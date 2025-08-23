@@ -12,6 +12,7 @@ export interface IUser extends Document {
   status: 'pending' | 'active' | 'suspended';
   emailVerified: boolean;
   verificationToken?: string;
+  verificationCode?: string;
   resetToken?: string;
   pharmacyId?: mongoose.Types.ObjectId;
   currentPlanId: mongoose.Types.ObjectId;
@@ -22,6 +23,7 @@ export interface IUser extends Document {
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
   generateVerificationToken(): string;
+  generateVerificationCode(): string;
   generateResetToken(): string;
 }
 
@@ -74,6 +76,10 @@ const userSchema = new Schema({
     type: String,
     index: { expires: '24h' }
   },
+  verificationCode: {
+    type: String,
+    index: { expires: '24h' }
+  },
   resetToken: {
     type: String,
     index: { expires: '1h' }
@@ -113,6 +119,13 @@ userSchema.methods.generateVerificationToken = function (): string {
   const token = crypto.randomBytes(32).toString('hex');
   this.verificationToken = crypto.createHash('sha256').update(token).digest('hex');
   return token;
+};
+
+userSchema.methods.generateVerificationCode = function (): string {
+  // Generate 6-digit code
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  this.verificationCode = crypto.createHash('sha256').update(code).digest('hex');
+  return code;
 };
 
 userSchema.methods.generateResetToken = function (): string {

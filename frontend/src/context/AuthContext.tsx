@@ -36,17 +36,24 @@ interface User {
   lastLoginAt?: Date;
 }
 
+interface AuthResponse {
+  success: boolean;
+  message: string;
+  user?: User;
+  token?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (credentials: LoginCredentials) => Promise<any>;
-  register: (userData: RegisterData) => Promise<any>;
-  verifyEmail: (token: string) => Promise<any>;
+  login: (credentials: LoginCredentials) => Promise<AuthResponse>;
+  register: (userData: RegisterData) => Promise<AuthResponse>;
+  verifyEmail: (token?: string, code?: string) => Promise<AuthResponse>;
   logout: () => Promise<void>;
   logoutAll: () => Promise<void>;
-  updateProfile: (profileData: any) => Promise<any>;
-  forgotPassword: (email: string) => Promise<any>;
-  resetPassword: (token: string, password: string) => Promise<any>;
+  updateProfile: (profileData: Partial<User>) => Promise<AuthResponse>;
+  forgotPassword: (email: string) => Promise<AuthResponse>;
+  resetPassword: (token: string, password: string) => Promise<AuthResponse>;
   hasFeature: (featureName: string) => boolean;
   checkLimit: (limitName: string, currentCount: number) => boolean;
 }
@@ -102,35 +109,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initAuth();
   }, []);
 
-  const login = async (credentials: LoginCredentials) => {
-    try {
-      const response = await authService.login(credentials);
-      if (response.success && response.user) {
-        setUser(response.user);
-      }
-      return response;
-    } catch (error) {
-      throw error;
+  const login = async (
+    credentials: LoginCredentials
+  ): Promise<AuthResponse> => {
+    const response = await authService.login(credentials);
+    if (response.success && response.user) {
+      setUser(response.user);
     }
+    return response;
   };
 
-  const register = async (userData: RegisterData) => {
-    try {
-      const response = await authService.register(userData);
-      // Note: Registration doesn't automatically log in due to email verification
-      return response;
-    } catch (error) {
-      throw error;
-    }
+  const register = async (userData: RegisterData): Promise<AuthResponse> => {
+    const response = await authService.register(userData);
+    // Note: Registration doesn't automatically log in due to email verification
+    return response;
   };
 
-  const verifyEmail = async (token: string) => {
-    try {
-      const response = await authService.verifyEmail(token);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+  const verifyEmail = async (
+    token?: string,
+    code?: string
+  ): Promise<AuthResponse> => {
+    const response = await authService.verifyEmail(token, code);
+    return response;
   };
 
   const logout = async (): Promise<void> => {
@@ -153,34 +153,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const updateProfile = async (profileData: unknown) => {
-    try {
-      const response = await authService.updateProfile(profileData);
-      if (response.success && response.user) {
-        setUser(response.user);
-      }
-      return response;
-    } catch (error) {
-      throw error;
+  const updateProfile = async (
+    profileData: Partial<User>
+  ): Promise<AuthResponse> => {
+    const response = await authService.updateProfile(profileData);
+    if (response.success && response.user) {
+      setUser(response.user);
     }
+    return response;
   };
 
-  const forgotPassword = async (email: string) => {
-    try {
-      const response = await authService.forgotPassword(email);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+  const forgotPassword = async (email: string): Promise<AuthResponse> => {
+    const response = await authService.forgotPassword(email);
+    return response;
   };
 
-  const resetPassword = async (token: string, password: string) => {
-    try {
-      const response = await authService.resetPassword(token, password);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+  const resetPassword = async (
+    token: string,
+    password: string
+  ): Promise<AuthResponse> => {
+    const response = await authService.resetPassword(token, password);
+    return response;
   };
 
   const hasFeature = (featureName: string): boolean => {

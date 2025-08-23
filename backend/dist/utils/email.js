@@ -6,7 +6,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendSubscriptionReminder = exports.sendWelcomeEmail = exports.sendEmail = void 0;
 const resend_1 = require("resend");
 const nodemailer_1 = __importDefault(require("nodemailer"));
-const resend = new resend_1.Resend(process.env.RESEND_API_KEY);
+let resend = null;
+const getResendClient = () => {
+    if (!resend && hasValidResendConfig()) {
+        resend = new resend_1.Resend(process.env.RESEND_API_KEY);
+    }
+    return resend;
+};
 const hasValidResendConfig = () => {
     return (process.env.RESEND_API_KEY &&
         process.env.SENDER_EMAIL &&
@@ -36,7 +42,8 @@ const createSMTPTransporter = () => {
 const smtpTransporter = createSMTPTransporter();
 const sendWithResend = async (options) => {
     try {
-        const { data, error } = await resend.emails.send({
+        const resendClient = getResendClient();
+        const { data, error } = await resendClient.emails.send({
             from: `${process.env.SENDER_NAME || 'PharmaCare Hub'} <${process.env.SENDER_EMAIL}>`,
             to: [options.to],
             subject: options.subject,

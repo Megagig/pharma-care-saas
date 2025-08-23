@@ -44,8 +44,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       status: 'pending' // User needs to verify email
     });
 
-    // Generate verification token
+    // Generate verification token and code
     const verificationToken = user.generateVerificationToken();
+    const verificationCode = user.generateVerificationCode();
     await user.save();
 
     // Send verification email
@@ -54,12 +55,36 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       to: email,
       subject: 'Verify Your Email - PharmaCare',
       html: `
-        <h2>Welcome to PharmaCare!</h2>
-        <p>Hi ${firstName},</p>
-        <p>Please verify your email address by clicking the link below:</p>
-        <a href="${verificationUrl}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Verify Email</a>
-        <p>This link will expire in 24 hours.</p>
-        <p>If you didn't create this account, please ignore this email.</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2563eb; margin-bottom: 10px;">Welcome to PharmaCare!</h1>
+            <p style="color: #6b7280; font-size: 16px;">Hi ${firstName}, please verify your email address</p>
+          </div>
+          
+          <div style="background: #f8fafc; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
+            <h2 style="color: #1f2937; margin-bottom: 20px; text-align: center;">Choose your verification method:</h2>
+            
+            <div style="margin-bottom: 30px;">
+              <h3 style="color: #374151; margin-bottom: 15px;">Option 1: Click the verification link</h3>
+              <div style="text-align: center;">
+                <a href="${verificationUrl}" style="background: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">Verify Email Address</a>
+              </div>
+            </div>
+            
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 30px;">
+              <h3 style="color: #374151; margin-bottom: 15px;">Option 2: Enter this 6-digit code</h3>
+              <div style="text-align: center; background: white; padding: 20px; border-radius: 8px; border: 2px dashed #d1d5db;">
+                <div style="font-size: 32px; font-weight: bold; color: #2563eb; letter-spacing: 8px; font-family: 'Courier New', monospace;">${verificationCode}</div>
+                <p style="color: #6b7280; margin-top: 10px; font-size: 14px;">Enter this code on the verification page</p>
+              </div>
+            </div>
+          </div>
+          
+          <div style="text-align: center; color: #6b7280; font-size: 14px;">
+            <p>This verification will expire in 24 hours.</p>
+            <p>If you didn't create this account, please ignore this email.</p>
+          </div>
+        </div>
       `
     });
 
@@ -157,24 +182,37 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
 export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { token } = req.body;
+    const { token, code } = req.body;
 
-    if (!token) {
-      res.status(400).json({ message: 'Verification token is required' });
+    if (!token && !code) {
+      res.status(400).json({ message: 'Verification token or code is required' });
       return;
     }
 
-    // Hash the token to match what's stored in the database
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    let user = null;
 
-    // Find user with this verification token
-    const user = await User.findOne({
-      verificationToken: hashedToken,
-      emailVerified: false
-    });
+    if (token) {
+      // Hash the token to match what's stored in the database
+      const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+      // Find user with this verification token
+      user = await User.findOne({
+        verificationToken: hashedToken,
+        emailVerified: false
+      });
+    } else if (code) {
+      // Hash the code to match what's stored in the database
+      const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
+
+      // Find user with this verification code
+      user = await User.findOne({
+        verificationCode: hashedCode,
+        emailVerified: false
+      });
+    }
 
     if (!user) {
-      res.status(400).json({ message: 'Invalid or expired verification token' });
+      res.status(400).json({ message: 'Invalid or expired verification token/code' });
       return;
     }
 
@@ -182,6 +220,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
     user.emailVerified = true;
     user.status = 'active';
     user.verificationToken = undefined;
+    user.verificationCode = undefined;
     await user.save();
 
     res.json({

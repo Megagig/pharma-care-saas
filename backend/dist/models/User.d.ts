@@ -9,6 +9,7 @@ export interface IUser extends Document {
     status: 'pending' | 'active' | 'suspended';
     emailVerified: boolean;
     verificationToken?: string;
+    verificationCode?: string;
     resetToken?: string;
     pharmacyId?: mongoose.Types.ObjectId;
     currentPlanId: mongoose.Types.ObjectId;
@@ -19,6 +20,7 @@ export interface IUser extends Document {
     updatedAt: Date;
     comparePassword(password: string): Promise<boolean>;
     generateVerificationToken(): string;
+    generateVerificationCode(): string;
     generateResetToken(): string;
 }
 declare const _default: mongoose.Model<IUser, {}, {}, {}, mongoose.Document<unknown, {}, IUser> & IUser & {

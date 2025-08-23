@@ -88,6 +88,10 @@ const userSchema = new mongoose_1.Schema({
         type: String,
         index: { expires: '24h' }
     },
+    verificationCode: {
+        type: String,
+        index: { expires: '24h' }
+    },
     resetToken: {
         type: String,
         index: { expires: '1h' }
@@ -125,6 +129,11 @@ userSchema.methods.generateVerificationToken = function () {
     const token = crypto_1.default.randomBytes(32).toString('hex');
     this.verificationToken = crypto_1.default.createHash('sha256').update(token).digest('hex');
     return token;
+};
+userSchema.methods.generateVerificationCode = function () {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    this.verificationCode = crypto_1.default.createHash('sha256').update(code).digest('hex');
+    return code;
 };
 userSchema.methods.generateResetToken = function () {
     const token = crypto_1.default.randomBytes(32).toString('hex');

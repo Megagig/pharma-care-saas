@@ -101,10 +101,14 @@ class AuthService {
     return response;
   }
 
-  async verifyEmail(token: string) {
+  async verifyEmail(token?: string, code?: string) {
+    const body: { token?: string; code?: string } = {};
+    if (token) body.token = token;
+    if (code) body.code = code;
+
     return this.makeRequest('/auth/verify-email', {
       method: 'POST',
-      body: JSON.stringify({ token }),
+      body: JSON.stringify(body),
     });
   }
 
