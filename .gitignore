@@ -1,0 +1,6 @@
+node_modules
+.clinerules
+.kiro
+.roo
+.vscode
+.env
