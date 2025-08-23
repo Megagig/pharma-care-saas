@@ -38,7 +38,26 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const crypto_1 = __importDefault(require("crypto"));
 const userSchema = new mongoose_1.Schema({
+    email: {
+        type: String,
+        required: [true, 'Email is required'],
+        unique: true,
+        lowercase: true,
+        index: true,
+        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    },
+    phone: {
+        type: String,
+        index: true,
+        sparse: true
+    },
+    passwordHash: {
+        type: String,
+        required: [true, 'Password is required'],
+        minlength: 6
+    },
     firstName: {
         type: String,
         required: [true, 'First name is required'],
@@ -49,57 +68,68 @@ const userSchema = new mongoose_1.Schema({
         required: [true, 'Last name is required'],
         trim: true
     },
-    email: {
-        type: String,
-        required: [true, 'Email is required'],
-        unique: true,
-        lowercase: true,
-        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
-    },
-    password: {
-        type: String,
-        required: [true, 'Password is required'],
-        minlength: 6
-    },
     role: {
         type: String,
-        enum: ['pharmacist', 'pharmacy_manager', 'admin'],
-        default: 'pharmacist'
+        enum: ['pharmacist', 'technician', 'owner', 'admin'],
+        default: 'pharmacist',
+        index: true
     },
-    licenseNumber: {
+    status: {
         type: String,
-        required: [true, 'License number is required'],
-        unique: true
+        enum: ['pending', 'active', 'suspended'],
+        default: 'pending',
+        index: true
     },
-    pharmacyName: {
+    emailVerified: {
+        type: Boolean,
+        default: false
+    },
+    verificationToken: {
         type: String,
-        required: [true, 'Pharmacy name is required']
+        index: { expires: '24h' }
     },
-    phoneNumber: String,
-    address: {
-        street: String,
-        city: String,
-        state: String,
-        zipCode: String,
-        country: { type: String, default: 'US' }
+    resetToken: {
+        type: String,
+        index: { expires: '1h' }
     },
-    profileImage: String,
-    isActive: { type: Boolean, default: true },
-    subscription: {
+    pharmacyId: {
         type: mongoose_1.default.Schema.Types.ObjectId,
-        ref: 'Subscription'
+        ref: 'Pharmacy',
+        index: true
     },
-    createdAt: { type: Date, default: Date.now },
-    lastLogin: Date
+    currentPlanId: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'SubscriptionPlan',
+        required: true
+    },
+    planOverride: {
+        type: mongoose_1.Schema.Types.Mixed
+    },
+    currentSubscriptionId: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'Subscription',
+        index: true
+    },
+    lastLoginAt: Date
 }, { timestamps: true });
 userSchema.pre('save', async function (next) {
-    if (!this.isModified('password'))
+    if (!this.isModified('passwordHash'))
         return next();
-    this.password = await bcryptjs_1.default.hash(this.password, 10);
+    this.passwordHash = await bcryptjs_1.default.hash(this.passwordHash, 12);
     next();
 });
 userSchema.methods.comparePassword = async function (password) {
-    return await bcryptjs_1.default.compare(password, this.password);
+    return await bcryptjs_1.default.compare(password, this.passwordHash);
+};
+userSchema.methods.generateVerificationToken = function () {
+    const token = crypto_1.default.randomBytes(32).toString('hex');
+    this.verificationToken = crypto_1.default.createHash('sha256').update(token).digest('hex');
+    return token;
+};
+userSchema.methods.generateResetToken = function () {
+    const token = crypto_1.default.randomBytes(32).toString('hex');
+    this.resetToken = crypto_1.default.createHash('sha256').update(token).digest('hex');
+    return token;
 };
 exports.default = mongoose_1.default.model('User', userSchema);
 //# sourceMappingURL=User.js.map

@@ -1,20 +1,11 @@
 import mongoose, { Document } from 'mongoose';
 export interface ISubscription extends Document {
-    user: mongoose.Types.ObjectId;
-    plan: 'basic' | 'professional' | 'enterprise';
-    status: 'active' | 'inactive' | 'cancelled' | 'expired';
+    userId: mongoose.Types.ObjectId;
+    planId: mongoose.Types.ObjectId;
+    status: 'active' | 'inactive' | 'cancelled' | 'expired' | 'trial';
     startDate: Date;
     endDate: Date;
     priceAtPurchase: number;
-    features: Array<{
-        name?: string;
-        enabled?: boolean;
-    }>;
-    limits: {
-        maxPatients?: number;
-        maxNotes?: number;
-        storageGB?: number;
-    };
     paymentHistory: mongoose.Types.ObjectId[];
     autoRenew: boolean;
     trialEnd?: Date;

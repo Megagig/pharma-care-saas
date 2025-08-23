@@ -1,13 +1,39 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
 import { authService } from '../services/authService';
+
+interface SubscriptionPlan {
+  _id: string;
+  name: string;
+  priceNGN: number;
+  billingInterval: 'monthly' | 'yearly';
+  features: {
+    patientLimit: number | null;
+    reminderSmsMonthlyLimit: number | null;
+    reportsExport: boolean;
+    careNoteExport: boolean;
+    adrModule: boolean;
+    multiUserSupport: boolean;
+  };
+}
 
 interface User {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-  role: string;
-  pharmacyName: string;
+  phone?: string;
+  role: 'pharmacist' | 'technician' | 'owner' | 'admin';
+  status: 'pending' | 'active' | 'suspended';
+  emailVerified: boolean;
+  currentPlan: SubscriptionPlan;
+  pharmacyId?: string;
+  lastLoginAt?: Date;
 }
 
 interface AuthContextType {
@@ -15,8 +41,14 @@ interface AuthContextType {
   loading: boolean;
   login: (credentials: LoginCredentials) => Promise<any>;
   register: (userData: RegisterData) => Promise<any>;
-  logout: () => void;
+  verifyEmail: (token: string) => Promise<any>;
+  logout: () => Promise<void>;
+  logoutAll: () => Promise<void>;
   updateProfile: (profileData: any) => Promise<any>;
+  forgotPassword: (email: string) => Promise<any>;
+  resetPassword: (token: string, password: string) => Promise<any>;
+  hasFeature: (featureName: string) => boolean;
+  checkLimit: (limitName: string, currentCount: number) => boolean;
 }
 
 interface LoginCredentials {
@@ -29,8 +61,8 @@ interface RegisterData {
   lastName: string;
   email: string;
   password: string;
-  licenseNumber: string;
-  pharmacyName: string;
+  phone?: string;
+  role?: 'pharmacist' | 'technician' | 'owner';
 }
 
 interface AuthProviderProps {
@@ -54,14 +86,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('accessToken');
         if (token) {
           const userData = await authService.getCurrentUser();
           setUser(userData.user);
         }
       } catch (error) {
         console.error('Auth initialization failed:', error);
-        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
       } finally {
         setLoading(false);
       }
@@ -73,8 +105,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (credentials: LoginCredentials) => {
     try {
       const response = await authService.login(credentials);
-      localStorage.setItem('token', response.token);
-      setUser(response.user);
+      if (response.success && response.user) {
+        setUser(response.user);
+      }
       return response;
     } catch (error) {
       throw error;
@@ -84,27 +117,88 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (userData: RegisterData) => {
     try {
       const response = await authService.register(userData);
-      localStorage.setItem('token', response.token);
-      setUser(response.user);
+      // Note: Registration doesn't automatically log in due to email verification
       return response;
     } catch (error) {
       throw error;
     }
   };
 
-  const logout = (): void => {
-    localStorage.removeItem('token');
-    setUser(null);
+  const verifyEmail = async (token: string) => {
+    try {
+      const response = await authService.verifyEmail(token);
+      return response;
+    } catch (error) {
+      throw error;
+    }
   };
 
-  const updateProfile = async (profileData: any) => {
+  const logout = async (): Promise<void> => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      setUser(null);
+    }
+  };
+
+  const logoutAll = async (): Promise<void> => {
+    try {
+      await authService.logoutAll();
+    } catch (error) {
+      console.error('Logout all failed:', error);
+    } finally {
+      setUser(null);
+    }
+  };
+
+  const updateProfile = async (profileData: unknown) => {
     try {
       const response = await authService.updateProfile(profileData);
-      setUser(response.user);
+      if (response.success && response.user) {
+        setUser(response.user);
+      }
       return response;
     } catch (error) {
       throw error;
     }
+  };
+
+  const forgotPassword = async (email: string) => {
+    try {
+      const response = await authService.forgotPassword(email);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const resetPassword = async (token: string, password: string) => {
+    try {
+      const response = await authService.resetPassword(token, password);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const hasFeature = (featureName: string): boolean => {
+    if (!user || !user.currentPlan) return false;
+    return (
+      user.currentPlan.features[
+        featureName as keyof typeof user.currentPlan.features
+      ] === true
+    );
+  };
+
+  const checkLimit = (limitName: string, currentCount: number): boolean => {
+    if (!user || !user.currentPlan) return false;
+    const limit =
+      user.currentPlan.features[
+        limitName as keyof typeof user.currentPlan.features
+      ];
+    return limit === null || currentCount < (limit as number);
   };
 
   const value = {
@@ -112,13 +206,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     login,
     register,
+    verifyEmail,
     logout,
+    logoutAll,
     updateProfile,
+    forgotPassword,
+    resetPassword,
+    hasFeature,
+    checkLimit,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

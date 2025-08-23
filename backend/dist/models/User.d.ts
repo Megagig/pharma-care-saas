@@ -1,26 +1,25 @@
 import mongoose, { Document } from 'mongoose';
 export interface IUser extends Document {
+    email: string;
+    phone?: string;
+    passwordHash: string;
     firstName: string;
     lastName: string;
-    email: string;
-    password: string;
-    role: 'pharmacist' | 'pharmacy_manager' | 'admin';
-    licenseNumber: string;
-    pharmacyName: string;
-    phoneNumber?: string;
-    address?: {
-        street?: string;
-        city?: string;
-        state?: string;
-        zipCode?: string;
-        country?: string;
-    };
-    profileImage?: string;
-    isActive: boolean;
-    subscription?: mongoose.Types.ObjectId;
+    role: 'pharmacist' | 'technician' | 'owner' | 'admin';
+    status: 'pending' | 'active' | 'suspended';
+    emailVerified: boolean;
+    verificationToken?: string;
+    resetToken?: string;
+    pharmacyId?: mongoose.Types.ObjectId;
+    currentPlanId: mongoose.Types.ObjectId;
+    planOverride?: Record<string, any>;
+    currentSubscriptionId?: mongoose.Types.ObjectId;
+    lastLoginAt?: Date;
     createdAt: Date;
-    lastLogin?: Date;
+    updatedAt: Date;
     comparePassword(password: string): Promise<boolean>;
+    generateVerificationToken(): string;
+    generateResetToken(): string;
 }
 declare const _default: mongoose.Model<IUser, {}, {}, {}, mongoose.Document<unknown, {}, IUser> & IUser & {
     _id: mongoose.Types.ObjectId;

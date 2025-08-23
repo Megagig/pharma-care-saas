@@ -35,20 +35,21 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const subscriptionSchema = new mongoose_1.Schema({
-    user: {
+    userId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
+        index: true
     },
-    plan: {
-        type: String,
-        enum: ['basic', 'professional', 'enterprise'],
+    planId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'SubscriptionPlan',
         required: true
     },
     status: {
         type: String,
-        enum: ['active', 'inactive', 'cancelled', 'expired'],
-        default: 'active'
+        enum: ['active', 'inactive', 'cancelled', 'expired', 'trial'],
+        default: 'trial'
     },
     startDate: {
         type: Date,
@@ -60,22 +61,17 @@ const subscriptionSchema = new mongoose_1.Schema({
     },
     priceAtPurchase: {
         type: Number,
-        required: true
-    },
-    features: [{
-            name: String,
-            enabled: { type: Boolean, default: true }
-        }],
-    limits: {
-        maxPatients: { type: Number, default: 100 },
-        maxNotes: { type: Number, default: 1000 },
-        storageGB: { type: Number, default: 5 }
+        required: true,
+        min: 0
     },
     paymentHistory: [{
             type: mongoose_1.Schema.Types.ObjectId,
             ref: 'Payment'
         }],
-    autoRenew: { type: Boolean, default: true },
+    autoRenew: {
+        type: Boolean,
+        default: true
+    },
     trialEnd: Date
 }, { timestamps: true });
 exports.default = mongoose_1.default.model('Subscription', subscriptionSchema);

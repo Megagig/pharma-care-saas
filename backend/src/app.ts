@@ -2,11 +2,13 @@ import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 import hpp from 'hpp';
 
+import logger from './utils/logger';
 import errorHandler from './middlewares/errorHandler';
 
 // Route imports
@@ -37,6 +39,7 @@ app.use('/api/', limiter);
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Data sanitization
 app.use(mongoSanitize()); // Against NoSQL query injection
@@ -50,8 +53,8 @@ if (process.env.NODE_ENV === 'development') {
 
 // Health check route
 app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV
   });

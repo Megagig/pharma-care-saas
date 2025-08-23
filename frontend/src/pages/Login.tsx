@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { Eye, EyeOff, AlertCircle, Mail } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+interface LoginForm {
+  email: string;
+  password: string;
+}
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -18,25 +21,31 @@ const Login = () => {
 
   const from = location.state?.from?.pathname || '/dashboard';
 
-  const handleChange = (e) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-  };
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginForm>();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+  const onSubmit = async (data: LoginForm) => {
+    setIsLoading(true);
+    setNeedsVerification(false);
 
     try {
-      await login(formData);
-      navigate(from, { replace: true });
-    } catch (error) {
-      setError(error.response?.data?.message || 'Login failed');
+      const response = await login(data);
+      if (response.success) {
+        toast.success('Login successful!');
+        navigate(from, { replace: true });
+      }
+    } catch (error: any) {
+      if (error.message?.includes('verify your email')) {
+        setNeedsVerification(true);
+        toast.error('Please verify your email before logging in.');
+      } else {
+        toast.error(error.message || 'Login failed. Please try again.');
+      }
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -58,45 +67,63 @@ const Login = () => {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
-              <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-              <span className="text-red-700 text-sm">{error}</span>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          {needsVerification && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center">
+              <Mail className="w-5 h-5 text-yellow-500 mr-2" />
+              <div>
+                <span className="text-yellow-700 text-sm font-medium">
+                  Email verification required
+                </span>
+                <p className="text-yellow-600 text-xs mt-1">
+                  Please check your email and click the verification link.
+                </p>
+              </div>
             </div>
           )}
 
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Email address
               </label>
               <input
-                id="email"
-                name="email"
+                {...register('email', {
+                  required: 'Email is required',
+                  pattern: {
+                    value: /^\S+@\S+$/i,
+                    message: 'Please enter a valid email address',
+                  },
+                })}
                 type="email"
                 autoComplete="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter your email"
               />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Password
               </label>
               <div className="relative">
                 <input
-                  id="password"
-                  name="password"
+                  {...register('password', {
+                    required: 'Password is required',
+                  })}
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter your password"
                 />
@@ -112,6 +139,11 @@ const Login = () => {
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -123,27 +155,36 @@ const Login = () => {
                 type="checkbox"
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+              <label
+                htmlFor="remember-me"
+                className="ml-2 block text-sm text-gray-700"
+              >
                 Remember me
               </label>
             </div>
 
-            <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-500">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-blue-600 hover:text-blue-500"
+            >
               Forgot your password?
             </Link>
           </div>
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={isLoading}
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
 
           <p className="text-center text-sm text-gray-600">
             Don't have an account?{' '}
-            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link
+              to="/register"
+              className="font-medium text-blue-600 hover:text-blue-500"
+            >
               Sign up for free
             </Link>
           </p>

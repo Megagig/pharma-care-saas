@@ -1,31 +1,49 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 export interface IUser extends Document {
+  email: string;
+  phone?: string;
+  passwordHash: string;
   firstName: string;
   lastName: string;
-  email: string;
-  password: string;
-  role: 'pharmacist' | 'pharmacy_manager' | 'admin';
-  licenseNumber: string;
-  pharmacyName: string;
-  phoneNumber?: string;
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    zipCode?: string;
-    country?: string;
-  };
-  profileImage?: string;
-  isActive: boolean;
-  subscription?: mongoose.Types.ObjectId;
+  role: 'pharmacist' | 'technician' | 'owner' | 'admin';
+  status: 'pending' | 'active' | 'suspended';
+  emailVerified: boolean;
+  verificationToken?: string;
+  resetToken?: string;
+  pharmacyId?: mongoose.Types.ObjectId;
+  currentPlanId: mongoose.Types.ObjectId;
+  planOverride?: Record<string, any>;
+  currentSubscriptionId?: mongoose.Types.ObjectId;
+  lastLoginAt?: Date;
   createdAt: Date;
-  lastLogin?: Date;
+  updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
+  generateVerificationToken(): string;
+  generateResetToken(): string;
 }
 
 const userSchema = new Schema({
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    unique: true,
+    lowercase: true,
+    index: true,
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+  },
+  phone: {
+    type: String,
+    index: true,
+    sparse: true
+  },
+  passwordHash: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: 6
+  },
   firstName: {
     type: String,
     required: [true, 'First name is required'],
@@ -36,58 +54,71 @@ const userSchema = new Schema({
     required: [true, 'Last name is required'],
     trim: true
   },
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    unique: true,
-    lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
-  },
-  password: {
-    type: String,
-    required: [true, 'Password is required'],
-    minlength: 6
-  },
   role: {
     type: String,
-    enum: ['pharmacist', 'pharmacy_manager', 'admin'],
-    default: 'pharmacist'
+    enum: ['pharmacist', 'technician', 'owner', 'admin'],
+    default: 'pharmacist',
+    index: true
   },
-  licenseNumber: {
+  status: {
     type: String,
-    required: [true, 'License number is required'],
-    unique: true
+    enum: ['pending', 'active', 'suspended'],
+    default: 'pending',
+    index: true
   },
-  pharmacyName: {
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationToken: {
     type: String,
-    required: [true, 'Pharmacy name is required']
+    index: { expires: '24h' }
   },
-  phoneNumber: String,
-  address: {
-    street: String,
-    city: String,
-    state: String,
-    zipCode: String,
-    country: { type: String, default: 'US' }
+  resetToken: {
+    type: String,
+    index: { expires: '1h' }
   },
-  profileImage: String,
-  isActive: { type: Boolean, default: true },
-  subscription: {
+  pharmacyId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Subscription'
+    ref: 'Pharmacy',
+    index: true
   },
-  createdAt: { type: Date, default: Date.now },
-  lastLogin: Date
+  currentPlanId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'SubscriptionPlan',
+    required: true
+  },
+  planOverride: {
+    type: Schema.Types.Mixed
+  },
+  currentSubscriptionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subscription',
+    index: true
+  },
+  lastLoginAt: Date
 }, { timestamps: true });
 
-userSchema.pre<IUser>('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+userSchema.pre<IUser>('save', async function (next) {
+  if (!this.isModified('passwordHash')) return next();
+  this.passwordHash = await bcrypt.hash(this.passwordHash, 12);
   next();
 });
 
-userSchema.methods.comparePassword = async function(password: string): Promise<boolean> {
-  return await bcrypt.compare(password, this.password);
+userSchema.methods.comparePassword = async function (password: string): Promise<boolean> {
+  return await bcrypt.compare(password, this.passwordHash);
+};
+
+userSchema.methods.generateVerificationToken = function (): string {
+  const token = crypto.randomBytes(32).toString('hex');
+  this.verificationToken = crypto.createHash('sha256').update(token).digest('hex');
+  return token;
+};
+
+userSchema.methods.generateResetToken = function (): string {
+  const token = crypto.randomBytes(32).toString('hex');
+  this.resetToken = crypto.createHash('sha256').update(token).digest('hex');
+  return token;
 };
 
 export default mongoose.model<IUser>('User', userSchema);

@@ -7,6 +7,7 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const express_mongo_sanitize_1 = __importDefault(require("express-mongo-sanitize"));
 const xss_clean_1 = __importDefault(require("xss-clean"));
@@ -32,6 +33,7 @@ const limiter = (0, express_rate_limit_1.default)({
 app.use('/api/', limiter);
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true }));
+app.use((0, cookie_parser_1.default)());
 app.use((0, express_mongo_sanitize_1.default)());
 app.use((0, xss_clean_1.default)());
 app.use((0, hpp_1.default)());

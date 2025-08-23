@@ -1,5 +1,11 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
@@ -8,9 +14,14 @@ import Footer from './components/Footer';
 
 // Pages
 import Landing from './pages/Landing';
+import About from './pages/About';
+import Contact from './pages/Contact';
 import Pricing from './pages/Pricing';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
 import ClinicalNotes from './pages/ClinicalNotes';
@@ -23,56 +34,103 @@ function App(): JSX.Element {
     <AuthProvider>
       <Router>
         <div className="min-h-screen bg-gray-50">
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+              success: {
+                duration: 3000,
+                iconTheme: {
+                  primary: '#4ade80',
+                  secondary: '#fff',
+                },
+              },
+              error: {
+                duration: 4000,
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Landing />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Dashboard />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/patients" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Patients />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/notes" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <ClinicalNotes />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/medications" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Medications />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/subscriptions" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Subscriptions />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/reports" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Reports />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Dashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Patients />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notes"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ClinicalNotes />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/medications"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Medications />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/subscriptions"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Subscriptions />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Reports />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Redirect any unknown routes to dashboard */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -94,9 +152,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <Navbar />
       <div className="flex-1 flex">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );
