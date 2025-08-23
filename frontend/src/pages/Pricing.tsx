@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import {
   Box,
   Container,
@@ -14,6 +15,9 @@ import {
   Grid,
   AppBar,
   Toolbar,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import {
   Check as CheckIcon,
@@ -21,6 +25,7 @@ import {
   Star as StarIcon,
   Bolt as BoltIcon,
   Stars as StarsIcon,
+  ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
 import Footer from '../components/Footer';
 
@@ -28,7 +33,7 @@ const Pricing = () => {
   const plans = [
     {
       name: 'Basic',
-      price: 29,
+      price: '1,000',
       description: 'Perfect for individual pharmacists',
       popular: false,
       features: [
@@ -47,7 +52,7 @@ const Pricing = () => {
     },
     {
       name: 'Professional',
-      price: 59,
+      price: '2,000',
       description: 'Ideal for growing practices',
       popular: true,
       features: [
@@ -64,7 +69,7 @@ const Pricing = () => {
     },
     {
       name: 'Enterprise',
-      price: 99,
+      price: '5,000',
       description: 'For large pharmacy operations',
       popular: false,
       features: [
@@ -119,6 +124,15 @@ const Pricing = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
             <Button component={Link} to="/" color="inherit">
               Home
+            </Button>
+            <Button component={Link} to="/about" color="inherit">
+              About
+            </Button>
+            <Button component={Link} to="/contact" color="inherit">
+              Contact
+            </Button>
+            <Button component={Link} to="/pricing" color="inherit">
+              Pricing
             </Button>
             <Button component={Link} to="/login" color="inherit">
               Sign In
@@ -266,7 +280,7 @@ const Pricing = () => {
                         variant="h3"
                         sx={{ fontWeight: 700, color: 'primary.main' }}
                       >
-                        ${plan.price}
+                        ₦{plan.price}
                       </Typography>
                       <Typography
                         variant="h6"
@@ -350,63 +364,202 @@ const Pricing = () => {
         </Grid>
 
         {/* FAQ Section */}
-        <Box sx={{ mt: 12, textAlign: 'center' }}>
+        <Box sx={{ mt: 12 }}>
           <Typography
             variant="h4"
             component="h2"
-            sx={{ fontWeight: 600, mb: 4 }}
+            sx={{ fontWeight: 600, mb: 6, textAlign: 'center' }}
           >
             Frequently Asked Questions
           </Typography>
-          <Grid container spacing={4}>
-            <Grid xs={12} md={6}>
-              <Card sx={{ p: 3, height: '100%' }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+          <Box sx={{ maxWidth: '800px', mx: 'auto' }}>
+            <Accordion
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+                '&:before': { display: 'none' },
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  py: 2,
+                  '& .MuiAccordionSummary-content': {
+                    margin: '12px 0',
+                  },
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Can I change my plan later?
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Yes! You can upgrade or downgrade your plan at any time.
-                  Changes take effect immediately, and you'll be charged or
-                  refunded the prorated amount.
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
+                <Typography variant="body1" color="text.secondary">
+                  Yes! You can upgrade or downgrade your plan at any time from
+                  your account settings. Changes take effect immediately, and
+                  you'll be charged or refunded the prorated amount based on
+                  your billing cycle. There are no penalties for changing plans.
                 </Typography>
-              </Card>
-            </Grid>
-            <Grid xs={12} md={6}>
-              <Card sx={{ p: 3, height: '100%' }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+                '&:before': { display: 'none' },
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  py: 2,
+                  '& .MuiAccordionSummary-content': {
+                    margin: '12px 0',
+                  },
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   What happens during the free trial?
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  You get full access to all features for 30 days. No credit
-                  card required. After the trial, you can choose to continue
-                  with a paid plan.
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
+                <Typography variant="body1" color="text.secondary">
+                  You get full access to all features for 30 days with no
+                  restrictions. No credit card is required to start your trial.
+                  After the trial period ends, you can choose to continue with a
+                  paid plan or your account will be paused until you subscribe.
                 </Typography>
-              </Card>
-            </Grid>
-            <Grid xs={12} md={6}>
-              <Card sx={{ p: 3, height: '100%' }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+                '&:before': { display: 'none' },
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  py: 2,
+                  '& .MuiAccordionSummary-content': {
+                    margin: '12px 0',
+                  },
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Is my data secure and HIPAA compliant?
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Absolutely! All plans include enterprise-grade security and
-                  HIPAA compliance. Your patient data is encrypted and stored
-                  securely.
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
+                <Typography variant="body1" color="text.secondary">
+                  Absolutely! All plans include enterprise-grade security with
+                  end-to-end encryption, secure data centers, and full HIPAA
+                  compliance. We undergo regular security audits and maintain
+                  SOC 2 Type II certification to ensure your patient data is
+                  always protected.
                 </Typography>
-              </Card>
-            </Grid>
-            <Grid xs={12} md={6}>
-              <Card sx={{ p: 3, height: '100%' }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+                '&:before': { display: 'none' },
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  py: 2,
+                  '& .MuiAccordionSummary-content': {
+                    margin: '12px 0',
+                  },
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Do you offer discounts for annual plans?
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Yes! Save 20% when you choose annual billing. Contact our
-                  sales team for volume discounts on Enterprise plans.
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
+                <Typography variant="body1" color="text.secondary">
+                  Yes! Save 20% when you choose annual billing instead of
+                  monthly. We also offer volume discounts for Enterprise plans
+                  with multiple users. Contact our sales team to discuss custom
+                  pricing for larger organizations.
                 </Typography>
-              </Card>
-            </Grid>
-          </Grid>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+                '&:before': { display: 'none' },
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  py: 2,
+                  '& .MuiAccordionSummary-content': {
+                    margin: '12px 0',
+                  },
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  What payment methods do you accept?
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
+                <Typography variant="body1" color="text.secondary">
+                  We accept all major Nigerian payment methods including bank
+                  transfers, debit cards, and mobile money platforms like
+                  Paystack and Flutterwave. International payments are also
+                  supported through Visa and Mastercard.
+                </Typography>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+                '&:before': { display: 'none' },
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  py: 2,
+                  '& .MuiAccordionSummary-content': {
+                    margin: '12px 0',
+                  },
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Can I cancel my subscription anytime?
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
+                <Typography variant="body1" color="text.secondary">
+                  Yes, you can cancel your subscription at any time with no
+                  cancellation fees or long-term contracts. Your access will
+                  continue until the end of your current billing period, and you
+                  can export your data before cancellation.
+                </Typography>
+              </AccordionDetails>
+            </Accordion>
+          </Box>
         </Box>
 
         {/* CTA Section */}

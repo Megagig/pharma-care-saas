@@ -111,6 +111,12 @@ const Landing = () => {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+            <Button component={Link} to="/about" color="inherit">
+              About
+            </Button>
+            <Button component={Link} to="/contact" color="inherit">
+              Contact
+            </Button>
             <Button component={Link} to="/pricing" color="inherit">
               Pricing
             </Button>
