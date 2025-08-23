@@ -1,75 +1,171 @@
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  Users, 
-  FileText, 
-  Pill, 
-  CreditCard, 
-  BarChart3,
-  Settings,
-  HelpCircle
-} from 'lucide-react';
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Box,
+  Divider,
+  Typography,
+} from '@mui/material';
+import {
+  Dashboard as DashboardIcon,
+  People as PeopleIcon,
+  Description as DescriptionIcon,
+  Medication as MedicationIcon,
+  Assessment as AssessmentIcon,
+  CreditCard as CreditCardIcon,
+  Settings as SettingsIcon,
+  Help as HelpIcon,
+} from '@mui/icons-material';
+
+const drawerWidth = 280;
 
 const Sidebar = () => {
   const location = useLocation();
 
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: Home },
-    { name: 'Patients', path: '/patients', icon: Users },
-    { name: 'Clinical Notes', path: '/notes', icon: FileText },
-    { name: 'Medications', path: '/medications', icon: Pill },
-    { name: 'Reports', path: '/reports', icon: BarChart3 },
-    { name: 'Subscriptions', path: '/subscriptions', icon: CreditCard },
-    { name: 'Settings', path: '/settings', icon: Settings },
-    { name: 'Help', path: '/help', icon: HelpCircle },
+    { name: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+    { name: 'Patients', path: '/patients', icon: PeopleIcon },
+    { name: 'Clinical Notes', path: '/notes', icon: DescriptionIcon },
+    { name: 'Medications', path: '/medications', icon: MedicationIcon },
+    { name: 'Reports', path: '/reports', icon: AssessmentIcon },
+    { name: 'Subscriptions', path: '/subscriptions', icon: CreditCardIcon },
   ];
 
-  return (
-    <div className="w-64 bg-white border-r border-gray-200 h-full">
-      <div className="flex flex-col h-full">
-        <div className="flex-1 pt-6 pb-4 overflow-y-auto">
-          <nav className="mt-5 px-3">
-            <ul className="space-y-1">
-              {navItems.map((item) => {
-                const isActive = location.pathname === item.path;
-                const Icon = item.icon;
-                
-                return (
-                  <li key={item.name}>
-                    <Link
-                      to={item.path}
-                      className={`${
-                        isActive
-                          ? 'bg-blue-50 border-blue-500 text-blue-700'
-                          : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      } group flex items-center px-3 py-2 text-sm font-medium border-l-4 transition-colors duration-150`}
-                    >
-                      <Icon
-                        className={`${
-                          isActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
-                        } mr-3 h-5 w-5 transition-colors duration-150`}
-                      />
-                      {item.name}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-        </div>
+  const settingsItems = [
+    { name: 'Settings', path: '/settings', icon: SettingsIcon },
+    { name: 'Help', path: '/help', icon: HelpIcon },
+  ];
 
-        <div className="p-3 border-t border-gray-200">
-          <div className="bg-blue-50 rounded-lg p-3">
-            <p className="text-xs text-blue-600 font-medium mb-1">Need Help?</p>
-            <p className="text-xs text-gray-600 mb-2">Contact our support team</p>
-            <button className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">
-              Get Support
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+  const renderNavItems = (items: typeof navItems) => (
+    <List>
+      {items.map((item) => {
+        const isActive = location.pathname === item.path;
+        const IconComponent = item.icon;
+
+        return (
+          <ListItem key={item.name} disablePadding sx={{ mb: 0.5 }}>
+            <ListItemButton
+              component={Link}
+              to={item.path}
+              sx={{
+                minHeight: 48,
+                borderRadius: 2,
+                mx: 1,
+                backgroundColor: isActive ? 'primary.main' : 'transparent',
+                color: isActive ? 'white' : 'text.primary',
+                '&:hover': {
+                  backgroundColor: isActive ? 'primary.dark' : 'action.hover',
+                },
+                '&.Mui-selected': {
+                  backgroundColor: 'primary.main',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: 'primary.dark',
+                  },
+                },
+              }}
+              selected={isActive}
+            >
+              <ListItemIcon
+                sx={{
+                  color: isActive ? 'white' : 'text.secondary',
+                  minWidth: 40,
+                }}
+              >
+                <IconComponent fontSize="small" />
+              </ListItemIcon>
+              <ListItemText
+                primary={item.name}
+                primaryTypographyProps={{
+                  fontSize: '0.875rem',
+                  fontWeight: isActive ? 600 : 400,
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+        );
+      })}
+    </List>
+  );
+
+  return (
+    <Drawer
+      variant="permanent"
+      sx={{
+        width: drawerWidth,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: drawerWidth,
+          boxSizing: 'border-box',
+          position: 'relative',
+          height: '100%',
+          backgroundColor: 'background.paper',
+          borderRight: '1px solid',
+          borderColor: 'grey.200',
+        },
+      }}
+    >
+      <Box sx={{ overflow: 'auto', height: '100%' }}>
+        {/* Main Navigation */}
+        <Box sx={{ pt: 3, pb: 2 }}>
+          <Typography
+            variant="overline"
+            sx={{
+              px: 3,
+              color: 'text.secondary',
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              letterSpacing: '0.1em',
+            }}
+          >
+            MAIN MENU
+          </Typography>
+          {renderNavItems(navItems)}
+        </Box>
+
+        <Divider sx={{ mx: 2 }} />
+
+        {/* Settings & Help */}
+        <Box sx={{ pt: 2, pb: 2 }}>
+          <Typography
+            variant="overline"
+            sx={{
+              px: 3,
+              color: 'text.secondary',
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              letterSpacing: '0.1em',
+            }}
+          >
+            SUPPORT
+          </Typography>
+          {renderNavItems(settingsItems)}
+        </Box>
+
+        {/* Bottom Spacer */}
+        <Box sx={{ flexGrow: 1 }} />
+
+        {/* Version Info */}
+        <Box sx={{ p: 2, mt: 'auto' }}>
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              bgcolor: 'grey.50',
+              textAlign: 'center',
+            }}
+          >
+            <Typography variant="caption" color="text.secondary">
+              PharmaCare v2.1.0
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+    </Drawer>
   );
 };
 

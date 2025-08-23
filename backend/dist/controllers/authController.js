@@ -19,6 +19,12 @@ const generateRefreshToken = () => {
 const register = async (req, res) => {
     try {
         const { firstName, lastName, email, password, phone, role = 'pharmacist' } = req.body;
+        if (!firstName || !lastName || !email || !password) {
+            res.status(400).json({
+                message: 'Missing required fields: firstName, lastName, email, and password are required'
+            });
+            return;
+        }
         const existingUser = await User_1.default.findOne({ email });
         if (existingUser) {
             res.status(400).json({ message: 'User already exists with this email' });

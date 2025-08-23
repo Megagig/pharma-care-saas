@@ -42,8 +42,12 @@ const ResetPassword: React.FC = () => {
         'Password reset successful! Please log in with your new password.'
       );
       navigate('/login');
-    } catch (error: any) {
-      toast.error(error.message || 'Password reset failed. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Password reset failed. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

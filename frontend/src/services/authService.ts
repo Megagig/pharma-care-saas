@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 class AuthService {
   private refreshPromise: Promise<any> | null = null;
@@ -22,11 +23,17 @@ class AuthService {
     let response = await fetch(`${API_BASE_URL}${url}`, config);
 
     // If token expired, try to refresh
-    if (response.status === 401 && token && !url.includes('/auth/refresh-token')) {
+    if (
+      response.status === 401 &&
+      token &&
+      !url.includes('/auth/refresh-token')
+    ) {
       const refreshed = await this.refreshAccessToken();
       if (refreshed) {
         // Retry the original request with new token
-        config.headers.Authorization = `Bearer ${localStorage.getItem('accessToken')}`;
+        config.headers.Authorization = `Bearer ${localStorage.getItem(
+          'accessToken'
+        )}`;
         response = await fetch(`${API_BASE_URL}${url}`, config);
       }
     }

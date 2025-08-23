@@ -10,12 +10,20 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.1",
+    "@mui/lab": "^7.0.0-beta.16",
+    "@mui/material": "^7.3.1",
+    "@mui/system": "^7.3.1",
+    "@mui/x-data-grid": "^8.10.2",
+    "@mui/x-date-pickers": "^8.10.2",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.8.2",
     "react-hook-form": "^7.48.2",
-    "react-hot-toast": "^2.4.1"
+    "react-hot-toast": "^2.4.1",
+    "react-router-dom": "^7.8.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

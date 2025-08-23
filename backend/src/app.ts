@@ -8,7 +8,7 @@ import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 import hpp from 'hpp';
 
-import logger from './utils/logger';
+
 import errorHandler from './middlewares/errorHandler';
 
 // Route imports
@@ -23,16 +23,18 @@ const app: Application = express();
 
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+  })
+);
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  message: 'Too many requests from this IP, please try again later.',
 });
 app.use('/api/', limiter);
 
@@ -40,6 +42,8 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+
 
 // Data sanitization
 app.use(mongoSanitize()); // Against NoSQL query injection
@@ -56,9 +60,11 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
   });
 });
+
+
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -67,6 +73,8 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/medications', medicationRoutes);
 app.use('/api/payments', paymentRoutes);
+
+
 
 // 404 handler
 app.all('*', (req: Request, res: Response) => {

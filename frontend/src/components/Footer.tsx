@@ -1,67 +1,535 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart } from 'lucide-react';
+import {
+  Box,
+  Container,
+  Typography,
+  Button,
+  Divider,
+  IconButton,
+  Stack,
+} from '@mui/material';
+import {
+  Favorite as FavoriteIcon,
+  Twitter as TwitterIcon,
+  LinkedIn as LinkedInIcon,
+  GitHub as GitHubIcon,
+  Email as EmailIcon,
+} from '@mui/icons-material';
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-50 border-t border-gray-200">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">P</span>
-              </div>
-              <span className="text-xl font-semibold text-gray-900">PharmaCare</span>
-            </div>
-            <p className="text-gray-600 mb-4 max-w-md">
-              Empowering pharmacists with comprehensive patient care management tools 
-              to improve medication therapy outcomes and enhance pharmaceutical care.
-            </p>
-            <div className="flex items-center text-sm text-gray-500">
-              Made with <Heart className="w-4 h-4 mx-1 text-red-500" /> for pharmacists
-            </div>
-          </div>
+    <Box
+      component="footer"
+      sx={{
+        bgcolor: 'background.paper',
+        borderTop: 1,
+        borderColor: 'grey.200',
+        py: 6,
+      }}
+    >
+      <Container maxWidth="lg">
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            gap: 4,
+          }}
+        >
+          {/* Brand Section */}
+          <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 33%' } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  bgcolor: 'primary.main',
+                  borderRadius: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mr: 2,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{ color: 'white', fontWeight: 'bold' }}
+                >
+                  PC
+                </Typography>
+              </Box>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 'bold', color: 'primary.main' }}
+              >
+                PharmaCare
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Empowering pharmacists and healthcare professionals with advanced
+              patient management, medication tracking, and clinical
+              documentation tools.
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Typography variant="caption" color="text.secondary">
+                Made with
+              </Typography>
+              <FavoriteIcon
+                sx={{ fontSize: 16, mx: 0.5, color: 'error.main' }}
+              />
+              <Typography variant="caption" color="text.secondary">
+                for pharmacists
+              </Typography>
+            </Box>
+          </Box>
 
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
-              Product
-            </h3>
-            <ul className="space-y-2">
-              <li><Link to="/features" className="text-gray-600 hover:text-gray-900">Features</Link></li>
-              <li><Link to="/pricing" className="text-gray-600 hover:text-gray-900">Pricing</Link></li>
-              <li><Link to="/integrations" className="text-gray-600 hover:text-gray-900">Integrations</Link></li>
-              <li><Link to="/security" className="text-gray-600 hover:text-gray-900">Security</Link></li>
-            </ul>
-          </div>
+          {/* Links Sections */}
+          <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 67%' } }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: 4,
+              }}
+            >
+              {/* Product Links */}
+              <Box sx={{ minWidth: 150 }}>
+                <Typography
+                  variant="overline"
+                  sx={{
+                    color: 'text.primary',
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    letterSpacing: '0.08333em',
+                    display: 'block',
+                    mb: 2,
+                  }}
+                >
+                  Product
+                </Typography>
+                <Stack spacing={1}>
+                  <Button
+                    component={Link}
+                    to="/dashboard"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Dashboard
+                  </Button>
+                  <Button
+                    component={Link}
+                    to="/patients"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Patient Management
+                  </Button>
+                  <Button
+                    component={Link}
+                    to="/medications"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Medications
+                  </Button>
+                  <Button
+                    component={Link}
+                    to="/clinical-notes"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Clinical Notes
+                  </Button>
+                </Stack>
+              </Box>
 
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
-              Support
-            </h3>
-            <ul className="space-y-2">
-              <li><Link to="/help" className="text-gray-600 hover:text-gray-900">Help Center</Link></li>
-              <li><Link to="/contact" className="text-gray-600 hover:text-gray-900">Contact Us</Link></li>
-              <li><Link to="/status" className="text-gray-600 hover:text-gray-900">System Status</Link></li>
-              <li><Link to="/training" className="text-gray-600 hover:text-gray-900">Training</Link></li>
-            </ul>
-          </div>
-        </div>
+              {/* Company Links */}
+              <Box sx={{ minWidth: 150 }}>
+                <Typography
+                  variant="overline"
+                  sx={{
+                    color: 'text.primary',
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    letterSpacing: '0.08333em',
+                    display: 'block',
+                    mb: 2,
+                  }}
+                >
+                  Company
+                </Typography>
+                <Stack spacing={1}>
+                  <Button
+                    component={Link}
+                    to="/about"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    About Us
+                  </Button>
+                  <Button
+                    component={Link}
+                    to="/pricing"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Pricing
+                  </Button>
+                  <Button
+                    component={Link}
+                    to="/contact"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Contact
+                  </Button>
+                </Stack>
+              </Box>
 
-        <div className="mt-8 pt-8 border-t border-gray-200">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex space-x-6 mb-4 md:mb-0">
-              <Link to="/privacy" className="text-sm text-gray-600 hover:text-gray-900">Privacy Policy</Link>
-              <Link to="/terms" className="text-sm text-gray-600 hover:text-gray-900">Terms of Service</Link>
-              <Link to="/hipaa" className="text-sm text-gray-600 hover:text-gray-900">HIPAA Compliance</Link>
-            </div>
-            <p className="text-sm text-gray-500">
-              © 2024 PharmaCare SaaS. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </div>
-    </footer>
+              {/* Resources Links */}
+              <Box sx={{ minWidth: 150 }}>
+                <Typography
+                  variant="overline"
+                  sx={{
+                    color: 'text.primary',
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    letterSpacing: '0.08333em',
+                    display: 'block',
+                    mb: 2,
+                  }}
+                >
+                  Resources
+                </Typography>
+                <Stack spacing={1}>
+                  <Button
+                    href="#"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Documentation
+                  </Button>
+                  <Button
+                    href="#"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    API Reference
+                  </Button>
+                  <Button
+                    href="#"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Help Center
+                  </Button>
+                  <Button
+                    href="#"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Community
+                  </Button>
+                </Stack>
+              </Box>
+
+              {/* Legal Links */}
+              <Box sx={{ minWidth: 150 }}>
+                <Typography
+                  variant="overline"
+                  sx={{
+                    color: 'text.primary',
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    letterSpacing: '0.08333em',
+                    display: 'block',
+                    mb: 2,
+                  }}
+                >
+                  Legal
+                </Typography>
+                <Stack spacing={1}>
+                  <Button
+                    href="#"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Privacy Policy
+                  </Button>
+                  <Button
+                    href="#"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Terms of Service
+                  </Button>
+                  <Button
+                    href="#"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    HIPAA Compliance
+                  </Button>
+                  <Button
+                    href="#"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 400,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Security
+                  </Button>
+                </Stack>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+
+        <Divider sx={{ my: 4 }} />
+
+        {/* Bottom Section */}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: 2,
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            © {new Date().getFullYear()} PharmaCare. All rights reserved.
+          </Typography>
+
+          {/* Social Media Links */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+              Follow us:
+            </Typography>
+            <IconButton
+              href="https://twitter.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              size="small"
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  color: 'primary.main',
+                  backgroundColor: 'primary.light',
+                },
+              }}
+            >
+              <TwitterIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              href="https://linkedin.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              size="small"
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  color: 'primary.main',
+                  backgroundColor: 'primary.light',
+                },
+              }}
+            >
+              <LinkedInIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              href="https://github.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              size="small"
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  color: 'primary.main',
+                  backgroundColor: 'primary.light',
+                },
+              }}
+            >
+              <GitHubIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              href="mailto:support@pharmacare.com"
+              size="small"
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  color: 'primary.main',
+                  backgroundColor: 'primary.light',
+                },
+              }}
+            >
+              <EmailIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+      </Container>
+    </Box>
   );
 };
 

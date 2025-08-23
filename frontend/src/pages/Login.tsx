@@ -1,196 +1,300 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, AlertCircle, Mail } from 'lucide-react';
+import {
+  Box,
+  Container,
+  Typography,
+  TextField,
+  Button,
+  FormControlLabel,
+  Checkbox,
+  Divider,
+  Alert,
+  CircularProgress,
+  InputAdornment,
+  IconButton,
+  Card,
+  CardContent,
+} from '@mui/material';
+import {
+  Email as EmailIcon,
+  Lock as LockIcon,
+  Visibility,
+  VisibilityOff,
+} from '@mui/icons-material';
 import toast from 'react-hot-toast';
 
-interface LoginForm {
-  email: string;
-  password: string;
-}
-
 const Login = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [needsVerification, setNeedsVerification] = useState(false);
-
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    rememberMe: false,
+  });
 
-  const from = location.state?.from?.pathname || '/dashboard';
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === 'rememberMe' ? checked : value,
+    }));
+  };
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginForm>();
-
-  const onSubmit = async (data: LoginForm) => {
-    setIsLoading(true);
-    setNeedsVerification(false);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
     try {
-      const response = await login(data);
-      if (response.success) {
-        toast.success('Login successful!');
-        navigate(from, { replace: true });
-      }
-    } catch (error: any) {
-      if (error.message?.includes('verify your email')) {
-        setNeedsVerification(true);
-        toast.error('Please verify your email before logging in.');
-      } else {
-        toast.error(error.message || 'Login failed. Please try again.');
-      }
+      await login({ email: formData.email, password: formData.password });
+      toast.success('Login successful!');
+      navigate('/dashboard');
+    } catch {
+      setError('Invalid email or password');
+      toast.error('Login failed');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="flex items-center justify-center space-x-2 mb-6">
-            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-2xl">P</span>
-            </div>
-            <span className="text-2xl font-bold text-gray-900">PharmaCare</span>
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900">
-            Sign in to your account
-          </h2>
-          <p className="mt-2 text-gray-600">
-            Welcome back! Please enter your details.
-          </p>
-        </div>
-
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          {needsVerification && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center">
-              <Mail className="w-5 h-5 text-yellow-500 mr-2" />
-              <div>
-                <span className="text-yellow-700 text-sm font-medium">
-                  Email verification required
-                </span>
-                <p className="text-yellow-600 text-xs mt-1">
-                  Please check your email and click the verification link.
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Email address
-              </label>
-              <input
-                {...register('email', {
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^\S+@\S+$/i,
-                    message: 'Please enter a valid email address',
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        py: 4,
+      }}
+    >
+      <Container maxWidth="sm">
+        <Card
+          sx={{ borderRadius: 4, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}
+        >
+          <CardContent sx={{ p: 6 }}>
+            {/* Back to Homepage Link */}
+            <Box sx={{ mb: 3 }}>
+              <Button
+                component={Link}
+                to="/"
+                variant="text"
+                sx={{
+                  color: 'text.secondary',
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  '&:hover': {
+                    color: 'primary.main',
+                    backgroundColor: 'transparent',
                   },
-                })}
-                type="email"
-                autoComplete="email"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter your email"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                }}
               >
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  {...register('password', {
-                    required: 'Password is required',
-                  })}
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}
+                ← Back to Homepage
+              </Button>
+            </Box>
+
+            {/* Header */}
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Box
+                sx={{
+                  width: 64,
+                  height: 64,
+                  bgcolor: 'primary.main',
+                  borderRadius: 3,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mx: 'auto',
+                  mb: 2,
+                }}
+              >
+                <Typography
+                  variant="h4"
+                  sx={{ color: 'white', fontWeight: 'bold' }}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
-                  )}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label
-                htmlFor="remember-me"
-                className="ml-2 block text-sm text-gray-700"
+                  P
+                </Typography>
+              </Box>
+              <Typography
+                variant="h4"
+                component="h1"
+                sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}
               >
-                Remember me
-              </label>
-            </div>
+                Welcome Back
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Sign in to your PharmaCare account
+              </Typography>
+            </Box>
 
-            <Link
-              to="/forgot-password"
-              className="text-sm text-blue-600 hover:text-blue-500"
-            >
-              Forgot your password?
-            </Link>
-          </div>
+            {/* Error Alert */}
+            {error && (
+              <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+                {error}
+              </Alert>
+            )}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Signing in...' : 'Sign in'}
-          </button>
+            {/* Login Form */}
+            <Box component="form" onSubmit={handleSubmit}>
+              <TextField
+                fullWidth
+                name="email"
+                label="Email Address"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                autoComplete="email"
+                autoFocus
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ mb: 3 }}
+              />
 
-          <p className="text-center text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link
-              to="/register"
-              className="font-medium text-blue-600 hover:text-blue-500"
-            >
-              Sign up for free
-            </Link>
-          </p>
-        </form>
-      </div>
-    </div>
+              <TextField
+                fullWidth
+                name="password"
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={handleChange}
+                required
+                autoComplete="current-password"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockIcon color="action" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ mb: 2 }}
+              />
+
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 4,
+                }}
+              >
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      name="rememberMe"
+                      checked={formData.rememberMe}
+                      onChange={handleChange}
+                      color="primary"
+                    />
+                  }
+                  label="Remember me"
+                />
+                <Link
+                  to="/forgot-password"
+                  style={{
+                    textDecoration: 'none',
+                    color: '#2563eb',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                  }}
+                >
+                  Forgot password?
+                </Link>
+              </Box>
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={loading}
+                sx={{
+                  py: 1.5,
+                  borderRadius: 3,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  mb: 3,
+                }}
+              >
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+
+              <Divider sx={{ mb: 3 }}>
+                <Typography variant="body2" color="text.secondary">
+                  or
+                </Typography>
+              </Divider>
+
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Don't have an account?{' '}
+                  <Link
+                    to="/register"
+                    style={{
+                      textDecoration: 'none',
+                      color: '#2563eb',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Sign up
+                  </Link>
+                </Typography>
+              </Box>
+
+              <Box sx={{ textAlign: 'center', mt: 3 }}>
+                <Typography variant="caption" color="text.secondary">
+                  By signing in, you agree to our{' '}
+                  <Link
+                    to="/terms"
+                    style={{
+                      textDecoration: 'none',
+                      color: '#2563eb',
+                    }}
+                  >
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link
+                    to="/privacy"
+                    style={{
+                      textDecoration: 'none',
+                      color: '#2563eb',
+                    }}
+                  >
+                    Privacy Policy
+                  </Link>
+                </Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
   );
 };
 

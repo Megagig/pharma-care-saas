@@ -141,7 +141,7 @@ const VerifyEmail: React.FC = () => {
       // TODO: Implement resend API call
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
       toast.success('Verification code sent successfully!');
-    } catch (error) {
+    } catch (resendError) {
       toast.error('Failed to resend code. Please try again.');
     } finally {
       setIsResending(false);

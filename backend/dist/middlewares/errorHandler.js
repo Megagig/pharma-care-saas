@@ -2,6 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const errorHandler = (err, req, res, next) => {
     console.error(err.stack);
+    if (err instanceof SyntaxError && 'body' in err) {
+        res.status(400).json({
+            message: 'Invalid JSON format in request body'
+        });
+        return;
+    }
     if (err.name === 'CastError') {
         const message = 'Resource not found';
         res.status(404).json({ message });

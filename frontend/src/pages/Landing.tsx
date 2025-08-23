@@ -1,221 +1,503 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle, Shield, Users, BarChart3, Clock, Star } from 'lucide-react';
+import {
+  Box,
+  Container,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  AppBar,
+  Toolbar,
+  Paper,
+  Rating,
+  Avatar,
+} from '@mui/material';
+import {
+  People as PeopleIcon,
+  Security as SecurityIcon,
+  BarChart as BarChartIcon,
+  Schedule as ScheduleIcon,
+  ArrowForward as ArrowForwardIcon,
+  CheckCircle as CheckCircleIcon,
+} from '@mui/icons-material';
+import Footer from '../components/Footer';
 
 const Landing = () => {
   const features = [
     {
-      icon: Users,
+      icon: PeopleIcon,
       title: 'Patient Management',
-      description: 'Comprehensive patient profiles with medical history, medications, and contact information.'
+      description:
+        'Comprehensive patient profiles with medical history, medications, and contact information.',
     },
     {
-      icon: Shield,
+      icon: SecurityIcon,
       title: 'HIPAA Compliant',
-      description: 'Enterprise-grade security ensuring all patient data is protected and compliant.'
+      description:
+        'Enterprise-grade security ensuring all patient data is protected and compliant.',
     },
     {
-      icon: BarChart3,
+      icon: BarChartIcon,
       title: 'Clinical Analytics',
-      description: 'Advanced reporting and analytics to track patient outcomes and medication adherence.'
+      description:
+        'Advanced reporting and analytics to track patient outcomes and medication adherence.',
     },
     {
-      icon: Clock,
+      icon: ScheduleIcon,
       title: 'Time Saving',
-      description: 'Streamline your workflow with automated documentation and smart reminders.'
-    }
+      description:
+        'Streamline your workflow with automated documentation and smart reminders.',
+    },
   ];
 
   const testimonials = [
     {
       name: 'Dr. Sarah Johnson',
       role: 'Clinical Pharmacist',
-      content: 'PharmaCare has transformed how I manage my patients. The clinical notes feature is incredibly detailed and saves me hours each week.',
-      rating: 5
+      content:
+        'PharmaCare has transformed how I manage my patients. The clinical notes feature is incredibly detailed and saves me hours each week.',
+      rating: 5,
+      avatar: 'S',
     },
     {
       name: 'Michael Chen',
       role: 'Pharmacy Manager',
-      content: 'The medication interaction checks and adherence tracking have significantly improved our patient care quality.',
-      rating: 5
-    }
+      content:
+        'The medication interaction checks and adherence tracking have significantly improved our patient care quality.',
+      rating: 5,
+      avatar: 'M',
+    },
+  ];
+
+  const benefits = [
+    'Comprehensive patient medication profiles',
+    'SOAP note clinical documentation',
+    'Drug interaction and allergy checking',
+    'Medication adherence monitoring',
+    'Automated follow-up reminders',
+    'Advanced reporting and analytics',
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">P</span>
-              </div>
-              <span className="text-xl font-semibold text-gray-900">PharmaCare</span>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <Link to="/pricing" className="text-gray-600 hover:text-gray-900">Pricing</Link>
-              <Link to="/login" className="text-gray-600 hover:text-gray-900">Sign In</Link>
-              <Link to="/register" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                Get Started
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppBar position="static" color="transparent" elevation={0}>
+        <Toolbar>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: 'primary.main',
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mr: 1,
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{ color: 'white', fontWeight: 'bold' }}
+              >
+                P
+              </Typography>
+            </Box>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 600, color: 'text.primary' }}
+            >
+              PharmaCare
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+            <Button component={Link} to="/pricing" color="inherit">
+              Pricing
+            </Button>
+            <Button component={Link} to="/login" color="inherit">
+              Sign In
+            </Button>
+            <Button
+              component={Link}
+              to="/register"
+              variant="contained"
+              sx={{ borderRadius: 3 }}
+            >
+              Get Started
+            </Button>
+          </Box>
+        </Toolbar>
+      </AppBar>
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-5xl font-bold text-gray-900 mb-6">
-              Comprehensive <span className="text-blue-600">Pharmaceutical Care</span><br />
+      <Box
+        sx={{
+          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+          py: { xs: 8, md: 12 },
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', maxWidth: '800px', mx: 'auto' }}>
+            <Typography
+              variant="h2"
+              component="h1"
+              sx={{
+                fontWeight: 700,
+                mb: 3,
+                color: 'text.primary',
+                fontSize: { xs: '2.5rem', md: '3.5rem' },
+                lineHeight: 1.2,
+              }}
+            >
+              Comprehensive{' '}
+              <Box component="span" sx={{ color: 'primary.main' }}>
+                Pharmaceutical Care
+              </Box>
+              <br />
               Management Platform
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Empower your pharmacy practice with advanced patient management, clinical documentation, 
-              and medication therapy optimization tools designed specifically for pharmacists.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register" className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center">
+            </Typography>
+            <Typography
+              variant="h6"
+              sx={{
+                mb: 4,
+                color: 'text.secondary',
+                maxWidth: '600px',
+                mx: 'auto',
+                lineHeight: 1.6,
+              }}
+            >
+              Empower your pharmacy practice with advanced patient management,
+              clinical documentation, and medication therapy optimization tools
+              designed specifically for pharmacists.
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: 2,
+                justifyContent: 'center',
+              }}
+            >
+              <Button
+                component={Link}
+                to="/register"
+                variant="contained"
+                size="large"
+                endIcon={<ArrowForwardIcon />}
+                sx={{ py: 1.5, px: 4, borderRadius: 3 }}
+              >
                 Start Free Trial
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-              <Link to="/demo" className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors">
+              </Button>
+              <Button
+                component={Link}
+                to="/demo"
+                variant="outlined"
+                size="large"
+                sx={{ py: 1.5, px: 4, borderRadius: 3 }}
+              >
                 Watch Demo
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+              </Button>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
 
       {/* Features Section */}
-      <div className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Everything You Need for Modern Pharmaceutical Care
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Our comprehensive platform provides all the tools pharmacists need to deliver 
-              exceptional patient care and optimize medication therapy outcomes.
-            </p>
-          </div>
+      <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
+        <Box sx={{ textAlign: 'center', mb: 8 }}>
+          <Typography
+            variant="h3"
+            component="h2"
+            sx={{ fontWeight: 600, mb: 2 }}
+          >
+            Everything You Need for Modern Pharmaceutical Care
+          </Typography>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{ maxWidth: '600px', mx: 'auto' }}
+          >
+            Our comprehensive platform provides all the tools pharmacists need
+            to deliver exceptional patient care and optimize medication therapy
+            outcomes.
+          </Typography>
+        </Box>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <div key={index} className="text-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <Icon className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                  <p className="text-gray-600">{feature.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: 'repeat(2, 1fr)',
+              lg: 'repeat(4, 1fr)',
+            },
+            gap: 4,
+          }}
+        >
+          {features.map((feature, index) => {
+            const IconComponent = feature.icon;
+            return (
+              <Card key={index} sx={{ height: '100%', textAlign: 'center' }}>
+                <CardContent sx={{ p: 4 }}>
+                  <Box
+                    sx={{
+                      width: 64,
+                      height: 64,
+                      bgcolor: 'primary.light',
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mx: 'auto',
+                      mb: 3,
+                    }}
+                  >
+                    <IconComponent
+                      sx={{ fontSize: 32, color: 'primary.main' }}
+                    />
+                  </Box>
+                  <Typography
+                    variant="h6"
+                    component="h3"
+                    sx={{ fontWeight: 600, mb: 2 }}
+                  >
+                    {feature.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {feature.description}
+                  </Typography>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </Box>
+      </Container>
 
       {/* Benefits Section */}
-      <div className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+      <Box sx={{ bgcolor: 'grey.50', py: { xs: 8, md: 12 } }}>
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', lg: 'row' },
+              gap: 6,
+              alignItems: 'center',
+            }}
+          >
+            <Box sx={{ flex: 1 }}>
+              <Typography
+                variant="h3"
+                component="h2"
+                sx={{ fontWeight: 600, mb: 4 }}
+              >
                 Streamline Your Clinical Workflow
-              </h2>
-              <div className="space-y-4">
-                {[
-                  'Comprehensive patient medication profiles',
-                  'SOAP note clinical documentation',
-                  'Drug interaction and allergy checking',
-                  'Medication adherence monitoring',
-                  'Automated follow-up reminders',
-                  'Advanced reporting and analytics'
-                ].map((benefit, index) => (
-                  <div key={index} className="flex items-center">
-                    <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                    <span className="text-gray-700">{benefit}</span>
-                  </div>
+              </Typography>
+              <Box sx={{ mb: 4 }}>
+                {benefits.map((benefit, index) => (
+                  <Box
+                    key={index}
+                    sx={{ display: 'flex', alignItems: 'center', mb: 2 }}
+                  >
+                    <CheckCircleIcon sx={{ color: 'success.main', mr: 2 }} />
+                    <Typography variant="body1" color="text.primary">
+                      {benefit}
+                    </Typography>
+                  </Box>
                 ))}
-              </div>
-              <Link to="/register" className="inline-flex items-center mt-8 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+              </Box>
+              <Button
+                component={Link}
+                to="/register"
+                variant="contained"
+                size="large"
+                endIcon={<ArrowForwardIcon />}
+                sx={{ py: 1.5, px: 4, borderRadius: 3 }}
+              >
                 Get Started Today
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Link>
-            </div>
-            
-            <div className="bg-white p-8 rounded-xl shadow-lg">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                  <span className="font-medium">Active Patients</span>
-                  <span className="text-blue-600 font-bold">147</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                  <span className="font-medium">Clinical Notes</span>
-                  <span className="text-green-600 font-bold">523</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                  <span className="font-medium">Medications Tracked</span>
-                  <span className="text-purple-600 font-bold">1,284</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+              </Button>
+            </Box>
 
-      {/* Testimonials */}
-      <div className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Trusted by Pharmacists Nationwide
-            </h2>
-            <p className="text-lg text-gray-600">
-              See what healthcare professionals are saying about PharmaCare
-            </p>
-          </div>
+            <Box sx={{ flex: 1 }}>
+              <Paper sx={{ p: 4, borderRadius: 4 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      p: 2,
+                      bgcolor: 'primary.light',
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      Active Patients
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      sx={{ color: 'primary.main', fontWeight: 700 }}
+                    >
+                      147
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      p: 2,
+                      bgcolor: 'success.light',
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      Clinical Notes
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      sx={{ color: 'success.main', fontWeight: 700 }}
+                    >
+                      523
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      p: 2,
+                      bgcolor: 'warning.light',
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      Adherence Rate
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      sx={{ color: 'warning.main', fontWeight: 700 }}
+                    >
+                      94.2%
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-gray-50 p-6 rounded-xl">
-                <div className="flex items-center mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-700 mb-4">"{testimonial.content}"</p>
-                <div>
-                  <p className="font-semibold text-gray-900">{testimonial.name}</p>
-                  <p className="text-gray-600">{testimonial.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Testimonials Section */}
+      <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
+        <Box sx={{ textAlign: 'center', mb: 8 }}>
+          <Typography
+            variant="h3"
+            component="h2"
+            sx={{ fontWeight: 600, mb: 2 }}
+          >
+            Trusted by Healthcare Professionals
+          </Typography>
+          <Typography variant="h6" color="text.secondary">
+            See what pharmacists are saying about PharmaCare
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
+            gap: 4,
+          }}
+        >
+          {testimonials.map((testimonial, index) => (
+            <Card key={index} sx={{ height: '100%' }}>
+              <CardContent sx={{ p: 4 }}>
+                <Rating value={testimonial.rating} readOnly sx={{ mb: 2 }} />
+                <Typography variant="body1" sx={{ mb: 3, fontStyle: 'italic' }}>
+                  "{testimonial.content}"
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                    {testimonial.avatar}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      {testimonial.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {testimonial.role}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
+      </Container>
 
       {/* CTA Section */}
-      <div className="bg-blue-600 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Ready to Transform Your Pharmacy Practice?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Join thousands of pharmacists who trust PharmaCare for their clinical workflow
-          </p>
-          <Link to="/register" className="bg-white text-blue-600 px-8 py-3 rounded-lg hover:bg-gray-100 transition-colors inline-flex items-center">
-            Start Your Free Trial
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Link>
-        </div>
-      </div>
-    </div>
+      <Box sx={{ bgcolor: 'primary.main', py: { xs: 8, md: 12 } }}>
+        <Container maxWidth="md">
+          <Box sx={{ textAlign: 'center', color: 'white' }}>
+            <Typography
+              variant="h3"
+              component="h2"
+              sx={{ fontWeight: 600, mb: 2 }}
+            >
+              Ready to Transform Your Practice?
+            </Typography>
+            <Typography variant="h6" sx={{ mb: 4, opacity: 0.9 }}>
+              Join thousands of pharmacists already using PharmaCare to improve
+              patient outcomes
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: 2,
+                justifyContent: 'center',
+              }}
+            >
+              <Button
+                component={Link}
+                to="/register"
+                variant="contained"
+                size="large"
+                sx={{
+                  py: 1.5,
+                  px: 4,
+                  borderRadius: 3,
+                  bgcolor: 'white',
+                  color: 'primary.main',
+                  '&:hover': { bgcolor: 'grey.100' },
+                }}
+                endIcon={<ArrowForwardIcon />}
+              >
+                Start Free Trial
+              </Button>
+              <Button
+                component={Link}
+                to="/contact"
+                variant="outlined"
+                size="large"
+                sx={{
+                  py: 1.5,
+                  px: 4,
+                  borderRadius: 3,
+                  borderColor: 'white',
+                  color: 'white',
+                  '&:hover': {
+                    borderColor: 'grey.300',
+                    bgcolor: 'rgba(255,255,255,0.1)',
+                  },
+                }}
+              >
+                Contact Sales
+              </Button>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
+
+      <Footer />
+    </Box>
   );
 };
 

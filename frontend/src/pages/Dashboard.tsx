@@ -1,175 +1,397 @@
-import React from 'react';
-import { Users, FileText, Pill, TrendingUp, AlertTriangle, Clock } from 'lucide-react';
+import {
+  Box,
+  Grid,
+  Typography,
+  Card,
+  CardContent,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Avatar,
+  Chip,
+  IconButton,
+  Button,
+} from '@mui/material';
+import {
+  People as PeopleIcon,
+  Description as DescriptionIcon,
+  Medication as MedicationIcon,
+  TrendingUp as TrendingUpIcon,
+  Warning as WarningIcon,
+  Schedule as ScheduleIcon,
+  MoreHoriz as MoreHorizIcon,
+} from '@mui/icons-material';
 
 const Dashboard = () => {
   const stats = [
     {
-      name: 'Total Patients',
+      title: 'Total Patients',
       value: '147',
       change: '+12%',
       changeType: 'increase',
-      icon: Users,
-      color: 'blue'
+      icon: PeopleIcon,
+      color: 'primary',
     },
     {
-      name: 'Clinical Notes',
+      title: 'Clinical Notes',
       value: '523',
       change: '+18%',
       changeType: 'increase',
-      icon: FileText,
-      color: 'green'
+      icon: DescriptionIcon,
+      color: 'success',
     },
     {
-      name: 'Active Medications',
+      title: 'Active Medications',
       value: '1,284',
       change: '+7%',
       changeType: 'increase',
-      icon: Pill,
-      color: 'purple'
+      icon: MedicationIcon,
+      color: 'secondary',
     },
     {
-      name: 'Adherence Rate',
+      title: 'Adherence Rate',
       value: '84.2%',
       change: '+2.1%',
       changeType: 'increase',
-      icon: TrendingUp,
-      color: 'orange'
-    }
+      icon: TrendingUpIcon,
+      color: 'warning',
+    },
   ];
 
   const recentPatients = [
-    { name: 'Sarah Johnson', age: 65, condition: 'Hypertension', lastVisit: '2024-01-15' },
-    { name: 'Michael Chen', age: 45, condition: 'Diabetes', lastVisit: '2024-01-14' },
-    { name: 'Emily Rodriguez', age: 28, condition: 'Asthma', lastVisit: '2024-01-13' },
-    { name: 'David Thompson', age: 72, condition: 'Heart Disease', lastVisit: '2024-01-12' }
+    {
+      name: 'Sarah Johnson',
+      age: 65,
+      condition: 'Hypertension',
+      lastVisit: 'Today',
+      avatar: 'S',
+      status: 'active',
+    },
+    {
+      name: 'Michael Chen',
+      age: 45,
+      condition: 'Diabetes',
+      lastVisit: '2 days ago',
+      avatar: 'M',
+      status: 'pending',
+    },
+    {
+      name: 'Emma Wilson',
+      age: 32,
+      condition: 'Asthma',
+      lastVisit: '1 week ago',
+      avatar: 'E',
+      status: 'completed',
+    },
   ];
 
   const alerts = [
     {
       type: 'warning',
-      message: 'Drug interaction alert for Patient #1247',
-      time: '2 hours ago'
+      title: 'Medication Review Due',
+      message: 'John Doe - Hypertension medication needs review',
+      time: '2 hours ago',
     },
     {
       type: 'info',
-      message: 'Follow-up required for Patient #1256',
-      time: '4 hours ago'
+      title: 'New Patient Registration',
+      message: 'Lisa Martinez has registered for consultation',
+      time: '4 hours ago',
     },
     {
-      type: 'error',
-      message: 'Medication adherence below 70% for Patient #1234',
-      time: '6 hours ago'
-    }
+      type: 'success',
+      title: 'Prescription Filled',
+      message: 'Robert Kim picked up diabetes medication',
+      time: '6 hours ago',
+    },
   ];
 
+  const getAlertColor = (type: string) => {
+    switch (type) {
+      case 'warning':
+        return 'warning';
+      case 'info':
+        return 'info';
+      case 'success':
+        return 'success';
+      default:
+        return 'default';
+    }
+  };
+
   return (
-    <div className="p-6 space-y-6">
+    <Box sx={{ p: 3 }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Welcome back! Here's what's happening in your practice.</p>
-        </div>
-        <div className="text-sm text-gray-500">
+      <Box sx={{ mb: 4 }}>
+        <Typography
+          variant="h4"
+          component="h1"
+          gutterBottom
+          sx={{ fontWeight: 600 }}
+        >
+          Dashboard
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Welcome back! Here's what's happening in your practice.
+        </Typography>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ mt: 1, display: 'block' }}
+        >
           Last updated: {new Date().toLocaleString()}
-        </div>
-      </div>
+        </Typography>
+      </Box>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <Grid container spacing={3} sx={{ mb: 4 }}>
         {stats.map((stat, index) => {
-          const Icon = stat.icon;
+          const IconComponent = stat.icon;
           return (
-            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`w-12 h-12 bg-${stat.color}-100 rounded-lg flex items-center justify-center`}>
-                  <Icon className={`w-6 h-6 text-${stat.color}-600`} />
-                </div>
-                <span className={`text-sm font-medium px-2 py-1 rounded-full ${
-                  stat.changeType === 'increase' ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'
-                }`}>
-                  {stat.change}
-                </span>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
-              <p className="text-gray-600 text-sm">{stat.name}</p>
-            </div>
+            <Grid item xs={12} sm={6} lg={3} key={index}>
+              <Card
+                sx={{
+                  height: '100%',
+                  position: 'relative',
+                  overflow: 'visible',
+                }}
+              >
+                <CardContent>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      mb: 2,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: `${stat.color}.main`,
+                        color: 'white',
+                      }}
+                    >
+                      <IconComponent />
+                    </Box>
+                    <Chip
+                      label={stat.change}
+                      size="small"
+                      color="success"
+                      sx={{ height: 24, fontSize: '0.75rem' }}
+                    />
+                  </Box>
+                  <Typography
+                    variant="h4"
+                    component="h3"
+                    sx={{ fontWeight: 700, mb: 1 }}
+                  >
+                    {stat.value}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {stat.title}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
           );
         })}
-      </div>
+      </Grid>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Grid container spacing={3}>
         {/* Recent Patients */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Patients</h2>
-            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-              View all
-            </button>
-          </div>
-          <div className="space-y-4">
-            {recentPatients.map((patient, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                <div>
-                  <h3 className="font-medium text-gray-900">{patient.name}</h3>
-                  <p className="text-sm text-gray-600">Age {patient.age} • {patient.condition}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">Last visit</p>
-                  <p className="text-sm font-medium text-gray-900">{patient.lastVisit}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Grid item xs={12} lg={6}>
+          <Card>
+            <CardContent>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  mb: 3,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  component="h2"
+                  sx={{ fontWeight: 600 }}
+                >
+                  Recent Patients
+                </Typography>
+                <Button variant="text" size="small" color="primary">
+                  View all
+                </Button>
+              </Box>
+              <List disablePadding>
+                {recentPatients.map((patient, index) => (
+                  <ListItem
+                    key={index}
+                    sx={{
+                      p: 2,
+                      bgcolor: 'grey.50',
+                      borderRadius: 2,
+                      mb: 1,
+                      '&:last-child': { mb: 0 },
+                      '&:hover': { bgcolor: 'grey.100' },
+                      cursor: 'pointer',
+                    }}
+                    secondaryAction={
+                      <IconButton edge="end" size="small">
+                        <MoreHorizIcon />
+                      </IconButton>
+                    }
+                  >
+                    <ListItemAvatar>
+                      <Avatar sx={{ bgcolor: 'primary.main' }}>
+                        {patient.avatar}
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={patient.name}
+                      secondary={`Age ${patient.age} • ${patient.condition}`}
+                      primaryTypographyProps={{ fontWeight: 500 }}
+                    />
+                    <Box sx={{ textAlign: 'right', mr: 2 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Last visit
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {patient.lastVisit}
+                      </Typography>
+                    </Box>
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
 
         {/* Alerts & Notifications */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Alerts & Notifications</h2>
-            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-              Mark all read
-            </button>
-          </div>
-          <div className="space-y-4">
-            {alerts.map((alert, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className={`w-2 h-2 rounded-full mt-2 ${
-                  alert.type === 'warning' ? 'bg-yellow-400' :
-                  alert.type === 'error' ? 'bg-red-400' : 'bg-blue-400'
-                }`}></div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900">{alert.message}</p>
-                  <div className="flex items-center mt-1">
-                    <Clock className="w-3 h-3 text-gray-400 mr-1" />
-                    <p className="text-xs text-gray-500">{alert.time}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+        <Grid item xs={12} lg={6}>
+          <Card>
+            <CardContent>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  mb: 3,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  component="h2"
+                  sx={{ fontWeight: 600 }}
+                >
+                  Alerts & Notifications
+                </Typography>
+                <Button variant="text" size="small" color="primary">
+                  View all
+                </Button>
+              </Box>
+              <List disablePadding>
+                {alerts.map((alert, index) => (
+                  <ListItem
+                    key={index}
+                    sx={{
+                      p: 2,
+                      bgcolor: 'grey.50',
+                      borderRadius: 2,
+                      mb: 1,
+                      '&:last-child': { mb: 0 },
+                      '&:hover': { bgcolor: 'grey.100' },
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{
+                          bgcolor: `${getAlertColor(alert.type)}.main`,
+                          width: 32,
+                          height: 32,
+                        }}
+                      >
+                        {alert.type === 'warning' && (
+                          <WarningIcon fontSize="small" />
+                        )}
+                        {alert.type === 'info' && (
+                          <ScheduleIcon fontSize="small" />
+                        )}
+                        {alert.type === 'success' && (
+                          <TrendingUpIcon fontSize="small" />
+                        )}
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={alert.title}
+                      secondary={alert.message}
+                      primaryTypographyProps={{
+                        fontWeight: 500,
+                        fontSize: '0.875rem',
+                      }}
+                      secondaryTypographyProps={{ fontSize: '0.75rem' }}
+                    />
+                    <Typography variant="caption" color="text.secondary">
+                      {alert.time}
+                    </Typography>
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <Users className="w-5 h-5 text-blue-600" />
-            <span className="font-medium text-gray-900">Add New Patient</span>
-          </button>
-          <button className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <FileText className="w-5 h-5 text-green-600" />
-            <span className="font-medium text-gray-900">Create Clinical Note</span>
-          </button>
-          <button className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <Pill className="w-5 h-5 text-purple-600" />
-            <span className="font-medium text-gray-900">Add Medication</span>
-          </button>
-        </div>
-      </div>
-    </div>
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Typography
+            variant="h6"
+            component="h2"
+            sx={{ fontWeight: 600, mb: 3 }}
+          >
+            Quick Actions
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<PeopleIcon />}
+                sx={{ py: 2, justifyContent: 'flex-start' }}
+              >
+                Add New Patient
+              </Button>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<DescriptionIcon />}
+                sx={{ py: 2, justifyContent: 'flex-start' }}
+              >
+                Create Clinical Note
+              </Button>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<MedicationIcon />}
+                sx={{ py: 2, justifyContent: 'flex-start' }}
+              >
+                Add Medication
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+    </Box>
   );
 };
 
