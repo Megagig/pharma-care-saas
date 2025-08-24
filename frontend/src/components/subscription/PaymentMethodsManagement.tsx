@@ -5,10 +5,6 @@ import {
   CardContent,
   Typography,
   Button,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   IconButton,
   Chip,
   Dialog,
@@ -18,7 +14,6 @@ import {
   Alert,
   CircularProgress,
   Stack,
-  Divider,
   Grid,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
@@ -27,34 +22,37 @@ import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import SecurityIcon from '@mui/icons-material/Security';
-import { loadStripe } from '@stripe/stripe-js';
+// import { loadStripe } from '@stripe/stripe-js';
+// import {
+//   Elements,
+//   CardElement,
+//   useStripe,
+//   useElements,
+// } from '@stripe/react-stripe-js';
 import {
-  Elements,
-  CardElement,
-  useStripe,
-  useElements,
-} from '@stripe/react-stripe-js';
-import { paymentService, type PaymentMethod } from '../../services/paymentService';
+  paymentService,
+  type PaymentMethod,
+} from '../../services/paymentService';
 import { useUIStore } from '../../stores';
 import LoadingSpinner from '../LoadingSpinner';
 
-// Initialize Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+// Initialize Stripe (commented out until Stripe packages are installed)
+// const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
-const CARD_ELEMENT_OPTIONS = {
-  style: {
-    base: {
-      fontSize: '16px',
-      color: '#424770',
-      '::placeholder': {
-        color: '#aab7c4',
-      },
-    },
-    invalid: {
-      color: '#9e2146',
-    },
-  },
-};
+// const CARD_ELEMENT_OPTIONS = {
+//   style: {
+//     base: {
+//       fontSize: '16px',
+//       color: '#424770',
+//       '::placeholder': {
+//         color: '#aab7c4',
+//       },
+//     },
+//     invalid: {
+//       color: '#9e2146',
+//     },
+//   },
+// };
 
 interface AddPaymentMethodFormProps {
   onSuccess: () => void;
@@ -65,17 +63,32 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({
   onSuccess,
   onCancel,
 }) => {
-  const stripe = useStripe();
-  const elements = useElements();
+  // const stripe = useStripe();
+  // const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [setAsDefault, setSetAsDefault] = useState(false);
-  
+
   const addNotification = useUIStore((state) => state.addNotification);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setError(
+      'Stripe integration is not yet implemented. Please install @stripe/stripe-js and @stripe/react-stripe-js packages.'
+    );
 
+    // TODO: These variables will be used when Stripe integration is implemented
+    // Currently preserved for future use: onSuccess, setLoading, addNotification
+    console.log('Variables ready for Stripe integration:', {
+      onSuccess,
+      setLoading,
+      addNotification,
+    });
+
+    // TODO: Implement Stripe integration
+    // Original Stripe code commented out below:
+
+    /*
     if (!stripe || !elements) {
       return;
     }
@@ -129,6 +142,7 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({
     } finally {
       setLoading(false);
     }
+    */
   };
 
   return (
@@ -143,12 +157,18 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({
             border: '1px solid',
             borderColor: 'divider',
             borderRadius: 1,
+            textAlign: 'center',
+            color: 'text.secondary',
             '&:focus-within': {
               borderColor: 'primary.main',
             },
           }}
         >
-          <CardElement options={CARD_ELEMENT_OPTIONS} />
+          <Typography variant="body2">
+            Stripe Card Element will be rendered here when Stripe packages are
+            installed
+          </Typography>
+          {/* <CardElement options={CARD_ELEMENT_OPTIONS} /> */}
         </Box>
       </Box>
 
@@ -176,7 +196,7 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({
         <Button
           type="submit"
           variant="contained"
-          disabled={!stripe || loading}
+          disabled={loading}
           startIcon={loading ? <CircularProgress size={16} /> : <AddIcon />}
         >
           {loading ? 'Adding...' : 'Add Payment Method'}
@@ -245,12 +265,13 @@ const PaymentMethodsManagement: React.FC = () => {
   const handleDeleteConfirm = () => {
     if (!selectedMethodId) return;
 
-    const method = paymentMethods.find(m => m.id === selectedMethodId);
+    const method = paymentMethods.find((m) => m.id === selectedMethodId);
     if (method?.isDefault) {
       addNotification({
         type: 'warning',
         title: 'Cannot Delete',
-        message: 'Cannot delete the default payment method. Please set another method as default first.',
+        message:
+          'Cannot delete the default payment method. Please set another method as default first.',
         duration: 5000,
       });
       setDeleteConfirmOpen(false);
@@ -309,10 +330,13 @@ const PaymentMethodsManagement: React.FC = () => {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Typography variant="h5">
-          Payment Methods
-        </Typography>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ mb: 3 }}
+      >
+        <Typography variant="h5">Payment Methods</Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -324,13 +348,16 @@ const PaymentMethodsManagement: React.FC = () => {
 
       {/* Security Notice */}
       <Alert severity="info" icon={<SecurityIcon />} sx={{ mb: 3 }}>
-        Your payment information is securely stored and encrypted. We never store your full card details on our servers.
+        Your payment information is securely stored and encrypted. We never
+        store your full card details on our servers.
       </Alert>
 
       {paymentMethods.length === 0 ? (
         <Card>
           <CardContent sx={{ textAlign: 'center', py: 6 }}>
-            <CreditCardIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+            <CreditCardIcon
+              sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+            />
             <Typography variant="h6" gutterBottom>
               No Payment Methods
             </Typography>
@@ -349,7 +376,7 @@ const PaymentMethodsManagement: React.FC = () => {
       ) : (
         <Grid container spacing={3}>
           {paymentMethods.map((method) => (
-            <Grid item xs={12} md={6} key={method.id}>
+            <Grid size={{ xs: 12, md: 6 }} key={method.id}>
               <Card variant="outlined">
                 <CardContent>
                   <Stack direction="row" spacing={2} alignItems="flex-start">
@@ -357,8 +384,16 @@ const PaymentMethodsManagement: React.FC = () => {
                       {getCardBrandIcon()}
                     </Box>
                     <Box sx={{ flexGrow: 1 }}>
-                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                        <Typography variant="subtitle1" sx={{ textTransform: 'capitalize' }}>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        sx={{ mb: 1 }}
+                      >
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ textTransform: 'capitalize' }}
+                        >
                           {method.brand}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
@@ -374,7 +409,11 @@ const PaymentMethodsManagement: React.FC = () => {
                         )}
                       </Stack>
                       <Typography variant="body2" color="text.secondary">
-                        Expires {formatExpiryDate(method.expiryMonth, method.expiryYear)}
+                        Expires{' '}
+                        {formatExpiryDate(
+                          method.expiryMonth,
+                          method.expiryYear
+                        )}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Added {new Date(method.createdAt).toLocaleDateString()}
@@ -429,12 +468,13 @@ const PaymentMethodsManagement: React.FC = () => {
       >
         <DialogTitle>Add Payment Method</DialogTitle>
         <DialogContent>
-          <Elements stripe={stripePromise}>
-            <AddPaymentMethodForm
-              onSuccess={handleAddSuccess}
-              onCancel={() => setAddDialogOpen(false)}
-            />
-          </Elements>
+          {/* Elements wrapper commented out until Stripe packages are installed */}
+          {/* <Elements stripe={stripePromise}> */}
+          <AddPaymentMethodForm
+            onSuccess={handleAddSuccess}
+            onCancel={() => setAddDialogOpen(false)}
+          />
+          {/* </Elements> */}
         </DialogContent>
       </Dialog>
 
@@ -451,13 +491,12 @@ const PaymentMethodsManagement: React.FC = () => {
             Are you sure you want to remove this payment method?
           </Typography>
           <Alert severity="warning" sx={{ mt: 2 }}>
-            This action cannot be undone. Make sure you have another payment method set up for your subscription.
+            This action cannot be undone. Make sure you have another payment
+            method set up for your subscription.
           </Alert>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)}>
-            Cancel
-          </Button>
+          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
           <Button
             onClick={handleDeleteConfirm}
             color="error"

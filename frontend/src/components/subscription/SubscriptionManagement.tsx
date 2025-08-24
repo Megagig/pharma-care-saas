@@ -24,28 +24,16 @@ import {
   TableRow,
   Switch,
   FormControlLabel,
-  Tabs,
-  Tab,
-  Paper,
-  Stack,
 } from '@mui/material';
-import {
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import CancelIcon from '@mui/icons-material/Cancel';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import PaymentIcon from '@mui/icons-material/Payment';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { useUIStore } from '../../stores';
 import { useSubscriptionStatus } from '../../hooks/useRBAC';
 import { paymentService } from '../../services/paymentService';
 import LoadingSpinner from '../LoadingSpinner';
-import BillingHistory from './BillingHistory';
-import PaymentMethodsManagement from './PaymentMethodsManagement';
-import SubscriptionAnalytics from './SubscriptionAnalytics';
 
 interface SubscriptionPlan {
   _id: string;
@@ -244,14 +232,14 @@ const SubscriptionManagement: React.FC = () => {
     setProcessing(true);
     try {
       await paymentService.downgradeSubscription(plan._id);
-      
+
       addNotification({
         type: 'success',
         title: 'Downgrade Scheduled',
         message: `Your plan will be downgraded to ${plan.name} at the end of your current billing period`,
         duration: 5000,
       });
-      
+
       loadData();
     } catch (err) {
       console.error('Downgrade error:', err);
@@ -648,13 +636,19 @@ const SubscriptionManagement: React.FC = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Confirm Plan {currentSubscription?.status === 'active' ? 'Upgrade' : 'Selection'}</DialogTitle>
+        <DialogTitle>
+          Confirm Plan{' '}
+          {currentSubscription?.status === 'active' ? 'Upgrade' : 'Selection'}
+        </DialogTitle>
         <DialogContent>
           {selectedPlan && (
             <Box>
               <Typography variant="body1" gutterBottom>
-                You are about to {currentSubscription?.status === 'active' ? 'upgrade' : 'subscribe'} to the{' '}
-                <strong>{selectedPlan.name}</strong> plan.
+                You are about to{' '}
+                {currentSubscription?.status === 'active'
+                  ? 'upgrade'
+                  : 'subscribe'}{' '}
+                to the <strong>{selectedPlan.name}</strong> plan.
               </Typography>
 
               <Alert severity="info" sx={{ mt: 2 }}>
@@ -674,7 +668,7 @@ const SubscriptionManagement: React.FC = () => {
                   with annual billing!
                 </Alert>
               )}
-              
+
               {currentSubscription?.status === 'active' && (
                 <Alert severity="info" sx={{ mt: 1 }}>
                   Upgrade will be prorated and take effect immediately.
@@ -691,7 +685,11 @@ const SubscriptionManagement: React.FC = () => {
             disabled={processing}
             startIcon={<TrendingUpIcon />}
           >
-            {processing ? 'Processing...' : currentSubscription?.status === 'active' ? 'Upgrade Now' : 'Continue to Payment'}
+            {processing
+              ? 'Processing...'
+              : currentSubscription?.status === 'active'
+              ? 'Upgrade Now'
+              : 'Continue to Payment'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -714,9 +712,11 @@ const SubscriptionManagement: React.FC = () => {
 
               <Alert severity="warning" sx={{ mt: 2 }}>
                 <Typography variant="body2">
-                  The downgrade will take effect at the end of your current billing period on{' '}
+                  The downgrade will take effect at the end of your current
+                  billing period on{' '}
                   {new Date(currentSubscription.endDate).toLocaleDateString()}.
-                  You will continue to have access to your current plan features until then.
+                  You will continue to have access to your current plan features
+                  until then.
                 </Typography>
               </Alert>
 

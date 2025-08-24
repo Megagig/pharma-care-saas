@@ -1,6 +1,5 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 interface PaymentMethod {
   id: string;
@@ -60,7 +59,7 @@ interface PaginatedPayments {
 class PaymentService {
   private async makeRequest(url: string, options: RequestInit = {}) {
     const token = localStorage.getItem('accessToken');
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -77,10 +76,14 @@ class PaymentService {
     }
 
     const response = await fetch(`${API_BASE_URL}${url}`, config);
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'An error occurred' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: 'An error occurred' }));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
     }
 
     return response.json();
@@ -88,17 +91,17 @@ class PaymentService {
 
   // Payment History Methods
   async getPayments(
-    page = 1, 
-    limit = 10, 
-    status?: string, 
-    dateFrom?: string, 
+    page = 1,
+    limit = 10,
+    status?: string,
+    dateFrom?: string,
     dateTo?: string
   ): Promise<PaginatedPayments> {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
     });
-    
+
     if (status) params.append('status', status);
     if (dateFrom) params.append('dateFrom', dateFrom);
     if (dateTo) params.append('dateTo', dateTo);
@@ -139,9 +142,12 @@ class PaymentService {
   }
 
   async removePaymentMethod(paymentMethodId: string) {
-    const response = await this.makeRequest(`/payments/methods/${paymentMethodId}`, {
-      method: 'DELETE',
-    });
+    const response = await this.makeRequest(
+      `/payments/methods/${paymentMethodId}`,
+      {
+        method: 'DELETE',
+      }
+    );
     return response;
   }
 
@@ -165,31 +171,42 @@ class PaymentService {
   }
 
   async getSubscriptionAnalytics() {
-    const response = await this.makeRequest('/subscription-management/analytics');
+    const response = await this.makeRequest(
+      '/subscription-management/analytics'
+    );
     return response.data;
   }
 
   async createCheckoutSession(planId: string, billingInterval = 'monthly') {
-    const response = await this.makeRequest('/subscription-management/checkout', {
-      method: 'POST',
-      body: JSON.stringify({ planId, billingInterval }),
-    });
+    const response = await this.makeRequest(
+      '/subscription-management/checkout',
+      {
+        method: 'POST',
+        body: JSON.stringify({ planId, billingInterval }),
+      }
+    );
     return response.data;
   }
 
   async upgradeSubscription(planId: string, billingInterval = 'monthly') {
-    const response = await this.makeRequest('/subscription-management/upgrade', {
-      method: 'POST',
-      body: JSON.stringify({ planId, billingInterval }),
-    });
+    const response = await this.makeRequest(
+      '/subscription-management/upgrade',
+      {
+        method: 'POST',
+        body: JSON.stringify({ planId, billingInterval }),
+      }
+    );
     return response.data;
   }
 
   async downgradeSubscription(planId: string) {
-    const response = await this.makeRequest('/subscription-management/downgrade', {
-      method: 'POST',
-      body: JSON.stringify({ planId }),
-    });
+    const response = await this.makeRequest(
+      '/subscription-management/downgrade',
+      {
+        method: 'POST',
+        body: JSON.stringify({ planId }),
+      }
+    );
     return response.data;
   }
 
@@ -202,15 +219,18 @@ class PaymentService {
   }
 
   async handleSuccessfulPayment(sessionId: string) {
-    const response = await this.makeRequest('/subscription-management/success', {
-      method: 'POST',
-      body: JSON.stringify({ sessionId }),
-    });
+    const response = await this.makeRequest(
+      '/subscription-management/success',
+      {
+        method: 'POST',
+        body: JSON.stringify({ sessionId }),
+      }
+    );
     return response.data;
   }
 
   // Legacy methods for backward compatibility
-  async createPayment(paymentData: any) {
+  async createPayment(paymentData: Record<string, unknown>) {
     const response = await this.makeRequest('/payments', {
       method: 'POST',
       body: JSON.stringify(paymentData),
@@ -218,7 +238,8 @@ class PaymentService {
     return response.data;
   }
 
-  async updateSubscription(subscriptionData: any) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async updateSubscription(_subscriptionData: Record<string, unknown>) {
     // This would likely be handled by upgrade/downgrade methods
     throw new Error('Use upgradeSubscription or downgradeSubscription instead');
   }
@@ -233,12 +254,14 @@ class PaymentService {
   }
 
   // Stripe integration methods (legacy)
-  async createPaymentIntent(amount: number, currency = 'ngn') {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async createPaymentIntent(_amount: number, _currency = 'ngn') {
     // This would be part of the checkout flow now
     throw new Error('Use createCheckoutSession for new payments');
   }
 
-  async confirmPayment(paymentIntentId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async confirmPayment(_paymentIntentId: string) {
     // This would be handled by Stripe checkout
     throw new Error('Payment confirmation is handled by Stripe checkout');
   }

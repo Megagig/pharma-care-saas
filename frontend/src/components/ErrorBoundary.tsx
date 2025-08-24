@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { Box, Typography, Button, Paper, Alert } from '@mui/material';
 
 interface Props {
@@ -72,7 +72,8 @@ class ErrorBoundary extends Component<Props, State> {
                 Oops! Something went wrong
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                An unexpected error occurred. This might be due to a temporary issue.
+                An unexpected error occurred. This might be due to a temporary
+                issue.
               </Typography>
             </Alert>
 
@@ -95,16 +96,10 @@ class ErrorBoundary extends Component<Props, State> {
             )}
 
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-              <Button
-                variant="contained"
-                onClick={this.handleReset}
-              >
+              <Button variant="contained" onClick={this.handleReset}>
                 Try Again
               </Button>
-              <Button
-                variant="outlined"
-                onClick={this.handleReload}
-              >
+              <Button variant="outlined" onClick={this.handleReload}>
                 Reload Page
               </Button>
             </Box>

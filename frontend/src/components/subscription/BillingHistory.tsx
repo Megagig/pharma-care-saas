@@ -5,17 +5,12 @@ import {
   Card,
   CardContent,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   IconButton,
   FormControl,
@@ -23,38 +18,37 @@ import {
   Select,
   MenuItem,
   Pagination,
-  Divider
+  Tooltip,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
-import ReceiptIcon from '@mui/icons-material/Receipt';
 import FilterIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
-import ViewIcon from '@mui/icons-material/Visibility';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { paymentService, type Payment, type PaginatedPayments } from '../../services/paymentService';
+import {
+  paymentService,
+  type Payment,
+  type PaginatedPayments,
+} from '../../services/paymentService';
 import { useUIStore } from '../../stores';
 import LoadingSpinner from '../LoadingSpinner';
 
 const BillingHistory: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
-  
+
   // Pagination state
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  
+
   // Filter state
   const [filters, setFilters] = useState({
     status: '',
     dateFrom: null as Date | null,
     dateTo: null as Date | null,
   });
-  
+
   // Summary state
   const [summary, setSummary] = useState({
     totalAmount: 0,
@@ -70,7 +64,7 @@ const BillingHistory: React.FC = () => {
     try {
       const dateFrom = filters.dateFrom?.toISOString().split('T')[0];
       const dateTo = filters.dateTo?.toISOString().split('T')[0];
-      
+
       const data: PaginatedPayments = await paymentService.getPayments(
         page,
         10,
@@ -78,10 +72,9 @@ const BillingHistory: React.FC = () => {
         dateFrom,
         dateTo
       );
-      
+
       setPayments(data.payments);
       setTotalPages(data.pagination.totalPages);
-      setTotalCount(data.pagination.totalCount);
       setSummary(data.summary);
     } catch (error) {
       console.error('Error loading payments:', error);
@@ -100,8 +93,8 @@ const BillingHistory: React.FC = () => {
     loadPayments();
   }, [loadPayments]);
 
-  const handleFilterChange = (field: string, value: any) => {
-    setFilters(prev => ({ ...prev, [field]: value }));
+  const handleFilterChange = (field: string, value: string | Date | null) => {
+    setFilters((prev) => ({ ...prev, [field]: value }));
     setPage(1); // Reset to first page when filters change
   };
 
@@ -151,16 +144,11 @@ const BillingHistory: React.FC = () => {
     }).format(amount);
   };
 
-  const handleViewDetails = (payment: Payment) => {
-    setSelectedPayment(payment);
-    setDetailsDialogOpen(true);
-  };
-
   const handleDownloadInvoice = async (paymentId: string) => {
     setInvoiceLoading(true);
     try {
       const invoice = await paymentService.generateInvoice(paymentId);
-      
+
       // For now, create a simple text representation
       // In production, this would generate a proper PDF
       const invoiceText = `
@@ -170,13 +158,18 @@ Customer: ${invoice.customer.name}
 Email: ${invoice.customer.email}
 
 Items:
-${invoice.items.map((item: any) => `- ${item.description}: ${formatCurrency(item.amount)} x ${item.quantity}`).join('\n')}
+${invoice.items
+  .map(
+    (item: { description: string; amount: number; quantity: number }) =>
+      `- ${item.description}: ${formatCurrency(item.amount)} x ${item.quantity}`
+  )
+  .join('\n')}
 
 Total: ${formatCurrency(invoice.amount, invoice.currency)}
 Status: ${invoice.status}
 Payment Method: ${invoice.paymentMethod}
       `;
-      
+
       const blob = new Blob([invoiceText], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -184,7 +177,7 @@ Payment Method: ${invoice.paymentMethod}
       a.download = `invoice-${invoice.invoiceNumber}.txt`;
       a.click();
       URL.revokeObjectURL(url);
-      
+
       addNotification({
         type: 'success',
         title: 'Download Complete',
@@ -294,7 +287,9 @@ Payment Method: ${invoice.paymentMethod}
                 <Button
                   variant="outlined"
                   startIcon={<FilterIcon />}
-                  onClick={() => {/* Add filter logic */}}
+                  onClick={() => {
+                    /* Add filter logic */
+                  }}
                 >
                   Filter
                 </Button>
@@ -334,7 +329,10 @@ Payment Method: ${invoice.paymentMethod}
                       </TableCell>
                       <TableCell>
                         <Typography fontWeight="medium">
-                          {formatCurrency(payment.amount, payment.currency.toUpperCase())}
+                          {formatCurrency(
+                            payment.amount,
+                            payment.currency.toUpperCase()
+                          )}
                         </Typography>
                       </TableCell>
                       <TableCell>
@@ -348,22 +346,17 @@ Payment Method: ${invoice.paymentMethod}
                         />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ textTransform: 'capitalize' }}
+                        >
                           {payment.paymentMethod.replace('_', ' ')}
                         </Typography>
                       </TableCell>
                       <TableCell align="right">
-                        <Tooltip title="View Details">
-                          <IconButton 
-                            size="small" 
-                            onClick={() => handleViewDetails(payment)}
-                          >
-                            <ViewIcon />
-                          </IconButton>
-                        </Tooltip>
                         <Tooltip title="Download Invoice">
-                          <IconButton 
-                            size="small" 
+                          <IconButton
+                            size="small"
                             onClick={() => handleDownloadInvoice(payment._id)}
                             disabled={invoiceLoading}
                           >
