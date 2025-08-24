@@ -363,6 +363,60 @@ class EmailService {
     };
     return this.sendEmail(email, template);
   }
+
+  async sendSubscriptionUpgrade(
+    email: string,
+    data: {
+      firstName: string;
+      oldPlanName: string;
+      newPlanName: string;
+      upgradeAmount: number;
+      effectiveDate: Date;
+    }
+  ) {
+    const template = {
+      subject: 'Subscription Upgraded - PharmaCare',
+      html: `
+        <h2>Subscription Upgraded!</h2>
+        <p>Dear ${data.firstName},</p>
+        <p>Your subscription has been successfully upgraded from <strong>${data.oldPlanName}</strong> to <strong>${data.newPlanName}</strong>.</p>
+        <p><strong>Upgrade Amount:</strong> ₦${data.upgradeAmount.toLocaleString()}</p>
+        <p><strong>Effective Date:</strong> ${data.effectiveDate.toLocaleDateString()}</p>
+        <p>You now have access to all the enhanced features of your new plan!</p>
+        <br>
+        <p>Best regards,<br>PharmaCare Team</p>
+      `,
+      text: `Subscription Upgraded! Dear ${data.firstName}, Your subscription has been upgraded from ${data.oldPlanName} to ${data.newPlanName}. Upgrade Amount: ₦${data.upgradeAmount.toLocaleString()}. Effective Date: ${data.effectiveDate.toLocaleDateString()}.`,
+    };
+    return this.sendEmail(email, template);
+  }
+
+  async sendSubscriptionDowngrade(
+    email: string,
+    data: {
+      firstName: string;
+      currentPlanName: string;
+      newPlanName: string;
+      effectiveDate: Date;
+    }
+  ) {
+    const template = {
+      subject: 'Subscription Downgrade Scheduled - PharmaCare',
+      html: `
+        <h2>Subscription Downgrade Scheduled</h2>
+        <p>Dear ${data.firstName},</p>
+        <p>Your subscription downgrade from <strong>${data.currentPlanName}</strong> to <strong>${data.newPlanName}</strong> has been scheduled.</p>
+        <p><strong>Effective Date:</strong> ${data.effectiveDate.toLocaleDateString()}</p>
+        <p>You'll continue to have access to your current plan features until the effective date.</p>
+        <p>You can cancel this downgrade anytime before the effective date in your account settings.</p>
+        <br>
+        <p>Best regards,<br>PharmaCare Team</p>
+      `,
+      text: `Subscription Downgrade Scheduled. Dear ${data.firstName}, Your downgrade from ${data.currentPlanName} to ${data.newPlanName} is scheduled for ${data.effectiveDate.toLocaleDateString()}.`,
+    };
+    return this.sendEmail(email, template);
+  }
 }
 
 export const emailService = new EmailService();
+export default emailService;

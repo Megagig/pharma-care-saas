@@ -153,7 +153,6 @@ export class SubscriptionController {
               currency: 'ngn',
               product_data: {
                 name: plan.name,
-                description: `${plan.name} subscription plan`,
                 metadata: {
                   planId: plan._id.toString(),
                   tier: plan.name.toLowerCase().replace(' ', '_'),
@@ -366,6 +365,255 @@ export class SubscriptionController {
       res.status(500).json({
         success: false,
         message: 'Error cancelling subscription',
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  // Upgrade subscription
+  async upgradeSubscription(req: AuthRequest, res: Response): Promise<any> {
+    try {
+      const { planId, billingInterval = 'monthly' } = req.body;
+
+      const currentSubscription = await Subscription.findOne({
+        userId: req.user._id,
+        status: 'active',
+      }).populate('planId');
+
+      if (!currentSubscription) {
+        return res.status(404).json({
+          success: false,
+          message: 'No active subscription found',
+        });
+      }
+
+      const newPlan = await SubscriptionPlan.findById(planId);
+      if (!newPlan) {
+        return res.status(404).json({
+          success: false,
+          message: 'New plan not found',
+        });
+      }
+
+      // Check if this is actually an upgrade
+      const tierOrder = ['free_trial', 'basic', 'pro', 'enterprise'];
+      const currentTierIndex = tierOrder.indexOf(currentSubscription.tier);
+      const newTierIndex = tierOrder.indexOf(newPlan.name.toLowerCase().replace(' ', '_'));
+
+      if (newTierIndex <= currentTierIndex) {
+        return res.status(400).json({
+          success: false,
+          message: 'This is not an upgrade. Use downgrade endpoint for downgrades.',
+        });
+      }
+
+      // Calculate prorated amount
+      const currentPlan = currentSubscription.planId as any;
+      const daysRemaining = Math.ceil(
+        (currentSubscription.endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      );
+      const totalDaysInPeriod = billingInterval === 'yearly' ? 365 : 30;
+      const proratedDiscount = (currentPlan.priceNGN * daysRemaining) / totalDaysInPeriod;
+      const upgradeAmount = newPlan.priceNGN - proratedDiscount;
+
+      // Create immediate payment for upgrade
+      if (currentSubscription.stripeSubscriptionId) {
+        try {
+          // Update Stripe subscription
+          const stripeSubscription = await stripe.subscriptions.retrieve(
+            currentSubscription.stripeSubscriptionId
+          );
+
+          // Create a new price for the upgraded plan
+          const price = await stripe.prices.create({
+            currency: 'ngn',
+            unit_amount: newPlan.priceNGN * 100,
+            recurring: {
+              interval: billingInterval as 'month' | 'year',
+            },
+            product_data: {
+              name: newPlan.name,
+            },
+          });
+
+          await stripe.subscriptions.update(currentSubscription.stripeSubscriptionId, {
+            items: [{
+              id: stripeSubscription.items.data[0]?.id,
+              price: price.id,
+            }],
+            proration_behavior: 'create_prorations',
+          });
+        } catch (stripeError) {
+          console.error('Error updating Stripe subscription:', stripeError);
+        }
+      }
+
+      // Update subscription in database
+      const tierMapping: Record<string, string> = {
+        'Free Trial': 'free_trial',
+        Basic: 'basic',
+        Pro: 'pro',
+        Enterprise: 'enterprise',
+      };
+      const newTier = tierMapping[newPlan.name] || 'basic';
+
+      const features = await FeatureFlag.find({
+        isActive: true,
+        allowedTiers: newTier,
+      });
+
+      currentSubscription.planId = newPlan._id;
+      currentSubscription.tier = newTier as 'free_trial' | 'basic' | 'pro' | 'enterprise';
+      currentSubscription.priceAtPurchase = newPlan.priceNGN;
+      currentSubscription.features = features.map((f) => f.key);
+
+      await currentSubscription.save();
+
+      // Update user
+      const user = await User.findById(req.user._id);
+      if (user) {
+        user.subscriptionTier = newTier as 'free_trial' | 'basic' | 'pro' | 'enterprise';
+        user.features = features.map((f) => f.key);
+        await user.save();
+      }
+
+      // Send upgrade confirmation email
+      await emailService.sendSubscriptionUpgrade(req.user.email, {
+        firstName: req.user.firstName,
+        oldPlanName: currentPlan.name,
+        newPlanName: newPlan.name,
+        upgradeAmount: upgradeAmount,
+        effectiveDate: new Date(),
+      });
+
+      res.json({
+        success: true,
+        message: 'Subscription upgraded successfully',
+        data: {
+          subscription: currentSubscription,
+          upgradeAmount: upgradeAmount,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error upgrading subscription',
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  // Downgrade subscription
+  async downgradeSubscription(req: AuthRequest, res: Response): Promise<any> {
+    try {
+      const { planId } = req.body;
+
+      const currentSubscription = await Subscription.findOne({
+        userId: req.user._id,
+        status: 'active',
+      }).populate('planId');
+
+      if (!currentSubscription) {
+        return res.status(404).json({
+          success: false,
+          message: 'No active subscription found',
+        });
+      }
+
+      const newPlan = await SubscriptionPlan.findById(planId);
+      if (!newPlan) {
+        return res.status(404).json({
+          success: false,
+          message: 'New plan not found',
+        });
+      }
+
+      // Schedule downgrade at end of current billing period
+      currentSubscription.scheduledDowngrade = {
+        planId: newPlan._id,
+        effectiveDate: currentSubscription.endDate,
+        scheduledAt: new Date(),
+      };
+
+      await currentSubscription.save();
+
+      // Send downgrade confirmation email
+      const currentPlan = currentSubscription.planId as any;
+      await emailService.sendSubscriptionDowngrade(req.user.email, {
+        firstName: req.user.firstName,
+        currentPlanName: currentPlan.name,
+        newPlanName: newPlan.name,
+        effectiveDate: currentSubscription.endDate,
+      });
+
+      res.json({
+        success: true,
+        message: 'Subscription downgrade scheduled successfully',
+        data: {
+          effectiveDate: currentSubscription.endDate,
+          newPlan: newPlan.name,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error scheduling downgrade',
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  // Get subscription analytics
+  async getSubscriptionAnalytics(req: AuthRequest, res: Response): Promise<any> {
+    try {
+      const subscription = await Subscription.findOne({
+        userId: req.user._id,
+        status: { $in: ['active', 'trial', 'grace_period'] },
+      }).populate('planId');
+
+      if (!subscription) {
+        return res.status(404).json({
+          success: false,
+          message: 'No active subscription found',
+        });
+      }
+
+      // Calculate usage metrics (this would be expanded based on actual feature usage)
+      const usageMetrics = {
+        currentPeriodStart: subscription.startDate,
+        currentPeriodEnd: subscription.endDate,
+        daysRemaining: Math.ceil(
+          (subscription.endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        ),
+        features: subscription.features,
+        // Add more metrics based on actual feature usage
+        storageUsed: 0,
+        apiCalls: 0,
+        teamMembers: 1,
+      };
+
+      // Calculate cost optimization suggestions
+      const costOptimization = {
+        currentMonthlySpend: subscription.priceAtPurchase,
+        projectedAnnualSpend: subscription.priceAtPurchase * 12,
+        savings: {
+          yearlyVsMonthly: subscription.priceAtPurchase * 2, // 2 months free
+          downgradeSavings: 0, // Calculate based on available plans
+        },
+      };
+
+      res.json({
+        success: true,
+        data: {
+          subscription,
+          usageMetrics,
+          costOptimization,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching analytics',
         error: (error as Error).message,
       });
     }

@@ -13,6 +13,11 @@ router.get(
   authOptionalSubscription, // Allow access even without active subscription
   subscriptionController.getCurrentSubscription.bind(subscriptionController)
 );
+router.get(
+  '/analytics',
+  auth,
+  subscriptionController.getSubscriptionAnalytics.bind(subscriptionController)
+);
 router.post(
   '/checkout',
   authOptionalSubscription, // Allow access even without active subscription
@@ -27,6 +32,16 @@ router.post(
   '/cancel',
   auth,
   subscriptionController.cancelSubscription.bind(subscriptionController)
+);
+router.post(
+  '/upgrade',
+  auth,
+  subscriptionController.upgradeSubscription.bind(subscriptionController)
+);
+router.post(
+  '/downgrade',
+  auth,
+  subscriptionController.downgradeSubscription.bind(subscriptionController)
 );
 router.post(
   '/webhook',

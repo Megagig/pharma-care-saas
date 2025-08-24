@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import User from '../models/User';
 import Subscription from '../models/Subscription';
 import FeatureFlag from '../models/FeatureFlag';
-import { uploadService } from '../utils/uploadService';
+import uploadService from '../utils/uploadService';
 import { emailService } from '../utils/emailService';
 
 interface AuthRequest extends Request {

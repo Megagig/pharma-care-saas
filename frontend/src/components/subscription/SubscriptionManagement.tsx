@@ -24,13 +24,28 @@ import {
   TableRow,
   Switch,
   FormControlLabel,
+  Tabs,
+  Tab,
+  Paper,
+  Stack,
 } from '@mui/material';
+import {
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import CancelIcon from '@mui/icons-material/Cancel';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import PaymentIcon from '@mui/icons-material/Payment';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { useUIStore } from '../../stores';
 import { useSubscriptionStatus } from '../../hooks/useRBAC';
+import { paymentService } from '../../services/paymentService';
 import LoadingSpinner from '../LoadingSpinner';
+import BillingHistory from './BillingHistory';
+import PaymentMethodsManagement from './PaymentMethodsManagement';
+import SubscriptionAnalytics from './SubscriptionAnalytics';
 
 interface SubscriptionPlan {
   _id: string;
@@ -82,6 +97,7 @@ const SubscriptionManagement: React.FC = () => {
     null
   );
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [downgradeDialogOpen, setDowngradeDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
 
@@ -221,6 +237,33 @@ const SubscriptionManagement: React.FC = () => {
     } finally {
       setProcessing(false);
       setUpgradeDialogOpen(false);
+    }
+  };
+
+  const handleDowngrade = async (plan: SubscriptionPlan) => {
+    setProcessing(true);
+    try {
+      await paymentService.downgradeSubscription(plan._id);
+      
+      addNotification({
+        type: 'success',
+        title: 'Downgrade Scheduled',
+        message: `Your plan will be downgraded to ${plan.name} at the end of your current billing period`,
+        duration: 5000,
+      });
+      
+      loadData();
+    } catch (err) {
+      console.error('Downgrade error:', err);
+      addNotification({
+        type: 'error',
+        title: 'Downgrade Failed',
+        message: 'Failed to schedule downgrade',
+        duration: 5000,
+      });
+    } finally {
+      setProcessing(false);
+      setDowngradeDialogOpen(false);
     }
   };
 
@@ -605,12 +648,12 @@ const SubscriptionManagement: React.FC = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Confirm Plan Upgrade</DialogTitle>
+        <DialogTitle>Confirm Plan {currentSubscription?.status === 'active' ? 'Upgrade' : 'Selection'}</DialogTitle>
         <DialogContent>
           {selectedPlan && (
             <Box>
               <Typography variant="body1" gutterBottom>
-                You are about to upgrade to the{' '}
+                You are about to {currentSubscription?.status === 'active' ? 'upgrade' : 'subscribe'} to the{' '}
                 <strong>{selectedPlan.name}</strong> plan.
               </Typography>
 
@@ -631,6 +674,12 @@ const SubscriptionManagement: React.FC = () => {
                   with annual billing!
                 </Alert>
               )}
+              
+              {currentSubscription?.status === 'active' && (
+                <Alert severity="info" sx={{ mt: 1 }}>
+                  Upgrade will be prorated and take effect immediately.
+                </Alert>
+              )}
             </Box>
           )}
         </DialogContent>
@@ -640,8 +689,56 @@ const SubscriptionManagement: React.FC = () => {
             onClick={() => selectedPlan && handleUpgrade(selectedPlan)}
             variant="contained"
             disabled={processing}
+            startIcon={<TrendingUpIcon />}
           >
-            {processing ? 'Processing...' : 'Continue to Payment'}
+            {processing ? 'Processing...' : currentSubscription?.status === 'active' ? 'Upgrade Now' : 'Continue to Payment'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Downgrade Confirmation Dialog */}
+      <Dialog
+        open={downgradeDialogOpen}
+        onClose={() => setDowngradeDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Schedule Plan Downgrade</DialogTitle>
+        <DialogContent>
+          {selectedPlan && currentSubscription && (
+            <Box>
+              <Typography variant="body1" gutterBottom>
+                You are about to schedule a downgrade to the{' '}
+                <strong>{selectedPlan.name}</strong> plan.
+              </Typography>
+
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  The downgrade will take effect at the end of your current billing period on{' '}
+                  {new Date(currentSubscription.endDate).toLocaleDateString()}.
+                  You will continue to have access to your current plan features until then.
+                </Typography>
+              </Alert>
+
+              <Alert severity="info" sx={{ mt: 1 }}>
+                <Typography variant="body2">
+                  <strong>New Price:</strong>{' '}
+                  {formatPrice(selectedPlan.priceNGN, 'monthly')}
+                </Typography>
+              </Alert>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDowngradeDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => selectedPlan && handleDowngrade(selectedPlan)}
+            variant="contained"
+            color="warning"
+            disabled={processing}
+            startIcon={<TrendingDownIcon />}
+          >
+            {processing ? 'Processing...' : 'Schedule Downgrade'}
           </Button>
         </DialogActions>
       </Dialog>

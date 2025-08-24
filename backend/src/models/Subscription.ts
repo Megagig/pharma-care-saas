@@ -32,6 +32,11 @@ export interface ISubscription extends Document {
     count: number;
     lastUpdated: Date;
   }[];
+  scheduledDowngrade?: {
+    planId: mongoose.Types.ObjectId;
+    effectiveDate: Date;
+    scheduledAt: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
   isInGracePeriod(): boolean;
@@ -143,7 +148,18 @@ const subscriptionSchema = new Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+  scheduledDowngrade: {
+    planId: {
+      type: Schema.Types.ObjectId,
+      ref: 'SubscriptionPlan'
+    },
+    effectiveDate: Date,
+    scheduledAt: {
+      type: Date,
+      default: Date.now
+    }
+  }
 }, { timestamps: true });
 
 // Instance methods

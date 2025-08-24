@@ -20,14 +20,12 @@ import {
   DialogContent,
   DialogActions
 } from '@mui/material';
-import {
-  CloudUpload as UploadIcon,
-  CheckCircle as CheckIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
-  Delete as DeleteIcon,
-  Visibility as ViewIcon
-} from '@mui/icons-material';
+import UploadIcon from '@mui/icons-material/CloudUpload';
+import CheckIcon from '@mui/icons-material/CheckCircle';
+import WarningIcon from '@mui/icons-material/Warning';
+import ErrorIcon from '@mui/icons-material/Error';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ViewIcon from '@mui/icons-material/Visibility';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../context/AuthContext';
 import { useUIStore } from '../../stores';
@@ -230,7 +228,7 @@ const LicenseUpload: React.FC = () => {
       addNotification({
         type: 'error',
         title: 'Upload Failed',
-        message: error.message || 'Failed to upload license document',
+        message: (error as Error).message || 'Failed to upload license document',
         duration: 5000
       });
     } finally {
@@ -278,12 +276,12 @@ const LicenseUpload: React.FC = () => {
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string): React.ReactElement | undefined => {
     switch (status) {
       case 'approved': return <CheckIcon />;
       case 'pending': return <WarningIcon />;
       case 'rejected': return <ErrorIcon />;
-      default: return null;
+      default: return undefined;
     }
   };
 
@@ -302,13 +300,6 @@ const LicenseUpload: React.FC = () => {
       </Card>
     );
   }
-
-  const steps = [
-    'Enter License Number',
-    'Upload Document',
-    'Under Review',
-    'Verification Complete'
-  ];
 
   return (
     <Box>
@@ -489,7 +480,7 @@ const LicenseUpload: React.FC = () => {
             <Box display="flex" alignItems="center" justifyContent="between" mb={2}>
               <Typography variant="h6">Current Status</Typography>
               <Chip
-                icon={getStatusIcon(licenseInfo.status)}
+                {...(getStatusIcon(licenseInfo.status) && { icon: getStatusIcon(licenseInfo.status) })}
                 label={licenseInfo.status.toUpperCase()}
                 color={getStatusColor(licenseInfo.status) as any}
               />

@@ -44,6 +44,7 @@ export interface IUser extends Document {
   trialStartDate?: Date;
   trialEndDate?: Date;
   features: string[]; // Enabled features for this user
+  stripeCustomerId?: string; // Stripe customer ID for payment processing
   
   createdAt: Date;
   updatedAt: Date;
@@ -185,7 +186,12 @@ const userSchema = new Schema({
   features: [{
     type: String,
     index: true
-  }]
+  }],
+  stripeCustomerId: {
+    type: String,
+    sparse: true,
+    index: true
+  }
 }, { timestamps: true });
 
 userSchema.pre<IUser>('save', async function (next) {

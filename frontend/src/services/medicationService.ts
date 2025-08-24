@@ -1,74 +1,99 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import api, { ApiResponse } from './api';
+
+export interface Medication {
+  _id: string;
+  patientId: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  route: string;
+  duration: string;
+  startDate: string;
+  endDate?: string;
+  prescribedBy: string;
+  instructions: string;
+  status: 'active' | 'completed' | 'discontinued' | 'paused';
+  sideEffects: string[];
+  interactions: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MedicationCreateData {
+  patientId: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  route: string;
+  duration: string;
+  startDate: string;
+  endDate?: string;
+  prescribedBy: string;
+  instructions: string;
+  sideEffects?: string[];
+  interactions?: string[];
+}
+
+export interface MedicationsResponse {
+  medications: Medication[];
+  total: number;
+  page: number;
+  limit: number;
+}
 
 class MedicationService {
-  async makeRequest(url: string, options: any = {}): Promise<any> {
-    const token = localStorage.getItem('token');
-    
-    const config: any = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers || {}),
-      },
-      ...options,
-    };
+  async getMedications(params?: {
+    patientId?: string;
+    page?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+  }) {
+    const searchParams = new URLSearchParams();
+    if (params?.patientId) searchParams.append('patientId', params.patientId);
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.search) searchParams.append('search', params.search);
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    const response = await fetch(`${API_BASE_URL}${url}`, config);
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'An error occurred');
-    }
-
-    return data;
+    const response = await api.get<ApiResponse<MedicationsResponse>>(
+      `/medications?${searchParams.toString()}`
+    );
+    return response.data;
   }
 
-  async getMedications(params: any = {}): Promise<any> {
-    const queryString = new URLSearchParams(params).toString();
-    return this.makeRequest(`/medications?${queryString}`);
+  async getMedication(id: string) {
+    const response = await api.get<ApiResponse<Medication>>(`/medications/${id}`);
+    return response.data;
   }
 
-  async getMedication(medicationId: string): Promise<any> {
-    return this.makeRequest(`/medications/${medicationId}`);
+  async createMedication(data: MedicationCreateData) {
+    const response = await api.post<ApiResponse<Medication>>('/medications', data);
+    return response.data;
   }
 
-  async getMedicationsByPatient(patientId: string): Promise<any> {
-    return this.makeRequest(`/medications/patient/${patientId}`);
+  async updateMedication(id: string, data: Partial<MedicationCreateData>) {
+    const response = await api.put<ApiResponse<Medication>>(`/medications/${id}`, data);
+    return response.data;
   }
 
-  async createMedication(medicationData: any): Promise<any> {
-    return this.makeRequest('/medications', {
-      method: 'POST',
-      body: JSON.stringify(medicationData),
-    });
+  async deleteMedication(id: string) {
+    const response = await api.delete<ApiResponse<void>>(`/medications/${id}`);
+    return response.data;
   }
 
-  async updateMedication(medicationId: string, medicationData: any): Promise<any> {
-    return this.makeRequest(`/medications/${medicationId}`, {
-      method: 'PUT',
-      body: JSON.stringify(medicationData),
-    });
+  async getMedicationsByPatient(patientId: string) {
+    const response = await api.get<ApiResponse<Medication[]>>(
+      `/medications/patient/${patientId}`
+    );
+    return response.data;
   }
 
-  async updateMedicationStatus(medicationId: string, status: string): Promise<any> {
-    return this.makeRequest(`/medications/${medicationId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
-  }
-
-  async deleteMedication(medicationId: string): Promise<any> {
-    return this.makeRequest(`/medications/${medicationId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  async searchMedications(query: string): Promise<any> {
-    return this.makeRequest(`/medications/search?q=${encodeURIComponent(query)}`);
+  async updateMedicationStatus(id: string, status: 'active' | 'completed' | 'discontinued' | 'paused') {
+    const response = await api.patch<ApiResponse<Medication>>(`/medications/${id}/status`, { status });
+    return response.data;
   }
 }
 
 export const medicationService = new MedicationService();
+export default medicationService;
