@@ -15,7 +15,7 @@ interface ClinicalNoteStore {
     total: number;
     pages: number;
   };
-  
+
   // Actions
   // CRUD operations
   fetchNotes: (filters?: ClinicalNoteFilters) => Promise<void>;
@@ -24,16 +24,16 @@ interface ClinicalNoteStore {
   updateNote: (id: string, noteData: Partial<ClinicalNoteFormData>) => Promise<ClinicalNote | null>;
   deleteNote: (id: string) => Promise<boolean>;
   getNoteById: (id: string) => Promise<ClinicalNote | null>;
-  
+
   // Note-specific actions
   toggleNotePrivacy: (id: string) => Promise<boolean>;
   addTagToNote: (id: string, tag: string) => Promise<boolean>;
   removeTagFromNote: (id: string, tag: string) => Promise<boolean>;
   duplicateNote: (id: string) => Promise<ClinicalNote | null>;
-  
+
   // Selection actions
   selectNote: (note: ClinicalNote | null) => void;
-  
+
   // Filter and search actions
   setFilters: (filters: Partial<ClinicalNoteFilters>) => void;
   clearFilters: () => void;
@@ -42,26 +42,26 @@ interface ClinicalNoteStore {
   filterByPatient: (patientId: string) => void;
   filterByTags: (tags: string[]) => void;
   sortNotes: (sortBy: 'title' | 'createdAt' | 'updatedAt', sortOrder: 'asc' | 'desc') => void;
-  
+
   // Pagination actions
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
-  
+
   // Utility actions
   clearErrors: () => void;
   setLoading: (key: string, loading: boolean) => void;
   setError: (key: string, error: string | null) => void;
-  
+
   // Bulk operations
   deleteMultipleNotes: (ids: string[]) => Promise<boolean>;
   updateMultipleNotesPrivacy: (ids: string[], isPrivate: boolean) => Promise<boolean>;
   addTagToMultipleNotes: (ids: string[], tag: string) => Promise<boolean>;
-  
+
   // Local state management
   addNoteToState: (note: ClinicalNote) => void;
   updateNoteInState: (id: string, updates: Partial<ClinicalNote>) => void;
   removeNoteFromState: (id: string) => void;
-  
+
   // Analytics and insights
   getNotesByType: (type: string) => ClinicalNote[];
   getPatientNoteSummary: (patientId: string) => {
@@ -86,14 +86,14 @@ const noteService = {
     return { success: true, data: [] };
   },
   async createNote(data: ClinicalNoteFormData) {
-    return { 
-      success: true, 
-      data: { 
-        ...data, 
-        _id: Date.now().toString(), 
-        createdAt: new Date().toISOString(), 
-        updatedAt: new Date().toISOString() 
-      } 
+    return {
+      success: true,
+      data: {
+        ...data,
+        _id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
     };
   },
   async updateNote(id: string, data: Partial<ClinicalNoteFormData>) {
@@ -109,8 +109,8 @@ const noteService = {
       createdAt: '2023-01-01T00:00:00.000Z',
       updatedAt: new Date().toISOString()
     };
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: fullNote
     };
   },
@@ -154,13 +154,12 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
       fetchNotes: async (_filters) => {
         // Prevent automatic API calls in development/testing
         const isProduction = import.meta.env.PROD;
-        const token = localStorage.getItem('token');
-        
-        if (!isProduction && !token) {
+
+        if (!isProduction) {
           console.warn('Skipping clinical notes API call - no token found in development mode');
           return;
         }
-        
+
         const { setLoading, setError } = get();
         setLoading('fetchNotes', true);
         setError('fetchNotes', null);
@@ -168,7 +167,7 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
         try {
           const currentFilters = _filters || get().filters;
           const response = await noteService.getNotes(currentFilters);
-          
+
           if (response.success && response.data) {
             set({
               notes: response.data,
@@ -196,7 +195,7 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
 
         try {
           const response = await noteService.getNotesByPatient(_patientId);
-          
+
           if (response.success && response.data) {
             set({ notes: response.data });
           } else {
@@ -216,7 +215,7 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
 
         try {
           const response = await noteService.createNote(noteData);
-          
+
           if (response.success && response.data) {
             addNoteToState(response.data);
             return response.data;
@@ -239,16 +238,16 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
 
         try {
           const response = await noteService.updateNote(id, noteData);
-          
+
           if (response.success && response.data) {
             updateNoteInState(id, response.data);
-            
+
             // Update selected note if it's the one being updated
             const { selectedNote } = get();
             if (selectedNote && selectedNote._id === id) {
               set({ selectedNote: { ...selectedNote, ...response.data } });
             }
-            
+
             return response.data;
           } else {
             setError('updateNote', 'Failed to update clinical note');
@@ -269,16 +268,16 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
 
         try {
           const response = await noteService.deleteNote(id);
-          
+
           if (response.success) {
             removeNoteFromState(id);
-            
+
             // Clear selected note if it's the one being deleted
             const { selectedNote } = get();
             if (selectedNote && selectedNote._id === id) {
               set({ selectedNote: null });
             }
-            
+
             return true;
           } else {
             setError('deleteNote', 'Failed to delete clinical note');
@@ -299,7 +298,7 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
 
         try {
           const response = await noteService.getNoteById(id);
-          
+
           if (response.success && response.data) {
             return response.data;
           } else {
@@ -328,7 +327,7 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
           }
 
           const response = await noteService.toggleNotePrivacy(id, !note.isPrivate);
-          
+
           if (response.success) {
             updateNoteInState(id, { isPrivate: !note.isPrivate });
             return true;
@@ -358,7 +357,7 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
 
           const updatedTags = [...(note.tags || []), tag];
           const response = await noteService.updateNoteTags(id, updatedTags);
-          
+
           if (response.success) {
             updateNoteInState(id, { tags: updatedTags });
             return true;
@@ -388,7 +387,7 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
 
           const updatedTags = (note.tags || []).filter(t => t !== tag);
           const response = await noteService.updateNoteTags(id, updatedTags);
-          
+
           if (response.success) {
             updateNoteInState(id, { tags: updatedTags });
             return true;
@@ -407,7 +406,7 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
       duplicateNote: async (id) => {
         const { notes, createNote } = get();
         const originalNote = notes.find(n => n._id === id);
-        
+
         if (!originalNote) {
           return null;
         }
@@ -511,15 +510,15 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
         try {
           const promises = ids.map(id => noteService.deleteNote(id));
           const results = await Promise.all(promises);
-          
+
           const successful = results.filter(r => r.success);
-          
+
           if (successful.length === ids.length) {
             // Remove all successfully deleted notes from state
             set((state) => ({
               notes: state.notes.filter(n => !ids.includes(n._id)),
-              selectedNote: state.selectedNote && ids.includes(state.selectedNote._id) 
-                ? null 
+              selectedNote: state.selectedNote && ids.includes(state.selectedNote._id)
+                ? null
                 : state.selectedNote,
             }));
             return true;
@@ -543,9 +542,9 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
         try {
           const promises = ids.map(id => noteService.toggleNotePrivacy(id, isPrivate));
           const results = await Promise.all(promises);
-          
+
           const successful = results.filter(r => r.success);
-          
+
           if (successful.length === ids.length) {
             // Update all successfully updated notes in state
             set((state) => ({
@@ -580,10 +579,10 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
             }
             return Promise.resolve({ success: false });
           });
-          
+
           const results = await Promise.all(promises);
           const successful = results.filter(r => r.success);
-          
+
           if (successful.length === ids.length) {
             // Update all successfully updated notes in state
             set((state) => ({
@@ -645,7 +644,7 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
       getPatientNoteSummary: (patientId) => {
         const { notes } = get();
         const patientNotes = notes.filter(n => n.patientId === patientId);
-        
+
         return {
           consultation: patientNotes.filter(n => n.type === 'consultation').length,
           followUp: patientNotes.filter(n => n.type === 'follow-up').length,

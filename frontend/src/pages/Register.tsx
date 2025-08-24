@@ -14,7 +14,7 @@ import {
   FormControlLabel,
   Stack,
 } from '@mui/material';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
 
 interface RegisterFormData {
@@ -122,7 +122,7 @@ const Register = () => {
       console.log('Registration payload:', payload);
 
       // Use the authService for proper error handling and consistency
-      const result = await register(payload);
+      await register(payload);
 
       toast.success(
         'Registration successful! Please check your email to verify your account.'

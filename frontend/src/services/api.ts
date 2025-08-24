@@ -4,18 +4,17 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
   timeout: 30000,
+  withCredentials: true, // Include httpOnly cookies
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to ensure credentials are included
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // Ensure credentials are included for httpOnly cookies
+    config.withCredentials = true;
     return config;
   },
   (error) => {
@@ -30,8 +29,7 @@ api.interceptors.response.use(
   },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('token');
+      // Unauthorized - redirect to login (cookies will be cleared by server)
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -39,7 +37,7 @@ api.interceptors.response.use(
 );
 
 // Generic API response type
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
@@ -48,11 +46,11 @@ export interface ApiResponse<T = any> {
 
 // API helper functions
 export const apiHelpers = {
-  get: <T>(url: string) => api.get<ApiResponse<T>>(url),
-  post: <T>(url: string, data?: any) => api.post<ApiResponse<T>>(url, data),
-  put: <T>(url: string, data?: any) => api.put<ApiResponse<T>>(url, data),
-  patch: <T>(url: string, data?: any) => api.patch<ApiResponse<T>>(url, data),
-  delete: <T>(url: string) => api.delete<ApiResponse<T>>(url),
+  get: <T = unknown>(url: string) => api.get<ApiResponse<T>>(url),
+  post: <T = unknown>(url: string, data?: unknown) => api.post<ApiResponse<T>>(url, data),
+  put: <T = unknown>(url: string, data?: unknown) => api.put<ApiResponse<T>>(url, data),
+  patch: <T = unknown>(url: string, data?: unknown) => api.patch<ApiResponse<T>>(url, data),
+  delete: <T = unknown>(url: string) => api.delete<ApiResponse<T>>(url),
 };
 
 export default api;

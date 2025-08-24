@@ -5,85 +5,117 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.dataSeeder = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
+const dotenv_1 = require("dotenv");
 const FeatureFlag_1 = __importDefault(require("../models/FeatureFlag"));
 const SubscriptionPlan_1 = __importDefault(require("../models/SubscriptionPlan"));
 const User_1 = __importDefault(require("../models/User"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+(0, dotenv_1.config)();
 const defaultFeatureFlags = [
     {
         name: 'Patient Management',
         key: 'patient_management',
         description: 'Create, view, and manage patient records',
         allowedTiers: ['free_trial', 'basic', 'pro', 'enterprise'],
-        allowedRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'super_admin'],
+        allowedRoles: [
+            'pharmacist',
+            'pharmacy_team',
+            'pharmacy_outlet',
+            'super_admin',
+        ],
         metadata: {
             category: 'core',
             priority: 'critical',
-            tags: ['patients', 'basic']
-        }
+            tags: ['patients', 'basic'],
+        },
     },
     {
         name: 'Medication Management',
         key: 'medication_management',
         description: 'Manage medication inventory and prescriptions',
         allowedTiers: ['free_trial', 'basic', 'pro', 'enterprise'],
-        allowedRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'super_admin'],
+        allowedRoles: [
+            'pharmacist',
+            'pharmacy_team',
+            'pharmacy_outlet',
+            'super_admin',
+        ],
         metadata: {
             category: 'core',
             priority: 'critical',
-            tags: ['medications', 'inventory']
-        }
+            tags: ['medications', 'inventory'],
+        },
     },
     {
         name: 'Clinical Notes',
         key: 'clinical_notes',
         description: 'Create and manage clinical notes for patients',
         allowedTiers: ['basic', 'pro', 'enterprise'],
-        allowedRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'super_admin'],
+        allowedRoles: [
+            'pharmacist',
+            'pharmacy_team',
+            'pharmacy_outlet',
+            'super_admin',
+        ],
         customRules: {
-            requiredLicense: true
+            requiredLicense: true,
         },
         metadata: {
             category: 'core',
             priority: 'high',
-            tags: ['notes', 'clinical']
-        }
+            tags: ['notes', 'clinical'],
+        },
     },
     {
         name: 'Basic Reports',
         key: 'basic_reports',
         description: 'Generate basic reports and analytics',
         allowedTiers: ['basic', 'pro', 'enterprise'],
-        allowedRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'super_admin'],
+        allowedRoles: [
+            'pharmacist',
+            'pharmacy_team',
+            'pharmacy_outlet',
+            'super_admin',
+        ],
         metadata: {
             category: 'analytics',
             priority: 'medium',
-            tags: ['reports', 'analytics']
-        }
+            tags: ['reports', 'analytics'],
+        },
     },
     {
         name: 'Advanced Analytics',
         key: 'advanced_analytics',
         description: 'Access to advanced analytics and insights',
         allowedTiers: ['pro', 'enterprise'],
-        allowedRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'super_admin'],
+        allowedRoles: [
+            'pharmacist',
+            'pharmacy_team',
+            'pharmacy_outlet',
+            'super_admin',
+        ],
         metadata: {
             category: 'analytics',
             priority: 'medium',
-            tags: ['analytics', 'insights', 'premium']
-        }
+            tags: ['analytics', 'insights', 'premium'],
+        },
     },
     {
         name: 'Data Export',
         key: 'data_export',
         description: 'Export data in various formats (CSV, PDF, Excel)',
         allowedTiers: ['pro', 'enterprise'],
-        allowedRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'super_admin'],
+        allowedRoles: [
+            'pharmacist',
+            'pharmacy_team',
+            'pharmacy_outlet',
+            'super_admin',
+        ],
         metadata: {
             category: 'analytics',
             priority: 'medium',
-            tags: ['export', 'data']
-        }
+            tags: ['export', 'data'],
+        },
     },
     {
         name: 'Team Management',
@@ -92,13 +124,13 @@ const defaultFeatureFlags = [
         allowedTiers: ['pro', 'enterprise'],
         allowedRoles: ['pharmacy_team', 'pharmacy_outlet', 'super_admin'],
         customRules: {
-            maxUsers: 10
+            maxUsers: 10,
         },
         metadata: {
             category: 'collaboration',
             priority: 'high',
-            tags: ['team', 'collaboration']
-        }
+            tags: ['team', 'collaboration'],
+        },
     },
     {
         name: 'Multi-User Access',
@@ -109,8 +141,8 @@ const defaultFeatureFlags = [
         metadata: {
             category: 'collaboration',
             priority: 'high',
-            tags: ['multi-user', 'team']
-        }
+            tags: ['multi-user', 'team'],
+        },
     },
     {
         name: 'Role Management',
@@ -121,8 +153,8 @@ const defaultFeatureFlags = [
         metadata: {
             category: 'collaboration',
             priority: 'medium',
-            tags: ['roles', 'permissions']
-        }
+            tags: ['roles', 'permissions'],
+        },
     },
     {
         name: 'API Access',
@@ -133,8 +165,8 @@ const defaultFeatureFlags = [
         metadata: {
             category: 'integration',
             priority: 'low',
-            tags: ['api', 'integration']
-        }
+            tags: ['api', 'integration'],
+        },
     },
     {
         name: 'Third-party Integrations',
@@ -145,32 +177,42 @@ const defaultFeatureFlags = [
         metadata: {
             category: 'integration',
             priority: 'low',
-            tags: ['integrations', 'external']
-        }
+            tags: ['integrations', 'external'],
+        },
     },
     {
         name: 'Audit Logs',
         key: 'audit_logs',
         description: 'Track all system activities and changes',
         allowedTiers: ['pro', 'enterprise'],
-        allowedRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'super_admin'],
+        allowedRoles: [
+            'pharmacist',
+            'pharmacy_team',
+            'pharmacy_outlet',
+            'super_admin',
+        ],
         metadata: {
             category: 'compliance',
             priority: 'high',
-            tags: ['audit', 'compliance']
-        }
+            tags: ['audit', 'compliance'],
+        },
     },
     {
         name: 'Data Backup',
         key: 'data_backup',
         description: 'Automated data backup and recovery',
         allowedTiers: ['pro', 'enterprise'],
-        allowedRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'super_admin'],
+        allowedRoles: [
+            'pharmacist',
+            'pharmacy_team',
+            'pharmacy_outlet',
+            'super_admin',
+        ],
         metadata: {
             category: 'compliance',
             priority: 'high',
-            tags: ['backup', 'recovery']
-        }
+            tags: ['backup', 'recovery'],
+        },
     },
     {
         name: 'User Management',
@@ -181,8 +223,8 @@ const defaultFeatureFlags = [
         metadata: {
             category: 'administration',
             priority: 'critical',
-            tags: ['admin', 'users']
-        }
+            tags: ['admin', 'users'],
+        },
     },
     {
         name: 'System Configuration',
@@ -193,9 +235,9 @@ const defaultFeatureFlags = [
         metadata: {
             category: 'administration',
             priority: 'critical',
-            tags: ['admin', 'configuration']
-        }
-    }
+            tags: ['admin', 'configuration'],
+        },
+    },
 ];
 const subscriptionPlans = [
     {
@@ -213,9 +255,9 @@ const subscriptionPlans = [
             teamSize: 1,
             apiAccess: false,
             auditLogs: false,
-            dataBackup: false
+            dataBackup: false,
         },
-        description: '14-day free trial with basic features'
+        description: '14-day free trial with basic features',
     },
     {
         name: 'Basic',
@@ -232,9 +274,9 @@ const subscriptionPlans = [
             teamSize: 1,
             apiAccess: false,
             auditLogs: false,
-            dataBackup: false
+            dataBackup: false,
         },
-        description: 'Perfect for individual pharmacists'
+        description: 'Perfect for individual pharmacists',
     },
     {
         name: 'Pro',
@@ -251,9 +293,9 @@ const subscriptionPlans = [
             teamSize: 5,
             apiAccess: false,
             auditLogs: true,
-            dataBackup: true
+            dataBackup: true,
         },
-        description: 'Great for pharmacy teams and growing businesses'
+        description: 'Great for pharmacy teams and growing businesses',
     },
     {
         name: 'Enterprise',
@@ -272,10 +314,10 @@ const subscriptionPlans = [
             auditLogs: true,
             dataBackup: true,
             customIntegrations: true,
-            prioritySupport: true
+            prioritySupport: true,
         },
-        description: 'Complete solution for large pharmacy chains'
-    }
+        description: 'Complete solution for large pharmacy chains',
+    },
 ];
 class DataSeeder {
     async seedFeatureFlags() {
@@ -284,6 +326,12 @@ class DataSeeder {
             await FeatureFlag_1.default.deleteMany({});
             let adminUser = await User_1.default.findOne({ role: 'super_admin' });
             if (!adminUser) {
+                const enterprisePlan = await SubscriptionPlan_1.default.findOne({
+                    name: 'Enterprise',
+                });
+                if (!enterprisePlan) {
+                    throw new Error('Enterprise plan not found. Please run subscription plan seeding first.');
+                }
                 const hashedPassword = await bcryptjs_1.default.hash('admin123!', 12);
                 adminUser = await User_1.default.create({
                     email: 'admin@pharmacare.com',
@@ -295,14 +343,15 @@ class DataSeeder {
                     emailVerified: true,
                     licenseStatus: 'not_required',
                     subscriptionTier: 'enterprise',
+                    currentPlanId: enterprisePlan._id,
                     permissions: ['*'],
-                    features: ['*']
+                    features: ['*'],
                 });
             }
-            const featureFlags = defaultFeatureFlags.map(flag => ({
+            const featureFlags = defaultFeatureFlags.map((flag) => ({
                 ...flag,
                 createdBy: adminUser._id,
-                updatedBy: adminUser._id
+                updatedBy: adminUser._id,
             }));
             await FeatureFlag_1.default.insertMany(featureFlags);
             console.log(`✅ Created ${featureFlags.length} feature flags`);
@@ -327,8 +376,8 @@ class DataSeeder {
     async seed() {
         try {
             console.log('🌱 Starting data seeding...');
-            await this.seedFeatureFlags();
             await this.seedSubscriptionPlans();
+            await this.seedFeatureFlags();
             console.log('✅ Data seeding completed successfully!');
         }
         catch (error) {
@@ -339,7 +388,7 @@ class DataSeeder {
 }
 exports.dataSeeder = new DataSeeder();
 if (require.main === module) {
-    const connectDB = require('../config/database').default;
+    const connectDB = require('../config/db').default;
     (async () => {
         try {
             await connectDB();

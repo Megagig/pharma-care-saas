@@ -35,6 +35,7 @@ export interface IUser extends Document {
     trialStartDate?: Date;
     trialEndDate?: Date;
     features: string[];
+    stripeCustomerId?: string;
     createdAt: Date;
     updatedAt: Date;
     comparePassword(password: string): Promise<boolean>;

@@ -45,7 +45,7 @@ export interface FeatureFlag {
   customRules: {
     field: string;
     operator: string;
-    value: any;
+    value: unknown;
   }[];
   environments: string[];
   createdAt: string;
@@ -76,9 +76,9 @@ export const adminService = {
   },
 
   async updateUserStatus(userId: string, status: string, reason?: string) {
-    const response = await apiClient.put(`/admin/users/${userId}/status`, { 
-      status, 
-      reason 
+    const response = await apiClient.put(`/admin/users/${userId}/status`, {
+      status,
+      reason
     });
     return response.data;
   },
@@ -89,8 +89,8 @@ export const adminService = {
   },
 
   async assignUserToTeam(userId: string, teamLeadId: string) {
-    const response = await apiClient.put(`/admin/users/${userId}/team`, { 
-      teamLeadId 
+    const response = await apiClient.put(`/admin/users/${userId}/team`, {
+      teamLeadId
     });
     return response.data;
   },

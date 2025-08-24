@@ -18,9 +18,13 @@ const storage = multer_1.default.diskStorage({
         cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        if (!req.user) {
+            return cb(new Error('User not authenticated'), '');
+        }
+        const userId = req.user._id;
+        const uniqueSuffix = Date.now();
         const extension = path_1.default.extname(file.originalname);
-        cb(null, `license-${uniqueSuffix}${extension}`);
+        cb(null, `license-${userId}-${uniqueSuffix}${extension}`);
     },
 });
 const fileFilter = (req, file, cb) => {
@@ -38,6 +42,13 @@ const fileFilter = (req, file, cb) => {
         cb(new Error('Invalid file type. Only JPEG, PNG, WebP, and PDF files are allowed.'), false);
     }
 };
+const licenseUpload = (0, multer_1.default)({
+    storage,
+    fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024,
+    },
+});
 exports.upload = (0, multer_1.default)({
     storage,
     fileFilter,
@@ -60,6 +71,13 @@ class LicenseController {
                 return res.status(400).json({
                     success: false,
                     message: 'License number is required',
+                });
+            }
+            if (!req.user) {
+                fs_1.default.unlinkSync(req.file.path);
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication required',
                 });
             }
             const user = await User_1.default.findById(req.user._id);
@@ -134,6 +152,12 @@ class LicenseController {
     }
     async getLicenseStatus(req, res) {
         try {
+            if (!req.user) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication required',
+                });
+            }
             const user = await User_1.default.findById(req.user._id)
                 .select('licenseNumber licenseStatus licenseDocument licenseVerifiedAt licenseRejectionReason')
                 .populate('licenseVerifiedBy', 'firstName lastName');
@@ -174,6 +198,12 @@ class LicenseController {
     async downloadLicenseDocument(req, res) {
         try {
             const { userId } = req.params;
+            if (!req.user) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication required',
+                });
+            }
             if (req.user.role !== 'super_admin' &&
                 req.user._id.toString() !== userId) {
                 return res.status(403).json({
@@ -210,6 +240,12 @@ class LicenseController {
     }
     async deleteLicenseDocument(req, res) {
         try {
+            if (!req.user) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication required',
+                });
+            }
             const user = await User_1.default.findById(req.user._id);
             if (!user || !user.licenseDocument) {
                 return res.status(404).json({
@@ -258,6 +294,12 @@ class LicenseController {
                     message: 'License number is required',
                 });
             }
+            if (!req.user) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication required',
+                });
+            }
             const existingUser = await User_1.default.findOne({
                 licenseNumber: licenseNumber,
                 _id: { $ne: req.user._id },
@@ -290,6 +332,12 @@ class LicenseController {
                 return res.status(400).json({
                     success: false,
                     message: 'Actions array is required',
+                });
+            }
+            if (!req.user) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication required',
                 });
             }
             const results = [];

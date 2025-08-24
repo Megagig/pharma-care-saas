@@ -2,15 +2,15 @@ import { Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import User from '../models/User';
+import User, { IUser } from '../models/User';
 import { emailService } from '../utils/emailService';
 
 interface AuthRequest extends Request {
-  user?: any;
+  user?: IUser;
   subscription?: any;
 }
 
-// Configure multer for license document uploads
+// Configure multer for license document uploads with improved validation
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = path.join(process.cwd(), 'uploads', 'licenses');
@@ -19,15 +19,21 @@ const storage = multer.diskStorage({
     }
     cb(null, uploadPath);
   },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+  filename: (req: AuthRequest, file, cb) => {
+    if (!req.user) {
+      return cb(new Error('User not authenticated'), '');
+    }
+
+    // Use user ID in filename for better organization and security
+    const userId = req.user._id;
+    const uniqueSuffix = Date.now();
     const extension = path.extname(file.originalname);
-    cb(null, `license-${uniqueSuffix}${extension}`);
+    cb(null, `license-${userId}-${uniqueSuffix}${extension}`);
   },
 });
 
 const fileFilter = (req: any, file: any, cb: any) => {
-  // Allow only specific file types
+  // Allow only specific file types with size validation
   const allowedTypes = [
     'image/jpeg',
     'image/jpg',
@@ -48,6 +54,16 @@ const fileFilter = (req: any, file: any, cb: any) => {
   }
 };
 
+// Set upload limits for security
+const licenseUpload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max file size
+  },
+});
+
+// Export for use in routes
 export const upload = multer({
   storage,
   fileFilter,
@@ -74,6 +90,14 @@ export class LicenseController {
         return res.status(400).json({
           success: false,
           message: 'License number is required',
+        });
+      }
+
+      if (!req.user) {
+        fs.unlinkSync(req.file.path);
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required',
         });
       }
 
@@ -163,6 +187,13 @@ export class LicenseController {
 
   async getLicenseStatus(req: AuthRequest, res: Response): Promise<any> {
     try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+      }
+
       const user = await User.findById(req.user._id)
         .select(
           'licenseNumber licenseStatus licenseDocument licenseVerifiedAt licenseRejectionReason'
@@ -212,6 +243,14 @@ export class LicenseController {
     try {
       const { userId } = req.params;
 
+      // Check if user is authenticated
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+      }
+
       // Check if current user is admin or the license owner
       if (
         req.user.role !== 'super_admin' &&
@@ -260,6 +299,14 @@ export class LicenseController {
 
   async deleteLicenseDocument(req: AuthRequest, res: Response): Promise<any> {
     try {
+      // Check if user is authenticated
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+      }
+
       const user = await User.findById(req.user._id);
       if (!user || !user.licenseDocument) {
         return res.status(404).json({
@@ -317,6 +364,14 @@ export class LicenseController {
         });
       }
 
+      // Check if user is authenticated
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+      }
+
       // Check if license number is already registered
       const existingUser = await User.findOne({
         licenseNumber: licenseNumber,
@@ -354,6 +409,14 @@ export class LicenseController {
         return res.status(400).json({
           success: false,
           message: 'Actions array is required',
+        });
+      }
+
+      // Check if user is authenticated
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required',
         });
       }
 

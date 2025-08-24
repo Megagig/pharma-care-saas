@@ -9,6 +9,9 @@ export declare class SubscriptionController {
     createCheckoutSession(req: AuthRequest, res: Response): Promise<any>;
     handleSuccessfulPayment(req: AuthRequest, res: Response): Promise<any>;
     cancelSubscription(req: AuthRequest, res: Response): Promise<any>;
+    upgradeSubscription(req: AuthRequest, res: Response): Promise<any>;
+    downgradeSubscription(req: AuthRequest, res: Response): Promise<any>;
+    getSubscriptionAnalytics(req: AuthRequest, res: Response): Promise<any>;
     handleWebhook(req: Request, res: Response): Promise<any>;
     private handleSubscriptionCreated;
     private handleSubscriptionUpdated;

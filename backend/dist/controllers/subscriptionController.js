@@ -24,8 +24,15 @@ class SubscriptionController {
                 .populate('planId')
                 .populate('paymentHistory');
             if (!subscription) {
-                return res.status(404).json({
-                    success: false,
+                return res.status(200).json({
+                    success: true,
+                    data: {
+                        subscription: null,
+                        availableFeatures: [],
+                        isExpired: true,
+                        isInGracePeriod: false,
+                        canRenew: true,
+                    },
                     message: 'No active subscription found',
                 });
             }
@@ -121,7 +128,6 @@ class SubscriptionController {
                             currency: 'ngn',
                             product_data: {
                                 name: plan.name,
-                                description: `${plan.name} subscription plan`,
                                 metadata: {
                                     planId: plan._id.toString(),
                                     tier: plan.name.toLowerCase().replace(' ', '_'),
@@ -294,6 +300,207 @@ class SubscriptionController {
             res.status(500).json({
                 success: false,
                 message: 'Error cancelling subscription',
+                error: error.message,
+            });
+        }
+    }
+    async upgradeSubscription(req, res) {
+        try {
+            const { planId, billingInterval = 'monthly' } = req.body;
+            const currentSubscription = await Subscription_1.default.findOne({
+                userId: req.user._id,
+                status: 'active',
+            }).populate('planId');
+            if (!currentSubscription) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No active subscription found',
+                });
+            }
+            const newPlan = await SubscriptionPlan_1.default.findById(planId);
+            if (!newPlan) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'New plan not found',
+                });
+            }
+            const tierOrder = ['free_trial', 'basic', 'pro', 'enterprise'];
+            const currentTierIndex = tierOrder.indexOf(currentSubscription.tier);
+            const newTierIndex = tierOrder.indexOf(newPlan.name.toLowerCase().replace(' ', '_'));
+            if (newTierIndex <= currentTierIndex) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'This is not an upgrade. Use downgrade endpoint for downgrades.',
+                });
+            }
+            const currentPlan = currentSubscription.planId;
+            const daysRemaining = Math.ceil((currentSubscription.endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+            const totalDaysInPeriod = billingInterval === 'yearly' ? 365 : 30;
+            const proratedDiscount = (currentPlan.priceNGN * daysRemaining) / totalDaysInPeriod;
+            const upgradeAmount = newPlan.priceNGN - proratedDiscount;
+            if (currentSubscription.stripeSubscriptionId) {
+                try {
+                    const stripeSubscription = await stripe.subscriptions.retrieve(currentSubscription.stripeSubscriptionId);
+                    const price = await stripe.prices.create({
+                        currency: 'ngn',
+                        unit_amount: newPlan.priceNGN * 100,
+                        recurring: {
+                            interval: billingInterval,
+                        },
+                        product_data: {
+                            name: newPlan.name,
+                        },
+                    });
+                    await stripe.subscriptions.update(currentSubscription.stripeSubscriptionId, {
+                        items: [{
+                                id: stripeSubscription.items.data[0]?.id,
+                                price: price.id,
+                            }],
+                        proration_behavior: 'create_prorations',
+                    });
+                }
+                catch (stripeError) {
+                    console.error('Error updating Stripe subscription:', stripeError);
+                }
+            }
+            const tierMapping = {
+                'Free Trial': 'free_trial',
+                Basic: 'basic',
+                Pro: 'pro',
+                Enterprise: 'enterprise',
+            };
+            const newTier = tierMapping[newPlan.name] || 'basic';
+            const features = await FeatureFlag_1.default.find({
+                isActive: true,
+                allowedTiers: newTier,
+            });
+            currentSubscription.planId = newPlan._id;
+            currentSubscription.tier = newTier;
+            currentSubscription.priceAtPurchase = newPlan.priceNGN;
+            currentSubscription.features = features.map((f) => f.key);
+            await currentSubscription.save();
+            const user = await User_1.default.findById(req.user._id);
+            if (user) {
+                user.subscriptionTier = newTier;
+                user.features = features.map((f) => f.key);
+                await user.save();
+            }
+            await emailService_1.emailService.sendSubscriptionUpgrade(req.user.email, {
+                firstName: req.user.firstName,
+                oldPlanName: currentPlan.name,
+                newPlanName: newPlan.name,
+                upgradeAmount: upgradeAmount,
+                effectiveDate: new Date(),
+            });
+            res.json({
+                success: true,
+                message: 'Subscription upgraded successfully',
+                data: {
+                    subscription: currentSubscription,
+                    upgradeAmount: upgradeAmount,
+                },
+            });
+        }
+        catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error upgrading subscription',
+                error: error.message,
+            });
+        }
+    }
+    async downgradeSubscription(req, res) {
+        try {
+            const { planId } = req.body;
+            const currentSubscription = await Subscription_1.default.findOne({
+                userId: req.user._id,
+                status: 'active',
+            }).populate('planId');
+            if (!currentSubscription) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No active subscription found',
+                });
+            }
+            const newPlan = await SubscriptionPlan_1.default.findById(planId);
+            if (!newPlan) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'New plan not found',
+                });
+            }
+            currentSubscription.scheduledDowngrade = {
+                planId: newPlan._id,
+                effectiveDate: currentSubscription.endDate,
+                scheduledAt: new Date(),
+            };
+            await currentSubscription.save();
+            const currentPlan = currentSubscription.planId;
+            await emailService_1.emailService.sendSubscriptionDowngrade(req.user.email, {
+                firstName: req.user.firstName,
+                currentPlanName: currentPlan.name,
+                newPlanName: newPlan.name,
+                effectiveDate: currentSubscription.endDate,
+            });
+            res.json({
+                success: true,
+                message: 'Subscription downgrade scheduled successfully',
+                data: {
+                    effectiveDate: currentSubscription.endDate,
+                    newPlan: newPlan.name,
+                },
+            });
+        }
+        catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error scheduling downgrade',
+                error: error.message,
+            });
+        }
+    }
+    async getSubscriptionAnalytics(req, res) {
+        try {
+            const subscription = await Subscription_1.default.findOne({
+                userId: req.user._id,
+                status: { $in: ['active', 'trial', 'grace_period'] },
+            }).populate('planId');
+            if (!subscription) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No active subscription found',
+                });
+            }
+            const usageMetrics = {
+                currentPeriodStart: subscription.startDate,
+                currentPeriodEnd: subscription.endDate,
+                daysRemaining: Math.ceil((subscription.endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+                features: subscription.features,
+                storageUsed: 0,
+                apiCalls: 0,
+                teamMembers: 1,
+            };
+            const costOptimization = {
+                currentMonthlySpend: subscription.priceAtPurchase,
+                projectedAnnualSpend: subscription.priceAtPurchase * 12,
+                savings: {
+                    yearlyVsMonthly: subscription.priceAtPurchase * 2,
+                    downgradeSavings: 0,
+                },
+            };
+            res.json({
+                success: true,
+                data: {
+                    subscription,
+                    usageMetrics,
+                    costOptimization,
+                },
+            });
+        }
+        catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error fetching analytics',
                 error: error.message,
             });
         }

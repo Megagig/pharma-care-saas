@@ -1,29 +1,32 @@
+import React, { useState } from 'react';
 import {
   AppBar,
   Toolbar,
   Typography,
   IconButton,
   Badge,
-  Avatar,
   Menu,
   MenuItem,
   Box,
   Chip,
 } from '@mui/material';
-import {
-  Notifications as NotificationsIcon,
-  AccountCircle as AccountCircleIcon,
-  ExitToApp as LogoutIcon,
-} from '@mui/icons-material';
-import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import LogoutIcon from '@mui/icons-material/ExitToApp';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { useSubscriptionStatus } from '../hooks/useSubscription';
 
-const Navbar = () => {
+/**
+ * Main navigation bar component displayed at the top of the application
+ * when users are logged in.
+ */
+const Navbar: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchor, setNotificationAnchor] =
     useState<null | HTMLElement>(null);
   const { user, logout } = useAuth();
+  const { tier } = useSubscriptionStatus();
   const navigate = useNavigate();
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -39,219 +42,127 @@ const Navbar = () => {
     setNotificationAnchor(null);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
     handleMenuClose();
+    await logout();
     navigate('/login');
+  };
+
+  const getSubscriptionChipColor = () => {
+    switch (tier) {
+      case 'enterprise':
+        return 'error';
+      case 'pro':
+        return 'secondary';
+      case 'basic':
+        return 'primary';
+      case 'free_trial':
+      default:
+        return 'default';
+    }
   };
 
   if (!user) return null;
 
   return (
     <AppBar
-      position="sticky"
-      sx={{
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-        zIndex: (theme) => theme.zIndex.drawer + 1,
-      }}
+      position="fixed"
+      color="primary"
+      sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
     >
       <Toolbar>
-        {/* Brand/Logo */}
-        <Box
-          component={Link}
-          to="/dashboard"
-          sx={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+        <Typography
+          variant="h6"
+          component="div"
+          sx={{ display: { xs: 'none', sm: 'block' }, flexGrow: 1 }}
         >
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mr: 2,
-            }}
+          PharmaCare
+        </Typography>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {tier && (
+            <Chip
+              size="small"
+              label={tier.replace('_', ' ').toUpperCase()}
+              color={
+                getSubscriptionChipColor() as
+                  | 'default'
+                  | 'primary'
+                  | 'secondary'
+                  | 'error'
+              }
+            />
+          )}
+
+          <IconButton
+            size="large"
+            color="inherit"
+            onClick={handleNotificationMenuOpen}
           >
-            <Typography
-              variant="h6"
-              sx={{ color: 'white', fontWeight: 'bold' }}
-            >
-              PC
-            </Typography>
-          </Box>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{
-              fontWeight: 'bold',
-              background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
+            <Badge badgeContent={3} color="error">
+              <NotificationsIcon />
+            </Badge>
+          </IconButton>
+
+          <IconButton
+            size="large"
+            edge="end"
+            color="inherit"
+            onClick={handleProfileMenuOpen}
           >
-            PharmaCare
-          </Typography>
+            {/* Use default icon for now */}
+            <AccountCircleIcon />
+          </IconButton>
         </Box>
 
-        <Box sx={{ flexGrow: 1 }} />
-
-        {/* Plan Badge */}
-        <Chip
-          label="Professional Plan"
-          size="small"
-          sx={{
-            backgroundColor: 'primary.main',
-            color: 'white',
-            mr: 2,
-            fontSize: '0.75rem',
-          }}
-        />
-
-        {/* Notifications */}
-        <IconButton
-          size="large"
-          aria-label="show new notifications"
-          color="inherit"
-          onClick={handleNotificationMenuOpen}
-          sx={{ color: 'text.primary', mr: 1 }}
-        >
-          <Badge badgeContent={4} color="error">
-            <NotificationsIcon />
-          </Badge>
-        </IconButton>
-
-        {/* Profile Menu */}
-        <IconButton
-          size="large"
-          edge="end"
-          aria-label="account of current user"
-          aria-haspopup="true"
-          onClick={handleProfileMenuOpen}
-          color="inherit"
-          sx={{ color: 'text.primary' }}
-        >
-          <Avatar
-            alt={user?.firstName || 'User'}
-            sx={{
-              width: 32,
-              height: 32,
-              bgcolor: 'primary.main',
-              fontSize: '0.875rem',
-            }}
-          >
-            {user?.firstName?.[0]?.toUpperCase() || 'U'}
-          </Avatar>
-        </IconButton>
-
-        {/* Profile Dropdown Menu */}
         <Menu
-          id="profile-menu"
           anchorEl={anchorEl}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'right',
-          }}
-          keepMounted
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
           open={Boolean(anchorEl)}
           onClose={handleMenuClose}
-          PaperProps={{
-            sx: {
-              mt: 1,
-              minWidth: 200,
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-              borderRadius: 2,
-            },
-          }}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         >
-          <Box
-            sx={{
-              px: 2,
-              py: 1,
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              {user?.firstName} {user?.lastName}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {user?.email}
-            </Typography>
-          </Box>
-          <MenuItem onClick={handleMenuClose}>
-            <AccountCircleIcon sx={{ mr: 1 }} />
-            Profile Settings
+          <MenuItem component={Link} to="/profile" onClick={handleMenuClose}>
+            Profile
+          </MenuItem>
+          {user.role === 'super_admin' && (
+            <MenuItem component={Link} to="/admin" onClick={handleMenuClose}>
+              Admin Dashboard
+            </MenuItem>
+          )}
+          <MenuItem component={Link} to="/settings" onClick={handleMenuClose}>
+            Settings
           </MenuItem>
           <MenuItem onClick={handleLogout}>
-            <LogoutIcon sx={{ mr: 1 }} />
+            <LogoutIcon fontSize="small" sx={{ mr: 1 }} />
             Logout
           </MenuItem>
         </Menu>
 
-        {/* Notifications Dropdown Menu */}
         <Menu
-          id="notifications-menu"
           anchorEl={notificationAnchor}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'right',
-          }}
-          keepMounted
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
           open={Boolean(notificationAnchor)}
           onClose={handleMenuClose}
-          PaperProps={{
-            sx: {
-              mt: 1,
-              minWidth: 300,
-              maxHeight: 400,
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-              borderRadius: 2,
-            },
-          }}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         >
-          <Box
-            sx={{
-              px: 2,
-              py: 1,
-              borderBottom: '1px solid',
-              borderColor: 'divider',
+          <MenuItem onClick={handleMenuClose}>
+            <Typography variant="body2">New patient registered</Typography>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Typography variant="body2">Prescription renewal needed</Typography>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Typography variant="body2">Subscription expires soon</Typography>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              handleMenuClose();
+              navigate('/notifications');
             }}
+            sx={{ justifyContent: 'center', color: 'primary.main' }}
           >
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              Notifications
-            </Typography>
-          </Box>
-          <MenuItem onClick={handleMenuClose}>
-            <Typography variant="body2">
-              New patient registration: John Doe
-            </Typography>
-          </MenuItem>
-          <MenuItem onClick={handleMenuClose}>
-            <Typography variant="body2">
-              Prescription renewal reminder
-            </Typography>
-          </MenuItem>
-          <MenuItem onClick={handleMenuClose}>
-            <Typography variant="body2">
-              System maintenance scheduled
-            </Typography>
-          </MenuItem>
-          <MenuItem onClick={handleMenuClose}>
-            <Typography variant="body2">Monthly report available</Typography>
+            <Typography variant="body2">View all notifications</Typography>
           </MenuItem>
         </Menu>
       </Toolbar>

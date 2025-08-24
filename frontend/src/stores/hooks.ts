@@ -43,7 +43,7 @@ export const usePatientManagement = () => {
   const selectedPatient = usePatientStore((state) => state.selectedPatient);
   const addNotification = useUIStore((state) => state.addNotification);
 
-  const handleCreatePatient = useCallback(async (patientData: any) => {
+  const handleCreatePatient = useCallback(async (patientData: Record<string, unknown>) => {
     const result = await createPatient(patientData);
     if (result) {
       addNotification({
@@ -64,7 +64,7 @@ export const usePatientManagement = () => {
     }
   }, [createPatient, addNotification]);
 
-  const handleUpdatePatient = useCallback(async (id: string, patientData: any) => {
+  const handleUpdatePatient = useCallback(async (id: string, patientData: Record<string, unknown>) => {
     const result = await updatePatient(id, patientData);
     if (result) {
       addNotification({
@@ -134,7 +134,7 @@ export const useMedicationManagement = () => {
   const getActiveMedicationsCount = useMedicationStore((state) => state.getActiveMedicationsCount);
   const addNotification = useUIStore((state) => state.addNotification);
 
-  const handleCreateMedication = useCallback(async (medicationData: any) => {
+  const handleCreateMedication = useCallback(async (medicationData: Record<string, unknown>) => {
     const result = await createMedication(medicationData);
     if (result) {
       addNotification({
@@ -206,7 +206,7 @@ export const useClinicalNoteManagement = () => {
   const getAllTags = useClinicalNoteStore((state) => state.getAllTags);
   const addNotification = useUIStore((state) => state.addNotification);
 
-  const handleCreateNote = useCallback(async (noteData: any) => {
+  const handleCreateNote = useCallback(async (noteData: Record<string, unknown>) => {
     const result = await createNote(noteData);
     if (result) {
       addNotification({
@@ -283,7 +283,7 @@ export const useDashboardData = () => {
     const safePatients = patients || [];
     const safeMedications = medications || [];
     const safeNotes = notes || [];
-    
+
     // Early return with default values if stores are not initialized
     if (!Array.isArray(safePatients) || !Array.isArray(safeMedications) || !Array.isArray(safeNotes)) {
       return {
@@ -296,9 +296,9 @@ export const useDashboardData = () => {
         notesByType: { consultation: 0, followUp: 0, emergency: 0, general: 0 },
       };
     }
-    
+
     const activeMedications = safeMedications.filter(m => m?.status === 'active').length;
-    
+
     return {
       totalPatients: safePatients.length,
       activeMedications,
@@ -391,7 +391,7 @@ export const useLoadingStates = () => {
     if (area) {
       return patientLoading[area] || medicationLoading[area] || noteLoading[area] || false;
     }
-    
+
     return (
       Object.values(patientLoading).some(Boolean) ||
       Object.values(medicationLoading).some(Boolean) ||
@@ -416,7 +416,7 @@ export const useDataSync = () => {
     const medicationStore = useMedicationStore.getState();
     const clinicalNoteStore = useClinicalNoteStore.getState();
     const uiStore = useUIStore.getState();
-    
+
     uiStore.setLoading(true);
     try {
       await Promise.all([

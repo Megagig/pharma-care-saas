@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import multer from 'multer';
+import { IUser } from '../models/User';
 interface AuthRequest extends Request {
-    user?: any;
+    user?: IUser;
     subscription?: any;
 }
 export declare const upload: multer.Multer;

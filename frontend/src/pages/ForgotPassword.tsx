@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useForm } from 'react-hook-form';
 import { Mail, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -26,10 +26,9 @@ const ForgotPassword: React.FC = () => {
       await forgotPassword(data.email);
       setEmailSent(true);
       toast.success('Password reset instructions sent to your email!');
-    } catch (error: any) {
-      toast.error(
-        error.message || 'Failed to send reset email. Please try again.'
-      );
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send reset email. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

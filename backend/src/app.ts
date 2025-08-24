@@ -8,7 +8,6 @@ import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 import hpp from 'hpp';
 
-
 import errorHandler from './middlewares/errorHandler';
 
 // Route imports
@@ -21,6 +20,9 @@ import paymentRoutes from './routes/paymentRoutes';
 import adminRoutes from './routes/admin';
 import licenseRoutes from './routes/license';
 import subscriptionManagementRoutes from './routes/subscription';
+import webhookRoutes from './routes/webhookRoutes';
+import featureFlagRoutes from './routes/featureFlagRoutes';
+import healthRoutes from './routes/healthRoutes';
 
 const app: Application = express();
 
@@ -46,8 +48,6 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-
-
 // Data sanitization
 app.use(mongoSanitize()); // Against NoSQL query injection
 app.use(xss()); // Against XSS attacks
@@ -58,7 +58,7 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Health check route
+// Health check routes
 app.get('/api/health', (req: Request, res: Response) => {
   res.json({
     status: 'OK',
@@ -66,8 +66,7 @@ app.get('/api/health', (req: Request, res: Response) => {
     environment: process.env.NODE_ENV,
   });
 });
-
-
+app.use('/api/health/feature-flags', healthRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -81,21 +80,30 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/license', licenseRoutes);
 app.use('/api/subscription-management', subscriptionManagementRoutes);
+app.use('/api/feature-flags', featureFlagRoutes);
+
+// Webhooks - no rate limiting and body parsing is raw for signature verification
+app.use(
+  '/api/webhooks',
+  express.raw({ type: 'application/json' }), // Raw body parser for signature verification
+  webhookRoutes
+);
 
 // Serve uploaded files (with proper security)
-app.use('/uploads', express.static('uploads', {
-  maxAge: '1d',
-  setHeaders: (res, path) => {
-    // Security headers for file downloads
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    if (path.endsWith('.pdf')) {
-      res.setHeader('Content-Disposition', 'inline');
-    }
-  }
-}));
-
-
+app.use(
+  '/uploads',
+  express.static('uploads', {
+    maxAge: '1d',
+    setHeaders: (res, path) => {
+      // Security headers for file downloads
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      if (path.endsWith('.pdf')) {
+        res.setHeader('Content-Disposition', 'inline');
+      }
+    },
+  })
+);
 
 // 404 handler
 app.all('*', (req: Request, res: Response) => {

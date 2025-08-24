@@ -4,9 +4,12 @@ import { Box, Typography, Button, Paper, Alert } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import WarningIcon from '@mui/icons-material/Warning';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
-import { useAuth } from '../context/AuthContext';
-import { useRBAC, useSubscriptionStatus } from '../hooks/useRBAC';
+import { useAuth } from '../hooks/useAuth';
+import useRBAC from '../hooks/useRBAC';
 import LoadingSpinner from './LoadingSpinner';
+import { useSubscriptionStatus } from '../hooks/useSubscription';
+
+// ProtectedRoute component
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -254,120 +257,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // All checks passed, render children
   return <>{children}</>;
-};
-
-// Higher-order component for protecting components
-export const withRoleProtection = <P extends object>(
-  Component: React.ComponentType<P>,
-  requiredRole: string | string[]
-) => {
-  return (props: P) => (
-    <ProtectedRoute requiredRole={requiredRole}>
-      <Component {...props} />
-    </ProtectedRoute>
-  );
-};
-
-// Higher-order component for feature protection
-export const withFeatureProtection = <P extends object>(
-  Component: React.ComponentType<P>,
-  requiredFeature: string
-) => {
-  return (props: P) => (
-    <ProtectedRoute requiredFeature={requiredFeature}>
-      <Component {...props} />
-    </ProtectedRoute>
-  );
-};
-
-// Component for conditional rendering based on permissions
-interface ConditionalRenderProps {
-  children: React.ReactNode;
-  requiredRole?: string | string[];
-  requiredPermission?: string;
-  requiredFeature?: string;
-  fallback?: React.ReactNode;
-}
-
-export const ConditionalRender: React.FC<ConditionalRenderProps> = ({
-  children,
-  requiredRole,
-  requiredPermission,
-  requiredFeature,
-  fallback = null,
-}) => {
-  const { hasRole, hasPermission, hasFeature } = useRBAC();
-
-  let hasAccess = true;
-
-  if (requiredRole && !hasRole(requiredRole)) {
-    hasAccess = false;
-  }
-
-  if (requiredPermission && !hasPermission(requiredPermission)) {
-    hasAccess = false;
-  }
-
-  if (requiredFeature && !hasFeature(requiredFeature)) {
-    hasAccess = false;
-  }
-
-  return hasAccess ? <>{children}</> : <>{fallback}</>;
-};
-
-// Hook for programmatic access control
-export const useAccessControl = () => {
-  const rbac = useRBAC();
-  const { user } = useAuth();
-  const subscriptionStatus = useSubscriptionStatus();
-
-  const checkAccess = (requirements: {
-    role?: string | string[];
-    permission?: string;
-    feature?: string;
-    requiresLicense?: boolean;
-    requiresActiveSubscription?: boolean;
-  }) => {
-    if (!user) return false;
-
-    if (
-      requirements.requiresActiveSubscription &&
-      !subscriptionStatus.isActive
-    ) {
-      return false;
-    }
-
-    if (
-      requirements.requiresLicense &&
-      rbac.requiresLicense() &&
-      rbac.getLicenseStatus() !== 'approved'
-    ) {
-      return false;
-    }
-
-    if (requirements.role && !rbac.hasRole(requirements.role)) {
-      return false;
-    }
-
-    if (
-      requirements.permission &&
-      !rbac.hasPermission(requirements.permission)
-    ) {
-      return false;
-    }
-
-    if (requirements.feature && !rbac.hasFeature(requirements.feature)) {
-      return false;
-    }
-
-    return true;
-  };
-
-  return {
-    ...rbac,
-    checkAccess,
-    subscriptionStatus,
-  };
 };
 
 export default ProtectedRoute;

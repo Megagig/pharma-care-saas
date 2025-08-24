@@ -31,6 +31,11 @@ export interface ISubscription extends Document {
         count: number;
         lastUpdated: Date;
     }[];
+    scheduledDowngrade?: {
+        planId: mongoose.Types.ObjectId;
+        effectiveDate: Date;
+        scheduledAt: Date;
+    };
     createdAt: Date;
     updatedAt: Date;
     isInGracePeriod(): boolean;

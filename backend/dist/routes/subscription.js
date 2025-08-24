@@ -8,11 +8,10 @@ const auth_1 = require("../middlewares/auth");
 const subscriptionController_1 = require("../controllers/subscriptionController");
 const router = express_1.default.Router();
 router.post('/webhook', express_1.default.raw({ type: 'application/json' }), subscriptionController_1.subscriptionController.handleWebhook);
-router.use(auth_1.auth);
-router.get('/current', subscriptionController_1.subscriptionController.getCurrentSubscription);
+router.get('/current', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.getCurrentSubscription);
 router.get('/plans', subscriptionController_1.subscriptionController.getAvailablePlans);
-router.post('/checkout', subscriptionController_1.subscriptionController.createCheckoutSession);
-router.post('/confirm-payment', subscriptionController_1.subscriptionController.handleSuccessfulPayment);
-router.post('/cancel', subscriptionController_1.subscriptionController.cancelSubscription);
+router.post('/checkout', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.createCheckoutSession);
+router.post('/confirm-payment', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.handleSuccessfulPayment);
+router.post('/cancel', auth_1.auth, subscriptionController_1.subscriptionController.cancelSubscription);
 exports.default = router;
 //# sourceMappingURL=subscription.js.map
