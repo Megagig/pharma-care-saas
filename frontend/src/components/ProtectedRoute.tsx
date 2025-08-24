@@ -1,7 +1,9 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Link } from 'react-router-dom';
 import { Box, Typography, Button, Paper, Alert } from '@mui/material';
-import { Lock as LockIcon, Warning as WarningIcon, CreditCard as CreditCardIcon } from '@mui/icons-material';
+import LockIcon from '@mui/icons-material/Lock';
+import WarningIcon from '@mui/icons-material/Warning';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { useAuth } from '../context/AuthContext';
 import { useRBAC, useSubscriptionStatus } from '../hooks/useRBAC';
 import LoadingSpinner from './LoadingSpinner';
@@ -23,7 +25,12 @@ interface AccessDeniedProps {
   requiredFeature?: string;
   userRole?: string;
   licenseStatus?: string;
-  subscriptionStatus?: any;
+  subscriptionStatus?: {
+    status: string;
+    isActive: boolean;
+    tier: string;
+    daysRemaining: number;
+  };
 }
 
 const AccessDenied: React.FC<AccessDeniedProps> = ({
@@ -33,7 +40,7 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
   requiredFeature,
   userRole,
   licenseStatus,
-  subscriptionStatus
+  subscriptionStatus,
 }) => {
   const getIcon = () => {
     switch (reason) {
@@ -65,13 +72,16 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
 
   const getMessage = () => {
     switch (reason) {
-      case 'role':
-        const roles = Array.isArray(requiredRole) ? requiredRole.join(', ') : requiredRole;
+      case 'role': {
+        const roles = Array.isArray(requiredRole)
+          ? requiredRole.join(', ')
+          : requiredRole;
         return `This page requires ${roles} role(s). Your current role is ${userRole}.`;
+      }
       case 'permission':
         return `You don't have the required permission: ${requiredPermission}`;
       case 'feature':
-        return `The feature \"${requiredFeature}\" is not available in your current plan. Please upgrade to access this feature.`;
+        return `The feature "${requiredFeature}" is not available in your current plan. Please upgrade to access this feature.`;
       case 'license':
         return `A verified pharmacist license is required to access this feature. Current status: ${licenseStatus}`;
       case 'subscription':
@@ -88,7 +98,8 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
           <Button
             variant="contained"
             color="primary"
-            href="/dashboard/subscription/plans"
+            component={Link}
+            to="/subscription-management"
             sx={{ mt: 2 }}
           >
             Upgrade Subscription
@@ -99,7 +110,8 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
           <Button
             variant="contained"
             color="primary"
-            href="/dashboard/profile/license"
+            component={Link}
+            to="/license"
             sx={{ mt: 2 }}
           >
             Upload License
@@ -109,7 +121,8 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
         return (
           <Button
             variant="outlined"
-            href="/dashboard"
+            component={Link}
+            to="/dashboard"
             sx={{ mt: 2 }}
           >
             Back to Dashboard
@@ -132,33 +145,33 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
           p: 4,
           textAlign: 'center',
           maxWidth: 500,
-          width: '100%'
+          width: '100%',
         }}
       >
-        <Box mb={3}>
-          {getIcon()}
-        </Box>
-        
+        <Box mb={3}>{getIcon()}</Box>
+
         <Typography variant="h4" gutterBottom color="text.primary">
           {getTitle()}
         </Typography>
-        
+
         <Typography variant="body1" color="text.secondary" paragraph>
           {getMessage()}
         </Typography>
-        
+
         {reason === 'feature' && (
           <Alert severity="info" sx={{ mt: 2, mb: 2 }}>
-            Contact your administrator or upgrade your plan to enable this feature.
+            Contact your administrator or upgrade your plan to enable this
+            feature.
           </Alert>
         )}
-        
+
         {reason === 'license' && licenseStatus === 'pending' && (
           <Alert severity="warning" sx={{ mt: 2, mb: 2 }}>
-            Your license is currently under review. You'll be notified once it's approved.
+            Your license is currently under review. You'll be notified once it's
+            approved.
           </Alert>
         )}
-        
+
         {getActionButton()}
       </Paper>
     </Box>
@@ -172,10 +185,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredFeature,
   requiresLicense = false,
   requiresActiveSubscription = false,
-  fallbackPath = '/login'
+  fallbackPath = '/login',
 }) => {
   const { user, loading } = useAuth();
-  const { hasRole, hasPermission, hasFeature, requiresLicense: userRequiresLicense, getLicenseStatus } = useRBAC();
+  const {
+    hasRole,
+    hasPermission,
+    hasFeature,
+    requiresLicense: userRequiresLicense,
+    getLicenseStatus,
+  } = useRBAC();
   const subscriptionStatus = useSubscriptionStatus();
   const location = useLocation();
 
@@ -203,12 +222,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (requiresLicense && userRequiresLicense()) {
     const licenseStatus = getLicenseStatus();
     if (licenseStatus !== 'approved') {
-      return (
-        <AccessDenied
-          reason="license"
-          licenseStatus={licenseStatus}
-        />
-      );
+      return <AccessDenied reason="license" licenseStatus={licenseStatus} />;
     }
   }
 
@@ -235,12 +249,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check feature requirement
   if (requiredFeature && !hasFeature(requiredFeature)) {
-    return (
-      <AccessDenied
-        reason="feature"
-        requiredFeature={requiredFeature}
-      />
-    );
+    return <AccessDenied reason="feature" requiredFeature={requiredFeature} />;
   }
 
   // All checks passed, render children
@@ -248,11 +257,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 };
 
 // Higher-order component for protecting components
-export const withRoleProtection = (
-  Component: React.ComponentType<any>,
+export const withRoleProtection = <P extends object>(
+  Component: React.ComponentType<P>,
   requiredRole: string | string[]
 ) => {
-  return (props: any) => (
+  return (props: P) => (
     <ProtectedRoute requiredRole={requiredRole}>
       <Component {...props} />
     </ProtectedRoute>
@@ -260,11 +269,11 @@ export const withRoleProtection = (
 };
 
 // Higher-order component for feature protection
-export const withFeatureProtection = (
-  Component: React.ComponentType<any>,
+export const withFeatureProtection = <P extends object>(
+  Component: React.ComponentType<P>,
   requiredFeature: string
 ) => {
-  return (props: any) => (
+  return (props: P) => (
     <ProtectedRoute requiredFeature={requiredFeature}>
       <Component {...props} />
     </ProtectedRoute>
@@ -285,7 +294,7 @@ export const ConditionalRender: React.FC<ConditionalRenderProps> = ({
   requiredRole,
   requiredPermission,
   requiredFeature,
-  fallback = null
+  fallback = null,
 }) => {
   const { hasRole, hasPermission, hasFeature } = useRBAC();
 
@@ -311,7 +320,7 @@ export const useAccessControl = () => {
   const rbac = useRBAC();
   const { user } = useAuth();
   const subscriptionStatus = useSubscriptionStatus();
-  
+
   const checkAccess = (requirements: {
     role?: string | string[];
     permission?: string;
@@ -320,34 +329,44 @@ export const useAccessControl = () => {
     requiresActiveSubscription?: boolean;
   }) => {
     if (!user) return false;
-    
-    if (requirements.requiresActiveSubscription && !subscriptionStatus.isActive) {
+
+    if (
+      requirements.requiresActiveSubscription &&
+      !subscriptionStatus.isActive
+    ) {
       return false;
     }
-    
-    if (requirements.requiresLicense && rbac.requiresLicense() && rbac.getLicenseStatus() !== 'approved') {
+
+    if (
+      requirements.requiresLicense &&
+      rbac.requiresLicense() &&
+      rbac.getLicenseStatus() !== 'approved'
+    ) {
       return false;
     }
-    
+
     if (requirements.role && !rbac.hasRole(requirements.role)) {
       return false;
     }
-    
-    if (requirements.permission && !rbac.hasPermission(requirements.permission)) {
+
+    if (
+      requirements.permission &&
+      !rbac.hasPermission(requirements.permission)
+    ) {
       return false;
     }
-    
+
     if (requirements.feature && !rbac.hasFeature(requirements.feature)) {
       return false;
     }
-    
+
     return true;
   };
-  
+
   return {
     ...rbac,
     checkAccess,
-    subscriptionStatus
+    subscriptionStatus,
   };
 };
 

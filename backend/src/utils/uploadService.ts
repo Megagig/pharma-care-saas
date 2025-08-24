@@ -22,7 +22,7 @@ class UploadService {
     const randomString = crypto.randomBytes(8).toString('hex');
     const extension = path.extname(originalName);
     const prefixPart = prefix ? `${prefix}-` : '';
-    
+
     return `${prefixPart}${timestamp}-${randomString}${extension}`;
   }
 
@@ -34,9 +34,12 @@ class UploadService {
         cb(null, uploadPath);
       },
       filename: (req, file, cb) => {
-        const uniqueName = this.generateUniqueFilename(file.originalname, subDirectory.slice(0, 3));
+        const uniqueName = this.generateUniqueFilename(
+          file.originalname,
+          subDirectory.slice(0, 3)
+        );
         cb(null, uniqueName);
-      }
+      },
     });
   }
 
@@ -46,12 +49,17 @@ class UploadService {
         if (allowedTypes.includes(file.mimetype)) {
           cb(null, true);
         } else {
-          cb(new Error(`Invalid file type. Allowed types: ${allowedTypes.join(', ')}`), false);
+          cb(
+            new Error(
+              `Invalid file type. Allowed types: ${allowedTypes.join(', ')}`
+            ),
+            false
+          );
         }
       },
       limits: {
-        fileSize: maxSize || 5 * 1024 * 1024 // Default 5MB
-      }
+        fileSize: maxSize || 5 * 1024 * 1024, // Default 5MB
+      },
     };
   }
 
@@ -62,27 +70,22 @@ class UploadService {
       'image/jpg',
       'image/png',
       'image/webp',
-      'application/pdf'
+      'application/pdf',
     ];
 
     return multer({
       storage: this.createUploadStorage('licenses'),
-      ...this.createFileFilter(allowedTypes, 5 * 1024 * 1024) // 5MB
+      ...this.createFileFilter(allowedTypes, 5 * 1024 * 1024), // 5MB
     });
   }
 
   // Profile picture upload configuration
   getProfilePictureUploadConfig() {
-    const allowedTypes = [
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/webp'
-    ];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
     return multer({
       storage: this.createUploadStorage('profiles'),
-      ...this.createFileFilter(allowedTypes, 2 * 1024 * 1024) // 2MB
+      ...this.createFileFilter(allowedTypes, 2 * 1024 * 1024), // 2MB
     });
   }
 
@@ -94,12 +97,12 @@ class UploadService {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'image/jpeg',
       'image/jpg',
-      'image/png'
+      'image/png',
     ];
 
     return multer({
       storage: this.createUploadStorage('documents'),
-      ...this.createFileFilter(allowedTypes, 10 * 1024 * 1024) // 10MB
+      ...this.createFileFilter(allowedTypes, 10 * 1024 * 1024), // 10MB
     });
   }
 
@@ -128,13 +131,13 @@ class UploadService {
           createdAt: stats.birthtime,
           modifiedAt: stats.mtime,
           isFile: stats.isFile(),
-          isDirectory: stats.isDirectory()
+          isDirectory: stats.isDirectory(),
         };
       }
       return { exists: false };
     } catch (error) {
       console.error('Error getting file info:', error);
-      return { exists: false, error: error.message };
+      return { exists: false, error: (error as Error).message };
     }
   }
 
@@ -151,46 +154,49 @@ class UploadService {
       cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
       let deleted = 0;
-      const errors = [];
+      const errors: Array<{ filename: string; error: string }> = [];
 
-      files.forEach(filename => {
+      files.forEach((filename) => {
         try {
           const filePath = path.join(dirPath, filename);
           const stats = fs.statSync(filePath);
-          
+
           if (stats.mtime < cutoffDate) {
             fs.unlinkSync(filePath);
             deleted++;
           }
         } catch (error) {
-          errors.push({ filename, error: error.message });
+          errors.push({ filename, error: (error as Error).message });
         }
       });
 
       return { deleted, errors };
     } catch (error) {
       console.error('Error during cleanup:', error);
-      return { deleted: 0, errors: [{ directory, error: error.message }] };
+      return {
+        deleted: 0,
+        errors: [{ directory, error: (error as Error).message }],
+      };
     }
   }
 
   // Validate file type by reading file header (more secure than relying on mimetype)
   validateFileType(filePath: string, expectedTypes: string[]): boolean {
     try {
-      const buffer = fs.readFileSync(filePath, { start: 0, end: 20 });
+      const buffer = fs.readFileSync(filePath);
       const header = buffer.toString('hex', 0, 4);
-      
+
       const signatures = {
-        'pdf': '25504446', // %PDF
-        'jpeg': 'ffd8ffe0',
-        'jpeg2': 'ffd8ffe1',
-        'jpeg3': 'ffd8ffe2',
-        'png': '89504e47',
-        'webp': '52494646' // RIFF (WebP container)
+        pdf: '25504446', // %PDF
+        jpeg: 'ffd8ffe0',
+        jpeg2: 'ffd8ffe1',
+        jpeg3: 'ffd8ffe2',
+        png: '89504e47',
+        webp: '52494646', // RIFF (WebP container)
       };
 
-      return expectedTypes.some(type => {
-        const sig = signatures[type.toLowerCase()];
+      return expectedTypes.some((type) => {
+        const sig = (signatures as any)[type.toLowerCase()];
         return sig && header.startsWith(sig);
       });
     } catch (error) {
@@ -206,17 +212,20 @@ class UploadService {
   }
 
   // Scan for malware (placeholder - integrate with actual antivirus)
-  async scanFile(filePath: string): Promise<{ safe: boolean; threat?: string }> {
+  async scanFile(
+    filePath: string
+  ): Promise<{ safe: boolean; threat?: string }> {
     // This is a placeholder. In production, integrate with services like:
     // - ClamAV
     // - VirusTotal API
     // - AWS GuardDuty
     // - Azure Security Center
-    
+
     try {
       // Basic file size check
       const stats = fs.statSync(filePath);
-      if (stats.size > 50 * 1024 * 1024) { // 50MB
+      if (stats.size > 50 * 1024 * 1024) {
+        // 50MB
         return { safe: false, threat: 'File too large' };
       }
 
@@ -226,7 +235,7 @@ class UploadService {
         /<script[^>]*>/i,
         /javascript:/i,
         /vbscript:/i,
-        /on\\w+\\s*=/i
+        /on\\w+\\s*=/i,
       ];
 
       for (const pattern of suspiciousPatterns) {

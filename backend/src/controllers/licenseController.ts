@@ -20,26 +20,31 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const extension = path.extname(file.originalname);
     cb(null, `license-${uniqueSuffix}${extension}`);
-  }
+  },
 });
 
 const fileFilter = (req: any, file: any, cb: any) => {
   // Allow only specific file types
   const allowedTypes = [
     'image/jpeg',
-    'image/jpg', 
+    'image/jpg',
     'image/png',
     'application/pdf',
-    'image/webp'
+    'image/webp',
   ];
-  
+
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, WebP, and PDF files are allowed.'), false);
+    cb(
+      new Error(
+        'Invalid file type. Only JPEG, PNG, WebP, and PDF files are allowed.'
+      ),
+      false
+    );
   }
 };
 
@@ -48,27 +53,27 @@ export const upload = multer({
   fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
-  }
+  },
 });
 
 export class LicenseController {
-  async uploadLicense(req: AuthRequest, res: Response) {
+  async uploadLicense(req: AuthRequest, res: Response): Promise<any> {
     try {
       if (!req.file) {
         return res.status(400).json({
           success: false,
-          message: 'No license document uploaded'
+          message: 'No license document uploaded',
         });
       }
 
       const { licenseNumber } = req.body;
-      
+
       if (!licenseNumber) {
         // Remove uploaded file if license number is missing
         fs.unlinkSync(req.file.path);
         return res.status(400).json({
           success: false,
-          message: 'License number is required'
+          message: 'License number is required',
         });
       }
 
@@ -77,7 +82,7 @@ export class LicenseController {
         fs.unlinkSync(req.file.path);
         return res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: 'User not found',
         });
       }
 
@@ -85,14 +90,14 @@ export class LicenseController {
       const existingUser = await User.findOne({
         licenseNumber: licenseNumber,
         _id: { $ne: user._id },
-        licenseStatus: { $in: ['pending', 'approved'] }
+        licenseStatus: { $in: ['pending', 'approved'] },
       });
 
       if (existingUser) {
         fs.unlinkSync(req.file.path);
         return res.status(409).json({
           success: false,
-          message: 'This license number is already registered by another user'
+          message: 'This license number is already registered by another user',
         });
       }
 
@@ -114,10 +119,10 @@ export class LicenseController {
         filePath: req.file.path,
         uploadedAt: new Date(),
         fileSize: req.file.size,
-        mimeType: req.file.mimetype
+        mimeType: req.file.mimetype,
       };
       user.licenseStatus = 'pending';
-      
+
       // If user was previously rejected, reset rejection reason
       if (user.licenseRejectionReason) {
         user.licenseRejectionReason = undefined;
@@ -130,7 +135,7 @@ export class LicenseController {
         userEmail: user.email,
         userName: `${user.firstName} ${user.lastName}`,
         licenseNumber: licenseNumber,
-        submittedAt: new Date()
+        submittedAt: new Date(),
       });
 
       res.json({
@@ -139,8 +144,8 @@ export class LicenseController {
         data: {
           licenseNumber: user.licenseNumber,
           status: user.licenseStatus,
-          uploadedAt: user.licenseDocument.uploadedAt
-        }
+          uploadedAt: user.licenseDocument.uploadedAt,
+        },
       });
     } catch (error) {
       // Clean up uploaded file on error
@@ -151,21 +156,23 @@ export class LicenseController {
       res.status(500).json({
         success: false,
         message: 'Error uploading license document',
-        error: error.message
+        error: (error as Error).message,
       });
     }
   }
 
-  async getLicenseStatus(req: AuthRequest, res: Response) {
+  async getLicenseStatus(req: AuthRequest, res: Response): Promise<any> {
     try {
       const user = await User.findById(req.user._id)
-        .select('licenseNumber licenseStatus licenseDocument licenseVerifiedAt licenseRejectionReason')
+        .select(
+          'licenseNumber licenseStatus licenseDocument licenseVerifiedAt licenseRejectionReason'
+        )
         .populate('licenseVerifiedBy', 'firstName lastName');
 
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: 'User not found',
         });
       }
 
@@ -175,39 +182,44 @@ export class LicenseController {
         hasDocument: !!user.licenseDocument,
         verifiedAt: user.licenseVerifiedAt,
         rejectionReason: user.licenseRejectionReason,
-        requiresLicense: ['pharmacist', 'intern_pharmacist'].includes(user.role)
+        requiresLicense: ['pharmacist', 'intern_pharmacist'].includes(
+          user.role
+        ),
       };
 
       if (user.licenseDocument) {
-        licenseInfo['documentInfo'] = {
+        (licenseInfo as any)['documentInfo'] = {
           fileName: user.licenseDocument.fileName,
           uploadedAt: user.licenseDocument.uploadedAt,
-          fileSize: user.licenseDocument.fileSize
+          fileSize: user.licenseDocument.fileSize,
         };
       }
 
       res.json({
         success: true,
-        data: licenseInfo
+        data: licenseInfo,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
         message: 'Error fetching license status',
-        error: error.message
+        error: (error as Error).message,
       });
     }
   }
 
-  async downloadLicenseDocument(req: AuthRequest, res: Response) {
+  async downloadLicenseDocument(req: AuthRequest, res: Response): Promise<any> {
     try {
       const { userId } = req.params;
-      
+
       // Check if current user is admin or the license owner
-      if (req.user.role !== 'super_admin' && req.user._id.toString() !== userId) {
+      if (
+        req.user.role !== 'super_admin' &&
+        req.user._id.toString() !== userId
+      ) {
         return res.status(403).json({
           success: false,
-          message: 'Access denied'
+          message: 'Access denied',
         });
       }
 
@@ -215,7 +227,7 @@ export class LicenseController {
       if (!user || !user.licenseDocument) {
         return res.status(404).json({
           success: false,
-          message: 'License document not found'
+          message: 'License document not found',
         });
       }
 
@@ -223,14 +235,17 @@ export class LicenseController {
       if (!fs.existsSync(filePath)) {
         return res.status(404).json({
           success: false,
-          message: 'License file not found on server'
+          message: 'License file not found on server',
         });
       }
 
       // Set appropriate headers for file download
       res.setHeader('Content-Type', user.licenseDocument.mimeType);
-      res.setHeader('Content-Disposition', `attachment; filename="${user.licenseDocument.fileName}"`);
-      
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${user.licenseDocument.fileName}"`
+      );
+
       // Stream the file
       const fileStream = fs.createReadStream(filePath);
       fileStream.pipe(res);
@@ -238,18 +253,18 @@ export class LicenseController {
       res.status(500).json({
         success: false,
         message: 'Error downloading license document',
-        error: error.message
+        error: (error as Error).message,
       });
     }
   }
 
-  async deleteLicenseDocument(req: AuthRequest, res: Response) {
+  async deleteLicenseDocument(req: AuthRequest, res: Response): Promise<any> {
     try {
       const user = await User.findById(req.user._id);
       if (!user || !user.licenseDocument) {
         return res.status(404).json({
           success: false,
-          message: 'No license document found'
+          message: 'No license document found',
         });
       }
 
@@ -257,7 +272,7 @@ export class LicenseController {
       if (!['rejected', 'pending'].includes(user.licenseStatus)) {
         return res.status(400).json({
           success: false,
-          message: 'Cannot delete approved license document'
+          message: 'Cannot delete approved license document',
         });
       }
 
@@ -280,25 +295,25 @@ export class LicenseController {
 
       res.json({
         success: true,
-        message: 'License document deleted successfully'
+        message: 'License document deleted successfully',
       });
     } catch (error) {
       res.status(500).json({
         success: false,
         message: 'Error deleting license document',
-        error: error.message
+        error: (error as Error).message,
       });
     }
   }
 
-  async validateLicenseNumber(req: AuthRequest, res: Response) {
+  async validateLicenseNumber(req: AuthRequest, res: Response): Promise<any> {
     try {
       const { licenseNumber } = req.body;
-      
+
       if (!licenseNumber) {
         return res.status(400).json({
           success: false,
-          message: 'License number is required'
+          message: 'License number is required',
         });
       }
 
@@ -306,7 +321,7 @@ export class LicenseController {
       const existingUser = await User.findOne({
         licenseNumber: licenseNumber,
         _id: { $ne: req.user._id },
-        licenseStatus: { $in: ['pending', 'approved'] }
+        licenseStatus: { $in: ['pending', 'approved'] },
       });
 
       const isAvailable = !existingUser;
@@ -316,29 +331,29 @@ export class LicenseController {
         data: {
           licenseNumber,
           isAvailable,
-          message: isAvailable 
-            ? 'License number is available' 
-            : 'This license number is already registered'
-        }
+          message: isAvailable
+            ? 'License number is available'
+            : 'This license number is already registered',
+        },
       });
     } catch (error) {
       res.status(500).json({
         success: false,
         message: 'Error validating license number',
-        error: error.message
+        error: (error as Error).message,
       });
     }
   }
 
   // Admin-only method to bulk process licenses
-  async bulkProcessLicenses(req: AuthRequest, res: Response) {
+  async bulkProcessLicenses(req: AuthRequest, res: Response): Promise<any> {
     try {
       const { actions } = req.body; // Array of { userId, action: 'approve'|'reject', reason? }
-      
+
       if (!Array.isArray(actions) || actions.length === 0) {
         return res.status(400).json({
           success: false,
-          message: 'Actions array is required'
+          message: 'Actions array is required',
         });
       }
 
@@ -351,7 +366,7 @@ export class LicenseController {
             results.push({
               userId: action.userId,
               success: false,
-              message: 'User not found'
+              message: 'User not found',
             });
             continue;
           }
@@ -361,26 +376,26 @@ export class LicenseController {
             user.licenseVerifiedAt = new Date();
             user.licenseVerifiedBy = req.user._id;
             user.status = 'active';
-            
+
             await user.save();
-            
+
             // Send approval email
             await emailService.sendLicenseApprovalNotification(user.email, {
               firstName: user.firstName,
-              licenseNumber: user.licenseNumber
+              licenseNumber: user.licenseNumber || '',
             });
-            
+
             results.push({
               userId: action.userId,
               success: true,
-              message: 'License approved'
+              message: 'License approved',
             });
           } else if (action.action === 'reject') {
             if (!action.reason) {
               results.push({
                 userId: action.userId,
                 success: false,
-                message: 'Rejection reason is required'
+                message: 'Rejection reason is required',
               });
               continue;
             }
@@ -390,26 +405,26 @@ export class LicenseController {
             user.licenseVerifiedAt = new Date();
             user.licenseVerifiedBy = req.user._id;
             user.status = 'license_rejected';
-            
+
             await user.save();
-            
+
             // Send rejection email
             await emailService.sendLicenseRejectionNotification(user.email, {
               firstName: user.firstName,
-              reason: action.reason
+              reason: action.reason,
             });
-            
+
             results.push({
               userId: action.userId,
               success: true,
-              message: 'License rejected'
+              message: 'License rejected',
             });
           }
         } catch (error) {
           results.push({
             userId: action.userId,
             success: false,
-            message: error.message
+            message: (error as Error).message,
           });
         }
       }
@@ -417,13 +432,13 @@ export class LicenseController {
       res.json({
         success: true,
         message: 'Bulk processing completed',
-        data: results
+        data: results,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
         message: 'Error processing bulk license actions',
-        error: error.message
+        error: (error as Error).message,
       });
     }
   }

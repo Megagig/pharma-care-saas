@@ -5,8 +5,8 @@ export interface IUser extends Document {
     passwordHash: string;
     firstName: string;
     lastName: string;
-    role: 'pharmacist' | 'technician' | 'owner' | 'admin';
-    status: 'pending' | 'active' | 'suspended';
+    role: 'pharmacist' | 'pharmacy_team' | 'pharmacy_outlet' | 'intern_pharmacist' | 'super_admin';
+    status: 'pending' | 'active' | 'suspended' | 'license_pending' | 'license_rejected';
     emailVerified: boolean;
     verificationToken?: string;
     verificationCode?: string;
@@ -16,12 +16,33 @@ export interface IUser extends Document {
     planOverride?: Record<string, any>;
     currentSubscriptionId?: mongoose.Types.ObjectId;
     lastLoginAt?: Date;
+    licenseNumber?: string;
+    licenseDocument?: {
+        fileName: string;
+        filePath: string;
+        uploadedAt: Date;
+        fileSize: number;
+        mimeType: string;
+    };
+    licenseStatus: 'not_required' | 'pending' | 'approved' | 'rejected';
+    licenseVerifiedAt?: Date;
+    licenseVerifiedBy?: mongoose.Types.ObjectId;
+    licenseRejectionReason?: string;
+    parentUserId?: mongoose.Types.ObjectId;
+    teamMembers?: mongoose.Types.ObjectId[];
+    permissions: string[];
+    subscriptionTier: 'free_trial' | 'basic' | 'pro' | 'enterprise';
+    trialStartDate?: Date;
+    trialEndDate?: Date;
+    features: string[];
     createdAt: Date;
     updatedAt: Date;
     comparePassword(password: string): Promise<boolean>;
     generateVerificationToken(): string;
     generateVerificationCode(): string;
     generateResetToken(): string;
+    hasPermission(permission: string): boolean;
+    hasFeature(feature: string): boolean;
 }
 declare const _default: mongoose.Model<IUser, {}, {}, {}, mongoose.Document<unknown, {}, IUser> & IUser & {
     _id: mongoose.Types.ObjectId;

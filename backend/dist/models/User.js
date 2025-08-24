@@ -70,13 +70,13 @@ const userSchema = new mongoose_1.Schema({
     },
     role: {
         type: String,
-        enum: ['pharmacist', 'technician', 'owner', 'admin'],
+        enum: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist', 'super_admin'],
         default: 'pharmacist',
         index: true
     },
     status: {
         type: String,
-        enum: ['pending', 'active', 'suspended'],
+        enum: ['pending', 'active', 'suspended', 'license_pending', 'license_rejected'],
         default: 'pending',
         index: true
     },
@@ -114,7 +114,56 @@ const userSchema = new mongoose_1.Schema({
         ref: 'Subscription',
         index: true
     },
-    lastLoginAt: Date
+    lastLoginAt: Date,
+    licenseNumber: {
+        type: String,
+        sparse: true,
+        index: true
+    },
+    licenseDocument: {
+        fileName: String,
+        filePath: String,
+        uploadedAt: Date,
+        fileSize: Number,
+        mimeType: String
+    },
+    licenseStatus: {
+        type: String,
+        enum: ['not_required', 'pending', 'approved', 'rejected'],
+        default: 'not_required',
+        index: true
+    },
+    licenseVerifiedAt: Date,
+    licenseVerifiedBy: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    licenseRejectionReason: String,
+    parentUserId: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'User',
+        index: true
+    },
+    teamMembers: [{
+            type: mongoose_1.default.Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+    permissions: [{
+            type: String,
+            index: true
+        }],
+    subscriptionTier: {
+        type: String,
+        enum: ['free_trial', 'basic', 'pro', 'enterprise'],
+        default: 'free_trial',
+        index: true
+    },
+    trialStartDate: Date,
+    trialEndDate: Date,
+    features: [{
+            type: String,
+            index: true
+        }]
 }, { timestamps: true });
 userSchema.pre('save', async function (next) {
     if (!this.isModified('passwordHash'))
@@ -140,5 +189,26 @@ userSchema.methods.generateResetToken = function () {
     this.resetToken = crypto_1.default.createHash('sha256').update(token).digest('hex');
     return token;
 };
+userSchema.methods.hasPermission = function (permission) {
+    return this.permissions.includes(permission) || this.role === 'super_admin';
+};
+userSchema.methods.hasFeature = function (feature) {
+    return this.features.includes(feature) || this.role === 'super_admin';
+};
+userSchema.pre('save', function (next) {
+    if (this.isNew || this.isModified('role')) {
+        if (this.role === 'pharmacist' || this.role === 'intern_pharmacist') {
+            this.licenseStatus = this.licenseStatus === 'not_required' ? 'pending' : this.licenseStatus;
+        }
+        else {
+            this.licenseStatus = 'not_required';
+        }
+        if (this.isNew && this.subscriptionTier === 'free_trial') {
+            this.trialStartDate = new Date();
+            this.trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+        }
+    }
+    next();
+});
 exports.default = mongoose_1.default.model('User', userSchema);
 //# sourceMappingURL=User.js.map

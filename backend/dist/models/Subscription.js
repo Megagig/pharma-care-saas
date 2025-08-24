@@ -48,8 +48,15 @@ const subscriptionSchema = new mongoose_1.Schema({
     },
     status: {
         type: String,
-        enum: ['active', 'inactive', 'cancelled', 'expired', 'trial'],
-        default: 'trial'
+        enum: ['active', 'inactive', 'cancelled', 'expired', 'trial', 'grace_period', 'suspended'],
+        default: 'trial',
+        index: true
+    },
+    tier: {
+        type: String,
+        enum: ['free_trial', 'basic', 'pro', 'enterprise'],
+        required: true,
+        index: true
     },
     startDate: {
         type: Date,
@@ -72,7 +79,93 @@ const subscriptionSchema = new mongoose_1.Schema({
         type: Boolean,
         default: true
     },
-    trialEnd: Date
+    trialEnd: Date,
+    gracePeriodEnd: Date,
+    stripeSubscriptionId: {
+        type: String,
+        sparse: true,
+        index: true
+    },
+    stripeCustomerId: {
+        type: String,
+        sparse: true,
+        index: true
+    },
+    webhookEvents: [{
+            eventId: {
+                type: String,
+                required: true
+            },
+            eventType: {
+                type: String,
+                required: true
+            },
+            processedAt: {
+                type: Date,
+                default: Date.now
+            },
+            data: mongoose_1.Schema.Types.Mixed
+        }],
+    renewalAttempts: [{
+            attemptedAt: {
+                type: Date,
+                default: Date.now
+            },
+            successful: {
+                type: Boolean,
+                required: true
+            },
+            error: String
+        }],
+    features: [{
+            type: String,
+            index: true
+        }],
+    customFeatures: [{
+            type: String,
+            index: true
+        }],
+    usageMetrics: [{
+            feature: {
+                type: String,
+                required: true
+            },
+            count: {
+                type: Number,
+                default: 0
+            },
+            lastUpdated: {
+                type: Date,
+                default: Date.now
+            }
+        }]
 }, { timestamps: true });
+subscriptionSchema.methods.isInGracePeriod = function () {
+    return this.status === 'grace_period' && this.gracePeriodEnd && new Date() <= this.gracePeriodEnd;
+};
+subscriptionSchema.methods.isExpired = function () {
+    return new Date() > this.endDate && !this.isInGracePeriod();
+};
+subscriptionSchema.methods.canRenew = function () {
+    return this.autoRenew && ['active', 'grace_period'].includes(this.status);
+};
+subscriptionSchema.pre('save', function (next) {
+    const now = new Date();
+    if (this.isModified('endDate') || this.isNew) {
+        if (now > this.endDate) {
+            if (this.gracePeriodEnd && now <= this.gracePeriodEnd) {
+                this.status = 'grace_period';
+            }
+            else {
+                this.status = 'expired';
+            }
+        }
+    }
+    next();
+});
+subscriptionSchema.index({ userId: 1, status: 1 });
+subscriptionSchema.index({ endDate: 1, status: 1 });
+subscriptionSchema.index({ stripeSubscriptionId: 1 }, { sparse: true });
+subscriptionSchema.index({ tier: 1, status: 1 });
 exports.default = mongoose_1.default.model('Subscription', subscriptionSchema);
 //# sourceMappingURL=Subscription.js.map

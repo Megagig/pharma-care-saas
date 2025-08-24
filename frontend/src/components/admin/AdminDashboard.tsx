@@ -29,21 +29,17 @@ import {
   Tabs,
   Tab,
   Badge,
-  Tooltip
+  Tooltip,
 } from '@mui/material';
-import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Block as BlockIcon,
-  CheckCircle as ApproveIcon,
-  Cancel as RejectIcon,
-  Visibility as ViewIcon,
-  Download as DownloadIcon,
-  People as PeopleIcon,
-  Assignment as LicenseIcon,
-  Analytics as AnalyticsIcon,
-  Settings as SettingsIcon
-} from '@mui/icons-material';
+import EditIcon from '@mui/icons-material/Edit';
+import BlockIcon from '@mui/icons-material/Block';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import DownloadIcon from '@mui/icons-material/Download';
+import PeopleIcon from '@mui/icons-material/People';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useUIStore } from '../../stores';
 import LoadingSpinner from '../LoadingSpinner';
 
@@ -76,7 +72,12 @@ interface License {
 
 interface Analytics {
   users: { _id: string; count: number; active: number }[];
-  subscriptions: { _id: string; count: number; active: number; revenue: number }[];
+  subscriptions: {
+    _id: string;
+    count: number;
+    active: number;
+    revenue: number;
+  }[];
   licenses: { _id: string; count: number }[];
   generated: string;
 }
@@ -96,13 +97,14 @@ const AdminDashboard: React.FC = () => {
   const [filters, setFilters] = useState({
     role: '',
     status: '',
-    licenseStatus: ''
+    licenseStatus: '',
   });
-  
-  const addNotification = useUIStore(state => state.addNotification);
+
+  const addNotification = useUIStore((state) => state.addNotification);
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, filters]);
 
   const loadData = async () => {
@@ -119,12 +121,12 @@ const AdminDashboard: React.FC = () => {
           await loadAnalytics();
           break;
       }
-    } catch (error) {
+    } catch {
       addNotification({
         type: 'error',
         title: 'Error',
         message: 'Failed to load data',
-        duration: 5000
+        duration: 5000,
       });
     } finally {
       setLoading(false);
@@ -135,15 +137,15 @@ const AdminDashboard: React.FC = () => {
     const queryParams = new URLSearchParams({
       page: (page + 1).toString(),
       limit: rowsPerPage.toString(),
-      ...filters
+      ...filters,
     });
-    
+
     const response = await fetch(`/api/admin/users?${queryParams}`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      }
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+      },
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       setUsers(data.data.users);
@@ -153,10 +155,10 @@ const AdminDashboard: React.FC = () => {
   const loadLicenses = async () => {
     const response = await fetch('/api/admin/licenses/pending', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      }
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+      },
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       setLicenses(data.data.licenses);
@@ -166,10 +168,10 @@ const AdminDashboard: React.FC = () => {
   const loadAnalytics = async () => {
     const response = await fetch('/api/admin/analytics', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      }
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+      },
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       setAnalytics(data.data);
@@ -182,27 +184,27 @@ const AdminDashboard: React.FC = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         },
-        body: JSON.stringify({ role })
+        body: JSON.stringify({ role }),
       });
-      
+
       if (response.ok) {
         addNotification({
           type: 'success',
           title: 'Success',
           message: 'User role updated successfully',
-          duration: 5000
+          duration: 5000,
         });
         loadUsers();
         setEditDialogOpen(false);
       }
-    } catch (error) {
+    } catch {
       addNotification({
         type: 'error',
         title: 'Error',
         message: 'Failed to update user role',
-        duration: 5000
+        duration: 5000,
       });
     }
   };
@@ -213,26 +215,26 @@ const AdminDashboard: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         },
-        body: JSON.stringify({ reason: 'Administrative action' })
+        body: JSON.stringify({ reason: 'Administrative action' }),
       });
-      
+
       if (response.ok) {
         addNotification({
           type: 'success',
           title: 'Success',
           message: 'User suspended successfully',
-          duration: 5000
+          duration: 5000,
         });
         loadUsers();
       }
-    } catch (error) {
+    } catch {
       addNotification({
         type: 'error',
         title: 'Error',
         message: 'Failed to suspend user',
-        duration: 5000
+        duration: 5000,
       });
     }
   };
@@ -243,26 +245,26 @@ const AdminDashboard: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         },
-        body: JSON.stringify({ notes: 'Approved by admin' })
+        body: JSON.stringify({ notes: 'Approved by admin' }),
       });
-      
+
       if (response.ok) {
         addNotification({
           type: 'success',
           title: 'Success',
           message: 'License approved successfully',
-          duration: 5000
+          duration: 5000,
         });
         loadLicenses();
       }
-    } catch (error) {
+    } catch {
       addNotification({
         type: 'error',
         title: 'Error',
         message: 'Failed to approve license',
-        duration: 5000
+        duration: 5000,
       });
     }
   };
@@ -273,54 +275,84 @@ const AdminDashboard: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         },
-        body: JSON.stringify({ reason })
+        body: JSON.stringify({ reason }),
       });
-      
+
       if (response.ok) {
         addNotification({
           type: 'success',
           title: 'Success',
           message: 'License rejected',
-          duration: 5000
+          duration: 5000,
         });
         loadLicenses();
         setLicenseDialogOpen(false);
       }
-    } catch (error) {
+    } catch {
       addNotification({
         type: 'error',
         title: 'Error',
         message: 'Failed to reject license',
-        duration: 5000
+        duration: 5000,
       });
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (
+    status: string
+  ):
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'error'
+    | 'info'
+    | 'success'
+    | 'warning' => {
     switch (status) {
-      case 'active': return 'success';
-      case 'pending': return 'warning';
-      case 'suspended': return 'error';
-      case 'approved': return 'success';
-      case 'rejected': return 'error';
-      default: return 'default';
+      case 'active':
+        return 'success';
+      case 'pending':
+        return 'warning';
+      case 'suspended':
+        return 'error';
+      case 'approved':
+        return 'success';
+      case 'rejected':
+        return 'error';
+      default:
+        return 'default';
     }
   };
 
-  const getRoleColor = (role: string) => {
+  const getRoleColor = (
+    role: string
+  ):
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'error'
+    | 'info'
+    | 'success'
+    | 'warning' => {
     switch (role) {
-      case 'super_admin': return 'error';
-      case 'pharmacy_outlet': return 'primary';
-      case 'pharmacy_team': return 'secondary';
-      case 'pharmacist': return 'info';
-      case 'intern_pharmacist': return 'warning';
-      default: return 'default';
+      case 'super_admin':
+        return 'error';
+      case 'pharmacy_outlet':
+        return 'primary';
+      case 'pharmacy_team':
+        return 'secondary';
+      case 'pharmacist':
+        return 'info';
+      case 'intern_pharmacist':
+        return 'warning';
+      default:
+        return 'default';
     }
   };
 
-  if (loading && (!users.length && !licenses.length && !analytics)) {
+  if (loading && !users.length && !licenses.length && !analytics) {
     return <LoadingSpinner message="Loading admin dashboard..." />;
   }
 
@@ -329,27 +361,34 @@ const AdminDashboard: React.FC = () => {
       <Typography variant="h4" gutterBottom>
         Admin Dashboard
       </Typography>
-      
+
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
-          <Tab 
-            icon={<PeopleIcon />} 
-            label="User Management" 
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+        >
+          <Tab
+            icon={<PeopleIcon />}
+            label="User Management"
             iconPosition="start"
           />
-          <Tab 
-            icon={<Badge badgeContent={licenses.length} color="error"><LicenseIcon /></Badge>} 
-            label="License Verification" 
+          <Tab
+            icon={
+              <Badge badgeContent={licenses.length} color="error">
+                <AssignmentIcon />
+              </Badge>
+            }
+            label="License Verification"
             iconPosition="start"
           />
-          <Tab 
-            icon={<AnalyticsIcon />} 
-            label="Analytics" 
+          <Tab
+            icon={<AnalyticsIcon />}
+            label="Analytics"
             iconPosition="start"
           />
-          <Tab 
-            icon={<SettingsIcon />} 
-            label="System Settings" 
+          <Tab
+            icon={<SettingsIcon />}
+            label="System Settings"
             iconPosition="start"
           />
         </Tabs>
@@ -359,33 +398,39 @@ const AdminDashboard: React.FC = () => {
       {activeTab === 0 && (
         <>
           {/* Filters */}
-          <Grid container spacing={2} mb={3}>
-            <Grid item xs={12} md={3}>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <FormControl fullWidth>
                 <InputLabel>Role</InputLabel>
                 <Select
                   value={filters.role}
-                  onChange={(e) => setFilters({ ...filters, role: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, role: e.target.value })
+                  }
                 >
-                  <MenuItem value=\"\">All Roles</MenuItem>
-                  <MenuItem value=\"pharmacist\">Pharmacist</MenuItem>
-                  <MenuItem value=\"pharmacy_team\">Pharmacy Team</MenuItem>
-                  <MenuItem value=\"pharmacy_outlet\">Pharmacy Outlet</MenuItem>
-                  <MenuItem value=\"intern_pharmacist\">Intern Pharmacist</MenuItem>
+                  <MenuItem value="">All Roles</MenuItem>
+                  <MenuItem value="pharmacist">Pharmacist</MenuItem>
+                  <MenuItem value="pharmacy_team">Pharmacy Team</MenuItem>
+                  <MenuItem value="pharmacy_outlet">Pharmacy Outlet</MenuItem>
+                  <MenuItem value="intern_pharmacist">
+                    Intern Pharmacist
+                  </MenuItem>
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <FormControl fullWidth>
                 <InputLabel>Status</InputLabel>
                 <Select
                   value={filters.status}
-                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, status: e.target.value })
+                  }
                 >
-                  <MenuItem value=\"\">All Statuses</MenuItem>
-                  <MenuItem value=\"active\">Active</MenuItem>
-                  <MenuItem value=\"pending\">Pending</MenuItem>
-                  <MenuItem value=\"suspended\">Suspended</MenuItem>
+                  <MenuItem value="">All Statuses</MenuItem>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="suspended">Suspended</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -413,36 +458,36 @@ const AdminDashboard: React.FC = () => {
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={user.role.replace('_', ' ')} 
-                        color={getRoleColor(user.role) as any}
-                        size=\"small\"
+                      <Chip
+                        label={user.role.replace('_', ' ')}
+                        color={getRoleColor(user.role)}
+                        size="small"
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={user.status} 
-                        color={getStatusColor(user.status) as any}
-                        size=\"small\"
+                      <Chip
+                        label={user.status}
+                        color={getStatusColor(user.status)}
+                        size="small"
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={user.licenseStatus} 
-                        color={getStatusColor(user.licenseStatus) as any}
-                        size=\"small\"
+                      <Chip
+                        label={user.licenseStatus}
+                        color={getStatusColor(user.licenseStatus)}
+                        size="small"
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={user.subscriptionTier} 
-                        variant=\"outlined\"
-                        size=\"small\"
+                      <Chip
+                        label={user.subscriptionTier}
+                        variant="outlined"
+                        size="small"
                       />
                     </TableCell>
                     <TableCell>
-                      <Tooltip title=\"Edit User\">
-                        <IconButton 
+                      <Tooltip title="Edit User">
+                        <IconButton
                           onClick={() => {
                             setSelectedUser(user);
                             setEditDialogOpen(true);
@@ -451,8 +496,8 @@ const AdminDashboard: React.FC = () => {
                           <EditIcon />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title=\"Suspend User\">
-                        <IconButton 
+                      <Tooltip title="Suspend User">
+                        <IconButton
                           onClick={() => handleSuspendUser(user._id)}
                           disabled={user.status === 'suspended'}
                         >
@@ -465,12 +510,14 @@ const AdminDashboard: React.FC = () => {
               </TableBody>
             </Table>
             <TablePagination
-              component=\"div\"
+              component="div"
               count={-1}
               page={page}
               onPageChange={(_, newPage) => setPage(newPage)}
               rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value))}
+              onRowsPerPageChange={(e) =>
+                setRowsPerPage(parseInt(e.target.value))
+              }
             />
           </TableContainer>
         </>
@@ -501,9 +548,12 @@ const AdminDashboard: React.FC = () => {
                   <TableCell>
                     <Button
                       startIcon={<DownloadIcon />}
-                      size=\"small\"
+                      size="small"
                       onClick={() => {
-                        window.open(`/api/license/document/${license._id}`, '_blank');
+                        window.open(
+                          `/api/license/document/${license._id}`,
+                          '_blank'
+                        );
                       }}
                     >
                       {license.licenseDocument.fileName}
@@ -513,23 +563,23 @@ const AdminDashboard: React.FC = () => {
                     {new Date(license.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <Tooltip title=\"Approve License\">
-                      <IconButton 
+                    <Tooltip title="Approve License">
+                      <IconButton
                         onClick={() => handleApproveLicense(license._id)}
-                        color=\"success\"
+                        color="success"
                       >
-                        <ApproveIcon />
+                        <CheckCircleIcon />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title=\"Reject License\">
-                      <IconButton 
+                    <Tooltip title="Reject License">
+                      <IconButton
                         onClick={() => {
                           setSelectedLicense(license);
                           setLicenseDialogOpen(true);
                         }}
-                        color=\"error\"
+                        color="error"
                       >
-                        <RejectIcon />
+                        <CancelIcon />
                       </IconButton>
                     </Tooltip>
                   </TableCell>
@@ -543,16 +593,21 @@ const AdminDashboard: React.FC = () => {
       {/* Analytics Tab */}
       {activeTab === 2 && analytics && (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Card>
               <CardContent>
-                <Typography variant=\"h6\" gutterBottom>
+                <Typography variant="h6" gutterBottom>
                   User Statistics
                 </Typography>
                 {analytics.users.map((stat) => (
-                  <Box key={stat._id} display=\"flex\" justifyContent=\"space-between\" mb={1}>
-                    <Typography variant=\"body2\">{stat._id}:</Typography>
-                    <Typography variant=\"body2\">
+                  <Box
+                    key={stat._id}
+                    display="flex"
+                    justifyContent="space-between"
+                    mb={1}
+                  >
+                    <Typography variant="body2">{stat._id}:</Typography>
+                    <Typography variant="body2">
                       {stat.active}/{stat.count}
                     </Typography>
                   </Box>
@@ -560,20 +615,20 @@ const AdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </Grid>
-          
-          <Grid item xs={12} md={4}>
+
+          <Grid size={{ xs: 12, md: 4 }}>
             <Card>
               <CardContent>
-                <Typography variant=\"h6\" gutterBottom>
+                <Typography variant="h6" gutterBottom>
                   Subscription Statistics
                 </Typography>
                 {analytics.subscriptions.map((stat) => (
-                  <Box key={stat._id} mb={1}>
-                    <Box display=\"flex\" justifyContent=\"space-between\">
-                      <Typography variant=\"body2\">{stat._id}:</Typography>
-                      <Typography variant=\"body2\">{stat.count}</Typography>
+                  <Box key={stat._id} sx={{ mb: 1 }}>
+                    <Box display="flex" justifyContent="space-between">
+                      <Typography variant="body2">{stat._id}:</Typography>
+                      <Typography variant="body2">{stat.count}</Typography>
                     </Box>
-                    <Typography variant=\"caption\" color=\"text.secondary\">
+                    <Typography variant="caption" color="text.secondary">
                       Revenue: ₦{stat.revenue?.toLocaleString()}
                     </Typography>
                   </Box>
@@ -581,17 +636,22 @@ const AdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </Grid>
-          
-          <Grid item xs={12} md={4}>
+
+          <Grid size={{ xs: 12, md: 4 }}>
             <Card>
               <CardContent>
-                <Typography variant=\"h6\" gutterBottom>
+                <Typography variant="h6" gutterBottom>
                   License Statistics
                 </Typography>
                 {analytics.licenses.map((stat) => (
-                  <Box key={stat._id} display=\"flex\" justifyContent=\"space-between\" mb={1}>
-                    <Typography variant=\"body2\">{stat._id}:</Typography>
-                    <Typography variant=\"body2\">{stat.count}</Typography>
+                  <Box
+                    key={stat._id}
+                    display="flex"
+                    justifyContent="space-between"
+                    mb={1}
+                  >
+                    <Typography variant="body2">{stat._id}:</Typography>
+                    <Typography variant="body2">{stat.count}</Typography>
                   </Box>
                 ))}
               </CardContent>
@@ -602,30 +662,39 @@ const AdminDashboard: React.FC = () => {
 
       {/* System Settings Tab */}
       {activeTab === 3 && (
-        <Alert severity=\"info\">
+        <Alert severity="info">
           System settings panel will be available in the next update.
         </Alert>
       )}
 
       {/* Edit User Dialog */}
-      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth=\"sm\" fullWidth>
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Edit User Role</DialogTitle>
         <DialogContent>
           {selectedUser && (
             <Box pt={1}>
-              <Typography variant=\"body1\" gutterBottom>
+              <Typography variant="body1" gutterBottom>
                 User: {selectedUser.firstName} {selectedUser.lastName}
               </Typography>
               <FormControl fullWidth>
                 <InputLabel>Role</InputLabel>
                 <Select
                   value={selectedUser.role}
-                  onChange={(e) => setSelectedUser({ ...selectedUser, role: e.target.value })}
+                  onChange={(e) =>
+                    setSelectedUser({ ...selectedUser, role: e.target.value })
+                  }
                 >
-                  <MenuItem value=\"pharmacist\">Pharmacist</MenuItem>
-                  <MenuItem value=\"pharmacy_team\">Pharmacy Team</MenuItem>
-                  <MenuItem value=\"pharmacy_outlet\">Pharmacy Outlet</MenuItem>
-                  <MenuItem value=\"intern_pharmacist\">Intern Pharmacist</MenuItem>
+                  <MenuItem value="pharmacist">Pharmacist</MenuItem>
+                  <MenuItem value="pharmacy_team">Pharmacy Team</MenuItem>
+                  <MenuItem value="pharmacy_outlet">Pharmacy Outlet</MenuItem>
+                  <MenuItem value="intern_pharmacist">
+                    Intern Pharmacist
+                  </MenuItem>
                 </Select>
               </FormControl>
             </Box>
@@ -633,9 +702,12 @@ const AdminDashboard: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={() => selectedUser && handleUpdateUserRole(selectedUser._id, selectedUser.role)}
-            variant=\"contained\"
+          <Button
+            onClick={() =>
+              selectedUser &&
+              handleUpdateUserRole(selectedUser._id, selectedUser.role)
+            }
+            variant="contained"
           >
             Update Role
           </Button>
@@ -643,30 +715,37 @@ const AdminDashboard: React.FC = () => {
       </Dialog>
 
       {/* License Rejection Dialog */}
-      <Dialog open={licenseDialogOpen} onClose={() => setLicenseDialogOpen(false)} maxWidth=\"sm\" fullWidth>
+      <Dialog
+        open={licenseDialogOpen}
+        onClose={() => setLicenseDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Reject License</DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
             multiline
             rows={4}
-            label=\"Rejection Reason\"
-            placeholder=\"Please provide a reason for rejecting this license...\"
-            margin=\"normal\"
-            id=\"rejection-reason\"
+            label="Rejection Reason"
+            placeholder="Please provide a reason for rejecting this license..."
+            margin="normal"
+            id="rejection-reason"
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setLicenseDialogOpen(false)}>Cancel</Button>
-          <Button 
+          <Button
             onClick={() => {
-              const reason = (document.getElementById('rejection-reason') as HTMLInputElement)?.value;
+              const reason = (
+                document.getElementById('rejection-reason') as HTMLInputElement
+              )?.value;
               if (selectedLicense && reason) {
                 handleRejectLicense(selectedLicense._id, reason);
               }
             }}
-            variant=\"contained\"
-            color=\"error\"
+            variant="contained"
+            color="error"
           >
             Reject License
           </Button>

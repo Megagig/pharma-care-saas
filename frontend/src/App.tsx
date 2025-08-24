@@ -52,165 +52,191 @@ function App(): JSX.Element {
           <CssBaseline />
           <AuthProvider>
             <Router>
-          <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#363636',
-                  color: '#fff',
-                },
-                success: {
-                  duration: 3000,
-                  iconTheme: {
-                    primary: '#4ade80',
-                    secondary: '#fff',
-                  },
-                },
-                error: {
-                  duration: 4000,
-                  iconTheme: {
-                    primary: '#ef4444',
-                    secondary: '#fff',
-                  },
-                },
-              }}
-            />
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Landing />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+              <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+                <Toaster
+                  position="top-right"
+                  toastOptions={{
+                    duration: 4000,
+                    style: {
+                      background: '#363636',
+                      color: '#fff',
+                    },
+                    success: {
+                      duration: 3000,
+                      iconTheme: {
+                        primary: '#4ade80',
+                        secondary: '#fff',
+                      },
+                    },
+                    error: {
+                      duration: 4000,
+                      iconTheme: {
+                        primary: '#ef4444',
+                        secondary: '#fff',
+                      },
+                    },
+                  }}
+                />
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/verify-email" element={<VerifyEmail />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
 
-              {/* Protected Routes */}
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute requiresActiveSubscription>
-                    <AppLayout>
-                      <Dashboard />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/patients"
-                element={
-                  <ProtectedRoute 
-                    requiredFeature="patient_management"
-                    requiresActiveSubscription
-                  >
-                    <AppLayout>
-                      <Patients />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/notes"
-                element={
-                  <ProtectedRoute 
-                    requiredFeature="clinical_notes"
-                    requiresLicense
-                    requiresActiveSubscription
-                  >
-                    <AppLayout>
-                      <ClinicalNotes />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/medications"
-                element={
-                  <ProtectedRoute 
-                    requiredFeature="medication_management"
-                    requiresActiveSubscription
-                  >
-                    <AppLayout>
-                      <Medications />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/subscriptions"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout>
-                      <Subscriptions />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/reports"
-                element={
-                  <ProtectedRoute 
-                    requiredFeature="basic_reports"
-                    requiresActiveSubscription
-                  >
-                    <AppLayout>
-                      <Reports />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              
-              {/* Admin Routes */}
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute requiredRole="super_admin">
-                    <AppLayout>
-                      <AdminDashboard />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              
-              {/* License Management */}
-              <Route
-                path="/license"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout>
-                      <LicenseUpload />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              
-              {/* Enhanced Subscription Management */}
-              <Route
-                path="/subscription-management"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout>
-                      <SubscriptionManagement />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
+                  {/* Protected Routes */}
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute requiresActiveSubscription>
+                        <AppLayout>
+                          <Dashboard />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/patients"
+                    element={
+                      <ProtectedRoute
+                        requiredFeature="patient_management"
+                        requiresActiveSubscription
+                      >
+                        <AppLayout>
+                          <Patients />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/notes"
+                    element={
+                      <ProtectedRoute
+                        requiredFeature="clinical_notes"
+                        requiresLicense
+                        requiresActiveSubscription
+                      >
+                        <AppLayout>
+                          <ClinicalNotes />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/medications"
+                    element={
+                      <ProtectedRoute
+                        requiredFeature="medication_management"
+                        requiresActiveSubscription
+                      >
+                        <AppLayout>
+                          <Medications />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/subscriptions"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout>
+                          <Subscriptions />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reports"
+                    element={
+                      <ProtectedRoute
+                        requiredFeature="basic_reports"
+                        requiresActiveSubscription
+                      >
+                        <AppLayout>
+                          <Reports />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
 
-              {/* Redirect any unknown routes to dashboard */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </Box>
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
-    {/* React Query DevTools - only shows in development */}
-    <ReactQueryDevtools initialIsOpen={false} />
-  </QueryClientProvider>
-</ErrorBoundary>
+                  {/* Admin Routes */}
+                  <Route
+                    path="/admin"
+                    element={
+                      <ProtectedRoute requiredRole="super_admin">
+                        <AppLayout>
+                          <AdminDashboard />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* License Management */}
+                  <Route
+                    path="/license"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout>
+                          <LicenseUpload />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Enhanced Subscription Management */}
+                  <Route
+                    path="/subscription-management"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout>
+                          <SubscriptionManagement />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Subscription Plans - This should not require active subscription */}
+                  <Route
+                    path="/dashboard/subscription/plans"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout>
+                          <SubscriptionManagement />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/subscription/plans"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout>
+                          <SubscriptionManagement />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Redirect any unknown routes to dashboard */}
+                  <Route
+                    path="*"
+                    element={<Navigate to="/dashboard" replace />}
+                  />
+                </Routes>
+              </Box>
+            </Router>
+          </AuthProvider>
+        </ThemeProvider>
+        {/* React Query DevTools - only shows in development */}
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -19,6 +19,9 @@ const patientRoutes_1 = __importDefault(require("./routes/patientRoutes"));
 const noteRoutes_1 = __importDefault(require("./routes/noteRoutes"));
 const medicationRoutes_1 = __importDefault(require("./routes/medicationRoutes"));
 const paymentRoutes_1 = __importDefault(require("./routes/paymentRoutes"));
+const admin_1 = __importDefault(require("./routes/admin"));
+const license_1 = __importDefault(require("./routes/license"));
+const subscription_1 = __importDefault(require("./routes/subscription"));
 const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
@@ -53,6 +56,19 @@ app.use('/api/patients', patientRoutes_1.default);
 app.use('/api/notes', noteRoutes_1.default);
 app.use('/api/medications', medicationRoutes_1.default);
 app.use('/api/payments', paymentRoutes_1.default);
+app.use('/api/admin', admin_1.default);
+app.use('/api/license', license_1.default);
+app.use('/api/subscription-management', subscription_1.default);
+app.use('/uploads', express_1.default.static('uploads', {
+    maxAge: '1d',
+    setHeaders: (res, path) => {
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'DENY');
+        if (path.endsWith('.pdf')) {
+            res.setHeader('Content-Disposition', 'inline');
+        }
+    }
+}));
 app.all('*', (req, res) => {
     res.status(404).json({ message: `Route ${req.originalUrl} not found` });
 });

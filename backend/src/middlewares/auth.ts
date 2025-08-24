@@ -1,25 +1,46 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import User from '../models/User';
+import User, { IUser } from '../models/User';
 import SubscriptionPlan from '../models/SubscriptionPlan';
-import Subscription from '../models/Subscription';
+import Subscription, { ISubscription } from '../models/Subscription';
 import FeatureFlag from '../models/FeatureFlag';
 
 interface AuthRequest extends Request {
-  user?: any;
-  subscription?: any;
+  user?: IUser & {
+    currentUsage?: number;
+    usageLimit?: number;
+  };
+  subscription?: ISubscription | null;
 }
 
+// Define role types
+type UserRole =
+  | 'pharmacist'
+  | 'pharmacy_team'
+  | 'pharmacy_outlet'
+  | 'intern_pharmacist'
+  | 'super_admin';
+
 // Role hierarchy for permission inheritance
-const ROLE_HIERARCHY = {
-  'super_admin': ['super_admin', 'pharmacy_outlet', 'pharmacy_team', 'pharmacist', 'intern_pharmacist'],
-  'pharmacy_outlet': ['pharmacy_outlet', 'pharmacy_team', 'pharmacist'],
-  'pharmacy_team': ['pharmacy_team', 'pharmacist'],
-  'pharmacist': ['pharmacist'],
-  'intern_pharmacist': ['intern_pharmacist']
+const ROLE_HIERARCHY: Record<UserRole, UserRole[]> = {
+  super_admin: [
+    'super_admin',
+    'pharmacy_outlet',
+    'pharmacy_team',
+    'pharmacist',
+    'intern_pharmacist',
+  ],
+  pharmacy_outlet: ['pharmacy_outlet', 'pharmacy_team', 'pharmacist'],
+  pharmacy_team: ['pharmacy_team', 'pharmacist'],
+  pharmacist: ['pharmacist'],
+  intern_pharmacist: ['intern_pharmacist'],
 };
 
-export const auth = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+export const auth = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
@@ -28,7 +49,9 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction):
       return;
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      userId: string;
+    };
     const user = await User.findById(decoded.userId)
       .populate('currentPlanId')
       .populate('parentUserId', 'firstName lastName role')
@@ -42,10 +65,13 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction):
 
     // Check if user account is active
     if (!['active', 'license_pending'].includes(user.status)) {
-      res.status(401).json({ 
+      res.status(401).json({
         message: 'Account is not active.',
         status: user.status,
-        requiresAction: user.status === 'license_pending' ? 'license_verification' : 'account_activation'
+        requiresAction:
+          user.status === 'license_pending'
+            ? 'license_verification'
+            : 'account_activation',
       });
       return;
     }
@@ -53,15 +79,15 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction):
     // Get user's subscription
     const subscription = await Subscription.findOne({
       userId: user._id,
-      status: { $in: ['active', 'trial', 'grace_period'] }
+      status: { $in: ['active', 'trial', 'grace_period'] },
     }).populate('planId');
 
     // Check subscription validity
     if (!subscription || subscription.isExpired()) {
-      res.status(402).json({ 
+      res.status(402).json({
         message: 'Subscription expired or not found.',
         requiresPayment: true,
-        subscriptionStatus: subscription?.status || 'none'
+        subscriptionStatus: subscription?.status || 'none',
       });
       return;
     }
@@ -78,24 +104,84 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction):
   }
 };
 
-export const authorize = (...roles: string[]) => {
+// Authentication middleware that doesn't enforce subscription requirements
+// Useful for subscription management endpoints where users need access to upgrade
+export const authOptionalSubscription = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+      res.status(401).json({ message: 'Access denied. No token provided.' });
+      return;
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      userId: string;
+    };
+    const user = await User.findById(decoded.userId)
+      .populate('currentPlanId')
+      .populate('parentUserId', 'firstName lastName role')
+      .populate('teamMembers', 'firstName lastName role status')
+      .select('-passwordHash');
+
+    if (!user) {
+      res.status(401).json({ message: 'Invalid token.' });
+      return;
+    }
+
+    // Check if user account is active
+    if (!['active', 'license_pending'].includes(user.status)) {
+      res.status(401).json({
+        message: 'Account is not active.',
+        status: user.status,
+        requiresAction:
+          user.status === 'license_pending'
+            ? 'license_verification'
+            : 'account_activation',
+      });
+      return;
+    }
+
+    // Get user's subscription (optional - don't block if none)
+    const subscription = await Subscription.findOne({
+      userId: user._id,
+      status: { $in: ['active', 'trial', 'grace_period'] },
+    }).populate('planId');
+
+    req.user = user;
+    req.subscription = subscription || undefined; // May be undefined
+    next();
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ message: 'Token expired.' });
+    } else {
+      res.status(401).json({ message: 'Invalid token.' });
+    }
+  }
+};
+
+export const authorize = (...roles: UserRole[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({ message: 'Access denied.' });
       return;
     }
 
-    const userRole = req.user.role;
-    const hasRole = roles.some(role => {
+    const userRole = req.user.role as UserRole;
+    const hasRole = roles.some((role) => {
       const allowedRoles = ROLE_HIERARCHY[userRole] || [userRole];
       return allowedRoles.includes(role);
     });
 
     if (!hasRole) {
-      res.status(403).json({ 
+      res.status(403).json({
         message: 'Insufficient permissions.',
         requiredRoles: roles,
-        userRole: userRole
+        userRole: userRole,
       });
       return;
     }
@@ -113,10 +199,10 @@ export const requirePermission = (permission: string) => {
     }
 
     if (!req.user.hasPermission(permission)) {
-      res.status(403).json({ 
+      res.status(403).json({
         message: 'Insufficient permissions.',
         requiredPermission: permission,
-        userPermissions: req.user.permissions
+        userPermissions: req.user.permissions,
       });
       return;
     }
@@ -126,19 +212,25 @@ export const requirePermission = (permission: string) => {
 };
 
 // License verification middleware
-export const requireLicense = (req: AuthRequest, res: Response, next: NextFunction): void => {
+export const requireLicense = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
   if (!req.user) {
     res.status(401).json({ message: 'Access denied.' });
     return;
   }
 
-  const requiresLicense = ['pharmacist', 'intern_pharmacist'].includes(req.user.role);
-  
+  const requiresLicense = ['pharmacist', 'intern_pharmacist'].includes(
+    req.user.role
+  );
+
   if (requiresLicense && req.user.licenseStatus !== 'approved') {
-    res.status(403).json({ 
+    res.status(403).json({
       message: 'Valid license required.',
       licenseStatus: req.user.licenseStatus,
-      requiresAction: 'license_verification'
+      requiresAction: 'license_verification',
     });
     return;
   }
@@ -148,7 +240,11 @@ export const requireLicense = (req: AuthRequest, res: Response, next: NextFuncti
 
 // Enhanced feature flag middleware
 export const requireFeature = (featureKey: string) => {
-  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  return async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       if (!req.user || !req.subscription) {
         res.status(401).json({ message: 'Access denied.' });
@@ -156,15 +252,15 @@ export const requireFeature = (featureKey: string) => {
       }
 
       // Get feature flag configuration
-      const featureFlag = await FeatureFlag.findOne({ 
-        key: featureKey, 
-        isActive: true 
+      const featureFlag = await FeatureFlag.findOne({
+        key: featureKey,
+        isActive: true,
       });
 
       if (!featureFlag) {
         res.status(404).json({
           message: 'Feature not found or inactive.',
-          feature: featureKey
+          feature: featureKey,
         });
         return;
       }
@@ -179,16 +275,18 @@ export const requireFeature = (featureKey: string) => {
           feature: featureKey,
           currentTier: subscription.tier,
           requiredTiers: featureFlag.allowedTiers,
-          upgradeRequired: true
+          upgradeRequired: true,
         });
         return;
       }
 
       // Check role access
       if (featureFlag.allowedRoles.length > 0) {
-        const hasRoleAccess = featureFlag.allowedRoles.some(role => {
-          const allowedRoles = ROLE_HIERARCHY[user.role] || [user.role];
-          return allowedRoles.includes(role);
+        const hasRoleAccess = featureFlag.allowedRoles.some((role) => {
+          const allowedRoles = ROLE_HIERARCHY[user.role as UserRole] || [
+            user.role,
+          ];
+          return allowedRoles.includes(role as UserRole);
         });
 
         if (!hasRoleAccess) {
@@ -196,7 +294,7 @@ export const requireFeature = (featureKey: string) => {
             message: 'Feature not available for your role.',
             feature: featureKey,
             userRole: user.role,
-            requiredRoles: featureFlag.allowedRoles
+            requiredRoles: featureFlag.allowedRoles,
           });
           return;
         }
@@ -205,12 +303,15 @@ export const requireFeature = (featureKey: string) => {
       // Check custom rules
       if (featureFlag.customRules) {
         // Check license requirement
-        if (featureFlag.customRules.requiredLicense && user.licenseStatus !== 'approved') {
+        if (
+          featureFlag.customRules.requiredLicense &&
+          user.licenseStatus !== 'approved'
+        ) {
           res.status(403).json({
             message: 'Feature requires verified license.',
             feature: featureKey,
             licenseStatus: user.licenseStatus,
-            requiresAction: 'license_verification'
+            requiresAction: 'license_verification',
           });
           return;
         }
@@ -223,7 +324,7 @@ export const requireFeature = (featureKey: string) => {
               message: 'Team size exceeds feature limit.',
               feature: featureKey,
               currentTeamSize: teamSize,
-              maxAllowed: featureFlag.customRules.maxUsers
+              maxAllowed: featureFlag.customRules.maxUsers,
             });
             return;
           }
@@ -231,7 +332,7 @@ export const requireFeature = (featureKey: string) => {
       }
 
       // Check if user has explicit feature access
-      const hasFeatureAccess = 
+      const hasFeatureAccess =
         subscription.features.includes(featureKey) ||
         subscription.customFeatures.includes(featureKey) ||
         user.features.includes(featureKey) ||
@@ -241,16 +342,19 @@ export const requireFeature = (featureKey: string) => {
         res.status(403).json({
           message: 'Feature not enabled for this account.',
           feature: featureKey,
-          upgradeRequired: true
+          upgradeRequired: true,
         });
         return;
       }
 
       next();
     } catch (error) {
-      res.status(500).json({ 
+      res.status(500).json({
         message: 'Error checking feature access.',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error:
+          process.env.NODE_ENV === 'development'
+            ? (error as Error).message
+            : undefined,
       });
     }
   };
@@ -258,7 +362,11 @@ export const requireFeature = (featureKey: string) => {
 
 // Usage limit middleware with analytics
 export const checkUsageLimit = (featureKey: string, limitKey: string) => {
-  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  return async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       if (!req.user || !req.subscription) {
         res.status(401).json({ message: 'Access denied.' });
@@ -266,10 +374,10 @@ export const checkUsageLimit = (featureKey: string, limitKey: string) => {
       }
 
       const subscription = req.subscription;
-      const plan = subscription.planId;
+      const plan = subscription.planId as any; // This should be populated from the subscription
 
       // Get the limit from the plan
-      const limit = plan.features?.[limitKey];
+      const limit = plan?.features?.[limitKey];
       if (limit === null || limit === undefined) {
         // No limit set, allow access
         next();
@@ -277,7 +385,10 @@ export const checkUsageLimit = (featureKey: string, limitKey: string) => {
       }
 
       // Get current usage
-      const usageMetric = subscription.usageMetrics.find(m => m.feature === featureKey);
+      const usageMetric = subscription.usageMetrics.find(
+        (m: { feature: string; count: number; lastUpdated: Date }) =>
+          m.feature === featureKey
+      );
       const currentUsage = usageMetric ? usageMetric.count : 0;
 
       if (currentUsage >= limit) {
@@ -286,7 +397,7 @@ export const checkUsageLimit = (featureKey: string, limitKey: string) => {
           feature: featureKey,
           limit: limit,
           current: currentUsage,
-          upgradeRequired: true
+          upgradeRequired: true,
         });
         return;
       }
@@ -294,7 +405,7 @@ export const checkUsageLimit = (featureKey: string, limitKey: string) => {
       // Store current usage in request for potential increment
       req.user.currentUsage = currentUsage;
       req.user.usageLimit = limit;
-      
+
       next();
     } catch (error) {
       res.status(500).json({ message: 'Error checking usage limit.' });
@@ -303,7 +414,11 @@ export const checkUsageLimit = (featureKey: string, limitKey: string) => {
 };
 
 // Team management middleware
-export const requireTeamAccess = (req: AuthRequest, res: Response, next: NextFunction): void => {
+export const requireTeamAccess = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
   if (!req.user) {
     res.status(401).json({ message: 'Access denied.' });
     return;
@@ -311,9 +426,9 @@ export const requireTeamAccess = (req: AuthRequest, res: Response, next: NextFun
 
   const allowedRoles = ['pharmacy_team', 'pharmacy_outlet', 'super_admin'];
   if (!allowedRoles.includes(req.user.role)) {
-    res.status(403).json({ 
+    res.status(403).json({
       message: 'Team features not available for your role.',
-      requiredRoles: allowedRoles
+      requiredRoles: allowedRoles,
     });
     return;
   }
@@ -322,16 +437,20 @@ export const requireTeamAccess = (req: AuthRequest, res: Response, next: NextFun
 };
 
 // Admin-only middleware
-export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction): void => {
+export const requireAdmin = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
   if (!req.user) {
     res.status(401).json({ message: 'Access denied.' });
     return;
   }
 
   if (req.user.role !== 'super_admin') {
-    res.status(403).json({ 
+    res.status(403).json({
       message: 'Administrator access required.',
-      userRole: req.user.role
+      userRole: req.user.role,
     });
     return;
   }

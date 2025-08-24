@@ -1,23 +1,46 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-class AuthService {
-  private refreshPromise: Promise<any> | null = null;
+interface RegisterData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phone?: string;
+  role?: string;
+}
 
-  async makeRequest(url: string, options: any = {}) {
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+interface ProfileData {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+}
+
+class AuthService {
+  private refreshPromise: Promise<boolean> | null = null;
+
+  async makeRequest(url: string, options: RequestInit = {}) {
     const token = localStorage.getItem('accessToken');
 
-    const config = {
+    const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...((options.headers as Record<string, string>) || {}),
       },
-      credentials: 'include', // Include cookies for refresh token
+      credentials: 'include' as RequestCredentials,
       ...options,
     };
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (token && config.headers) {
+      (
+        config.headers as Record<string, string>
+      ).Authorization = `Bearer ${token}`;
     }
 
     let response = await fetch(`${API_BASE_URL}${url}`, config);
@@ -31,9 +54,11 @@ class AuthService {
       const refreshed = await this.refreshAccessToken();
       if (refreshed) {
         // Retry the original request with new token
-        config.headers.Authorization = `Bearer ${localStorage.getItem(
-          'accessToken'
-        )}`;
+        if (config.headers) {
+          (
+            config.headers as Record<string, string>
+          ).Authorization = `Bearer ${localStorage.getItem('accessToken')}`;
+        }
         response = await fetch(`${API_BASE_URL}${url}`, config);
       }
     }
@@ -41,9 +66,14 @@ class AuthService {
     const data = await response.json();
 
     if (!response.ok) {
+      // Handle different types of authentication/authorization errors
       if (response.status === 401) {
         this.clearTokens();
         window.location.href = '/login';
+        throw new Error(data.message || 'Authentication failed');
+      } else if (response.status === 402) {
+        // Payment/subscription required - don't logout, just throw error
+        throw new Error(data.message || 'Subscription required');
       }
       throw new Error(data.message || 'An error occurred');
     }
@@ -78,7 +108,8 @@ class AuthService {
         this.clearTokens();
         return false;
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Refresh error:', err);
       this.clearTokens();
       return false;
     }
@@ -88,14 +119,14 @@ class AuthService {
     localStorage.removeItem('accessToken');
   }
 
-  async register(userData: any) {
+  async register(userData: RegisterData) {
     return this.makeRequest('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
   }
 
-  async login(credentials: any) {
+  async login(credentials: LoginCredentials) {
     const response = await this.makeRequest('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
@@ -148,7 +179,7 @@ class AuthService {
     return this.makeRequest('/auth/me');
   }
 
-  async updateProfile(profileData: any) {
+  async updateProfile(profileData: ProfileData) {
     return this.makeRequest('/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(profileData),

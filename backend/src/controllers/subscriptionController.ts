@@ -4,6 +4,7 @@ import User from '../models/User';
 import Subscription from '../models/Subscription';
 import SubscriptionPlan from '../models/SubscriptionPlan';
 import FeatureFlag from '../models/FeatureFlag';
+import Payment from '../models/Payment';
 import { emailService } from '../utils/emailService';
 
 interface AuthRequest extends Request {
@@ -12,31 +13,39 @@ interface AuthRequest extends Request {
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16'
+  apiVersion: '2022-11-15',
 });
 
 export class SubscriptionController {
   // Get current subscription details
-  async getCurrentSubscription(req: AuthRequest, res: Response) {
+  async getCurrentSubscription(req: AuthRequest, res: Response): Promise<any> {
     try {
       const subscription = await Subscription.findOne({
         userId: req.user._id,
-        status: { $in: ['active', 'trial', 'grace_period'] }
+        status: { $in: ['active', 'trial', 'grace_period'] },
       })
         .populate('planId')
         .populate('paymentHistory');
 
       if (!subscription) {
-        return res.status(404).json({
-          success: false,
-          message: 'No active subscription found'
+        // Instead of returning 404, return a structured response indicating no subscription
+        return res.status(200).json({
+          success: true,
+          data: {
+            subscription: null,
+            availableFeatures: [],
+            isExpired: true,
+            isInGracePeriod: false,
+            canRenew: true,
+          },
+          message: 'No active subscription found',
         });
       }
 
       // Get available features for this subscription
       const availableFeatures = await FeatureFlag.find({
         isActive: true,
-        allowedTiers: subscription.tier
+        allowedTiers: subscription.tier,
       }).select('key name description metadata.category');
 
       res.json({
@@ -46,64 +55,65 @@ export class SubscriptionController {
           availableFeatures,
           isExpired: subscription.isExpired(),
           isInGracePeriod: subscription.isInGracePeriod(),
-          canRenew: subscription.canRenew()
-        }
+          canRenew: subscription.canRenew(),
+        },
       });
     } catch (error) {
       res.status(500).json({
         success: false,
         message: 'Error fetching subscription',
-        error: error.message
+        error: (error as Error).message,
       });
     }
   }
 
   // Get available subscription plans
-  async getAvailablePlans(req: AuthRequest, res: Response) {
+  async getAvailablePlans(req: AuthRequest, res: Response): Promise<any> {
     try {
-      const plans = await SubscriptionPlan.find({ isActive: true })
-        .sort({ priceNGN: 1 });
+      const plans = await SubscriptionPlan.find({ isActive: true }).sort({
+        priceNGN: 1,
+      });
 
       // Get features for each plan
       const plansWithFeatures = await Promise.all(
         plans.map(async (plan) => {
-          const tierMapping = {
+          const tierMapping: Record<string, string> = {
             'Free Trial': 'free_trial',
-            'Basic': 'basic',
-            'Pro': 'pro',
-            'Enterprise': 'enterprise'
+            Basic: 'basic',
+            Pro: 'pro',
+            Enterprise: 'enterprise',
           };
-          
+
           const tier = tierMapping[plan.name] || 'basic';
-          
+
           const features = await FeatureFlag.find({
             isActive: true,
-            allowedTiers: tier
+            allowedTiers: tier,
           }).select('key name description metadata.category');
 
           return {
             ...plan.toObject(),
             tier,
-            features
+            features,
           };
         })
       );
 
       res.json({
         success: true,
-        data: plansWithFeatures
+        data: plansWithFeatures,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
         message: 'Error fetching plans',
-        error: error.message
+        error: (error as Error).message,
       });
     }
   }
 
   // Create Stripe checkout session
-  async createCheckoutSession(req: AuthRequest, res: Response) {
+  async createCheckoutSession(req: AuthRequest, res: Response): Promise<any> {
     try {
       const { planId, billingInterval = 'monthly' } = req.body;
 
@@ -111,7 +121,7 @@ export class SubscriptionController {
       if (!plan) {
         return res.status(404).json({
           success: false,
-          message: 'Subscription plan not found'
+          message: 'Subscription plan not found',
         });
       }
 
@@ -125,10 +135,10 @@ export class SubscriptionController {
           name: `${user.firstName} ${user.lastName}`,
           metadata: {
             userId: user._id.toString(),
-            role: user.role
-          }
+            role: user.role,
+          },
         });
-        
+
         stripeCustomerId = customer.id;
         await User.findByIdAndUpdate(user._id, { stripeCustomerId });
       }
@@ -146,16 +156,16 @@ export class SubscriptionController {
                 description: `${plan.name} subscription plan`,
                 metadata: {
                   planId: plan._id.toString(),
-                  tier: plan.name.toLowerCase().replace(' ', '_')
-                }
+                  tier: plan.name.toLowerCase().replace(' ', '_'),
+                },
               },
               unit_amount: plan.priceNGN * 100, // Stripe uses smallest currency unit
               recurring: {
-                interval: billingInterval
-              }
+                interval: billingInterval,
+              },
             },
-            quantity: 1
-          }
+            quantity: 1,
+          },
         ],
         mode: 'subscription',
         success_url: `${process.env.FRONTEND_URL}/dashboard/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -163,28 +173,28 @@ export class SubscriptionController {
         metadata: {
           userId: user._id.toString(),
           planId: plan._id.toString(),
-          billingInterval
-        }
+          billingInterval,
+        },
       });
 
       res.json({
         success: true,
         data: {
           sessionId: session.id,
-          sessionUrl: session.url
-        }
+          sessionUrl: session.url,
+        },
       });
     } catch (error) {
       res.status(500).json({
         success: false,
         message: 'Error creating checkout session',
-        error: error.message
+        error: (error as Error).message,
       });
     }
   }
 
-  // Handle successful payment (called after Stripe checkout)
-  async handleSuccessfulPayment(req: AuthRequest, res: Response) {
+  // Handle successful payment from Stripe
+  async handleSuccessfulPayment(req: AuthRequest, res: Response): Promise<any> {
     try {
       const { sessionId } = req.body;
 
@@ -192,7 +202,7 @@ export class SubscriptionController {
       if (!session || session.payment_status !== 'paid') {
         return res.status(400).json({
           success: false,
-          message: 'Payment not completed'
+          message: 'Payment not completed',
         });
       }
 
@@ -203,7 +213,7 @@ export class SubscriptionController {
       if (!userId || !planId) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid session metadata'
+          message: 'Invalid session metadata',
         });
       }
 
@@ -213,7 +223,7 @@ export class SubscriptionController {
       if (!user || !plan) {
         return res.status(404).json({
           success: false,
-          message: 'User or plan not found'
+          message: 'User or plan not found',
         });
       }
 
@@ -233,17 +243,17 @@ export class SubscriptionController {
       }
 
       // Get features for the plan
-      const tierMapping = {
+      const tierMapping: Record<string, string> = {
         'Free Trial': 'free_trial',
-        'Basic': 'basic',
-        'Pro': 'pro',
-        'Enterprise': 'enterprise'
+        Basic: 'basic',
+        Pro: 'pro',
+        Enterprise: 'enterprise',
       };
       const tier = tierMapping[plan.name] || 'basic';
-      
+
       const features = await FeatureFlag.find({
         isActive: true,
-        allowedTiers: tier
+        allowedTiers: tier,
       });
 
       // Create new subscription
@@ -258,15 +268,19 @@ export class SubscriptionController {
         autoRenew: true,
         stripeSubscriptionId: session.subscription,
         stripeCustomerId: session.customer,
-        features: features.map(f => f.key)
+        features: features.map((f) => f.key),
       });
 
       await subscription.save();
 
       // Update user subscription info
       user.currentSubscriptionId = subscription._id;
-      user.subscriptionTier = tier;
-      user.features = features.map(f => f.key);
+      user.subscriptionTier = tier as
+        | 'free_trial'
+        | 'basic'
+        | 'pro'
+        | 'enterprise';
+      user.features = features.map((f) => f.key);
       await user.save();
 
       // Send confirmation email
@@ -276,37 +290,37 @@ export class SubscriptionController {
         amount: plan.priceNGN,
         billingInterval: billingInterval,
         startDate: startDate,
-        endDate: endDate
+        endDate: endDate,
       });
 
       res.json({
         success: true,
         message: 'Subscription activated successfully',
-        data: subscription
+        data: subscription,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
         message: 'Error processing payment',
-        error: error.message
+        error: (error as Error).message,
       });
     }
   }
 
   // Cancel subscription
-  async cancelSubscription(req: AuthRequest, res: Response) {
+  async cancelSubscription(req: AuthRequest, res: Response): Promise<any> {
     try {
       const { reason } = req.body;
 
       const subscription = await Subscription.findOne({
         userId: req.user._id,
-        status: 'active'
+        status: 'active',
       });
 
       if (!subscription) {
         return res.status(404).json({
           success: false,
-          message: 'No active subscription found'
+          message: 'No active subscription found',
         });
       }
 
@@ -326,19 +340,18 @@ export class SubscriptionController {
       subscription.status = 'grace_period';
       subscription.gracePeriodEnd = gracePeriodEnd;
       subscription.autoRenew = false;
-      
-      if (reason) {
-        subscription.cancellationReason = reason;
-      }
 
       await subscription.save();
+
+      // Get plan details for email
+      const plan = await SubscriptionPlan.findById(subscription.planId);
 
       // Send cancellation confirmation
       await emailService.sendSubscriptionCancellation(req.user.email, {
         firstName: req.user.firstName,
-        planName: subscription.planId.name,
+        planName: plan?.name || 'Unknown Plan',
         gracePeriodEnd: gracePeriodEnd,
-        reason: reason
+        reason: reason,
       });
 
       res.json({
@@ -346,20 +359,20 @@ export class SubscriptionController {
         message: 'Subscription cancelled successfully',
         data: {
           gracePeriodEnd: gracePeriodEnd,
-          accessUntil: gracePeriodEnd
-        }
+          accessUntil: gracePeriodEnd,
+        },
       });
     } catch (error) {
       res.status(500).json({
         success: false,
         message: 'Error cancelling subscription',
-        error: error.message
+        error: (error as Error).message,
       });
     }
   }
 
   // Stripe webhook handler
-  async handleWebhook(req: Request, res: Response) {
+  async handleWebhook(req: Request, res: Response): Promise<any> {
     const sig = req.headers['stripe-signature'];
     let event;
 
@@ -370,8 +383,11 @@ export class SubscriptionController {
         process.env.STRIPE_WEBHOOK_SECRET!
       );
     } catch (err) {
-      console.log(`Webhook signature verification failed.`, err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+      console.log(
+        `Webhook signature verification failed.`,
+        (err as Error).message
+      );
+      return res.status(400).send(`Webhook Error: ${(err as Error).message}`);
     }
 
     try {
@@ -409,7 +425,7 @@ export class SubscriptionController {
 
   private async handleSubscriptionUpdated(stripeSubscription: any) {
     const subscription = await Subscription.findOne({
-      stripeSubscriptionId: stripeSubscription.id
+      stripeSubscriptionId: stripeSubscription.id,
     });
 
     if (subscription) {
@@ -418,14 +434,14 @@ export class SubscriptionController {
       } else if (stripeSubscription.status === 'canceled') {
         subscription.status = 'cancelled';
       }
-      
+
       await subscription.save();
     }
   }
 
   private async handleSubscriptionDeleted(stripeSubscription: any) {
     const subscription = await Subscription.findOne({
-      stripeSubscriptionId: stripeSubscription.id
+      stripeSubscriptionId: stripeSubscription.id,
     });
 
     if (subscription) {
@@ -437,9 +453,9 @@ export class SubscriptionController {
   private async handlePaymentSucceeded(invoice: any) {
     // Handle successful payment and extend subscription
     const stripeSubscriptionId = invoice.subscription;
-    
+
     const subscription = await Subscription.findOne({
-      stripeSubscriptionId: stripeSubscriptionId
+      stripeSubscriptionId: stripeSubscriptionId,
     });
 
     if (subscription) {
@@ -447,14 +463,24 @@ export class SubscriptionController {
       const newEndDate = new Date(invoice.period_end * 1000);
       subscription.endDate = newEndDate;
       subscription.status = 'active';
-      
-      // Add payment to history
-      subscription.paymentHistory.push({
+
+      // Create payment record
+      const payment = new Payment({
+        user: subscription.userId,
+        subscription: subscription._id,
         amount: invoice.amount_paid / 100,
-        paidAt: new Date(invoice.created * 1000),
-        invoiceId: invoice.id
+        currency: 'ngn',
+        paymentMethod: 'credit_card',
+        status: 'completed',
+        stripePaymentIntentId: invoice.payment_intent,
+        transactionId: invoice.id,
       });
-      
+
+      await payment.save();
+
+      // Add payment to history
+      subscription.paymentHistory.push(payment._id);
+
       await subscription.save();
 
       // Send payment confirmation email
@@ -463,7 +489,7 @@ export class SubscriptionController {
         await emailService.sendPaymentConfirmation(user.email, {
           firstName: user.firstName,
           amount: invoice.amount_paid / 100,
-          nextBillingDate: newEndDate
+          nextBillingDate: newEndDate,
         });
       }
     }
@@ -471,9 +497,9 @@ export class SubscriptionController {
 
   private async handlePaymentFailed(invoice: any) {
     const stripeSubscriptionId = invoice.subscription;
-    
+
     const subscription = await Subscription.findOne({
-      stripeSubscriptionId: stripeSubscriptionId
+      stripeSubscriptionId: stripeSubscriptionId,
     });
 
     if (subscription) {
@@ -481,18 +507,18 @@ export class SubscriptionController {
       subscription.renewalAttempts.push({
         attemptedAt: new Date(),
         successful: false,
-        error: 'Payment failed'
+        error: 'Payment failed',
       });
-      
+
       // If too many failed attempts, suspend subscription
       const failedAttempts = subscription.renewalAttempts.filter(
-        attempt => !attempt.successful
+        (attempt) => !attempt.successful
       ).length;
-      
+
       if (failedAttempts >= 3) {
         subscription.status = 'suspended';
       }
-      
+
       await subscription.save();
 
       // Send payment failure email
@@ -501,7 +527,7 @@ export class SubscriptionController {
         await emailService.sendPaymentFailedNotification(user.email, {
           firstName: user.firstName,
           attemptNumber: failedAttempts,
-          nextAttempt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+          nextAttempt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
         });
       }
     }

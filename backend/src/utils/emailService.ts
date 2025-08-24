@@ -12,34 +12,46 @@ class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    this.transporter = nodemailer.createTransporter({
+    this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: false,
       auth: {
         user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
+        pass: process.env.SMTP_PASS,
+      },
     });
   }
 
-  private async loadTemplate(templateName: string, variables: Record<string, any>): Promise<EmailTemplate> {
+  private async loadTemplate(
+    templateName: string,
+    variables: Record<string, any>
+  ): Promise<EmailTemplate> {
     try {
-      const templatePath = path.join(process.cwd(), 'src', 'templates', 'email', `${templateName}.html`);
+      const templatePath = path.join(
+        process.cwd(),
+        'src',
+        'templates',
+        'email',
+        `${templateName}.html`
+      );
       let html = fs.readFileSync(templatePath, 'utf-8');
-      
+
       // Replace variables in template
-      Object.keys(variables).forEach(key => {
+      Object.keys(variables).forEach((key) => {
         const regex = new RegExp(`{{${key}}}`, 'g');
         html = html.replace(regex, variables[key]);
       });
 
       // Extract text content (basic implementation)
-      const text = html.replace(/<[^>]*>/g, '').replace(/\\s+/g, ' ').trim();
-      
+      const text = html
+        .replace(/<[^>]*>/g, '')
+        .replace(/\\s+/g, ' ')
+        .trim();
+
       // Extract subject from template (assuming it's in a comment at the top)
       const subjectMatch = html.match(/<!--\\s*SUBJECT:\\s*(.+?)\\s*-->/);
-      const subject = subjectMatch ? subjectMatch[1] : 'PharmaCare Notification';
+      const subject: string = subjectMatch?.[1] || 'PharmaCare Notification';
 
       return { subject, html, text };
     } catch (error) {
@@ -48,7 +60,10 @@ class EmailService {
     }
   }
 
-  private getDefaultTemplate(templateName: string, variables: Record<string, any>): EmailTemplate {
+  private getDefaultTemplate(
+    templateName: string,
+    variables: Record<string, any>
+  ): EmailTemplate {
     // Fallback templates
     const templates = {
       licenseApproval: {
@@ -62,7 +77,7 @@ class EmailService {
           <br>
           <p>Best regards,<br>PharmaCare Team</p>
         `,
-        text: `License Approved! Dear ${variables.firstName}, Your pharmacist license has been approved and verified. License Number: ${variables.licenseNumber}. You now have full access to all features in your account.`
+        text: `License Approved! Dear ${variables.firstName}, Your pharmacist license has been approved and verified. License Number: ${variables.licenseNumber}. You now have full access to all features in your account.`,
       },
       licenseRejection: {
         subject: 'License Review Update - PharmaCare',
@@ -76,7 +91,7 @@ class EmailService {
           <br>
           <p>Best regards,<br>PharmaCare Team</p>
         `,
-        text: `License Review Update. Dear ${variables.firstName}, We've reviewed your license submission and need additional information. Reason: ${variables.reason}. Please log in to your account and resubmit your license documentation.`
+        text: `License Review Update. Dear ${variables.firstName}, We've reviewed your license submission and need additional information. Reason: ${variables.reason}. Please log in to your account and resubmit your license documentation.`,
       },
       roleUpdate: {
         subject: 'Account Role Updated - PharmaCare',
@@ -89,7 +104,7 @@ class EmailService {
           <br>
           <p>Best regards,<br>PharmaCare Team</p>
         `,
-        text: `Account Role Updated. Dear ${variables.firstName}, Your account role has been updated to: ${variables.newRole}. Updated by: ${variables.updatedBy}.`
+        text: `Account Role Updated. Dear ${variables.firstName}, Your account role has been updated to: ${variables.newRole}. Updated by: ${variables.updatedBy}.`,
       },
       subscriptionConfirmation: {
         subject: 'Subscription Confirmed - PharmaCare',
@@ -104,26 +119,30 @@ class EmailService {
           <br>
           <p>Best regards,<br>PharmaCare Team</p>
         `,
-        text: `Subscription Confirmed! Dear ${variables.firstName}, Thank you for subscribing to PharmaCare ${variables.planName} plan. Amount: ₦${variables.amount}, Billing: ${variables.billingInterval}.`
-      }
+        text: `Subscription Confirmed! Dear ${variables.firstName}, Thank you for subscribing to PharmaCare ${variables.planName} plan. Amount: ₦${variables.amount}, Billing: ${variables.billingInterval}.`,
+      },
     };
 
-    return templates[templateName] || {
-      subject: 'PharmaCare Notification',
-      html: '<p>This is a notification from PharmaCare.</p>',
-      text: 'This is a notification from PharmaCare.'
-    };
+    return (
+      templates[templateName as keyof typeof templates] || {
+        subject: 'PharmaCare Notification',
+        html: '<p>This is a notification from PharmaCare.</p>',
+        text: 'This is a notification from PharmaCare.',
+      }
+    );
   }
 
   async sendEmail(to: string, template: EmailTemplate, attachments?: any[]) {
     try {
       const mailOptions = {
-        from: `\"PharmaCare\" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+        from: `\"PharmaCare\" <${
+          process.env.SMTP_FROM || process.env.SMTP_USER
+        }>`,
         to,
         subject: template.subject,
         text: template.text,
         html: template.html,
-        attachments
+        attachments,
       };
 
       const result = await this.transporter.sendMail(mailOptions);
@@ -131,28 +150,44 @@ class EmailService {
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error('Error sending email:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: (error as Error).message };
     }
   }
 
   // License-related emails
-  async sendLicenseApprovalNotification(email: string, data: { firstName: string; licenseNumber: string; notes?: string }) {
+  async sendLicenseApprovalNotification(
+    email: string,
+    data: { firstName: string; licenseNumber: string; notes?: string }
+  ) {
     const template = await this.loadTemplate('licenseApproval', data);
     return this.sendEmail(email, template);
   }
 
-  async sendLicenseRejectionNotification(email: string, data: { firstName: string; reason: string; supportEmail?: string }) {
+  async sendLicenseRejectionNotification(
+    email: string,
+    data: { firstName: string; reason: string; supportEmail?: string }
+  ) {
     const template = await this.loadTemplate('licenseRejection', {
       ...data,
-      supportEmail: data.supportEmail || process.env.SUPPORT_EMAIL || 'support@pharmacare.com'
+      supportEmail:
+        data.supportEmail ||
+        process.env.SUPPORT_EMAIL ||
+        'support@pharmacare.com',
     });
     return this.sendEmail(email, template);
   }
 
-  async sendLicenseSubmissionNotification(data: { userEmail: string; userName: string; licenseNumber: string; submittedAt: Date }) {
+  async sendLicenseSubmissionNotification(data: {
+    userEmail: string;
+    userName: string;
+    licenseNumber: string;
+    submittedAt: Date;
+  }) {
     // Send to admin
-    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['admin@pharmacare.com'];
-    
+    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [
+      'admin@pharmacare.com',
+    ];
+
     const template = {
       subject: 'New License Submission - PharmaCare Admin',
       html: `
@@ -162,7 +197,11 @@ class EmailService {
         <p><strong>Submitted:</strong> ${data.submittedAt.toLocaleString()}</p>
         <p>Please review and approve/reject in the admin panel.</p>
       `,
-      text: `New License Submission from ${data.userName} (${data.userEmail}). License Number: ${data.licenseNumber}. Submitted: ${data.submittedAt.toLocaleString()}.`
+      text: `New License Submission from ${data.userName} (${
+        data.userEmail
+      }). License Number: ${
+        data.licenseNumber
+      }. Submitted: ${data.submittedAt.toLocaleString()}.`,
     };
 
     const results = [];
@@ -173,12 +212,18 @@ class EmailService {
   }
 
   // Role and permission emails
-  async sendRoleUpdateNotification(email: string, data: { firstName: string; newRole: string; updatedBy: string }) {
+  async sendRoleUpdateNotification(
+    email: string,
+    data: { firstName: string; newRole: string; updatedBy: string }
+  ) {
     const template = await this.loadTemplate('roleUpdate', data);
     return this.sendEmail(email, template);
   }
 
-  async sendAccountSuspensionNotification(email: string, data: { firstName: string; reason: string; supportEmail?: string }) {
+  async sendAccountSuspensionNotification(
+    email: string,
+    data: { firstName: string; reason: string; supportEmail?: string }
+  ) {
     const template = {
       subject: 'Account Suspended - PharmaCare',
       html: `
@@ -186,16 +231,21 @@ class EmailService {
         <p>Dear ${data.firstName},</p>
         <p>Your PharmaCare account has been temporarily suspended.</p>
         <p><strong>Reason:</strong> ${data.reason}</p>
-        <p>If you believe this is an error, please contact support at ${data.supportEmail || 'support@pharmacare.com'}</p>
+        <p>If you believe this is an error, please contact support at ${
+          data.supportEmail || 'support@pharmacare.com'
+        }</p>
         <br>
         <p>PharmaCare Team</p>
       `,
-      text: `Account Suspended. Dear ${data.firstName}, Your PharmaCare account has been temporarily suspended. Reason: ${data.reason}.`
+      text: `Account Suspended. Dear ${data.firstName}, Your PharmaCare account has been temporarily suspended. Reason: ${data.reason}.`,
     };
     return this.sendEmail(email, template);
   }
 
-  async sendAccountReactivationNotification(email: string, data: { firstName: string }) {
+  async sendAccountReactivationNotification(
+    email: string,
+    data: { firstName: string }
+  ) {
     const template = {
       subject: 'Account Reactivated - PharmaCare',
       html: `
@@ -206,70 +256,110 @@ class EmailService {
         <br>
         <p>Best regards,<br>PharmaCare Team</p>
       `,
-      text: `Account Reactivated. Dear ${data.firstName}, Your PharmaCare account has been reactivated. You can now log in and access all your features.`
+      text: `Account Reactivated. Dear ${data.firstName}, Your PharmaCare account has been reactivated. You can now log in and access all your features.`,
     };
     return this.sendEmail(email, template);
   }
 
   // Subscription-related emails
-  async sendSubscriptionConfirmation(email: string, data: { firstName: string; planName: string; amount: number; billingInterval: string; startDate: Date; endDate: Date }) {
+  async sendSubscriptionConfirmation(
+    email: string,
+    data: {
+      firstName: string;
+      planName: string;
+      amount: number;
+      billingInterval: string;
+      startDate: Date;
+      endDate: Date;
+    }
+  ) {
     const template = await this.loadTemplate('subscriptionConfirmation', {
       ...data,
       startDate: data.startDate.toLocaleDateString(),
-      endDate: data.endDate.toLocaleDateString()
+      endDate: data.endDate.toLocaleDateString(),
     });
     return this.sendEmail(email, template);
   }
 
-  async sendSubscriptionCancellation(email: string, data: { firstName: string; planName: string; gracePeriodEnd: Date; reason?: string }) {
+  async sendSubscriptionCancellation(
+    email: string,
+    data: {
+      firstName: string;
+      planName: string;
+      gracePeriodEnd: Date;
+      reason?: string;
+    }
+  ) {
     const template = {
       subject: 'Subscription Cancelled - PharmaCare',
       html: `
         <h2>Subscription Cancelled</h2>
         <p>Dear ${data.firstName},</p>
-        <p>Your ${data.planName} subscription has been cancelled as requested.</p>
+        <p>Your ${
+          data.planName
+        } subscription has been cancelled as requested.</p>
         <p>You'll continue to have access until: <strong>${data.gracePeriodEnd.toLocaleDateString()}</strong></p>
         ${data.reason ? `<p>Reason: ${data.reason}</p>` : ''}
         <p>You can reactivate your subscription anytime before the grace period ends.</p>
         <br>
         <p>Best regards,<br>PharmaCare Team</p>
       `,
-      text: `Subscription Cancelled. Dear ${data.firstName}, Your ${data.planName} subscription has been cancelled. Access until: ${data.gracePeriodEnd.toLocaleDateString()}.`
+      text: `Subscription Cancelled. Dear ${data.firstName}, Your ${
+        data.planName
+      } subscription has been cancelled. Access until: ${data.gracePeriodEnd.toLocaleDateString()}.`,
     };
     return this.sendEmail(email, template);
   }
 
-  async sendPaymentConfirmation(email: string, data: { firstName: string; amount: number; nextBillingDate: Date }) {
+  async sendPaymentConfirmation(
+    email: string,
+    data: { firstName: string; amount: number; nextBillingDate: Date }
+  ) {
     const template = {
       subject: 'Payment Confirmed - PharmaCare',
       html: `
         <h2>Payment Confirmed</h2>
         <p>Dear ${data.firstName},</p>
-        <p>We've successfully processed your payment of <strong>₦${data.amount}</strong>.</p>
+        <p>We've successfully processed your payment of <strong>₦${
+          data.amount
+        }</strong>.</p>
         <p>Your subscription is active until: <strong>${data.nextBillingDate.toLocaleDateString()}</strong></p>
         <p>Thank you for continuing with PharmaCare!</p>
         <br>
         <p>Best regards,<br>PharmaCare Team</p>
       `,
-      text: `Payment Confirmed. Dear ${data.firstName}, We've successfully processed your payment of ₦${data.amount}. Your subscription is active until: ${data.nextBillingDate.toLocaleDateString()}.`
+      text: `Payment Confirmed. Dear ${
+        data.firstName
+      }, We've successfully processed your payment of ₦${
+        data.amount
+      }. Your subscription is active until: ${data.nextBillingDate.toLocaleDateString()}.`,
     };
     return this.sendEmail(email, template);
   }
 
-  async sendPaymentFailedNotification(email: string, data: { firstName: string; attemptNumber: number; nextAttempt: Date }) {
+  async sendPaymentFailedNotification(
+    email: string,
+    data: { firstName: string; attemptNumber: number; nextAttempt: Date }
+  ) {
     const template = {
       subject: 'Payment Failed - PharmaCare',
       html: `
         <h2>Payment Failed</h2>
         <p>Dear ${data.firstName},</p>
-        <p>We couldn't process your subscription payment (Attempt ${data.attemptNumber}).</p>
+        <p>We couldn't process your subscription payment (Attempt ${
+          data.attemptNumber
+        }).</p>
         <p>We'll try again on: <strong>${data.nextAttempt.toLocaleDateString()}</strong></p>
         <p>Please ensure your payment method is valid and has sufficient funds.</p>
         <p>You can update your payment method in your account settings.</p>
         <br>
         <p>Best regards,<br>PharmaCare Team</p>
       `,
-      text: `Payment Failed. Dear ${data.firstName}, We couldn't process your subscription payment (Attempt ${data.attemptNumber}). We'll try again on: ${data.nextAttempt.toLocaleDateString()}.`
+      text: `Payment Failed. Dear ${
+        data.firstName
+      }, We couldn't process your subscription payment (Attempt ${
+        data.attemptNumber
+      }). We'll try again on: ${data.nextAttempt.toLocaleDateString()}.`,
     };
     return this.sendEmail(email, template);
   }
