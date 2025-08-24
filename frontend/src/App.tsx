@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,10 +9,11 @@ import { ThemeProvider, CssBaseline, Box } from '@mui/material';
 import { Toaster } from 'react-hot-toast';
 import { theme } from './theme';
 import { AuthProvider } from './context/AuthContext';
+import { initializeStores } from './stores';
+import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import Footer from './components/Footer';
 
 // Pages
 import Landing from './pages/Landing';
@@ -32,11 +33,17 @@ import Subscriptions from './pages/Subscriptions';
 import Reports from './pages/Reports';
 
 function App(): JSX.Element {
+  // Initialize Zustand stores on app startup
+  useEffect(() => {
+    initializeStores();
+  }, []);
+
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <Router>
+    <ErrorBoundary>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthProvider>
+          <Router>
           <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
             <Toaster
               position="top-right"
@@ -143,6 +150,7 @@ function App(): JSX.Element {
         </Router>
       </AuthProvider>
     </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
@@ -156,7 +164,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
       <Box sx={{ display: 'flex', flex: 1 }}>
-        <Sidebar />
+        <ErrorBoundary>
+          <Sidebar />
+        </ErrorBoundary>
         <Box component="main" sx={{ flex: 1, overflow: 'auto' }}>
           {children}
         </Box>

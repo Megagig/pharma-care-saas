@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Drawer,
@@ -9,6 +10,9 @@ import {
   Box,
   Divider,
   Typography,
+  IconButton,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -19,12 +23,30 @@ import {
   CreditCard as CreditCardIcon,
   Settings as SettingsIcon,
   Help as HelpIcon,
+  ChevronLeft as ChevronLeftIcon,
 } from '@mui/icons-material';
-
-const drawerWidth = 280;
+import { useUIStore } from '../stores';
 
 const Sidebar = () => {
   const location = useLocation();
+  const sidebarOpen = useUIStore((state) => state.sidebarOpen);
+  const toggleSidebar = useUIStore((state) => state.toggleSidebar);
+  const setSidebarOpen = useUIStore((state) => state.setSidebarOpen);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // Auto-close sidebar on mobile when route changes - using useCallback for stable reference
+  const handleMobileClose = React.useCallback(() => {
+    if (isMobile) {
+      useUIStore.getState().setSidebarOpen(false);
+    }
+  }, [isMobile]);
+
+  React.useEffect(() => {
+    handleMobileClose();
+  }, [location.pathname, handleMobileClose]);
+
+  const drawerWidth = sidebarOpen ? 280 : 64;
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
@@ -55,6 +77,8 @@ const Sidebar = () => {
                 minHeight: 48,
                 borderRadius: 2,
                 mx: 1,
+                justifyContent: sidebarOpen ? 'initial' : 'center',
+                px: sidebarOpen ? 2 : 1,
                 backgroundColor: isActive ? 'primary.main' : 'transparent',
                 color: isActive ? 'white' : 'text.primary',
                 '&:hover': {
@@ -73,18 +97,22 @@ const Sidebar = () => {
               <ListItemIcon
                 sx={{
                   color: isActive ? 'white' : 'text.secondary',
-                  minWidth: 40,
+                  minWidth: sidebarOpen ? 40 : 0,
+                  mr: sidebarOpen ? 2 : 0,
+                  justifyContent: 'center',
                 }}
               >
                 <IconComponent fontSize="small" />
               </ListItemIcon>
-              <ListItemText
-                primary={item.name}
-                primaryTypographyProps={{
-                  fontSize: '0.875rem',
-                  fontWeight: isActive ? 600 : 400,
-                }}
-              />
+              {sidebarOpen && (
+                <ListItemText
+                  primary={item.name}
+                  primaryTypographyProps={{
+                    fontSize: '0.875rem',
+                    fontWeight: isActive ? 600 : 400,
+                  }}
+                />
+              )}
             </ListItemButton>
           </ListItem>
         );
@@ -106,43 +134,86 @@ const Sidebar = () => {
           backgroundColor: 'background.paper',
           borderRight: '1px solid',
           borderColor: 'grey.200',
+          transition: 'width 0.3s ease',
         },
       }}
     >
       <Box sx={{ overflow: 'auto', height: '100%' }}>
-        {/* Main Navigation */}
-        <Box sx={{ pt: 3, pb: 2 }}>
-          <Typography
-            variant="overline"
+        {/* Sidebar Header with Toggle */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: sidebarOpen ? 'space-between' : 'center',
+          p: sidebarOpen ? 2 : 1,
+          minHeight: 64
+        }}>
+          {sidebarOpen && (
+            <Typography
+              variant="h6"
+              sx={{
+                color: 'primary.main',
+                fontWeight: 700,
+                fontSize: '1.1rem',
+              }}
+            >
+              PharmaCare
+            </Typography>
+          )}
+          <IconButton
+            onClick={toggleSidebar}
+            size="small"
             sx={{
-              px: 3,
               color: 'text.secondary',
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              letterSpacing: '0.1em',
+              '&:hover': {
+                bgcolor: 'action.hover',
+              },
             }}
           >
-            MAIN MENU
-          </Typography>
+            <ChevronLeftIcon sx={{ 
+              transform: sidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)',
+              transition: 'transform 0.3s ease',
+            }} />
+          </IconButton>
+        </Box>
+
+        <Divider sx={{ mx: sidebarOpen ? 2 : 1 }} />
+        {/* Main Navigation */}
+        <Box sx={{ pt: 2, pb: 2 }}>
+          {sidebarOpen && (
+            <Typography
+              variant="overline"
+              sx={{
+                px: 3,
+                color: 'text.secondary',
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                letterSpacing: '0.1em',
+              }}
+            >
+              MAIN MENU
+            </Typography>
+          )}
           {renderNavItems(navItems)}
         </Box>
 
-        <Divider sx={{ mx: 2 }} />
+        <Divider sx={{ mx: sidebarOpen ? 2 : 1 }} />
 
         {/* Settings & Help */}
         <Box sx={{ pt: 2, pb: 2 }}>
-          <Typography
-            variant="overline"
-            sx={{
-              px: 3,
-              color: 'text.secondary',
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              letterSpacing: '0.1em',
-            }}
-          >
-            SUPPORT
-          </Typography>
+          {sidebarOpen && (
+            <Typography
+              variant="overline"
+              sx={{
+                px: 3,
+                color: 'text.secondary',
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                letterSpacing: '0.1em',
+              }}
+            >
+              SUPPORT
+            </Typography>
+          )}
           {renderNavItems(settingsItems)}
         </Box>
 
@@ -150,20 +221,22 @@ const Sidebar = () => {
         <Box sx={{ flexGrow: 1 }} />
 
         {/* Version Info */}
-        <Box sx={{ p: 2, mt: 'auto' }}>
-          <Box
-            sx={{
-              p: 2,
-              borderRadius: 2,
-              bgcolor: 'grey.50',
-              textAlign: 'center',
-            }}
-          >
-            <Typography variant="caption" color="text.secondary">
-              PharmaCare v2.1.0
-            </Typography>
+        {sidebarOpen && (
+          <Box sx={{ p: 2, mt: 'auto' }}>
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: 2,
+                bgcolor: 'grey.50',
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                PharmaCare v2.1.0
+              </Typography>
+            </Box>
           </Box>
-        </Box>
+        )}
       </Box>
     </Drawer>
   );

@@ -1,13 +1,13 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 class PatientService {
-  async makeRequest(url, options = {}) {
+  async makeRequest(url: string, options: any = {}): Promise<any> {
     const token = localStorage.getItem('token');
     
-    const config = {
+    const config: any = {
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...(options.headers || {}),
       },
       ...options,
     };
@@ -26,44 +26,48 @@ class PatientService {
     return data;
   }
 
-  async getPatients(params = {}) {
+  async getPatients(params: any = {}): Promise<any> {
     const queryString = new URLSearchParams(params).toString();
     return this.makeRequest(`/patients?${queryString}`);
   }
 
-  async getPatient(patientId) {
+  async getPatient(patientId: string): Promise<any> {
     return this.makeRequest(`/patients/${patientId}`);
   }
 
-  async createPatient(patientData) {
+  async getPatientById(patientId: string): Promise<any> {
+    return this.makeRequest(`/patients/${patientId}`);
+  }
+
+  async createPatient(patientData: any): Promise<any> {
     return this.makeRequest('/patients', {
       method: 'POST',
       body: JSON.stringify(patientData),
     });
   }
 
-  async updatePatient(patientId, patientData) {
+  async updatePatient(patientId: string, patientData: any): Promise<any> {
     return this.makeRequest(`/patients/${patientId}`, {
       method: 'PUT',
       body: JSON.stringify(patientData),
     });
   }
 
-  async deletePatient(patientId) {
+  async deletePatient(patientId: string): Promise<any> {
     return this.makeRequest(`/patients/${patientId}`, {
       method: 'DELETE',
     });
   }
 
-  async searchPatients(query) {
+  async searchPatients(query: string): Promise<any> {
     return this.makeRequest(`/patients/search?q=${encodeURIComponent(query)}`);
   }
 
-  async getPatientMedications(patientId) {
+  async getPatientMedications(patientId: string): Promise<any> {
     return this.makeRequest(`/medications/patient/${patientId}`);
   }
 
-  async getPatientNotes(patientId) {
+  async getPatientNotes(patientId: string): Promise<any> {
     return this.makeRequest(`/notes/patient/${patientId}`);
   }
 }

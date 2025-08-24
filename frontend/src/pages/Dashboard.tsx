@@ -1,6 +1,6 @@
+import { useEffect, useMemo } from 'react';
 import {
   Box,
-  Grid,
   Typography,
   Card,
   CardContent,
@@ -28,42 +28,56 @@ import {
   Event as EventIcon,
   AccessTime as AccessTimeIcon,
 } from '@mui/icons-material';
+import { useDashboardData } from '../stores/hooks';
+import { useUIStore } from '../stores';
 
 const Dashboard = () => {
-  const stats = [
+  // Use Zustand stores for real data
+  const dashboardData = useDashboardData();
+  const notifications = useUIStore((state) => state.notifications);
+
+  // Commented out automatic data sync to prevent 401 errors and infinite loops
+  // useEffect(() => {
+  //   syncAllData();
+  // }, [syncAllData]);
+
+  // TODO: Add manual refresh functionality or fetch data when needed
+
+  // Dynamic stats based on real data from Zustand stores - memoized to prevent re-renders
+  const stats = useMemo(() => [
     {
       title: 'Total Patients',
-      value: '147',
-      change: '+12%',
+      value: dashboardData.totalPatients.toString(),
+      change: '+12%', // You can calculate this based on historical data
       changeType: 'increase',
       icon: PeopleIcon,
       color: 'primary',
       gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      progress: 75,
+      progress: Math.min((dashboardData.totalPatients / 200) * 100, 100), // Assuming 200 is max
     },
     {
       title: 'Clinical Notes',
-      value: '523',
+      value: dashboardData.totalNotes.toString(),
       change: '+18%',
       changeType: 'increase',
       icon: DescriptionIcon,
       color: 'success',
       gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      progress: 85,
+      progress: Math.min((dashboardData.totalNotes / 1000) * 100, 100), // Assuming 1000 is max
     },
     {
       title: 'Active Medications',
-      value: '1,284',
+      value: dashboardData.activeMedications.toString(),
       change: '+7%',
       changeType: 'increase',
       icon: MedicationIcon,
       color: 'secondary',
       gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      progress: 92,
+      progress: Math.min((dashboardData.activeMedications / 1500) * 100, 100), // Assuming 1500 is max
     },
     {
       title: 'Adherence Rate',
-      value: '84.2%',
+      value: '84.2%', // This could be calculated from medication data
       change: '+2.1%',
       changeType: 'increase',
       icon: TrendingUpIcon,
@@ -71,56 +85,54 @@ const Dashboard = () => {
       gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
       progress: 84,
     },
-  ];
+  ], [dashboardData]);
 
-  const recentPatients = [
-    {
-      name: 'Sarah Johnson',
-      age: 65,
-      condition: 'Hypertension',
-      lastVisit: 'Today',
-      avatar: 'S',
-      status: 'active',
-    },
-    {
-      name: 'Michael Chen',
-      age: 45,
-      condition: 'Diabetes',
-      lastVisit: '2 days ago',
-      avatar: 'M',
-      status: 'pending',
-    },
-    {
-      name: 'Emma Wilson',
-      age: 32,
-      condition: 'Asthma',
-      lastVisit: '1 week ago',
-      avatar: 'E',
-      status: 'completed',
-    },
-  ];
+  // Use real recent patients data from Zustand store - memoized to prevent re-renders
+  const recentPatients = useMemo(() => {
+    // Safety check for undefined patients
+    if (!dashboardData.recentPatients || dashboardData.recentPatients.length === 0) {
+      return [];
+    }
+    
+    return dashboardData.recentPatients
+      .map(patient => {
+        // Safety checks for patient properties
+        if (!patient) return null;
+        
+        return {
+          name: `${patient.firstName || 'Unknown'} ${patient.lastName || 'Patient'}`,
+          age: patient.dateOfBirth ? new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear() : 'N/A',
+          condition: patient.medicalHistory || 'General Care',
+          lastVisit: patient.updatedAt ? new Date(patient.updatedAt).toLocaleDateString() : 'N/A',
+          avatar: (patient.firstName && patient.firstName.charAt(0).toUpperCase()) || 'P',
+          status: 'active',
+        };
+      })
+      .filter((patient): patient is NonNullable<typeof patient> => patient !== null); // Type-safe filter
+  }, [dashboardData.recentPatients]);
 
-  const alerts = [
-    {
-      type: 'warning',
-      title: 'Medication Review Due',
-      message: 'John Doe - Hypertension medication needs review',
-      time: '2 hours ago',
-    },
-    {
-      type: 'info',
-      title: 'New Patient Registration',
-      message: 'Lisa Martinez has registered for consultation',
-      time: '4 hours ago',
-    },
-    {
-      type: 'success',
-      title: 'Prescription Filled',
-      message: 'Robert Kim picked up diabetes medication',
-      time: '6 hours ago',
-    },
-  ];
+  // Convert notifications from Zustand store to alerts format - memoized to prevent re-renders
+  const alerts = useMemo(() => {
+    if (!notifications || notifications.length === 0) {
+      return [];
+    }
+    
+    return notifications
+      .slice(0, 3)
+      .map(notification => {
+        if (!notification) return null;
+        
+        return {
+          type: notification.type || 'info',
+          title: notification.title || 'Notification',
+          message: notification.message || '',
+          time: notification.timestamp ? new Date(notification.timestamp).toLocaleString() : 'N/A',
+        };
+      })
+      .filter((alert): alert is NonNullable<typeof alert> => alert !== null); // Type-safe filter
+  }, [notifications]);
 
+  // Example follow-ups - in a real app, this could come from appointments/medication reminders
   const followUps = [
     {
       patientName: 'Sarah Johnson',
@@ -293,11 +305,22 @@ const Dashboard = () => {
           >
             Practice Statistics
           </Typography>
-          <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                lg: 'repeat(4, 1fr)',
+              },
+              gap: 4,
+              justifyContent: 'center',
+            }}
+          >
             {stats.map((stat, index) => {
               const IconComponent = stat.icon;
               return (
-                <Grid item xs={12} sm={6} lg={3} key={index}>
+                <Box key={index}>
                   <Card
                     sx={{
                       height: '100%',
@@ -409,16 +432,27 @@ const Dashboard = () => {
                       </Typography>
                     </CardContent>
                   </Card>
-                </Grid>
+                </Box>
               );
             })}
-          </Grid>
+          </Box>
         </Box>
 
         {/* Centered Content Sections */}
-        <Grid container spacing={4} sx={{ mb: 6 }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: 'repeat(2, 1fr)',
+              lg: 'repeat(3, 1fr)',
+            },
+            gap: 4,
+            mb: 6,
+          }}
+        >
           {/* Enhanced Recent Patients */}
-          <Grid item xs={12} md={6} lg={4}>
+          <Box>
             <Card
               sx={{
                 height: 'fit-content',
@@ -545,10 +579,10 @@ const Dashboard = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
           {/* Enhanced Alerts */}
-          <Grid item xs={12} md={6} lg={4}>
+          <Box>
             <Card
               sx={{
                 height: 'fit-content',
@@ -679,10 +713,10 @@ const Dashboard = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
           {/* Today's Schedule - Third Card */}
-          <Grid item xs={12} md={6} lg={4}>
+          <Box>
             <Card
               sx={{
                 height: 'fit-content',
@@ -873,9 +907,8 @@ const Dashboard = () => {
                       p: 3,
                       bgcolor: 'rgba(248,250,252,0.8)',
                       borderRadius: 3,
-                      border: '1px solid rgba(226,232,240,0.5)',
-                      textAlign: 'center',
                       border: '2px dashed rgba(226,232,240,0.8)',
+                      textAlign: 'center',
                     }}
                   >
                     <Typography
@@ -908,8 +941,8 @@ const Dashboard = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Follow-up Schedule Section */}
         <Box sx={{ mb: 6 }}>
@@ -968,9 +1001,19 @@ const Dashboard = () => {
                 </Box>
               </Box>
 
-              <Grid container spacing={3}>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'repeat(2, 1fr)',
+                    md: 'repeat(4, 1fr)',
+                  },
+                  gap: 3,
+                }}
+              >
                 {followUps.map((followUp, index) => (
-                  <Grid item xs={12} sm={6} md={3} key={index}>
+                  <Box key={index}>
                     <Paper
                       elevation={0}
                       sx={{
@@ -1060,9 +1103,9 @@ const Dashboard = () => {
                         />
                       </Box>
                     </Paper>
-                  </Grid>
+                  </Box>
                 ))}
-              </Grid>
+              </Box>
 
               <Box sx={{ textAlign: 'center', mt: 4 }}>
                 <Button
@@ -1155,8 +1198,19 @@ const Dashboard = () => {
                 Streamline your workflow with these common tasks
               </Typography>
             </Box>
-            <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
-              <Grid item xs={12} sm={6} md={3}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, 1fr)',
+                  md: 'repeat(4, 1fr)',
+                },
+                gap: 4,
+                justifyContent: 'center',
+              }}
+            >
+              <Box>
                 <Button
                   variant="contained"
                   fullWidth
@@ -1178,8 +1232,8 @@ const Dashboard = () => {
                 >
                   Add Patient
                 </Button>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              </Box>
+              <Box>
                 <Button
                   variant="contained"
                   fullWidth
@@ -1201,8 +1255,8 @@ const Dashboard = () => {
                 >
                   Clinical Note
                 </Button>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              </Box>
+              <Box>
                 <Button
                   variant="contained"
                   fullWidth
@@ -1224,8 +1278,8 @@ const Dashboard = () => {
                 >
                   Add Medication
                 </Button>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              </Box>
+              <Box>
                 <Button
                   variant="contained"
                   fullWidth
@@ -1247,8 +1301,8 @@ const Dashboard = () => {
                 >
                   View Reports
                 </Button>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </CardContent>
         </Card>
       </Box>
