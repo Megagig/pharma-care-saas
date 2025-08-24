@@ -8,8 +8,8 @@ export interface IUser extends Document {
   passwordHash: string;
   firstName: string;
   lastName: string;
-  role: 'pharmacist' | 'technician' | 'owner' | 'admin';
-  status: 'pending' | 'active' | 'suspended';
+  role: 'pharmacist' | 'pharmacy_team' | 'pharmacy_outlet' | 'intern_pharmacist' | 'super_admin';
+  status: 'pending' | 'active' | 'suspended' | 'license_pending' | 'license_rejected';
   emailVerified: boolean;
   verificationToken?: string;
   verificationCode?: string;
@@ -19,12 +19,40 @@ export interface IUser extends Document {
   planOverride?: Record<string, any>;
   currentSubscriptionId?: mongoose.Types.ObjectId;
   lastLoginAt?: Date;
+  
+  // License verification fields
+  licenseNumber?: string;
+  licenseDocument?: {
+    fileName: string;
+    filePath: string;
+    uploadedAt: Date;
+    fileSize: number;
+    mimeType: string;
+  };
+  licenseStatus: 'not_required' | 'pending' | 'approved' | 'rejected';
+  licenseVerifiedAt?: Date;
+  licenseVerifiedBy?: mongoose.Types.ObjectId;
+  licenseRejectionReason?: string;
+  
+  // Team and hierarchy management
+  parentUserId?: mongoose.Types.ObjectId; // For team members under a lead
+  teamMembers?: mongoose.Types.ObjectId[]; // For team leads
+  permissions: string[]; // Custom permissions array
+  
+  // Subscription and access
+  subscriptionTier: 'free_trial' | 'basic' | 'pro' | 'enterprise';
+  trialStartDate?: Date;
+  trialEndDate?: Date;
+  features: string[]; // Enabled features for this user
+  
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
   generateVerificationToken(): string;
   generateVerificationCode(): string;
   generateResetToken(): string;
+  hasPermission(permission: string): boolean;
+  hasFeature(feature: string): boolean;
 }
 
 const userSchema = new Schema({
@@ -58,13 +86,13 @@ const userSchema = new Schema({
   },
   role: {
     type: String,
-    enum: ['pharmacist', 'technician', 'owner', 'admin'],
+    enum: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist', 'super_admin'],
     default: 'pharmacist',
     index: true
   },
   status: {
     type: String,
-    enum: ['pending', 'active', 'suspended'],
+    enum: ['pending', 'active', 'suspended', 'license_pending', 'license_rejected'],
     default: 'pending',
     index: true
   },
@@ -102,7 +130,62 @@ const userSchema = new Schema({
     ref: 'Subscription',
     index: true
   },
-  lastLoginAt: Date
+  lastLoginAt: Date,
+  
+  // License verification fields
+  licenseNumber: {
+    type: String,
+    sparse: true,
+    index: true
+  },
+  licenseDocument: {
+    fileName: String,
+    filePath: String,
+    uploadedAt: Date,
+    fileSize: Number,
+    mimeType: String
+  },
+  licenseStatus: {
+    type: String,
+    enum: ['not_required', 'pending', 'approved', 'rejected'],
+    default: 'not_required',
+    index: true
+  },
+  licenseVerifiedAt: Date,
+  licenseVerifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  licenseRejectionReason: String,
+  
+  // Team and hierarchy management
+  parentUserId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true
+  },
+  teamMembers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  permissions: [{
+    type: String,
+    index: true
+  }],
+  
+  // Subscription and access
+  subscriptionTier: {
+    type: String,
+    enum: ['free_trial', 'basic', 'pro', 'enterprise'],
+    default: 'free_trial',
+    index: true
+  },
+  trialStartDate: Date,
+  trialEndDate: Date,
+  features: [{
+    type: String,
+    index: true
+  }]
 }, { timestamps: true });
 
 userSchema.pre<IUser>('save', async function (next) {
@@ -133,5 +216,31 @@ userSchema.methods.generateResetToken = function (): string {
   this.resetToken = crypto.createHash('sha256').update(token).digest('hex');
   return token;
 };
+
+userSchema.methods.hasPermission = function (permission: string): boolean {
+  return this.permissions.includes(permission) || this.role === 'super_admin';
+};
+
+userSchema.methods.hasFeature = function (feature: string): boolean {
+  return this.features.includes(feature) || this.role === 'super_admin';
+};
+
+// Set license requirements based on role
+userSchema.pre<IUser>('save', function (next) {
+  if (this.isNew || this.isModified('role')) {
+    if (this.role === 'pharmacist' || this.role === 'intern_pharmacist') {
+      this.licenseStatus = this.licenseStatus === 'not_required' ? 'pending' : this.licenseStatus;
+    } else {
+      this.licenseStatus = 'not_required';
+    }
+    
+    // Set trial period for new users
+    if (this.isNew && this.subscriptionTier === 'free_trial') {
+      this.trialStartDate = new Date();
+      this.trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
+    }
+  }
+  next();
+});
 
 export default mongoose.model<IUser>('User', userSchema);

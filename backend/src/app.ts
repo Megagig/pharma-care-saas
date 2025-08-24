@@ -18,6 +18,9 @@ import patientRoutes from './routes/patientRoutes';
 import noteRoutes from './routes/noteRoutes';
 import medicationRoutes from './routes/medicationRoutes';
 import paymentRoutes from './routes/paymentRoutes';
+import adminRoutes from './routes/admin';
+import licenseRoutes from './routes/license';
+import subscriptionManagementRoutes from './routes/subscription';
 
 const app: Application = express();
 
@@ -73,6 +76,24 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/medications', medicationRoutes);
 app.use('/api/payments', paymentRoutes);
+
+// RBAC and enhanced features
+app.use('/api/admin', adminRoutes);
+app.use('/api/license', licenseRoutes);
+app.use('/api/subscription-management', subscriptionManagementRoutes);
+
+// Serve uploaded files (with proper security)
+app.use('/uploads', express.static('uploads', {
+  maxAge: '1d',
+  setHeaders: (res, path) => {
+    // Security headers for file downloads
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    if (path.endsWith('.pdf')) {
+      res.setHeader('Content-Disposition', 'inline');
+    }
+  }
+}));
 
 
 

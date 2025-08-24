@@ -18,7 +18,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 
-// Pages
 import Landing from './pages/Landing';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -34,6 +33,11 @@ import ClinicalNotes from './pages/ClinicalNotes';
 import Medications from './pages/Medications';
 import Subscriptions from './pages/Subscriptions';
 import Reports from './pages/Reports';
+
+// RBAC and Enhanced Components
+import AdminDashboard from './components/admin/AdminDashboard';
+import LicenseUpload from './components/license/LicenseUpload';
+import SubscriptionManagement from './components/subscription/SubscriptionManagement';
 
 function App(): JSX.Element {
   // Initialize Zustand stores on app startup
@@ -89,7 +93,7 @@ function App(): JSX.Element {
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiresActiveSubscription>
                     <AppLayout>
                       <Dashboard />
                     </AppLayout>
@@ -99,7 +103,10 @@ function App(): JSX.Element {
               <Route
                 path="/patients"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute 
+                    requiredFeature="patient_management"
+                    requiresActiveSubscription
+                  >
                     <AppLayout>
                       <Patients />
                     </AppLayout>
@@ -109,7 +116,11 @@ function App(): JSX.Element {
               <Route
                 path="/notes"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute 
+                    requiredFeature="clinical_notes"
+                    requiresLicense
+                    requiresActiveSubscription
+                  >
                     <AppLayout>
                       <ClinicalNotes />
                     </AppLayout>
@@ -119,7 +130,10 @@ function App(): JSX.Element {
               <Route
                 path="/medications"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute 
+                    requiredFeature="medication_management"
+                    requiresActiveSubscription
+                  >
                     <AppLayout>
                       <Medications />
                     </AppLayout>
@@ -139,9 +153,48 @@ function App(): JSX.Element {
               <Route
                 path="/reports"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute 
+                    requiredFeature="basic_reports"
+                    requiresActiveSubscription
+                  >
                     <AppLayout>
                       <Reports />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Admin Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute requiredRole="super_admin">
+                    <AppLayout>
+                      <AdminDashboard />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* License Management */}
+              <Route
+                path="/license"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <LicenseUpload />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Enhanced Subscription Management */}
+              <Route
+                path="/subscription-management"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <SubscriptionManagement />
                     </AppLayout>
                   </ProtectedRoute>
                 }
