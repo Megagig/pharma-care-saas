@@ -6,10 +6,13 @@ import {
   Navigate,
 } from 'react-router-dom';
 import { ThemeProvider, CssBaseline, Box } from '@mui/material';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'react-hot-toast';
 import { theme } from './theme';
 import { AuthProvider } from './context/AuthContext';
 import { initializeStores } from './stores';
+import { queryClient } from './lib/queryClient';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
@@ -40,10 +43,11 @@ function App(): JSX.Element {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <AuthProvider>
-          <Router>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <AuthProvider>
+            <Router>
           <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
             <Toaster
               position="top-right"
@@ -150,7 +154,10 @@ function App(): JSX.Element {
         </Router>
       </AuthProvider>
     </ThemeProvider>
-    </ErrorBoundary>
+    {/* React Query DevTools - only shows in development */}
+    <ReactQueryDevtools initialIsOpen={false} />
+  </QueryClientProvider>
+</ErrorBoundary>
   );
 }
 
