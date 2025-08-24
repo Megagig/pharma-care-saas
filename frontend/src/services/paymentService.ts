@@ -58,22 +58,14 @@ interface PaginatedPayments {
 
 class PaymentService {
   private async makeRequest(url: string, options: RequestInit = {}) {
-    const token = localStorage.getItem('accessToken');
-
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      credentials: 'include', // Include httpOnly cookies
       ...options,
     };
-
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      };
-    }
 
     const response = await fetch(`${API_BASE_URL}${url}`, config);
 

@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from 'react';
+import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '../services/authService';
 
 interface SubscriptionPlan {
@@ -28,12 +22,18 @@ interface User {
   lastName: string;
   email: string;
   phone?: string;
-  role: 'pharmacist' | 'technician' | 'owner' | 'admin';
+  role: 'pharmacist' | 'technician' | 'owner' | 'admin' | 'super_admin';
   status: 'pending' | 'active' | 'suspended';
   emailVerified: boolean;
   currentPlan: SubscriptionPlan;
   pharmacyId?: string;
   lastLoginAt?: Date;
+  subscription?: {
+    status: 'active' | 'canceled' | 'expired' | 'pending';
+    expiresAt: string;
+    canceledAt?: string;
+    tier?: string;
+  };
 }
 
 interface AuthResponse {
@@ -76,15 +76,13 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Export the context and types for use in hooks
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+// Note: useAuth hook is now in ../hooks/useAuth.ts
+export type { AuthContextType };
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -93,14 +91,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-          const userData = await authService.getCurrentUser();
-          setUser(userData.user);
-        }
+        // Try to get current user - if successful, we're authenticated
+        const userData = await authService.getCurrentUser();
+        setUser(userData.user);
       } catch (error) {
         console.error('Auth initialization failed:', error);
-        localStorage.removeItem('accessToken');
+        // No need to clear localStorage - using httpOnly cookies
       } finally {
         setLoading(false);
       }

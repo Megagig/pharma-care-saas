@@ -16,14 +16,20 @@ const generateRefreshToken = (): string => {
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-
-
-    const { firstName, lastName, email, password, phone, role = 'pharmacist' } = req.body;
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
+      role = 'pharmacist',
+    } = req.body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
       res.status(400).json({
-        message: 'Missing required fields: firstName, lastName, email, and password are required'
+        message:
+          'Missing required fields: firstName, lastName, email, and password are required',
       });
       return;
     }
@@ -36,9 +42,16 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Get the Free Trial plan as default
-    const freeTrialPlan = await SubscriptionPlan.findOne({ name: 'Free Trial' });
+    const freeTrialPlan = await SubscriptionPlan.findOne({
+      name: 'Free Trial',
+    });
     if (!freeTrialPlan) {
-      res.status(500).json({ message: 'Default subscription plan not found. Please run seed script.' });
+      res
+        .status(500)
+        .json({
+          message:
+            'Default subscription plan not found. Please run seed script.',
+        });
       return;
     }
 
@@ -51,7 +64,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       passwordHash: password, // Will be hashed by pre-save hook
       role,
       currentPlanId: freeTrialPlan._id,
-      status: 'pending' // User needs to verify email
+      status: 'pending', // User needs to verify email
     });
 
     // Generate verification token and code
@@ -95,12 +108,13 @@ export const register = async (req: Request, res: Response): Promise<void> => {
             <p>If you didn't create this account, please ignore this email.</p>
           </div>
         </div>
-      `
+      `,
     });
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful! Please check your email to verify your account.',
+      message:
+        'Registration successful! Please check your email to verify your account.',
       user: {
         id: user._id,
         firstName: user.firstName,
@@ -108,8 +122,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         email: user.email,
         role: user.role,
         status: user.status,
-        emailVerified: user.emailVerified
-      }
+        emailVerified: user.emailVerified,
+      },
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
@@ -121,7 +135,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const { email, password } = req.body;
 
     // Find user and include password for comparison
-    const user = await User.findOne({ email }).select('+passwordHash').populate('currentPlanId');
+    const user = await User.findOne({ email })
+      .select('+passwordHash')
+      .populate('currentPlanId');
     if (!user || !(await user.comparePassword(password))) {
       res.status(401).json({ message: 'Invalid credentials' });
       return;
@@ -129,7 +145,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // Check if user is active
     if (user.status === 'suspended') {
-      res.status(401).json({ message: 'Account is suspended. Please contact support.' });
+      res
+        .status(401)
+        .json({ message: 'Account is suspended. Please contact support.' });
       return;
     }
 
@@ -137,7 +155,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     if (!user.emailVerified) {
       res.status(401).json({
         message: 'Please verify your email before logging in.',
-        requiresVerification: true
+        requiresVerification: true,
       });
       return;
     }
@@ -156,23 +174,32 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     await Session.create({
       userId: user._id,
-      refreshToken: crypto.createHash('sha256').update(refreshToken).digest('hex'),
+      refreshToken: crypto
+        .createHash('sha256')
+        .update(refreshToken)
+        .digest('hex'),
       userAgent: req.get('User-Agent'),
       ipAddress: req.ip,
-      expiresAt
+      expiresAt,
     });
 
-    // Set refresh token as httpOnly cookie
+    // Set both access and refresh tokens as httpOnly cookies
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
     res.json({
       success: true,
-      accessToken,
       user: {
         id: user._id,
         firstName: user.firstName,
@@ -182,20 +209,25 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         status: user.status,
         emailVerified: user.emailVerified,
         currentPlan: user.currentPlanId,
-        pharmacyId: user.pharmacyId
-      }
+        pharmacyId: user.pharmacyId,
+      },
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
   }
 };
 
-export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
+export const verifyEmail = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { token, code } = req.body;
 
     if (!token && !code) {
-      res.status(400).json({ message: 'Verification token or code is required' });
+      res
+        .status(400)
+        .json({ message: 'Verification token or code is required' });
       return;
     }
 
@@ -203,12 +235,15 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
 
     if (token) {
       // Hash the token to match what's stored in the database
-      const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+      const hashedToken = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
 
       // Find user with this verification token
       user = await User.findOne({
         verificationToken: hashedToken,
-        emailVerified: false
+        emailVerified: false,
       });
     } else if (code) {
       // Hash the code to match what's stored in the database
@@ -217,12 +252,14 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
       // Find user with this verification code
       user = await User.findOne({
         verificationCode: hashedCode,
-        emailVerified: false
+        emailVerified: false,
       });
     }
 
     if (!user) {
-      res.status(400).json({ message: 'Invalid or expired verification token/code' });
+      res
+        .status(400)
+        .json({ message: 'Invalid or expired verification token/code' });
       return;
     }
 
@@ -235,21 +272,27 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
 
     res.json({
       success: true,
-      message: 'Email verified successfully! You can now log in.'
+      message: 'Email verified successfully! You can now log in.',
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
   }
 };
 
-export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+export const forgotPassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { email } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {
       // Don't reveal if user exists or not for security
-      res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+      res.json({
+        message:
+          'If an account with that email exists, a password reset link has been sent.',
+      });
       return;
     }
 
@@ -269,19 +312,23 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
         <a href="${resetUrl}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
         <p>This link will expire in 1 hour.</p>
         <p>If you didn't request this, please ignore this email.</p>
-      `
+      `,
     });
 
     res.json({
       success: true,
-      message: 'If an account with that email exists, a password reset link has been sent.'
+      message:
+        'If an account with that email exists, a password reset link has been sent.',
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
   }
 };
 
-export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+export const resetPassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { token, password } = req.body;
 
@@ -295,7 +342,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
 
     // Find user with this reset token
     const user = await User.findOne({
-      resetToken: hashedToken
+      resetToken: hashedToken,
     });
 
     if (!user) {
@@ -309,21 +356,22 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     await user.save();
 
     // Invalidate all existing sessions for security
-    await Session.updateMany(
-      { userId: user._id },
-      { isActive: false }
-    );
+    await Session.updateMany({ userId: user._id }, { isActive: false });
 
     res.json({
       success: true,
-      message: 'Password reset successful! Please log in with your new password.'
+      message:
+        'Password reset successful! Please log in with your new password.',
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
   }
 };
 
-export const refreshToken = async (req: Request, res: Response): Promise<void> => {
+export const refreshToken = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { refreshToken } = req.cookies;
 
@@ -333,13 +381,16 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
     }
 
     // Hash the refresh token to match what's stored in the database
-    const hashedToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(refreshToken)
+      .digest('hex');
 
     // Find active session with this refresh token
     const session = await Session.findOne({
       refreshToken: hashedToken,
       isActive: true,
-      expiresAt: { $gt: new Date() }
+      expiresAt: { $gt: new Date() },
     }).populate('userId');
 
     if (!session) {
@@ -352,9 +403,16 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
     // Generate new access token
     const accessToken = generateAccessToken(user._id.toString());
 
+    // Set new access token as httpOnly cookie
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
     res.json({
       success: true,
-      accessToken,
       user: {
         id: user._id,
         firstName: user.firstName,
@@ -362,8 +420,8 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
         email: user.email,
         role: user.role,
         status: user.status,
-        emailVerified: user.emailVerified
-      }
+        emailVerified: user.emailVerified,
+      },
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
@@ -376,7 +434,10 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 
     if (refreshToken) {
       // Hash the refresh token to match what's stored in the database
-      const hashedToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
+      const hashedToken = crypto
+        .createHash('sha256')
+        .update(refreshToken)
+        .digest('hex');
 
       // Deactivate the session
       await Session.updateOne(
@@ -385,12 +446,31 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
       );
     }
 
-    // Clear the refresh token cookie
+    // Clear all possible cookie names
     res.clearCookie('refreshToken');
+    res.clearCookie('accessToken');
+    res.clearCookie('token'); // Clear old token cookie name too
 
     res.json({
       success: true,
-      message: 'Logged out successfully'
+      message: 'Logged out successfully',
+    });
+  } catch (error: any) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Clear cookies endpoint (no auth required)
+export const clearCookies = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Clear all possible cookie names
+    res.clearCookie('refreshToken');
+    res.clearCookie('accessToken');
+    res.clearCookie('token'); // Clear old token cookie name too
+
+    res.json({
+      success: true,
+      message: 'Cookies cleared successfully',
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
@@ -403,7 +483,10 @@ export const logoutAll = async (req: Request, res: Response): Promise<void> => {
 
     if (refreshToken) {
       // Hash the refresh token to find the user
-      const hashedToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
+      const hashedToken = crypto
+        .createHash('sha256')
+        .update(refreshToken)
+        .digest('hex');
       const session = await Session.findOne({ refreshToken: hashedToken });
 
       if (session) {
@@ -415,12 +498,13 @@ export const logoutAll = async (req: Request, res: Response): Promise<void> => {
       }
     }
 
-    // Clear the refresh token cookie
+    // Clear both cookies
     res.clearCookie('refreshToken');
+    res.clearCookie('accessToken');
 
     res.json({
       success: true,
-      message: 'Logged out from all devices successfully'
+      message: 'Logged out from all devices successfully',
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
@@ -456,33 +540,39 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
         emailVerified: user.emailVerified,
         currentPlan: user.currentPlanId,
         pharmacy: user.pharmacyId,
-        lastLoginAt: user.lastLoginAt
-      }
+        lastLoginAt: user.lastLoginAt,
+      },
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
   }
 };
 
-export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+export const updateProfile = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
   try {
     const allowedUpdates = ['firstName', 'lastName', 'phone'];
     const updates = Object.keys(req.body);
-    const isValidOperation = updates.every(update => allowedUpdates.includes(update));
+    const isValidOperation = updates.every((update) =>
+      allowedUpdates.includes(update)
+    );
 
     if (!isValidOperation) {
-      res.status(400).json({ message: 'Invalid updates. Only firstName, lastName, and phone can be updated.' });
+      res
+        .status(400)
+        .json({
+          message:
+            'Invalid updates. Only firstName, lastName, and phone can be updated.',
+        });
       return;
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user.userId,
-      req.body,
-      {
-        new: true,
-        runValidators: true
-      }
-    ).select('-passwordHash');
+    const user = await User.findByIdAndUpdate(req.user.userId, req.body, {
+      new: true,
+      runValidators: true,
+    }).select('-passwordHash');
 
     if (!user) {
       res.status(404).json({ message: 'User not found' });
@@ -498,8 +588,8 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         email: user.email,
         phone: user.phone,
         role: user.role,
-        status: user.status
-      }
+        status: user.status,
+      },
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });

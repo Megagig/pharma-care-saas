@@ -26,39 +26,28 @@ class AuthService {
   private refreshPromise: Promise<boolean> | null = null;
 
   async makeRequest(url: string, options: RequestInit = {}) {
-    const token = localStorage.getItem('accessToken');
-
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
         ...((options.headers as Record<string, string>) || {}),
       },
-      credentials: 'include' as RequestCredentials,
+      credentials: 'include' as RequestCredentials, // Always include cookies
       ...options,
     };
 
-    if (token && config.headers) {
-      (
-        config.headers as Record<string, string>
-      ).Authorization = `Bearer ${token}`;
-    }
-
     let response = await fetch(`${API_BASE_URL}${url}`, config);
 
-    // If token expired, try to refresh
+    // If token expired, try to refresh (but avoid infinite loops)
     if (
       response.status === 401 &&
-      token &&
-      !url.includes('/auth/refresh-token')
+      !url.includes('/auth/refresh-token') &&
+      !url.includes('/auth/me') &&
+      !url.includes('/auth/login') &&
+      !url.includes('/auth/register')
     ) {
       const refreshed = await this.refreshAccessToken();
       if (refreshed) {
-        // Retry the original request with new token
-        if (config.headers) {
-          (
-            config.headers as Record<string, string>
-          ).Authorization = `Bearer ${localStorage.getItem('accessToken')}`;
-        }
+        // Retry the original request
         response = await fetch(`${API_BASE_URL}${url}`, config);
       }
     }
@@ -68,8 +57,10 @@ class AuthService {
     if (!response.ok) {
       // Handle different types of authentication/authorization errors
       if (response.status === 401) {
-        this.clearTokens();
-        window.location.href = '/login';
+        // Only redirect to login if this is not an auth check
+        if (!url.includes('/auth/me') && !url.includes('/auth/refresh-token')) {
+          window.location.href = '/login';
+        }
         throw new Error(data.message || 'Authentication failed');
       } else if (response.status === 402) {
         // Payment/subscription required - don't logout, just throw error
@@ -97,26 +88,20 @@ class AuthService {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
         method: 'POST',
-        credentials: 'include',
+        credentials: 'include', // Include httpOnly cookies
       });
 
       if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem('accessToken', data.accessToken);
+        // New access token is automatically set as httpOnly cookie by server
         return true;
       } else {
-        this.clearTokens();
+        // Refresh failed, redirect to login
         return false;
       }
     } catch (err) {
       console.error('Refresh error:', err);
-      this.clearTokens();
       return false;
     }
-  }
-
-  private clearTokens(): void {
-    localStorage.removeItem('accessToken');
   }
 
   async register(userData: RegisterData) {
@@ -132,10 +117,7 @@ class AuthService {
       body: JSON.stringify(credentials),
     });
 
-    if (response.success && response.accessToken) {
-      localStorage.setItem('accessToken', response.accessToken);
-    }
-
+    // No need to store tokens - they're automatically set as httpOnly cookies by server
     return response;
   }
 
@@ -158,9 +140,8 @@ class AuthService {
     } catch (error) {
       // Continue with logout even if server request fails
       console.error('Logout request failed:', error);
-    } finally {
-      this.clearTokens();
     }
+    // Cookies are cleared by server
   }
 
   async logoutAll() {
@@ -170,9 +151,8 @@ class AuthService {
       });
     } catch (error) {
       console.error('Logout all request failed:', error);
-    } finally {
-      this.clearTokens();
     }
+    // Cookies are cleared by server
   }
 
   async getCurrentUser() {
@@ -200,8 +180,26 @@ class AuthService {
     });
   }
 
-  isAuthenticated(): boolean {
-    return !!localStorage.getItem('accessToken');
+  async clearCookies() {
+    try {
+      await this.makeRequest('/auth/clear-cookies', {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Clear cookies request failed:', error);
+    }
+    // Redirect to login page
+    window.location.href = '/login';
+  }
+
+  async isAuthenticated(): Promise<boolean> {
+    try {
+      // Try to get current user - if successful, we're authenticated
+      await this.getCurrentUser();
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

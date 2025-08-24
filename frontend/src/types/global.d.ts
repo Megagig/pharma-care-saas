@@ -30,24 +30,89 @@ declare module '../../types/User' {
     features?: string[];
     licenseStatus?: 'pending' | 'approved' | 'rejected';
     subscriptionTier?: 'free_trial' | 'basic' | 'pro' | 'enterprise';
-    currentSubscription?: any;
+    currentSubscription?: SubscriptionDetails;
     stripeCustomerId?: string;
+    subscription?: {
+      status: 'active' | 'canceled' | 'expired' | 'pending';
+      expiresAt: string;
+      canceledAt?: string;
+      tier?: string;
+    };
+    role?: 'pharmacist' | 'technician' | 'owner' | 'admin' | 'super_admin';
   }
+}
+
+// Interfaces for custom types
+interface SubscriptionDetails {
+  id: string;
+  plan: string;
+  status: 'active' | 'canceled' | 'expired' | 'pending';
+  startDate: string;
+  endDate: string;
+  autoRenew: boolean;
+}
+
+interface StripeConfirmationResponse {
+  paymentMethod?: { id: string };
+  error?: { message: string };
+}
+
+interface StripeSetupData {
+  payment_method?: { card?: unknown; billing_details?: unknown };
+  return_url?: string;
 }
 
 // Module declarations for missing packages
 declare module '@stripe/stripe-js' {
-  export function loadStripe(key: string): Promise<any>;
+  export function loadStripe(key: string): Promise<StripeInstance>;
   export interface Stripe {
-    confirmCardSetup(clientSecret: string, data?: any): Promise<any>;
+    confirmCardSetup(
+      clientSecret: string,
+      data?: StripeSetupData
+    ): Promise<StripeConfirmationResponse>;
   }
 }
 
+interface StripeInstance {
+  elements: () => StripeElements;
+  confirmCardPayment: (
+    clientSecret: string,
+    data?: StripeSetupData
+  ) => Promise<StripeConfirmationResponse>;
+  confirmCardSetup: (
+    clientSecret: string,
+    data?: StripeSetupData
+  ) => Promise<StripeConfirmationResponse>;
+}
+
+interface StripeElements {
+  getElement: (elementType: string) => StripeElement | null;
+}
+
+interface StripeElement {
+  on: (event: string, handler: (event: { complete: boolean }) => void) => void;
+  update: (options: Record<string, unknown>) => void;
+}
+
+interface ElementsProps {
+  stripe?: StripeInstance | null;
+  options?: { clientSecret?: string; fonts?: Array<{ cssSrc: string }> };
+  children: React.ReactNode;
+}
+
+interface CardElementProps {
+  onChange?: (event: {
+    complete: boolean;
+    error?: { message: string };
+  }) => void;
+  options?: { style?: Record<string, unknown>; hidePostalCode?: boolean };
+}
+
 declare module '@stripe/react-stripe-js' {
-  export const Elements: React.ComponentType<any>;
-  export const CardElement: React.ComponentType<any>;
-  export function useStripe(): any;
-  export function useElements(): any;
+  export const Elements: React.ComponentType<ElementsProps>;
+  export const CardElement: React.ComponentType<CardElementProps>;
+  export function useStripe(): StripeInstance | null;
+  export function useElements(): StripeElements | null;
 }
 
 // Fix for MUI Grid component type issues
@@ -64,7 +129,7 @@ declare module '@mui/material/Grid' {
 }
 
 // Generic API response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;

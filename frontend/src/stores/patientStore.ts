@@ -16,7 +16,7 @@ interface PatientStore {
     total: number;
     pages: number;
   };
-  
+
   // Actions
   // CRUD operations
   fetchPatients: (filters?: PatientFilters) => Promise<void>;
@@ -24,28 +24,28 @@ interface PatientStore {
   updatePatient: (id: string, patientData: Partial<PatientFormData>) => Promise<Patient | null>;
   deletePatient: (id: string) => Promise<boolean>;
   getPatientById: (id: string) => Promise<Patient | null>;
-  
+
   // Selection actions
   selectPatient: (patient: Patient | null) => void;
-  
+
   // Filter and search actions
   setFilters: (filters: Partial<PatientFilters>) => void;
   clearFilters: () => void;
   searchPatients: (searchTerm: string) => void;
   sortPatients: (sortBy: 'firstName' | 'lastName' | 'createdAt' | 'updatedAt', sortOrder: 'asc' | 'desc') => void;
-  
+
   // Pagination actions
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
-  
+
   // Utility actions
   clearErrors: () => void;
   setLoading: (key: string, loading: boolean) => void;
   setError: (key: string, error: string | null) => void;
-  
+
   // Bulk operations
   deleteMultiplePatients: (ids: string[]) => Promise<boolean>;
-  
+
   // Local state management
   addPatientToState: (patient: Patient) => void;
   updatePatientInState: (id: string, updates: Partial<Patient>) => void;
@@ -78,13 +78,12 @@ export const usePatientStore = create<PatientStore>()(
       fetchPatients: async (filters) => {
         // Prevent automatic API calls in development/testing
         const isProduction = import.meta.env.PROD;
-        const token = localStorage.getItem('token');
-        
-        if (!isProduction && !token) {
+
+        if (!isProduction) {
           console.warn('Skipping API call - no token found in development mode');
           return;
         }
-        
+
         const { setLoading, setError } = get();
         setLoading('fetchPatients', true);
         setError('fetchPatients', null);
@@ -92,7 +91,7 @@ export const usePatientStore = create<PatientStore>()(
         try {
           const currentFilters = filters || get().filters;
           const response = await patientService.getPatients(currentFilters);
-          
+
           if (response.success && response.data) {
             set({
               patients: response.data,
@@ -120,7 +119,7 @@ export const usePatientStore = create<PatientStore>()(
 
         try {
           const response = await patientService.createPatient(patientData);
-          
+
           if (response.success && response.data) {
             addPatientToState(response.data);
             return response.data;
@@ -143,16 +142,16 @@ export const usePatientStore = create<PatientStore>()(
 
         try {
           const response = await patientService.updatePatient(id, patientData);
-          
+
           if (response.success && response.data) {
             updatePatientInState(id, response.data);
-            
+
             // Update selected patient if it's the one being updated
             const { selectedPatient } = get();
             if (selectedPatient && selectedPatient._id === id) {
               set({ selectedPatient: response.data });
             }
-            
+
             return response.data;
           } else {
             setError('updatePatient', response.message || 'Failed to update patient');
@@ -173,16 +172,16 @@ export const usePatientStore = create<PatientStore>()(
 
         try {
           const response = await patientService.deletePatient(id);
-          
+
           if (response.success) {
             removePatientFromState(id);
-            
+
             // Clear selected patient if it's the one being deleted
             const { selectedPatient } = get();
             if (selectedPatient && selectedPatient._id === id) {
               set({ selectedPatient: null });
             }
-            
+
             return true;
           } else {
             setError('deletePatient', response.message || 'Failed to delete patient');
@@ -203,7 +202,7 @@ export const usePatientStore = create<PatientStore>()(
 
         try {
           const response = await patientService.getPatientById(id);
-          
+
           if (response.success && response.data) {
             return response.data;
           } else {
@@ -285,15 +284,15 @@ export const usePatientStore = create<PatientStore>()(
         try {
           const promises = ids.map(id => patientService.deletePatient(id));
           const results = await Promise.all(promises);
-          
+
           const successful = results.filter(r => r.success);
-          
+
           if (successful.length === ids.length) {
             // Remove all successfully deleted patients from state
             set((state) => ({
               patients: state.patients.filter(p => !ids.includes(p._id)),
-              selectedPatient: state.selectedPatient && ids.includes(state.selectedPatient._id) 
-                ? null 
+              selectedPatient: state.selectedPatient && ids.includes(state.selectedPatient._id)
+                ? null
                 : state.selectedPatient,
             }));
             return true;

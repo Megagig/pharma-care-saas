@@ -5,7 +5,7 @@ import SubscriptionPlan from '../models/SubscriptionPlan';
 import Subscription, { ISubscription } from '../models/Subscription';
 import FeatureFlag from '../models/FeatureFlag';
 
-interface AuthRequest extends Request {
+export interface AuthRequest extends Request {
   user?: IUser & {
     currentUsage?: number;
     usageLimit?: number;
@@ -42,7 +42,8 @@ export const auth = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    // Try to get token from httpOnly cookie first, fallback to Authorization header for API compatibility
+    const token = req.cookies.accessToken || req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
       res.status(401).json({ message: 'Access denied. No token provided.' });
@@ -50,9 +51,13 @@ export const auth = async (
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string;
+      userId?: string;
+      id?: string; // Support old token format
     };
-    const user = await User.findById(decoded.userId)
+
+    // Handle both old and new token formats
+    const userId = decoded.userId || decoded.id;
+    const user = await User.findById(userId)
       .populate('currentPlanId')
       .populate('parentUserId', 'firstName lastName role')
       .populate('teamMembers', 'firstName lastName role status')
@@ -82,15 +87,10 @@ export const auth = async (
       status: { $in: ['active', 'trial', 'grace_period'] },
     }).populate('planId');
 
-    // Check subscription validity
-    if (!subscription || subscription.isExpired()) {
-      res.status(402).json({
-        message: 'Subscription expired or not found.',
-        requiresPayment: true,
-        subscriptionStatus: subscription?.status || 'none',
-      });
-      return;
-    }
+    // Set subscription information regardless of validity
+    // This allows the request to proceed even if subscription is expired
+    // Frontend will handle display of subscription warnings/requirements
+    req.subscription = subscription;
 
     req.user = user;
     req.subscription = subscription;
@@ -112,7 +112,8 @@ export const authOptionalSubscription = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    // Try to get token from httpOnly cookie first, fallback to Authorization header for API compatibility
+    const token = req.cookies.accessToken || req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
       res.status(401).json({ message: 'Access denied. No token provided.' });
@@ -120,9 +121,13 @@ export const authOptionalSubscription = async (
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string;
+      userId?: string;
+      id?: string; // Support old token format
     };
-    const user = await User.findById(decoded.userId)
+
+    // Handle both old and new token formats
+    const userId = decoded.userId || decoded.id;
+    const user = await User.findById(userId)
       .populate('currentPlanId')
       .populate('parentUserId', 'firstName lastName role')
       .populate('teamMembers', 'firstName lastName role status')
@@ -211,7 +216,7 @@ export const requirePermission = (permission: string) => {
   };
 };
 
-// License verification middleware
+// Enhanced license verification middleware with detailed status checking
 export const requireLicense = (
   req: AuthRequest,
   res: Response,
@@ -226,19 +231,54 @@ export const requireLicense = (
     req.user.role
   );
 
-  if (requiresLicense && req.user.licenseStatus !== 'approved') {
-    res.status(403).json({
-      message: 'Valid license required.',
-      licenseStatus: req.user.licenseStatus,
-      requiresAction: 'license_verification',
-    });
-    return;
+  // Super admin bypasses license check
+  if ((req.user.role as string) === 'super_admin') {
+    return next();
+  }
+
+  if (requiresLicense) {
+    switch (req.user.licenseStatus) {
+      case 'approved':
+        // License is valid, allow access
+        break;
+
+      case 'pending':
+        res.status(403).json({
+          message:
+            'Your license is pending review. This usually takes 1-3 business days.',
+          licenseStatus: 'pending',
+          requiresAction: 'license_pending',
+          nextStep: 'You will be notified when your license has been reviewed.',
+        });
+        return;
+
+      case 'rejected':
+        res.status(403).json({
+          message: 'Your license verification was rejected.',
+          licenseStatus: 'rejected',
+          requiresAction: 'license_resubmission',
+          rejectionReason:
+            req.user.licenseRejectionReason ||
+            'Invalid or incomplete information.',
+          nextStep: 'Please resubmit with valid license information.',
+        });
+        return;
+
+      default:
+        res.status(403).json({
+          message: 'Valid license required for this role.',
+          licenseStatus: req.user.licenseStatus || 'not_submitted',
+          requiresAction: 'license_verification',
+          nextStep: 'Please submit your pharmacy license for verification.',
+        });
+        return;
+    }
   }
 
   next();
 };
 
-// Enhanced feature flag middleware
+// Enhanced feature flag middleware with subscription validation
 export const requireFeature = (featureKey: string) => {
   return async (
     req: AuthRequest,
@@ -267,6 +307,23 @@ export const requireFeature = (featureKey: string) => {
 
       const user = req.user;
       const subscription = req.subscription;
+
+      // Check if user is super admin - they bypass all restrictions
+      if ((user.role as string) === 'super_admin') {
+        return next();
+      }
+
+      // Check subscription status
+      if (!['active', 'trial'].includes(subscription.status)) {
+        res.status(403).json({
+          message: 'Your subscription is not active.',
+          feature: featureKey,
+          subscriptionStatus: subscription.status,
+          requiresAction: 'subscription_renewal',
+          upgradeRequired: true,
+        });
+        return;
+      }
 
       // Check tier access
       if (!featureFlag.allowedTiers.includes(subscription.tier)) {
@@ -336,7 +393,7 @@ export const requireFeature = (featureKey: string) => {
         subscription.features.includes(featureKey) ||
         subscription.customFeatures.includes(featureKey) ||
         user.features.includes(featureKey) ||
-        user.role === 'super_admin';
+        (user.role as string) === 'super_admin';
 
       if (!hasFeatureAccess) {
         res.status(403).json({
@@ -450,6 +507,28 @@ export const requireAdmin = (
   if (req.user.role !== 'super_admin') {
     res.status(403).json({
       message: 'Administrator access required.',
+      userRole: req.user.role,
+    });
+    return;
+  }
+
+  next();
+};
+
+// Super Admin-only middleware
+export const requireSuperAdmin = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void | Response => {
+  if (!req.user) {
+    res.status(401).json({ message: 'Access denied.' });
+    return;
+  }
+
+  if (req.user.role !== 'super_admin') {
+    res.status(403).json({
+      message: 'Super Administrator access required.',
       userRole: req.user.role,
     });
     return;

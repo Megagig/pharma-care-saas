@@ -15,7 +15,7 @@ interface MedicationStore {
     total: number;
     pages: number;
   };
-  
+
   // Actions
   // CRUD operations
   fetchMedications: (filters?: MedicationFilters) => Promise<void>;
@@ -24,14 +24,14 @@ interface MedicationStore {
   updateMedication: (id: string, medicationData: Partial<MedicationFormData>) => Promise<Medication | null>;
   deleteMedication: (id: string) => Promise<boolean>;
   getMedicationById: (id: string) => Promise<Medication | null>;
-  
+
   // Status management
   updateMedicationStatus: (id: string, status: 'active' | 'completed' | 'discontinued') => Promise<boolean>;
   discontinueMedication: (id: string, reason?: string) => Promise<boolean>;
-  
+
   // Selection actions
   selectMedication: (medication: Medication | null) => void;
-  
+
   // Filter and search actions
   setFilters: (filters: Partial<MedicationFilters>) => void;
   clearFilters: () => void;
@@ -39,25 +39,25 @@ interface MedicationStore {
   filterByStatus: (status: 'active' | 'completed' | 'discontinued' | 'all') => void;
   filterByPatient: (patientId: string) => void;
   sortMedications: (sortBy: 'name' | 'prescribedDate' | 'createdAt', sortOrder: 'asc' | 'desc') => void;
-  
+
   // Pagination actions
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
-  
+
   // Utility actions
   clearErrors: () => void;
   setLoading: (key: string, loading: boolean) => void;
   setError: (key: string, error: string | null) => void;
-  
+
   // Bulk operations
   updateMultipleMedicationStatus: (ids: string[], status: string) => Promise<boolean>;
   deleteMultipleMedications: (ids: string[]) => Promise<boolean>;
-  
+
   // Local state management
   addMedicationToState: (medication: Medication) => void;
   updateMedicationInState: (id: string, updates: Partial<Medication>) => void;
   removeMedicationFromState: (id: string) => void;
-  
+
   // Analytics and insights
   getActiveMedicationsCount: () => number;
   getMedicationsByStatus: (status: string) => Medication[];
@@ -135,13 +135,12 @@ export const useMedicationStore = create<MedicationStore>()(
       fetchMedications: async (filters) => {
         // Prevent automatic API calls in development/testing
         const isProduction = import.meta.env.PROD;
-        const token = localStorage.getItem('token');
-        
-        if (!isProduction && !token) {
+
+        if (!isProduction) {
           console.warn('Skipping medication API call - no token found in development mode');
           return;
         }
-        
+
         const { setLoading, setError } = get();
         setLoading('fetchMedications', true);
         setError('fetchMedications', null);
@@ -149,7 +148,7 @@ export const useMedicationStore = create<MedicationStore>()(
         try {
           const currentFilters = filters || get().filters;
           const response = await medicationService.getMedications(currentFilters);
-          
+
           if (response.success && response.data) {
             set({
               medications: response.data,
@@ -177,7 +176,7 @@ export const useMedicationStore = create<MedicationStore>()(
 
         try {
           const response = await medicationService.getMedicationsByPatient(_patientId);
-          
+
           if (response.success && response.data) {
             set({ medications: response.data });
           } else {
@@ -197,7 +196,7 @@ export const useMedicationStore = create<MedicationStore>()(
 
         try {
           const response = await medicationService.createMedication(medicationData);
-          
+
           if (response.success && response.data) {
             addMedicationToState(response.data);
             return response.data;
@@ -220,16 +219,16 @@ export const useMedicationStore = create<MedicationStore>()(
 
         try {
           const response = await medicationService.updateMedication(id, medicationData);
-          
+
           if (response.success && response.data) {
             updateMedicationInState(id, response.data);
-            
+
             // Update selected medication if it's the one being updated
             const { selectedMedication } = get();
             if (selectedMedication && selectedMedication._id === id) {
               set({ selectedMedication: { ...selectedMedication, ...response.data } });
             }
-            
+
             return response.data;
           } else {
             setError('updateMedication', 'Failed to update medication');
@@ -250,16 +249,16 @@ export const useMedicationStore = create<MedicationStore>()(
 
         try {
           const response = await medicationService.deleteMedication(id);
-          
+
           if (response.success) {
             removeMedicationFromState(id);
-            
+
             // Clear selected medication if it's the one being deleted
             const { selectedMedication } = get();
             if (selectedMedication && selectedMedication._id === id) {
               set({ selectedMedication: null });
             }
-            
+
             return true;
           } else {
             setError('deleteMedication', 'Failed to delete medication');
@@ -280,7 +279,7 @@ export const useMedicationStore = create<MedicationStore>()(
 
         try {
           const response = await medicationService.getMedicationById(id);
-          
+
           if (response.success && response.data) {
             return response.data;
           } else {
@@ -303,7 +302,7 @@ export const useMedicationStore = create<MedicationStore>()(
 
         try {
           const response = await medicationService.updateMedicationStatus(id, status);
-          
+
           if (response.success) {
             updateMedicationInState(id, { status: status as 'active' | 'completed' | 'discontinued' });
             return true;
@@ -404,9 +403,9 @@ export const useMedicationStore = create<MedicationStore>()(
         try {
           const promises = ids.map(id => medicationService.updateMedicationStatus(id, status));
           const results = await Promise.all(promises);
-          
+
           const successful = results.filter(r => r.success);
-          
+
           if (successful.length === ids.length) {
             // Update all successfully updated medications in state
             set((state) => ({
@@ -435,15 +434,15 @@ export const useMedicationStore = create<MedicationStore>()(
         try {
           const promises = ids.map(id => medicationService.deleteMedication(id));
           const results = await Promise.all(promises);
-          
+
           const successful = results.filter(r => r.success);
-          
+
           if (successful.length === ids.length) {
             // Remove all successfully deleted medications from state
             set((state) => ({
               medications: state.medications.filter(m => !ids.includes(m._id)),
-              selectedMedication: state.selectedMedication && ids.includes(state.selectedMedication._id) 
-                ? null 
+              selectedMedication: state.selectedMedication && ids.includes(state.selectedMedication._id)
+                ? null
                 : state.selectedMedication,
             }));
             return true;
@@ -499,7 +498,7 @@ export const useMedicationStore = create<MedicationStore>()(
       getPatientMedicationSummary: (patientId) => {
         const { medications } = get();
         const patientMeds = medications.filter(m => m.patientId === patientId);
-        
+
         return {
           active: patientMeds.filter(m => m.status === 'active').length,
           completed: patientMeds.filter(m => m.status === 'completed').length,

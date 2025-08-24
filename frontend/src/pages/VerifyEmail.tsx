@@ -5,7 +5,7 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import {
   CheckCircle,
   XCircle,
@@ -141,7 +141,7 @@ const VerifyEmail: React.FC = () => {
       // TODO: Implement resend API call
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
       toast.success('Verification code sent successfully!');
-    } catch (resendError) {
+    } catch {
       toast.error('Failed to resend code. Please try again.');
     } finally {
       setIsResending(false);

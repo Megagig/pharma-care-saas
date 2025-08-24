@@ -132,18 +132,39 @@ class EmailService {
     );
   }
 
-  async sendEmail(to: string, template: EmailTemplate, attachments?: any[]) {
+  async sendEmail(
+    toOrOptions:
+      | string
+      | { to: string; subject: string; text: string; html: string },
+    templateOrAttachments?: EmailTemplate | any[],
+    attachments?: any[]
+  ) {
     try {
-      const mailOptions = {
-        from: `\"PharmaCare\" <${
-          process.env.SMTP_FROM || process.env.SMTP_USER
-        }>`,
-        to,
-        subject: template.subject,
-        text: template.text,
-        html: template.html,
-        attachments,
-      };
+      let mailOptions: any;
+
+      // Handle object format
+      if (typeof toOrOptions === 'object') {
+        mailOptions = {
+          from: `\"PharmaCare\" <${
+            process.env.SMTP_FROM || process.env.SMTP_USER
+          }>`,
+          ...toOrOptions,
+          attachments: templateOrAttachments as any[],
+        };
+      }
+      // Handle original parameter format
+      else {
+        mailOptions = {
+          from: `\"PharmaCare\" <${
+            process.env.SMTP_FROM || process.env.SMTP_USER
+          }>`,
+          to: toOrOptions,
+          subject: (templateOrAttachments as EmailTemplate).subject,
+          text: (templateOrAttachments as EmailTemplate).text,
+          html: (templateOrAttachments as EmailTemplate).html,
+          attachments,
+        };
+      }
 
       const result = await this.transporter.sendMail(mailOptions);
       console.log('Email sent successfully:', result.messageId);
@@ -379,14 +400,20 @@ class EmailService {
       html: `
         <h2>Subscription Upgraded!</h2>
         <p>Dear ${data.firstName},</p>
-        <p>Your subscription has been successfully upgraded from <strong>${data.oldPlanName}</strong> to <strong>${data.newPlanName}</strong>.</p>
+        <p>Your subscription has been successfully upgraded from <strong>${
+          data.oldPlanName
+        }</strong> to <strong>${data.newPlanName}</strong>.</p>
         <p><strong>Upgrade Amount:</strong> ₦${data.upgradeAmount.toLocaleString()}</p>
         <p><strong>Effective Date:</strong> ${data.effectiveDate.toLocaleDateString()}</p>
         <p>You now have access to all the enhanced features of your new plan!</p>
         <br>
         <p>Best regards,<br>PharmaCare Team</p>
       `,
-      text: `Subscription Upgraded! Dear ${data.firstName}, Your subscription has been upgraded from ${data.oldPlanName} to ${data.newPlanName}. Upgrade Amount: ₦${data.upgradeAmount.toLocaleString()}. Effective Date: ${data.effectiveDate.toLocaleDateString()}.`,
+      text: `Subscription Upgraded! Dear ${
+        data.firstName
+      }, Your subscription has been upgraded from ${data.oldPlanName} to ${
+        data.newPlanName
+      }. Upgrade Amount: ₦${data.upgradeAmount.toLocaleString()}. Effective Date: ${data.effectiveDate.toLocaleDateString()}.`,
     };
     return this.sendEmail(email, template);
   }
@@ -405,14 +432,22 @@ class EmailService {
       html: `
         <h2>Subscription Downgrade Scheduled</h2>
         <p>Dear ${data.firstName},</p>
-        <p>Your subscription downgrade from <strong>${data.currentPlanName}</strong> to <strong>${data.newPlanName}</strong> has been scheduled.</p>
+        <p>Your subscription downgrade from <strong>${
+          data.currentPlanName
+        }</strong> to <strong>${
+        data.newPlanName
+      }</strong> has been scheduled.</p>
         <p><strong>Effective Date:</strong> ${data.effectiveDate.toLocaleDateString()}</p>
         <p>You'll continue to have access to your current plan features until the effective date.</p>
         <p>You can cancel this downgrade anytime before the effective date in your account settings.</p>
         <br>
         <p>Best regards,<br>PharmaCare Team</p>
       `,
-      text: `Subscription Downgrade Scheduled. Dear ${data.firstName}, Your downgrade from ${data.currentPlanName} to ${data.newPlanName} is scheduled for ${data.effectiveDate.toLocaleDateString()}.`,
+      text: `Subscription Downgrade Scheduled. Dear ${
+        data.firstName
+      }, Your downgrade from ${data.currentPlanName} to ${
+        data.newPlanName
+      } is scheduled for ${data.effectiveDate.toLocaleDateString()}.`,
     };
     return this.sendEmail(email, template);
   }

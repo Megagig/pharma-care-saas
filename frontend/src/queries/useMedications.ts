@@ -39,17 +39,17 @@ export const useCreateMedication = () => {
 
   return useMutation({
     mutationFn: medicationService.createMedication,
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       // Invalidate medications lists
       queryClient.invalidateQueries({ queryKey: queryKeys.medications.lists() });
-      
+
       // If medication has a patient, invalidate patient-specific medications
       if (data?.patientId) {
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.medications.byPatient(data.patientId) 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.medications.byPatient(data.patientId)
         });
       }
-      
+
       // Show success notification
       addNotification({
         type: 'success',
@@ -75,25 +75,25 @@ export const useUpdateMedication = () => {
   const addNotification = useUIStore((state) => state.addNotification);
 
   return useMutation({
-    mutationFn: ({ medicationId, medicationData }: { medicationId: string; medicationData: any }) =>
+    mutationFn: ({ medicationId, medicationData }: { medicationId: string; medicationData: Record<string, unknown> }) =>
       medicationService.updateMedication(medicationId, medicationData),
-    onSuccess: (data: any, variables) => {
+    onSuccess: (data: unknown, variables) => {
       // Update specific medication in cache
       queryClient.setQueryData(
         queryKeys.medications.detail(variables.medicationId),
         data
       );
-      
+
       // Invalidate medications lists
       queryClient.invalidateQueries({ queryKey: queryKeys.medications.lists() });
-      
+
       // If medication has a patient, invalidate patient-specific medications
       if (data?.patientId) {
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.medications.byPatient(data.patientId) 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.medications.byPatient(data.patientId)
         });
       }
-      
+
       addNotification({
         type: 'success',
         title: 'Medication Updated',
@@ -123,16 +123,16 @@ export const useUpdateMedicationStatus = () => {
     onMutate: async ({ medicationId, status }) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.medications.detail(medicationId) });
-      
+
       // Snapshot previous value
       const previousMedication = queryClient.getQueryData(queryKeys.medications.detail(medicationId));
-      
+
       // Optimistically update to new value
       queryClient.setQueryData(
         queryKeys.medications.detail(medicationId),
         (old: any) => old ? { ...old, status } : old
       );
-      
+
       return { previousMedication };
     },
     onError: (error, variables, context) => {
@@ -143,7 +143,7 @@ export const useUpdateMedicationStatus = () => {
           context.previousMedication
         );
       }
-      
+
       addNotification({
         type: 'error',
         title: 'Status Update Failed',
@@ -154,13 +154,13 @@ export const useUpdateMedicationStatus = () => {
     onSuccess: (data: any, variables) => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.medications.lists() });
-      
+
       if (data?.patientId) {
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.medications.byPatient(data.patientId) 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.medications.byPatient(data.patientId)
         });
       }
-      
+
       addNotification({
         type: 'success',
         title: 'Status Updated',
@@ -181,13 +181,13 @@ export const useDeleteMedication = () => {
     onSuccess: (data: any, medicationId: string) => {
       // Remove from cache
       queryClient.removeQueries({ queryKey: queryKeys.medications.detail(medicationId) });
-      
+
       // Invalidate lists
       queryClient.invalidateQueries({ queryKey: queryKeys.medications.lists() });
-      
+
       // Invalidate patient-specific medications if applicable
       queryClient.invalidateQueries({ queryKey: queryKeys.medications.all });
-      
+
       addNotification({
         type: 'success',
         title: 'Medication Deleted',

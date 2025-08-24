@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireAdmin = exports.requireTeamAccess = exports.checkUsageLimit = exports.requireFeature = exports.requireLicense = exports.requirePermission = exports.authorize = exports.auth = void 0;
+exports.requireSuperAdmin = exports.requireAdmin = exports.requireTeamAccess = exports.checkUsageLimit = exports.requireFeature = exports.requireLicense = exports.requirePermission = exports.authorize = exports.authOptionalSubscription = exports.auth = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
 const Subscription_1 = __importDefault(require("../models/Subscription"));
@@ -23,13 +23,14 @@ const ROLE_HIERARCHY = {
 };
 const auth = async (req, res, next) => {
     try {
-        const token = req.header('Authorization')?.replace('Bearer ', '');
+        const token = req.cookies.accessToken || req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
         if (!token) {
             res.status(401).json({ message: 'Access denied. No token provided.' });
             return;
         }
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
-        const user = await User_1.default.findById(decoded.userId)
+        const userId = decoded.userId || decoded.id;
+        const user = await User_1.default.findById(userId)
             .populate('currentPlanId')
             .populate('parentUserId', 'firstName lastName role')
             .populate('teamMembers', 'firstName lastName role status')
@@ -52,14 +53,7 @@ const auth = async (req, res, next) => {
             userId: user._id,
             status: { $in: ['active', 'trial', 'grace_period'] },
         }).populate('planId');
-        if (!subscription || subscription.isExpired()) {
-            res.status(402).json({
-                message: 'Subscription expired or not found.',
-                requiresPayment: true,
-                subscriptionStatus: subscription?.status || 'none',
-            });
-            return;
-        }
+        req.subscription = subscription;
         req.user = user;
         req.subscription = subscription;
         next();
@@ -74,6 +68,52 @@ const auth = async (req, res, next) => {
     }
 };
 exports.auth = auth;
+const authOptionalSubscription = async (req, res, next) => {
+    try {
+        const token = req.cookies.accessToken || req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
+        if (!token) {
+            res.status(401).json({ message: 'Access denied. No token provided.' });
+            return;
+        }
+        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId || decoded.id;
+        const user = await User_1.default.findById(userId)
+            .populate('currentPlanId')
+            .populate('parentUserId', 'firstName lastName role')
+            .populate('teamMembers', 'firstName lastName role status')
+            .select('-passwordHash');
+        if (!user) {
+            res.status(401).json({ message: 'Invalid token.' });
+            return;
+        }
+        if (!['active', 'license_pending'].includes(user.status)) {
+            res.status(401).json({
+                message: 'Account is not active.',
+                status: user.status,
+                requiresAction: user.status === 'license_pending'
+                    ? 'license_verification'
+                    : 'account_activation',
+            });
+            return;
+        }
+        const subscription = await Subscription_1.default.findOne({
+            userId: user._id,
+            status: { $in: ['active', 'trial', 'grace_period'] },
+        }).populate('planId');
+        req.user = user;
+        req.subscription = subscription || undefined;
+        next();
+    }
+    catch (error) {
+        if (error instanceof jsonwebtoken_1.default.TokenExpiredError) {
+            res.status(401).json({ message: 'Token expired.' });
+        }
+        else {
+            res.status(401).json({ message: 'Invalid token.' });
+        }
+    }
+};
+exports.authOptionalSubscription = authOptionalSubscription;
 const authorize = (...roles) => {
     return (req, res, next) => {
         if (!req.user) {
@@ -121,13 +161,40 @@ const requireLicense = (req, res, next) => {
         return;
     }
     const requiresLicense = ['pharmacist', 'intern_pharmacist'].includes(req.user.role);
-    if (requiresLicense && req.user.licenseStatus !== 'approved') {
-        res.status(403).json({
-            message: 'Valid license required.',
-            licenseStatus: req.user.licenseStatus,
-            requiresAction: 'license_verification',
-        });
-        return;
+    if (req.user.role === 'super_admin') {
+        return next();
+    }
+    if (requiresLicense) {
+        switch (req.user.licenseStatus) {
+            case 'approved':
+                break;
+            case 'pending':
+                res.status(403).json({
+                    message: 'Your license is pending review. This usually takes 1-3 business days.',
+                    licenseStatus: 'pending',
+                    requiresAction: 'license_pending',
+                    nextStep: 'You will be notified when your license has been reviewed.',
+                });
+                return;
+            case 'rejected':
+                res.status(403).json({
+                    message: 'Your license verification was rejected.',
+                    licenseStatus: 'rejected',
+                    requiresAction: 'license_resubmission',
+                    rejectionReason: req.user.licenseRejectionReason ||
+                        'Invalid or incomplete information.',
+                    nextStep: 'Please resubmit with valid license information.',
+                });
+                return;
+            default:
+                res.status(403).json({
+                    message: 'Valid license required for this role.',
+                    licenseStatus: req.user.licenseStatus || 'not_submitted',
+                    requiresAction: 'license_verification',
+                    nextStep: 'Please submit your pharmacy license for verification.',
+                });
+                return;
+        }
     }
     next();
 };
@@ -152,6 +219,19 @@ const requireFeature = (featureKey) => {
             }
             const user = req.user;
             const subscription = req.subscription;
+            if (user.role === 'super_admin') {
+                return next();
+            }
+            if (!['active', 'trial'].includes(subscription.status)) {
+                res.status(403).json({
+                    message: 'Your subscription is not active.',
+                    feature: featureKey,
+                    subscriptionStatus: subscription.status,
+                    requiresAction: 'subscription_renewal',
+                    upgradeRequired: true,
+                });
+                return;
+            }
             if (!featureFlag.allowedTiers.includes(subscription.tier)) {
                 res.status(403).json({
                     message: 'Feature not available in your current plan.',
@@ -295,4 +375,19 @@ const requireAdmin = (req, res, next) => {
     next();
 };
 exports.requireAdmin = requireAdmin;
+const requireSuperAdmin = (req, res, next) => {
+    if (!req.user) {
+        res.status(401).json({ message: 'Access denied.' });
+        return;
+    }
+    if (req.user.role !== 'super_admin') {
+        res.status(403).json({
+            message: 'Super Administrator access required.',
+            userRole: req.user.role,
+        });
+        return;
+    }
+    next();
+};
+exports.requireSuperAdmin = requireSuperAdmin;
 //# sourceMappingURL=auth.js.map

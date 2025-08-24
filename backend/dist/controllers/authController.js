@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProfile = exports.getMe = exports.logoutAll = exports.logout = exports.refreshToken = exports.resetPassword = exports.forgotPassword = exports.verifyEmail = exports.login = exports.register = void 0;
+exports.updateProfile = exports.getMe = exports.logoutAll = exports.clearCookies = exports.logout = exports.refreshToken = exports.resetPassword = exports.forgotPassword = exports.verifyEmail = exports.login = exports.register = void 0;
 const User_1 = __importDefault(require("../models/User"));
 const Session_1 = __importDefault(require("../models/Session"));
 const SubscriptionPlan_1 = __importDefault(require("../models/SubscriptionPlan"));
@@ -18,10 +18,10 @@ const generateRefreshToken = () => {
 };
 const register = async (req, res) => {
     try {
-        const { firstName, lastName, email, password, phone, role = 'pharmacist' } = req.body;
+        const { firstName, lastName, email, password, phone, role = 'pharmacist', } = req.body;
         if (!firstName || !lastName || !email || !password) {
             res.status(400).json({
-                message: 'Missing required fields: firstName, lastName, email, and password are required'
+                message: 'Missing required fields: firstName, lastName, email, and password are required',
             });
             return;
         }
@@ -30,9 +30,15 @@ const register = async (req, res) => {
             res.status(400).json({ message: 'User already exists with this email' });
             return;
         }
-        const freeTrialPlan = await SubscriptionPlan_1.default.findOne({ name: 'Free Trial' });
+        const freeTrialPlan = await SubscriptionPlan_1.default.findOne({
+            name: 'Free Trial',
+        });
         if (!freeTrialPlan) {
-            res.status(500).json({ message: 'Default subscription plan not found. Please run seed script.' });
+            res
+                .status(500)
+                .json({
+                message: 'Default subscription plan not found. Please run seed script.',
+            });
             return;
         }
         const user = await User_1.default.create({
@@ -43,7 +49,7 @@ const register = async (req, res) => {
             passwordHash: password,
             role,
             currentPlanId: freeTrialPlan._id,
-            status: 'pending'
+            status: 'pending',
         });
         const verificationToken = user.generateVerificationToken();
         const verificationCode = user.generateVerificationCode();
@@ -83,7 +89,7 @@ const register = async (req, res) => {
             <p>If you didn't create this account, please ignore this email.</p>
           </div>
         </div>
-      `
+      `,
         });
         res.status(201).json({
             success: true,
@@ -95,8 +101,8 @@ const register = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 status: user.status,
-                emailVerified: user.emailVerified
-            }
+                emailVerified: user.emailVerified,
+            },
         });
     }
     catch (error) {
@@ -107,19 +113,23 @@ exports.register = register;
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User_1.default.findOne({ email }).select('+passwordHash').populate('currentPlanId');
+        const user = await User_1.default.findOne({ email })
+            .select('+passwordHash')
+            .populate('currentPlanId');
         if (!user || !(await user.comparePassword(password))) {
             res.status(401).json({ message: 'Invalid credentials' });
             return;
         }
         if (user.status === 'suspended') {
-            res.status(401).json({ message: 'Account is suspended. Please contact support.' });
+            res
+                .status(401)
+                .json({ message: 'Account is suspended. Please contact support.' });
             return;
         }
         if (!user.emailVerified) {
             res.status(401).json({
                 message: 'Please verify your email before logging in.',
-                requiresVerification: true
+                requiresVerification: true,
             });
             return;
         }
@@ -131,20 +141,28 @@ const login = async (req, res) => {
         expiresAt.setDate(expiresAt.getDate() + 30);
         await Session_1.default.create({
             userId: user._id,
-            refreshToken: crypto_1.default.createHash('sha256').update(refreshToken).digest('hex'),
+            refreshToken: crypto_1.default
+                .createHash('sha256')
+                .update(refreshToken)
+                .digest('hex'),
             userAgent: req.get('User-Agent'),
             ipAddress: req.ip,
-            expiresAt
+            expiresAt,
+        });
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 15 * 60 * 1000,
         });
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 30 * 24 * 60 * 60 * 1000
+            maxAge: 30 * 24 * 60 * 60 * 1000,
         });
         res.json({
             success: true,
-            accessToken,
             user: {
                 id: user._id,
                 firstName: user.firstName,
@@ -154,8 +172,8 @@ const login = async (req, res) => {
                 status: user.status,
                 emailVerified: user.emailVerified,
                 currentPlan: user.currentPlanId,
-                pharmacyId: user.pharmacyId
-            }
+                pharmacyId: user.pharmacyId,
+            },
         });
     }
     catch (error) {
@@ -167,26 +185,33 @@ const verifyEmail = async (req, res) => {
     try {
         const { token, code } = req.body;
         if (!token && !code) {
-            res.status(400).json({ message: 'Verification token or code is required' });
+            res
+                .status(400)
+                .json({ message: 'Verification token or code is required' });
             return;
         }
         let user = null;
         if (token) {
-            const hashedToken = crypto_1.default.createHash('sha256').update(token).digest('hex');
+            const hashedToken = crypto_1.default
+                .createHash('sha256')
+                .update(token)
+                .digest('hex');
             user = await User_1.default.findOne({
                 verificationToken: hashedToken,
-                emailVerified: false
+                emailVerified: false,
             });
         }
         else if (code) {
             const hashedCode = crypto_1.default.createHash('sha256').update(code).digest('hex');
             user = await User_1.default.findOne({
                 verificationCode: hashedCode,
-                emailVerified: false
+                emailVerified: false,
             });
         }
         if (!user) {
-            res.status(400).json({ message: 'Invalid or expired verification token/code' });
+            res
+                .status(400)
+                .json({ message: 'Invalid or expired verification token/code' });
             return;
         }
         user.emailVerified = true;
@@ -196,7 +221,7 @@ const verifyEmail = async (req, res) => {
         await user.save();
         res.json({
             success: true,
-            message: 'Email verified successfully! You can now log in.'
+            message: 'Email verified successfully! You can now log in.',
         });
     }
     catch (error) {
@@ -209,7 +234,9 @@ const forgotPassword = async (req, res) => {
         const { email } = req.body;
         const user = await User_1.default.findOne({ email });
         if (!user) {
-            res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+            res.json({
+                message: 'If an account with that email exists, a password reset link has been sent.',
+            });
             return;
         }
         const resetToken = user.generateResetToken();
@@ -225,11 +252,11 @@ const forgotPassword = async (req, res) => {
         <a href="${resetUrl}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
         <p>This link will expire in 1 hour.</p>
         <p>If you didn't request this, please ignore this email.</p>
-      `
+      `,
         });
         res.json({
             success: true,
-            message: 'If an account with that email exists, a password reset link has been sent.'
+            message: 'If an account with that email exists, a password reset link has been sent.',
         });
     }
     catch (error) {
@@ -246,7 +273,7 @@ const resetPassword = async (req, res) => {
         }
         const hashedToken = crypto_1.default.createHash('sha256').update(token).digest('hex');
         const user = await User_1.default.findOne({
-            resetToken: hashedToken
+            resetToken: hashedToken,
         });
         if (!user) {
             res.status(400).json({ message: 'Invalid or expired reset token' });
@@ -258,7 +285,7 @@ const resetPassword = async (req, res) => {
         await Session_1.default.updateMany({ userId: user._id }, { isActive: false });
         res.json({
             success: true,
-            message: 'Password reset successful! Please log in with your new password.'
+            message: 'Password reset successful! Please log in with your new password.',
         });
     }
     catch (error) {
@@ -273,11 +300,14 @@ const refreshToken = async (req, res) => {
             res.status(401).json({ message: 'Refresh token not provided' });
             return;
         }
-        const hashedToken = crypto_1.default.createHash('sha256').update(refreshToken).digest('hex');
+        const hashedToken = crypto_1.default
+            .createHash('sha256')
+            .update(refreshToken)
+            .digest('hex');
         const session = await Session_1.default.findOne({
             refreshToken: hashedToken,
             isActive: true,
-            expiresAt: { $gt: new Date() }
+            expiresAt: { $gt: new Date() },
         }).populate('userId');
         if (!session) {
             res.status(401).json({ message: 'Invalid or expired refresh token' });
@@ -285,9 +315,14 @@ const refreshToken = async (req, res) => {
         }
         const user = session.userId;
         const accessToken = generateAccessToken(user._id.toString());
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 15 * 60 * 1000,
+        });
         res.json({
             success: true,
-            accessToken,
             user: {
                 id: user._id,
                 firstName: user.firstName,
@@ -295,8 +330,8 @@ const refreshToken = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 status: user.status,
-                emailVerified: user.emailVerified
-            }
+                emailVerified: user.emailVerified,
+            },
         });
     }
     catch (error) {
@@ -308,13 +343,18 @@ const logout = async (req, res) => {
     try {
         const { refreshToken } = req.cookies;
         if (refreshToken) {
-            const hashedToken = crypto_1.default.createHash('sha256').update(refreshToken).digest('hex');
+            const hashedToken = crypto_1.default
+                .createHash('sha256')
+                .update(refreshToken)
+                .digest('hex');
             await Session_1.default.updateOne({ refreshToken: hashedToken }, { isActive: false });
         }
         res.clearCookie('refreshToken');
+        res.clearCookie('accessToken');
+        res.clearCookie('token');
         res.json({
             success: true,
-            message: 'Logged out successfully'
+            message: 'Logged out successfully',
         });
     }
     catch (error) {
@@ -322,20 +362,39 @@ const logout = async (req, res) => {
     }
 };
 exports.logout = logout;
+const clearCookies = async (req, res) => {
+    try {
+        res.clearCookie('refreshToken');
+        res.clearCookie('accessToken');
+        res.clearCookie('token');
+        res.json({
+            success: true,
+            message: 'Cookies cleared successfully',
+        });
+    }
+    catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+exports.clearCookies = clearCookies;
 const logoutAll = async (req, res) => {
     try {
         const { refreshToken } = req.cookies;
         if (refreshToken) {
-            const hashedToken = crypto_1.default.createHash('sha256').update(refreshToken).digest('hex');
+            const hashedToken = crypto_1.default
+                .createHash('sha256')
+                .update(refreshToken)
+                .digest('hex');
             const session = await Session_1.default.findOne({ refreshToken: hashedToken });
             if (session) {
                 await Session_1.default.updateMany({ userId: session.userId }, { isActive: false });
             }
         }
         res.clearCookie('refreshToken');
+        res.clearCookie('accessToken');
         res.json({
             success: true,
-            message: 'Logged out from all devices successfully'
+            message: 'Logged out from all devices successfully',
         });
     }
     catch (error) {
@@ -366,8 +425,8 @@ const getMe = async (req, res) => {
                 emailVerified: user.emailVerified,
                 currentPlan: user.currentPlanId,
                 pharmacy: user.pharmacyId,
-                lastLoginAt: user.lastLoginAt
-            }
+                lastLoginAt: user.lastLoginAt,
+            },
         });
     }
     catch (error) {
@@ -379,14 +438,18 @@ const updateProfile = async (req, res) => {
     try {
         const allowedUpdates = ['firstName', 'lastName', 'phone'];
         const updates = Object.keys(req.body);
-        const isValidOperation = updates.every(update => allowedUpdates.includes(update));
+        const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
         if (!isValidOperation) {
-            res.status(400).json({ message: 'Invalid updates. Only firstName, lastName, and phone can be updated.' });
+            res
+                .status(400)
+                .json({
+                message: 'Invalid updates. Only firstName, lastName, and phone can be updated.',
+            });
             return;
         }
         const user = await User_1.default.findByIdAndUpdate(req.user.userId, req.body, {
             new: true,
-            runValidators: true
+            runValidators: true,
         }).select('-passwordHash');
         if (!user) {
             res.status(404).json({ message: 'User not found' });
@@ -401,8 +464,8 @@ const updateProfile = async (req, res) => {
                 email: user.email,
                 phone: user.phone,
                 role: user.role,
-                status: user.status
-            }
+                status: user.status,
+            },
         });
     }
     catch (error) {

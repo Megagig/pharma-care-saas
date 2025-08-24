@@ -31,7 +31,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import { useUIStore } from '../../stores';
-import { useSubscriptionStatus } from '../../hooks/useRBAC';
+import { useSubscriptionStatus } from '../../hooks/useSubscription';
 import { paymentService } from '../../services/paymentService';
 import LoadingSpinner from '../LoadingSpinner';
 

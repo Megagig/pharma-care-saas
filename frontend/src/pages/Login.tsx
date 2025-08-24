@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import {
   Box,
   Container,
@@ -17,13 +17,12 @@ import {
   Card,
   CardContent,
 } from '@mui/material';
-import {
-  Email as EmailIcon,
-  Lock as LockIcon,
-  Visibility,
-  VisibilityOff,
-} from '@mui/icons-material';
+import EmailIcon from '@mui/icons-material/Email';
+import LockIcon from '@mui/icons-material/Lock';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import toast from 'react-hot-toast';
+import { checkAuthToken, testAPIConnection } from '../utils/authDebug';
 
 const Login = () => {
   const { login } = useAuth();
@@ -51,12 +50,35 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await login({ email: formData.email, password: formData.password });
-      toast.success('Login successful!');
-      navigate('/dashboard');
-    } catch {
-      setError('Invalid email or password');
-      toast.error('Login failed');
+      console.log('Attempting login with:', { email: formData.email });
+
+      const response = await login({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      console.log('Login response:', response);
+
+      if (response.success) {
+        console.log('Login successful, checking authentication...');
+        const hasToken = await checkAuthToken();
+        console.log('Auth check result:', hasToken);
+
+        if (hasToken) {
+          console.log('Authentication confirmed, testing API...');
+          await testAPIConnection();
+        }
+
+        toast.success('Login successful!');
+        navigate('/dashboard');
+      } else {
+        throw new Error(response.message || 'Login failed');
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      const errorMessage = error.message || 'Invalid email or password';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -182,7 +204,11 @@ const Login = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         edge="end"
                       >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                        {showPassword ? (
+                          <VisibilityOffIcon />
+                        ) : (
+                          <VisibilityIcon />
+                        )}
                       </IconButton>
                     </InputAdornment>
                   ),

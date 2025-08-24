@@ -8,7 +8,12 @@ declare class EmailService {
     constructor();
     private loadTemplate;
     private getDefaultTemplate;
-    sendEmail(to: string, template: EmailTemplate, attachments?: any[]): Promise<{
+    sendEmail(toOrOptions: string | {
+        to: string;
+        subject: string;
+        text: string;
+        html: string;
+    }, templateOrAttachments?: EmailTemplate | any[], attachments?: any[]): Promise<{
         success: boolean;
         messageId: any;
         error?: undefined;
@@ -150,7 +155,36 @@ declare class EmailService {
         error: string;
         messageId?: undefined;
     }>;
+    sendSubscriptionUpgrade(email: string, data: {
+        firstName: string;
+        oldPlanName: string;
+        newPlanName: string;
+        upgradeAmount: number;
+        effectiveDate: Date;
+    }): Promise<{
+        success: boolean;
+        messageId: any;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: string;
+        messageId?: undefined;
+    }>;
+    sendSubscriptionDowngrade(email: string, data: {
+        firstName: string;
+        currentPlanName: string;
+        newPlanName: string;
+        effectiveDate: Date;
+    }): Promise<{
+        success: boolean;
+        messageId: any;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: string;
+        messageId?: undefined;
+    }>;
 }
 export declare const emailService: EmailService;
-export {};
+export default emailService;
 //# sourceMappingURL=emailService.d.ts.map

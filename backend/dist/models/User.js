@@ -163,7 +163,12 @@ const userSchema = new mongoose_1.Schema({
     features: [{
             type: String,
             index: true
-        }]
+        }],
+    stripeCustomerId: {
+        type: String,
+        sparse: true,
+        index: true
+    }
 }, { timestamps: true });
 userSchema.pre('save', async function (next) {
     if (!this.isModified('passwordHash'))

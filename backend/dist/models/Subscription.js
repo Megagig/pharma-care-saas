@@ -138,7 +138,18 @@ const subscriptionSchema = new mongoose_1.Schema({
                 type: Date,
                 default: Date.now
             }
-        }]
+        }],
+    scheduledDowngrade: {
+        planId: {
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'SubscriptionPlan'
+        },
+        effectiveDate: Date,
+        scheduledAt: {
+            type: Date,
+            default: Date.now
+        }
+    }
 }, { timestamps: true });
 subscriptionSchema.methods.isInGracePeriod = function () {
     return this.status === 'grace_period' && this.gracePeriodEnd && new Date() <= this.gracePeriodEnd;

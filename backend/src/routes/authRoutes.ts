@@ -8,6 +8,7 @@ import {
     refreshToken,
     logout,
     logoutAll,
+    clearCookies,
     getMe,
     updateProfile
 } from '../controllers/authController';
@@ -22,6 +23,7 @@ router.post('/verify-email', verifyEmail);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.post('/refresh-token', refreshToken);
+router.post('/clear-cookies', clearCookies); // No auth required
 
 // Protected routes
 router.post('/logout', logout);
