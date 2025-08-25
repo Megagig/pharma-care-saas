@@ -18,6 +18,10 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  CircularProgress,
+  Alert,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import {
   Check as CheckIcon,
@@ -28,66 +32,43 @@ import {
   ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
 import Footer from '../components/Footer';
+import {
+  useAvailablePlansQuery,
+  useCreateCheckoutSessionMutation,
+} from '../queries/useSubscription';
 
 const Pricing = () => {
-  const plans = [
-    {
-      name: 'Basic',
-      price: '1,000',
-      description: 'Perfect for individual pharmacists',
-      popular: false,
-      features: [
-        'Up to 50 patients',
-        '500 clinical notes',
-        '2GB storage',
-        'Basic reporting',
-        'Email support',
-        'HIPAA compliant',
-      ],
-      notIncluded: [
-        'Advanced analytics',
-        'Priority support',
-        'Custom integrations',
-      ],
-    },
-    {
-      name: 'Professional',
-      price: '2,000',
-      description: 'Ideal for growing practices',
-      popular: true,
-      features: [
-        'Up to 200 patients',
-        '2,000 clinical notes',
-        '10GB storage',
-        'Advanced reporting',
-        'Priority email support',
-        'HIPAA compliant',
-        'Drug interaction alerts',
-        'Medication adherence tracking',
-      ],
-      notIncluded: ['Custom integrations'],
-    },
-    {
-      name: 'Enterprise',
-      price: '5,000',
-      description: 'For large pharmacy operations',
-      popular: false,
-      features: [
-        'Unlimited patients',
-        'Unlimited clinical notes',
-        '100GB storage',
-        'Advanced analytics',
-        'Priority phone & email support',
-        'HIPAA compliant',
-        'Drug interaction alerts',
-        'Medication adherence tracking',
-        'Custom integrations',
-        'API access',
-        'Dedicated account manager',
-      ],
-      notIncluded: [],
-    },
-  ];
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>(
+    'monthly'
+  );
+  const {
+    data: plans,
+    isLoading,
+    error,
+  } = useAvailablePlansQuery(billingInterval);
+  const createCheckoutSession = useCreateCheckoutSessionMutation();
+
+  const handleSubscribe = (planId: string) => {
+    createCheckoutSession.mutate({ planId, billingInterval });
+  };
+
+  const handleContactSales = (whatsappNumber?: string) => {
+    if (whatsappNumber) {
+      const message = encodeURIComponent(
+        "Hello, I'm interested in the Enterprise plan. Please provide more information."
+      );
+      window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+    }
+  };
+
+  const handleBillingIntervalChange = (
+    event: React.MouseEvent<HTMLElement>,
+    newBillingInterval: 'monthly' | 'yearly' | null
+  ) => {
+    if (newBillingInterval !== null) {
+      setBillingInterval(newBillingInterval);
+    }
+  };
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -189,25 +170,56 @@ const Pricing = () => {
           />
         </Box>
 
+        {/* Billing Interval Toggle */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 6 }}>
+          <ToggleButtonGroup
+            value={billingInterval}
+            exclusive
+            onChange={handleBillingIntervalChange}
+            aria-label="billing interval"
+          >
+            <ToggleButton value="monthly" aria-label="monthly billing">
+              Monthly
+            </ToggleButton>
+            <ToggleButton value="yearly" aria-label="yearly billing">
+              Yearly (Save 25%)
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
         {/* Pricing Cards */}
+        {isLoading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <CircularProgress />
+          </Box>
+        )}
+        {error && (
+          <Alert severity="error">
+            Error fetching pricing plans. Please try again later.
+          </Alert>
+        )}
         <Grid container spacing={4} justifyContent="center">
-          {plans.map((plan, index) => (
-            <Grid xs={12} md={4} key={index}>
+          {plans?.map((plan, index) => (
+            <Grid item xs={12} md={4} key={index}>
               <Card
                 sx={{
                   height: '100%',
                   position: 'relative',
-                  border: plan.popular ? 2 : 1,
-                  borderColor: plan.popular ? 'primary.main' : 'grey.200',
-                  transform: plan.popular ? 'scale(1.05)' : 'scale(1)',
+                  border: plan.isPopular ? 2 : 1,
+                  borderColor: plan.isPopular
+                    ? 'primary.main'
+                    : 'grey.200',
+                  transform: plan.isPopular ? 'scale(1.05)' : 'scale(1)',
                   transition: 'all 0.3s ease-in-out',
                   '&:hover': {
-                    transform: plan.popular ? 'scale(1.05)' : 'scale(1.02)',
-                    boxShadow: plan.popular ? 6 : 4,
+                    transform: plan.isPopular
+                      ? 'scale(1.05)'
+                      : 'scale(1.02)',
+                    boxShadow: plan.isPopular ? 6 : 4,
                   },
                 }}
               >
-                {plan.popular && (
+                {plan.isPopular && (
                   <Box
                     sx={{
                       position: 'absolute',
@@ -250,11 +262,19 @@ const Pricing = () => {
                     >
                       {plan.name === 'Enterprise' ? (
                         <StarsIcon
-                          sx={{ fontSize: 32, color: 'warning.main', mr: 1 }}
+                          sx={{
+                            fontSize: 32,
+                            color: 'warning.main',
+                            mr: 1,
+                          }}
                         />
                       ) : (
                         <BoltIcon
-                          sx={{ fontSize: 32, color: 'primary.main', mr: 1 }}
+                          sx={{
+                            fontSize: 32,
+                            color: 'primary.main',
+                            mr: 1,
+                          }}
                         />
                       )}
                       <Typography variant="h5" sx={{ fontWeight: 600 }}>
@@ -268,47 +288,81 @@ const Pricing = () => {
                     >
                       {plan.description}
                     </Typography>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'baseline',
-                        justifyContent: 'center',
-                        mb: 2,
-                      }}
-                    >
+                    {plan.isContactSales ? (
                       <Typography
-                        variant="h3"
+                        variant="h4"
                         sx={{ fontWeight: 700, color: 'primary.main' }}
                       >
-                        ₦{plan.price}
+                        Contact Sales
                       </Typography>
-                      <Typography
-                        variant="h6"
-                        color="text.secondary"
-                        sx={{ ml: 1 }}
+                    ) : (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'baseline',
+                          justifyContent: 'center',
+                          mb: 2,
+                        }}
                       >
-                        /month
-                      </Typography>
-                    </Box>
+                        <Typography
+                          variant="h3"
+                          sx={{ fontWeight: 700, color: 'primary.main' }}
+                        >
+                          ₦{plan.priceNGN.toLocaleString()}
+                        </Typography>
+                        <Typography
+                          variant="h6"
+                          color="text.secondary"
+                          sx={{ ml: 1 }}
+                        >
+                          /
+                          {billingInterval === 'monthly' ? 'month' : 'year'}
+                        </Typography>
+                      </Box>
+                    )}
                     <Typography variant="caption" color="text.secondary">
-                      Billed monthly
+                      Billed {billingInterval}
                     </Typography>
                   </Box>
 
-                  <Button
-                    variant={plan.popular ? 'contained' : 'outlined'}
-                    size="large"
-                    fullWidth
-                    sx={{
-                      mb: 4,
-                      py: 1.5,
-                      borderRadius: 3,
-                      textTransform: 'none',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {plan.popular ? 'Start Free Trial' : 'Get Started'}
-                  </Button>
+                  {plan.isContactSales ? (
+                    <Button
+                      variant="contained"
+                      size="large"
+                      fullWidth
+                      sx={{
+                        mb: 4,
+                        py: 1.5,
+                        borderRadius: 3,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                      }}
+                      onClick={() => handleContactSales(plan.whatsappNumber)}
+                    >
+                      Contact Sales
+                    </Button>
+                  ) : (
+                    <Button
+                      variant={plan.isPopular ? 'contained' : 'outlined'}
+                      size="large"
+                      fullWidth
+                      sx={{
+                        mb: 4,
+                        py: 1.5,
+                        borderRadius: 3,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                      }}
+                      onClick={() => handleSubscribe(plan._id)}
+                      disabled={createCheckoutSession.isPending}
+                    >
+                      {createCheckoutSession.isPending
+                        ? 'Processing...'
+                        : plan.isPopular
+                        ? 'Start Free Trial'
+                        : 'Get Started'}
+                    </Button>
+                  )}
 
                   <Box sx={{ flexGrow: 1 }}>
                     <Typography
@@ -318,43 +372,28 @@ const Pricing = () => {
                       What's included:
                     </Typography>
                     <List disablePadding>
-                      {plan.features.map((feature, featureIndex) => (
-                        <ListItem
-                          key={featureIndex}
-                          disablePadding
-                          sx={{ py: 0.5 }}
-                        >
-                          <ListItemIcon sx={{ minWidth: 32 }}>
-                            <CheckIcon
-                              sx={{ fontSize: 20, color: 'success.main' }}
+                      {plan.displayFeatures.map(
+                        (feature: any, featureIndex: number) => (
+                          <ListItem
+                            key={featureIndex}
+                            disablePadding
+                            sx={{ py: 0.5 }}
+                          >
+                            <ListItemIcon sx={{ minWidth: 32 }}>
+                              <CheckIcon
+                                sx={{
+                                  fontSize: 20,
+                                  color: 'success.main',
+                                }}
+                              />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={feature}
+                              primaryTypographyProps={{ variant: 'body2' }}
                             />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={feature}
-                            primaryTypographyProps={{ variant: 'body2' }}
-                          />
-                        </ListItem>
-                      ))}
-                      {plan.notIncluded.map((feature, featureIndex) => (
-                        <ListItem
-                          key={featureIndex}
-                          disablePadding
-                          sx={{ py: 0.5, opacity: 0.6 }}
-                        >
-                          <ListItemIcon sx={{ minWidth: 32 }}>
-                            <CloseIcon
-                              sx={{ fontSize: 20, color: 'text.disabled' }}
-                            />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={feature}
-                            primaryTypographyProps={{
-                              variant: 'body2',
-                              color: 'text.secondary',
-                            }}
-                          />
-                        </ListItem>
-                      ))}
+                          </ListItem>
+                        )
+                      )}
                     </List>
                   </Box>
                 </CardContent>

@@ -106,7 +106,8 @@ const SubscriptionManagement: React.FC = () => {
   };
 
   // Use plans directly from the query (already filtered by billing interval)
-  const filteredPlans = plans;
+  const tierOrder = ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'];
+  const filteredPlans = plans.sort((a, b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier));
 
   const isCurrentPlan = (planId: string) => {
     return currentSubscription?.subscription?.planId?._id === planId;
