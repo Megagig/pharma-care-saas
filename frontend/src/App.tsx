@@ -36,6 +36,8 @@ import Subscriptions from './pages/Subscriptions';
 import Reports from './pages/Reports';
 import SaasSettings from './pages/SaasSettings';
 import FeatureFlagsPage from './pages/FeatureFlags';
+import Settings from './pages/Settings';
+import Help from './pages/Help';
 
 // RBAC and Enhanced Components
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -262,6 +264,30 @@ function App(): JSX.Element {
                         <AppLayout>
                           <SaasSettings />
                         </AppLayout>
+                      }
+                    />
+
+                    {/* Settings Page */}
+                    <Route
+                      path="/settings"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Settings />
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Help & Support Page */}
+                    <Route
+                      path="/help"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Help />
+                          </AppLayout>
+                        </ProtectedRoute>
                       }
                     />
 
