@@ -10,6 +10,8 @@ config();
 const subscriptionPlans = [
   {
     name: 'Free Trial',
+    tier: 'free_trial',
+    description: 'A 14-day free trial with access to all features.',
     priceNGN: 0,
     billingInterval: 'monthly',
     features: {
@@ -23,7 +25,9 @@ const subscriptionPlans = [
   },
   {
     name: 'Basic',
-    priceNGN: 10000,
+    tier: 'basic',
+    description: 'Ideal for individual pharmacists and small clinics.',
+    priceNGN: 1000,
     billingInterval: 'monthly',
     features: {
       patientLimit: 100,
@@ -35,8 +39,25 @@ const subscriptionPlans = [
     },
   },
   {
+    name: 'Basic Yearly',
+    tier: 'basic',
+    description: 'Ideal for individual pharmacists and small clinics.',
+    priceNGN: 9000, // 25% discount
+    billingInterval: 'yearly',
+    features: {
+      patientLimit: 100,
+      reminderSmsMonthlyLimit: 50,
+      reportsExport: true,
+      careNoteExport: false,
+      adrModule: false,
+      multiUserSupport: false,
+    },
+  },
+  {
     name: 'Pro',
-    priceNGN: 25000,
+    tier: 'pro',
+    description: 'Perfect for growing pharmacies and teams.',
+    priceNGN: 2000,
     billingInterval: 'monthly',
     features: {
       patientLimit: 500,
@@ -48,9 +69,107 @@ const subscriptionPlans = [
     },
   },
   {
-    name: 'Enterprise',
-    priceNGN: 50000,
+    name: 'Pro Yearly',
+    tier: 'pro',
+    description: 'Perfect for growing pharmacies and teams.',
+    priceNGN: 18000, // 25% discount
+    billingInterval: 'yearly',
+    features: {
+      patientLimit: 500,
+      reminderSmsMonthlyLimit: 200,
+      reportsExport: true,
+      careNoteExport: true,
+      adrModule: true,
+      multiUserSupport: true,
+    },
+  },
+  {
+    name: 'Pharmily',
+    tier: 'pharmily',
+    description: 'For pharmacies that need more features.',
+    priceNGN: 5000,
     billingInterval: 'monthly',
+    isPopular: true,
+    features: {
+      patientLimit: 1000,
+      reminderSmsMonthlyLimit: 500,
+      reportsExport: true,
+      careNoteExport: true,
+      adrModule: true,
+      multiUserSupport: true,
+    },
+  },
+  {
+    name: 'Pharmily Yearly',
+    tier: 'pharmily',
+    description: 'For pharmacies that need more features.',
+    priceNGN: 45000, // 25% discount
+    billingInterval: 'yearly',
+    isPopular: true,
+    features: {
+      patientLimit: 1000,
+      reminderSmsMonthlyLimit: 500,
+      reportsExport: true,
+      careNoteExport: true,
+      adrModule: true,
+      multiUserSupport: true,
+    },
+  },
+  {
+    name: 'Network',
+    tier: 'network',
+    description: 'For pharmacy chains and groups.',
+    priceNGN: 10000,
+    billingInterval: 'monthly',
+    features: {
+      patientLimit: null,
+      reminderSmsMonthlyLimit: null,
+      reportsExport: true,
+      careNoteExport: true,
+      adrModule: true,
+      multiUserSupport: true,
+    },
+  },
+  {
+    name: 'Network Yearly',
+    tier: 'network',
+    description: 'For pharmacy chains and groups.',
+    priceNGN: 90000, // 25% discount
+    billingInterval: 'yearly',
+    features: {
+      patientLimit: null,
+      reminderSmsMonthlyLimit: null,
+      reportsExport: true,
+      careNoteExport: true,
+      adrModule: true,
+      multiUserSupport: true,
+    },
+  },
+  {
+    name: 'Enterprise',
+    tier: 'enterprise',
+    description: 'For large-scale operations and custom needs.',
+    priceNGN: 0,
+    billingInterval: 'monthly',
+    isContactSales: true,
+    whatsappNumber: '+2348060374755',
+    features: {
+      patientLimit: null, // unlimited
+      reminderSmsMonthlyLimit: null, // unlimited
+      reportsExport: true,
+      careNoteExport: true,
+      adrModule: true,
+      multiUserSupport: true,
+    },
+  },
+  {
+    name: 'Enterprise Yearly',
+    tier: 'enterprise',
+    description: 'For large-scale operations and custom needs.',
+    priceNGN: 0,
+    billingInterval: 'yearly',
+    isContactSales: true,
+    whatsappNumber: '+2348060374755',
     features: {
       patientLimit: null, // unlimited
       reminderSmsMonthlyLimit: null, // unlimited

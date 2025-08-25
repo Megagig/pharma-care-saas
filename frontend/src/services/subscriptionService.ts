@@ -112,6 +112,17 @@ export const subscriptionService = {
     return response.data;
   },
 
+  // Handle successful payment (for both simulation and real payments)
+  async handleSuccessfulPayment(paymentReference: string) {
+    const response = await api.post(
+      '/subscription-management/payment-success',
+      {
+        paymentReference,
+      }
+    );
+    return response.data;
+  },
+
   // Cancel subscription
   async cancelSubscription(reason?: string) {
     const response = await api.post('/subscription-management/cancel', {
