@@ -3,10 +3,12 @@ import api from './api';
 export interface SubscriptionPlan {
   _id: string;
   name: string;
-  tier: 'free_trial' | 'basic' | 'pro' | 'enterprise';
+  tier: 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
   priceNGN: number;
   priceUSD: number;
   billingInterval: 'monthly' | 'yearly';
+  isContactSales?: boolean;
+  whatsappNumber?: string;
   features: {
     patientLimit: number | null;
     reminderSmsMonthlyLimit: number | null;
@@ -18,6 +20,14 @@ export interface SubscriptionPlan {
     apiAccess: boolean;
     customIntegrations: boolean;
     prioritySupport: boolean;
+    // New features for Pharmily and Network plans
+    adrReporting: boolean;
+    drugInteractionChecker: boolean;
+    doseCalculator: boolean;
+    multiLocationDashboard: boolean;
+    sharedPatientRecords: boolean;
+    groupAnalytics: boolean;
+    cdss: boolean;
   };
   isActive: boolean;
   stripePriceId?: string;
@@ -37,7 +47,7 @@ export interface Subscription {
     | 'trial'
     | 'grace_period'
     | 'suspended';
-  tier: 'free_trial' | 'basic' | 'pro' | 'enterprise';
+  tier: 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
   startDate: string;
   endDate: string;
   priceAtPurchase: number;

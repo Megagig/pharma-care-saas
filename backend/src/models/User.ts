@@ -8,8 +8,18 @@ export interface IUser extends Document {
   passwordHash: string;
   firstName: string;
   lastName: string;
-  role: 'pharmacist' | 'pharmacy_team' | 'pharmacy_outlet' | 'intern_pharmacist' | 'super_admin';
-  status: 'pending' | 'active' | 'suspended' | 'license_pending' | 'license_rejected';
+  role:
+    | 'pharmacist'
+    | 'pharmacy_team'
+    | 'pharmacy_outlet'
+    | 'intern_pharmacist'
+    | 'super_admin';
+  status:
+    | 'pending'
+    | 'active'
+    | 'suspended'
+    | 'license_pending'
+    | 'license_rejected';
   emailVerified: boolean;
   verificationToken?: string;
   verificationCode?: string;
@@ -19,7 +29,7 @@ export interface IUser extends Document {
   planOverride?: Record<string, any>;
   currentSubscriptionId?: mongoose.Types.ObjectId;
   lastLoginAt?: Date;
-  
+
   // License verification fields
   licenseNumber?: string;
   licenseDocument?: {
@@ -33,19 +43,25 @@ export interface IUser extends Document {
   licenseVerifiedAt?: Date;
   licenseVerifiedBy?: mongoose.Types.ObjectId;
   licenseRejectionReason?: string;
-  
+
   // Team and hierarchy management
   parentUserId?: mongoose.Types.ObjectId; // For team members under a lead
   teamMembers?: mongoose.Types.ObjectId[]; // For team leads
   permissions: string[]; // Custom permissions array
-  
+
   // Subscription and access
-  subscriptionTier: 'free_trial' | 'basic' | 'pro' | 'enterprise';
+  subscriptionTier:
+    | 'free_trial'
+    | 'basic'
+    | 'pro'
+    | 'pharmily'
+    | 'network'
+    | 'enterprise';
   trialStartDate?: Date;
   trialEndDate?: Date;
   features: string[]; // Enabled features for this user
   stripeCustomerId?: string; // Stripe customer ID for payment processing
-  
+
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -56,143 +72,167 @@ export interface IUser extends Document {
   hasFeature(feature: string): boolean;
 }
 
-const userSchema = new Schema({
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    unique: true,
-    lowercase: true,
-    index: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+const userSchema = new Schema(
+  {
+    email: {
+      type: String,
+      required: [true, 'Email is required'],
+      unique: true,
+      lowercase: true,
+      index: true,
+      match: [
+        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+        'Please enter a valid email',
+      ],
+    },
+    phone: {
+      type: String,
+      index: true,
+      sparse: true,
+    },
+    passwordHash: {
+      type: String,
+      required: [true, 'Password is required'],
+      minlength: 6,
+    },
+    firstName: {
+      type: String,
+      required: [true, 'First name is required'],
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      required: [true, 'Last name is required'],
+      trim: true,
+    },
+    role: {
+      type: String,
+      enum: [
+        'pharmacist',
+        'pharmacy_team',
+        'pharmacy_outlet',
+        'intern_pharmacist',
+        'super_admin',
+      ],
+      default: 'pharmacist',
+      index: true,
+    },
+    status: {
+      type: String,
+      enum: [
+        'pending',
+        'active',
+        'suspended',
+        'license_pending',
+        'license_rejected',
+      ],
+      default: 'pending',
+      index: true,
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: {
+      type: String,
+      index: { expires: '24h' },
+    },
+    verificationCode: {
+      type: String,
+      index: { expires: '24h' },
+    },
+    resetToken: {
+      type: String,
+      index: { expires: '1h' },
+    },
+    pharmacyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Pharmacy',
+      index: true,
+    },
+    currentPlanId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SubscriptionPlan',
+      required: true,
+    },
+    planOverride: {
+      type: Schema.Types.Mixed,
+    },
+    currentSubscriptionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Subscription',
+      index: true,
+    },
+    lastLoginAt: Date,
+
+    // License verification fields
+    licenseNumber: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
+    licenseDocument: {
+      fileName: String,
+      filePath: String,
+      uploadedAt: Date,
+      fileSize: Number,
+      mimeType: String,
+    },
+    licenseStatus: {
+      type: String,
+      enum: ['not_required', 'pending', 'approved', 'rejected'],
+      default: 'not_required',
+      index: true,
+    },
+    licenseVerifiedAt: Date,
+    licenseVerifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    licenseRejectionReason: String,
+
+    // Team and hierarchy management
+    parentUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      index: true,
+    },
+    teamMembers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    permissions: [
+      {
+        type: String,
+        index: true,
+      },
+    ],
+
+    // Subscription and access
+    subscriptionTier: {
+      type: String,
+      enum: ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'],
+      default: 'free_trial',
+      index: true,
+    },
+    trialStartDate: Date,
+    trialEndDate: Date,
+    features: [
+      {
+        type: String,
+        index: true,
+      },
+    ],
+    stripeCustomerId: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
   },
-  phone: {
-    type: String,
-    index: true,
-    sparse: true
-  },
-  passwordHash: {
-    type: String,
-    required: [true, 'Password is required'],
-    minlength: 6
-  },
-  firstName: {
-    type: String,
-    required: [true, 'First name is required'],
-    trim: true
-  },
-  lastName: {
-    type: String,
-    required: [true, 'Last name is required'],
-    trim: true
-  },
-  role: {
-    type: String,
-    enum: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist', 'super_admin'],
-    default: 'pharmacist',
-    index: true
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'active', 'suspended', 'license_pending', 'license_rejected'],
-    default: 'pending',
-    index: true
-  },
-  emailVerified: {
-    type: Boolean,
-    default: false
-  },
-  verificationToken: {
-    type: String,
-    index: { expires: '24h' }
-  },
-  verificationCode: {
-    type: String,
-    index: { expires: '24h' }
-  },
-  resetToken: {
-    type: String,
-    index: { expires: '1h' }
-  },
-  pharmacyId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Pharmacy',
-    index: true
-  },
-  currentPlanId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'SubscriptionPlan',
-    required: true
-  },
-  planOverride: {
-    type: Schema.Types.Mixed
-  },
-  currentSubscriptionId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Subscription',
-    index: true
-  },
-  lastLoginAt: Date,
-  
-  // License verification fields
-  licenseNumber: {
-    type: String,
-    sparse: true,
-    index: true
-  },
-  licenseDocument: {
-    fileName: String,
-    filePath: String,
-    uploadedAt: Date,
-    fileSize: Number,
-    mimeType: String
-  },
-  licenseStatus: {
-    type: String,
-    enum: ['not_required', 'pending', 'approved', 'rejected'],
-    default: 'not_required',
-    index: true
-  },
-  licenseVerifiedAt: Date,
-  licenseVerifiedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  licenseRejectionReason: String,
-  
-  // Team and hierarchy management
-  parentUserId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    index: true
-  },
-  teamMembers: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  permissions: [{
-    type: String,
-    index: true
-  }],
-  
-  // Subscription and access
-  subscriptionTier: {
-    type: String,
-    enum: ['free_trial', 'basic', 'pro', 'enterprise'],
-    default: 'free_trial',
-    index: true
-  },
-  trialStartDate: Date,
-  trialEndDate: Date,
-  features: [{
-    type: String,
-    index: true
-  }],
-  stripeCustomerId: {
-    type: String,
-    sparse: true,
-    index: true
-  }
-}, { timestamps: true });
+  { timestamps: true }
+);
 
 userSchema.pre<IUser>('save', async function (next) {
   if (!this.isModified('passwordHash')) return next();
@@ -200,20 +240,28 @@ userSchema.pre<IUser>('save', async function (next) {
   next();
 });
 
-userSchema.methods.comparePassword = async function (password: string): Promise<boolean> {
+userSchema.methods.comparePassword = async function (
+  password: string
+): Promise<boolean> {
   return await bcrypt.compare(password, this.passwordHash);
 };
 
 userSchema.methods.generateVerificationToken = function (): string {
   const token = crypto.randomBytes(32).toString('hex');
-  this.verificationToken = crypto.createHash('sha256').update(token).digest('hex');
+  this.verificationToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
   return token;
 };
 
 userSchema.methods.generateVerificationCode = function (): string {
   // Generate 6-digit code
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  this.verificationCode = crypto.createHash('sha256').update(code).digest('hex');
+  this.verificationCode = crypto
+    .createHash('sha256')
+    .update(code)
+    .digest('hex');
   return code;
 };
 
@@ -235,11 +283,12 @@ userSchema.methods.hasFeature = function (feature: string): boolean {
 userSchema.pre<IUser>('save', function (next) {
   if (this.isNew || this.isModified('role')) {
     if (this.role === 'pharmacist' || this.role === 'intern_pharmacist') {
-      this.licenseStatus = this.licenseStatus === 'not_required' ? 'pending' : this.licenseStatus;
+      this.licenseStatus =
+        this.licenseStatus === 'not_required' ? 'pending' : this.licenseStatus;
     } else {
       this.licenseStatus = 'not_required';
     }
-    
+
     // Set trial period for new users
     if (this.isNew && this.subscriptionTier === 'free_trial') {
       this.trialStartDate = new Date();

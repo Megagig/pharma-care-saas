@@ -278,6 +278,13 @@ const subscriptionPlans = [
       drugTherapyManagement: true,
       teamManagement: false,
       dedicatedSupport: false,
+      adrReporting: false,
+      drugInteractionChecker: false,
+      doseCalculator: false,
+      multiLocationDashboard: false,
+      sharedPatientRecords: false,
+      groupAnalytics: false,
+      cdss: false,
     },
     description: '14-day free trial with access to all features',
     popularPlan: false,
@@ -308,6 +315,13 @@ const subscriptionPlans = [
       drugTherapyManagement: false,
       teamManagement: false,
       dedicatedSupport: false,
+      adrReporting: false,
+      drugInteractionChecker: false,
+      doseCalculator: false,
+      multiLocationDashboard: false,
+      sharedPatientRecords: false,
+      groupAnalytics: false,
+      cdss: false,
     },
     description: 'Perfect for individual pharmacists starting out',
     popularPlan: false,
@@ -339,17 +353,25 @@ const subscriptionPlans = [
       teamManagement: false,
       dedicatedSupport: false,
       integrations: true,
+      adrReporting: false,
+      drugInteractionChecker: false,
+      doseCalculator: false,
+      multiLocationDashboard: false,
+      sharedPatientRecords: false,
+      groupAnalytics: false,
+      cdss: false,
     },
     description: 'Ideal for growing pharmacy teams',
-    popularPlan: true, // Most popular
+    popularPlan: false, // Changed from true to false
   },
   {
-    name: 'Enterprise',
-    priceNGN: 5000,
+    name: 'Pharmily',
+    priceNGN: 10000,
     billingInterval: 'monthly',
     isActive: true,
-    tier: 'enterprise',
+    tier: 'pharmily',
     features: {
+      // Inherit all Pro features
       patientLimit: null, // Unlimited
       reminderSmsMonthlyLimit: null, // Unlimited
       reportsExport: true,
@@ -364,21 +386,115 @@ const subscriptionPlans = [
       patientRecordsLimit: null, // Unlimited
       prioritySupport: true,
       emailReminders: true,
-      smsReminders: true,
+      smsReminders: false,
+      advancedReports: true,
+      drugTherapyManagement: true,
+      teamManagement: false,
+      dedicatedSupport: false,
+      integrations: true,
+      // New Pharmily-specific features
+      adrReporting: true,
+      drugInteractionChecker: true,
+      doseCalculator: true,
+      multiLocationDashboard: false,
+      sharedPatientRecords: false,
+      groupAnalytics: false,
+      cdss: false,
+    },
+    description:
+      'Pro features + Advanced Reporting, ADR reporting, Drug Interaction checker, Dose Calculator',
+    popularPlan: true, // This is now the popular plan
+  },
+  {
+    name: 'Network',
+    priceNGN: 20000,
+    billingInterval: 'monthly',
+    isActive: true,
+    tier: 'network',
+    features: {
+      // Inherit all Pharmily features
+      patientLimit: null, // Unlimited
+      reminderSmsMonthlyLimit: null, // Unlimited
+      reportsExport: true,
+      careNoteExport: true,
+      adrModule: true,
+      multiUserSupport: true,
+      teamSize: null, // Unlimited
+      apiAccess: true,
+      auditLogs: true,
+      dataBackup: true,
+      clinicalNotesLimit: null, // Unlimited
+      patientRecordsLimit: null, // Unlimited
+      prioritySupport: true,
+      emailReminders: true,
+      smsReminders: false,
+      advancedReports: true,
+      drugTherapyManagement: true,
+      teamManagement: true, // Enable team management for Network
+      dedicatedSupport: false,
+      integrations: true,
+      // Pharmily features
+      adrReporting: true,
+      drugInteractionChecker: true,
+      doseCalculator: true,
+      // New Network-specific features
+      multiLocationDashboard: true,
+      sharedPatientRecords: true,
+      groupAnalytics: true,
+      cdss: true, // Clinical Decision Support System
+    },
+    description:
+      'Pharmily features + Multi-location Dashboard, Shared Patient Records, Group Analytics, CDSS',
+    popularPlan: false,
+  },
+  {
+    name: 'Enterprise',
+    priceNGN: 0, // Price not displayed for contact sales
+    billingInterval: 'monthly',
+    isActive: true,
+    tier: 'enterprise',
+    isContactSales: true,
+    whatsappNumber: '+2348060374755', // Updated WhatsApp number
+    features: {
+      // Inherit all Network features plus additional enterprise features
+      patientLimit: null, // Unlimited
+      reminderSmsMonthlyLimit: null, // Unlimited
+      reportsExport: true,
+      careNoteExport: true,
+      adrModule: true,
+      multiUserSupport: true,
+      teamSize: null, // Unlimited
+      apiAccess: true,
+      auditLogs: true,
+      dataBackup: true,
+      clinicalNotesLimit: null, // Unlimited
+      patientRecordsLimit: null, // Unlimited
+      prioritySupport: true,
+      emailReminders: true,
+      smsReminders: true, // Enable SMS for Enterprise
       advancedReports: true,
       drugTherapyManagement: true,
       teamManagement: true,
-      dedicatedSupport: true,
+      dedicatedSupport: true, // Dedicated support for Enterprise
       integrations: true,
-      customIntegrations: true,
+      customIntegrations: true, // Custom integrations for Enterprise
+      // All advanced features
+      adrReporting: true,
+      drugInteractionChecker: true,
+      doseCalculator: true,
+      multiLocationDashboard: true,
+      sharedPatientRecords: true,
+      groupAnalytics: true,
+      cdss: true,
     },
-    description: 'Complete solution for large pharmacy chains',
+    description:
+      'Complete solution for large pharmacy chains with custom integrations and dedicated support',
     popularPlan: false,
   },
-  // Yearly plans (with discount)
+  // Yearly plans (with 25% discount - Monthly × 12 × 0.75)
   {
-    name: 'Basic',
-    priceNGN: 10000, // 2 months free (10 months pricing)
+    name: 'Basic Yearly',
+    priceNGN: 9000, // 1000 × 12 × 0.75
     billingInterval: 'yearly',
     isActive: true,
     tier: 'basic',
@@ -402,13 +518,20 @@ const subscriptionPlans = [
       drugTherapyManagement: false,
       teamManagement: false,
       dedicatedSupport: false,
+      adrReporting: false,
+      drugInteractionChecker: false,
+      doseCalculator: false,
+      multiLocationDashboard: false,
+      sharedPatientRecords: false,
+      groupAnalytics: false,
+      cdss: false,
     },
-    description: 'Perfect for individual pharmacists (Save 2 months)',
+    description: 'Perfect for individual pharmacists (Save 25% annually)',
     popularPlan: false,
   },
   {
-    name: 'Pro',
-    priceNGN: 20000, // 2 months free
+    name: 'Pro Yearly',
+    priceNGN: 18000, // 2000 × 12 × 0.75
     billingInterval: 'yearly',
     isActive: true,
     tier: 'pro',
@@ -433,16 +556,103 @@ const subscriptionPlans = [
       teamManagement: false,
       dedicatedSupport: false,
       integrations: true,
+      adrReporting: false,
+      drugInteractionChecker: false,
+      doseCalculator: false,
+      multiLocationDashboard: false,
+      sharedPatientRecords: false,
+      groupAnalytics: false,
+      cdss: false,
     },
-    description: 'Ideal for growing pharmacy teams (Save 2 months)',
-    popularPlan: true,
+    description: 'Ideal for growing pharmacy teams (Save 25% annually)',
+    popularPlan: false,
   },
   {
-    name: 'Enterprise',
-    priceNGN: 50000, // 2 months free
+    name: 'Pharmily Yearly',
+    priceNGN: 90000, // 10000 × 12 × 0.75
+    billingInterval: 'yearly',
+    isActive: true,
+    tier: 'pharmily',
+    features: {
+      patientLimit: null,
+      reminderSmsMonthlyLimit: null,
+      reportsExport: true,
+      careNoteExport: true,
+      adrModule: true,
+      multiUserSupport: true,
+      teamSize: null,
+      apiAccess: true,
+      auditLogs: true,
+      dataBackup: true,
+      clinicalNotesLimit: null,
+      patientRecordsLimit: null,
+      prioritySupport: true,
+      emailReminders: true,
+      smsReminders: false,
+      advancedReports: true,
+      drugTherapyManagement: true,
+      teamManagement: false,
+      dedicatedSupport: false,
+      integrations: true,
+      adrReporting: true,
+      drugInteractionChecker: true,
+      doseCalculator: true,
+      multiLocationDashboard: false,
+      sharedPatientRecords: false,
+      groupAnalytics: false,
+      cdss: false,
+    },
+    description:
+      'Pro features + Advanced Reporting, ADR reporting, Drug Interaction checker, Dose Calculator (Save 25% annually)',
+    popularPlan: true, // Most popular yearly plan
+  },
+  {
+    name: 'Network Yearly',
+    priceNGN: 180000, // 20000 × 12 × 0.75
+    billingInterval: 'yearly',
+    isActive: true,
+    tier: 'network',
+    features: {
+      patientLimit: null,
+      reminderSmsMonthlyLimit: null,
+      reportsExport: true,
+      careNoteExport: true,
+      adrModule: true,
+      multiUserSupport: true,
+      teamSize: null,
+      apiAccess: true,
+      auditLogs: true,
+      dataBackup: true,
+      clinicalNotesLimit: null,
+      patientRecordsLimit: null,
+      prioritySupport: true,
+      emailReminders: true,
+      smsReminders: false,
+      advancedReports: true,
+      drugTherapyManagement: true,
+      teamManagement: true,
+      dedicatedSupport: false,
+      integrations: true,
+      adrReporting: true,
+      drugInteractionChecker: true,
+      doseCalculator: true,
+      multiLocationDashboard: true,
+      sharedPatientRecords: true,
+      groupAnalytics: true,
+      cdss: true,
+    },
+    description:
+      'Pharmily features + Multi-location Dashboard, Shared Patient Records, Group Analytics, CDSS (Save 25% annually)',
+    popularPlan: false,
+  },
+  {
+    name: 'Enterprise Yearly',
+    priceNGN: 0, // Price not displayed for contact sales
     billingInterval: 'yearly',
     isActive: true,
     tier: 'enterprise',
+    isContactSales: true,
+    whatsappNumber: '+2348060374755', // Updated WhatsApp number
     features: {
       patientLimit: null,
       reminderSmsMonthlyLimit: null,
@@ -465,8 +675,16 @@ const subscriptionPlans = [
       dedicatedSupport: true,
       integrations: true,
       customIntegrations: true,
+      adrReporting: true,
+      drugInteractionChecker: true,
+      doseCalculator: true,
+      multiLocationDashboard: true,
+      sharedPatientRecords: true,
+      groupAnalytics: true,
+      cdss: true,
     },
-    description: 'Complete solution for large pharmacy chains (Save 2 months)',
+    description:
+      'Complete solution for large pharmacy chains with custom integrations and dedicated support',
     popularPlan: false,
   },
 ];

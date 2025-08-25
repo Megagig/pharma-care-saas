@@ -4,9 +4,11 @@ export interface ISubscriptionPlan extends Document {
   name: string;
   priceNGN: number;
   billingInterval: 'monthly' | 'yearly';
-  tier: 'free_trial' | 'basic' | 'pro' | 'enterprise';
+  tier: 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
   trialDuration?: number;
   popularPlan: boolean;
+  isContactSales?: boolean; // For enterprise plans that require sales contact
+  whatsappNumber?: string; // WhatsApp number for contact sales
   features: {
     patientLimit: number | null;
     reminderSmsMonthlyLimit: number | null;
@@ -29,6 +31,14 @@ export interface ISubscriptionPlan extends Document {
     dedicatedSupport: boolean;
     integrations?: boolean;
     customIntegrations?: boolean;
+    // New feature flags for Pharmily and Network plans
+    adrReporting: boolean;
+    drugInteractionChecker: boolean;
+    doseCalculator: boolean;
+    multiLocationDashboard: boolean;
+    sharedPatientRecords: boolean;
+    groupAnalytics: boolean;
+    cdss: boolean; // Clinical Decision Support System
   };
   description: string;
   isActive: boolean;
@@ -55,7 +65,7 @@ const subscriptionPlanSchema = new Schema(
     },
     tier: {
       type: String,
-      enum: ['free_trial', 'basic', 'pro', 'enterprise'],
+      enum: ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'],
       required: true,
     },
     trialDuration: {
@@ -65,6 +75,14 @@ const subscriptionPlanSchema = new Schema(
     popularPlan: {
       type: Boolean,
       default: false,
+    },
+    isContactSales: {
+      type: Boolean,
+      default: false,
+    },
+    whatsappNumber: {
+      type: String,
+      default: null,
     },
     description: {
       type: String,
@@ -156,6 +174,35 @@ const subscriptionPlanSchema = new Schema(
         default: false,
       },
       customIntegrations: {
+        type: Boolean,
+        default: false,
+      },
+      // New feature flags for Pharmily and Network plans
+      adrReporting: {
+        type: Boolean,
+        default: false,
+      },
+      drugInteractionChecker: {
+        type: Boolean,
+        default: false,
+      },
+      doseCalculator: {
+        type: Boolean,
+        default: false,
+      },
+      multiLocationDashboard: {
+        type: Boolean,
+        default: false,
+      },
+      sharedPatientRecords: {
+        type: Boolean,
+        default: false,
+      },
+      groupAnalytics: {
+        type: Boolean,
+        default: false,
+      },
+      cdss: {
         type: Boolean,
         default: false,
       },

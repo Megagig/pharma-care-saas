@@ -127,8 +127,24 @@ export class SubscriptionController {
       if (plan.features.advancedReports) features.push('Advanced reports');
       if (plan.features.drugTherapyManagement)
         features.push('Drug Therapy Management');
-    } else if (plan.tier === 'enterprise') {
+    } else if (plan.tier === 'pharmily') {
       features.push('Everything in Pro plan');
+      features.push('ADR Reporting');
+      features.push('Drug Interaction Checker');
+      features.push('Dose Calculator');
+      features.push('Advanced Reporting');
+      if (plan.features.integrations) features.push('Integrations');
+      if (plan.features.emailReminders) features.push('Email reminders');
+    } else if (plan.tier === 'network') {
+      features.push('Everything in Pharmily plan');
+      features.push('Multi-location Dashboard');
+      features.push('Shared Patient Records');
+      features.push('Group Analytics');
+      features.push('Clinical Decision Support System (CDSS)');
+      features.push('Team Management');
+      if (plan.features.smsReminders) features.push('SMS reminders');
+    } else if (plan.tier === 'enterprise') {
+      features.push('Everything in Network plan');
       features.push('Dedicated support');
       features.push('Team management');
       features.push('ADR reporting');
@@ -443,7 +459,14 @@ export class SubscriptionController {
       }
 
       // Check if this is actually an upgrade
-      const tierOrder = ['free_trial', 'basic', 'pro', 'enterprise'];
+      const tierOrder = [
+        'free_trial',
+        'basic',
+        'pro',
+        'pharmily',
+        'network',
+        'enterprise',
+      ];
       const currentTierIndex = tierOrder.indexOf(currentSubscription.tier);
       const newTierIndex = tierOrder.indexOf(
         newPlan.name.toLowerCase().replace(' ', '_')
@@ -477,8 +500,15 @@ export class SubscriptionController {
       const tierMapping: Record<string, string> = {
         'Free Trial': 'free_trial',
         Basic: 'basic',
+        'Basic Yearly': 'basic',
         Pro: 'pro',
+        'Pro Yearly': 'pro',
+        Pharmily: 'pharmily',
+        'Pharmily Yearly': 'pharmily',
+        Network: 'network',
+        'Network Yearly': 'network',
         Enterprise: 'enterprise',
+        'Enterprise Yearly': 'enterprise',
       };
       const newTier = tierMapping[newPlan.name] || 'basic';
 
@@ -492,6 +522,8 @@ export class SubscriptionController {
         | 'free_trial'
         | 'basic'
         | 'pro'
+        | 'pharmily'
+        | 'network'
         | 'enterprise';
       currentSubscription.priceAtPurchase = newPlan.priceNGN;
       currentSubscription.features = features.map((f) => f.key);
@@ -505,6 +537,8 @@ export class SubscriptionController {
           | 'free_trial'
           | 'basic'
           | 'pro'
+          | 'pharmily'
+          | 'network'
           | 'enterprise';
         user.features = features.map((f) => f.key);
         await user.save();
