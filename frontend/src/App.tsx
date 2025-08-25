@@ -35,6 +35,7 @@ import Medications from './pages/Medications';
 import Subscriptions from './pages/Subscriptions';
 import Reports from './pages/Reports';
 import SaasSettings from './pages/SaasSettings';
+import FeatureFlagsPage from './pages/FeatureFlags';
 
 // RBAC and Enhanced Components
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -178,6 +179,18 @@ function App(): JSX.Element {
                         <ProtectedRoute requiredRole="super_admin">
                           <AppLayout>
                             <AdminDashboard />
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Feature Flags Route */}
+                    <Route
+                      path="/feature-flags"
+                      element={
+                        <ProtectedRoute requiredRole="super_admin">
+                          <AppLayout>
+                            <FeatureFlagsPage />
                           </AppLayout>
                         </ProtectedRoute>
                       }

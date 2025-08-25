@@ -205,6 +205,42 @@ export class SubscriptionController {
         },
       };
 
+      // Check if this is development mode without Nomba credentials or if Nomba is not configured
+      if (process.env.NODE_ENV === 'development' && !nombaService.isNombaConfigured()) {
+        // Mock payment response for development
+        const mockReference = `mock_${Date.now()}_${user._id}`;
+        const mockCheckoutUrl = `${process.env.FRONTEND_URL}/subscription-management/success?reference=${mockReference}`;
+        
+        // Store pending payment record with mock data
+        await Payment.create({
+          userId: user._id,
+          planId: plan._id,
+          amount: plan.priceNGN,
+          currency: 'NGN',
+          paymentReference: mockReference,
+          status: 'pending',
+          paymentMethod: 'nomba',
+          metadata: paymentData.metadata,
+        });
+
+        return res.json({
+          success: true,
+          data: {
+            checkoutUrl: mockCheckoutUrl,
+            reference: mockReference,
+          },
+          message: 'Development mode: Mock payment initiated',
+        });
+      }
+
+      // Check if Nomba is configured in production
+      if (!nombaService.isNombaConfigured()) {
+        return res.status(500).json({
+          success: false,
+          message: 'Payment service is not properly configured. Please contact support.',
+        });
+      }
+
       const paymentResponse = await nombaService.initiatePayment(paymentData);
 
       if (!paymentResponse.success) {
@@ -255,25 +291,38 @@ export class SubscriptionController {
         });
       }
 
-      // Verify payment with Nomba
-      const verificationResult = await nombaService.verifyPayment(
-        paymentReference
-      );
+      // Check if this is a development mode mock payment
+      let paymentData: any;
+      if (process.env.NODE_ENV === 'development' && paymentReference.startsWith('mock_')) {
+        // Mock verification for development
+        paymentData = {
+          status: 'success',
+          reference: paymentReference,
+          amount: 0, // Will be filled from payment record
+          currency: 'NGN',
+          customerEmail: '',
+        };
+      } else {
+        // Verify payment with Nomba
+        const verificationResult = await nombaService.verifyPayment(
+          paymentReference
+        );
 
-      if (!verificationResult.success || !verificationResult.data) {
-        return res.status(400).json({
-          success: false,
-          message: verificationResult.message || 'Payment verification failed',
-        });
-      }
+        if (!verificationResult.success || !verificationResult.data) {
+          return res.status(400).json({
+            success: false,
+            message: verificationResult.message || 'Payment verification failed',
+          });
+        }
 
-      const paymentData = verificationResult.data;
+        paymentData = verificationResult.data;
 
-      if (paymentData.status !== 'success') {
-        return res.status(400).json({
-          success: false,
-          message: 'Payment not completed',
-        });
+        if (paymentData.status !== 'success') {
+          return res.status(400).json({
+            success: false,
+            message: 'Payment not completed',
+          });
+        }
       }
 
       // Find the payment record
@@ -815,6 +864,71 @@ export class SubscriptionController {
       console.log('Payment failed for reference:', reference);
     } catch (error) {
       console.error('Error handling Nomba payment failure:', error);
+    }
+  }
+
+  // Get billing history
+  async getBillingHistory(req: AuthRequest, res: Response): Promise<any> {
+    try {
+      const payments = await Payment.find({
+        userId: req.user._id,
+      })
+        .populate('planId')
+        .sort({ createdAt: -1 })
+        .limit(50);
+
+      res.json({
+        success: true,
+        data: payments,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching billing history',
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  // Get usage metrics
+  async getUsageMetrics(req: AuthRequest, res: Response): Promise<any> {
+    try {
+      const subscription = await Subscription.findOne({
+        userId: req.user._id,
+        status: { $in: ['active', 'trial', 'grace_period'] },
+      }).populate('planId');
+
+      if (!subscription) {
+        return res.status(404).json({
+          success: false,
+          message: 'No active subscription found',
+        });
+      }
+
+      // Basic usage metrics - you can expand this based on actual usage tracking
+      const usageMetrics = {
+        currentPeriodStart: subscription.startDate,
+        currentPeriodEnd: subscription.endDate,
+        daysRemaining: Math.ceil(
+          (subscription.endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        ),
+        features: subscription.features,
+        // Add more usage tracking here as needed
+        patientsCount: 0, // Would be fetched from actual patient records
+        notesCount: 0,    // Would be fetched from actual notes
+        teamMembers: 1,
+      };
+
+      res.json({
+        success: true,
+        data: usageMetrics,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching usage metrics',
+        error: (error as Error).message,
+      });
     }
   }
 }

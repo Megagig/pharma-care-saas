@@ -43,15 +43,22 @@ class NombaService {
   private privateKey: string;
   private accountId: string;
   private baseURL: string = 'https://api.nomba.com/v1';
+  private isConfigured: boolean = false;
 
   constructor() {
     this.clientId = process.env.NOMBA_CLIENT_ID || '';
     this.privateKey = process.env.NOMBA_PRIVATE_KEY || '';
     this.accountId = process.env.NOMBA_ACCOUNT_ID || '';
 
-    if (!this.clientId || !this.privateKey || !this.accountId) {
-      throw new Error('Nomba API credentials are not properly configured');
+    this.isConfigured = !!(this.clientId && this.privateKey && this.accountId);
+    
+    if (!this.isConfigured) {
+      console.warn('Nomba API credentials are not properly configured. Payment functionality will be limited.');
     }
+  }
+
+  isNombaConfigured(): boolean {
+    return this.isConfigured;
   }
 
   private generateSignature(payload: string, timestamp: string): string {

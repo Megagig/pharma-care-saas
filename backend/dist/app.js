@@ -22,13 +22,18 @@ const paymentRoutes_1 = __importDefault(require("./routes/paymentRoutes"));
 const admin_1 = __importDefault(require("./routes/admin"));
 const license_1 = __importDefault(require("./routes/license"));
 const subscription_1 = __importDefault(require("./routes/subscription"));
+const subscriptionManagement_1 = __importDefault(require("./routes/subscriptionManagement"));
 const webhookRoutes_1 = __importDefault(require("./routes/webhookRoutes"));
 const featureFlagRoutes_1 = __importDefault(require("./routes/featureFlagRoutes"));
 const healthRoutes_1 = __importDefault(require("./routes/healthRoutes"));
 const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        process.env.FRONTEND_URL || 'http://localhost:3000',
+    ],
     credentials: true,
 }));
 const limiter = (0, express_rate_limit_1.default)({
@@ -63,6 +68,7 @@ app.use('/api/payments', paymentRoutes_1.default);
 app.use('/api/admin', admin_1.default);
 app.use('/api/license', license_1.default);
 app.use('/api/subscription-management', subscription_1.default);
+app.use('/api/subscription-management/analytics', subscriptionManagement_1.default);
 app.use('/api/feature-flags', featureFlagRoutes_1.default);
 app.use('/api/webhooks', express_1.default.raw({ type: 'application/json' }), webhookRoutes_1.default);
 app.use('/uploads', express_1.default.static('uploads', {

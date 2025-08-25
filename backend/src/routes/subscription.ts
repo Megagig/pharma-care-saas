@@ -28,8 +28,27 @@ router.post(
   authOptionalSubscription,
   subscriptionController.handleSuccessfulPayment
 );
+router.post(
+  '/payment-success',
+  authOptionalSubscription,
+  subscriptionController.handleSuccessfulPayment
+);
 
 // Routes that require active subscription
 router.post('/cancel', auth, subscriptionController.cancelSubscription);
+router.post('/upgrade', auth, subscriptionController.upgradeSubscription);
+router.post('/downgrade', auth, subscriptionController.downgradeSubscription);
+
+// Additional routes for subscription management
+router.get(
+  '/billing-history',
+  auth,
+  subscriptionController.getBillingHistory
+);
+router.get(
+  '/usage',
+  auth,
+  subscriptionController.getUsageMetrics
+);
 
 export default router;
