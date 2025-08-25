@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   Typography,
-  Grid,
   LinearProgress,
   Chip,
   Alert,
@@ -17,7 +16,8 @@ import {
   Divider,
   Paper,
 } from '@mui/material';
-import {
+// Import our custom Grid components to fix type issues
+import { GridContainer, GridItem } from '../common/grid/GridSystem';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
@@ -53,14 +53,28 @@ interface CostOptimization {
   };
 }
 
+interface Subscription {
+  id: string;
+  planName: string;
+  status: string;
+  tier: string;
+  startDate: Date;
+  endDate: Date;
+  autoRenew: boolean;
+  price: number;
+  interval: string;
+}
+
 interface SubscriptionAnalytics {
-  subscription: any;
+  subscription: Subscription;
   usageMetrics: UsageMetrics;
   costOptimization: CostOptimization;
 }
 
 const SubscriptionAnalytics: React.FC = () => {
-  const [analytics, setAnalytics] = useState<SubscriptionAnalytics | null>(null);
+  const [analytics, setAnalytics] = useState<SubscriptionAnalytics | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
 
   const addNotification = useUIStore((state) => state.addNotification);
@@ -126,7 +140,8 @@ const SubscriptionAnalytics: React.FC = () => {
   if (!analytics) {
     return (
       <Alert severity="info">
-        No analytics data available. Please ensure you have an active subscription.
+        No analytics data available. Please ensure you have an active
+        subscription.
       </Alert>
     );
   }
@@ -137,31 +152,30 @@ const SubscriptionAnalytics: React.FC = () => {
     <Box>
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 4 }}>
         <AnalyticsIcon />
-        <Typography variant="h5">
-          Subscription Analytics
-        </Typography>
+        <Typography variant="h5">Subscription Analytics</Typography>
       </Stack>
 
-      <Grid container spacing={3}>
+      <GridContainer spacing={3}>
         {/* Current Period Overview */}
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Current Billing Period
               </Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={4}>
+              <GridContainer spacing={3}>
+                <GridItem xs={12} md={4}>
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Period
                     </Typography>
                     <Typography variant="body1">
-                      {formatDate(usageMetrics.currentPeriodStart)} - {formatDate(usageMetrics.currentPeriodEnd)}
+                      {formatDate(usageMetrics.currentPeriodStart)} -{' '}
+                      {formatDate(usageMetrics.currentPeriodEnd)}
                     </Typography>
                   </Box>
-                </Grid>
-                <Grid item xs={12} md={4}>
+                </GridItem>
+                <GridItem xs={12} md={4}>
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Days Remaining
@@ -171,42 +185,56 @@ const SubscriptionAnalytics: React.FC = () => {
                         {usageMetrics.daysRemaining}
                       </Typography>
                       <Chip
-                        label={usageMetrics.daysRemaining <= 7 ? 'Ending Soon' : 'Active'}
-                        color={getRemainingDaysColor(usageMetrics.daysRemaining)}
+                        label={
+                          usageMetrics.daysRemaining <= 7
+                            ? 'Ending Soon'
+                            : 'Active'
+                        }
+                        color={getRemainingDaysColor(
+                          usageMetrics.daysRemaining
+                        )}
                         size="small"
                         icon={<ScheduleIcon />}
                       />
                     </Stack>
                   </Box>
-                </Grid>
-                <Grid item xs={12} md={4}>
+                </GridItem>
+                <GridItem xs={12} md={4}>
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Current Plan
                     </Typography>
-                    <Typography variant="h6" sx={{ textTransform: 'capitalize' }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ textTransform: 'capitalize' }}
+                    >
                       {subscription.tier.replace('_', ' ')}
                     </Typography>
                   </Box>
-                </Grid>
-              </Grid>
+                </GridItem>
+              </GridContainer>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
 
         {/* Usage Metrics */}
-        <Grid item xs={12} md={8}>
+        <GridItem xs={12} md={8}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Usage Metrics
               </Typography>
-              
-              <Grid container spacing={3}>
+
+              <GridContainer spacing={3}>
                 {/* Storage Usage */}
-                <Grid item xs={12}>
+                <GridItem xs={12}>
                   <Box sx={{ mb: 2 }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      sx={{ mb: 1 }}
+                    >
                       <Stack direction="row" spacing={1} alignItems="center">
                         <StorageIcon color="primary" />
                         <Typography variant="body2">Storage Usage</Typography>
@@ -218,19 +246,28 @@ const SubscriptionAnalytics: React.FC = () => {
                     <LinearProgress
                       variant="determinate"
                       value={getUsagePercentage(usageMetrics.storageUsed, 10)} // Assuming 10GB limit
-                      color={getUsageColor(getUsagePercentage(usageMetrics.storageUsed, 10))}
+                      color={getUsageColor(
+                        getUsagePercentage(usageMetrics.storageUsed, 10)
+                      )}
                       sx={{ height: 8, borderRadius: 4 }}
                     />
                   </Box>
-                </Grid>
+                </GridItem>
 
                 {/* API Calls */}
-                <Grid item xs={12}>
+                <GridItem xs={12}>
                   <Box sx={{ mb: 2 }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      sx={{ mb: 1 }}
+                    >
                       <Stack direction="row" spacing={1} alignItems="center">
                         <ApiIcon color="primary" />
-                        <Typography variant="body2">API Calls This Month</Typography>
+                        <Typography variant="body2">
+                          API Calls This Month
+                        </Typography>
                       </Stack>
                       <Typography variant="body2" color="text.secondary">
                         {usageMetrics.apiCalls.toLocaleString()} calls
@@ -239,16 +276,22 @@ const SubscriptionAnalytics: React.FC = () => {
                     <LinearProgress
                       variant="determinate"
                       value={getUsagePercentage(usageMetrics.apiCalls, 10000)} // Assuming 10k limit
-                      color={getUsageColor(getUsagePercentage(usageMetrics.apiCalls, 10000))}
+                      color={getUsageColor(
+                        getUsagePercentage(usageMetrics.apiCalls, 10000)
+                      )}
                       sx={{ height: 8, borderRadius: 4 }}
                     />
                   </Box>
-                </Grid>
+                </GridItem>
 
                 {/* Team Members */}
-                <Grid item xs={12}>
+                <GridItem xs={12}>
                   <Box>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
                       <Stack direction="row" spacing={1} alignItems="center">
                         <PeopleIcon color="primary" />
                         <Typography variant="body2">Team Members</Typography>
@@ -258,20 +301,20 @@ const SubscriptionAnalytics: React.FC = () => {
                       </Typography>
                     </Stack>
                   </Box>
-                </Grid>
-              </Grid>
+                </GridItem>
+              </GridContainer>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
 
         {/* Cost Overview */}
-        <Grid item xs={12} md={4}>
+        <GridItem xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Cost Overview
               </Typography>
-              
+
               <Stack spacing={2}>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
@@ -296,23 +339,25 @@ const SubscriptionAnalytics: React.FC = () => {
                 {costOptimization.savings.yearlyVsMonthly > 0 && (
                   <Alert severity="info" icon={<SavingsIcon />}>
                     <Typography variant="body2">
-                      Save {formatCurrency(costOptimization.savings.yearlyVsMonthly)} with annual billing
+                      Save{' '}
+                      {formatCurrency(costOptimization.savings.yearlyVsMonthly)}{' '}
+                      with annual billing
                     </Typography>
                   </Alert>
                 )}
               </Stack>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
 
         {/* Feature Usage */}
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Active Features
               </Typography>
-              
+
               <List dense>
                 {usageMetrics.features.map((feature, index) => (
                   <ListItem key={index}>
@@ -320,29 +365,31 @@ const SubscriptionAnalytics: React.FC = () => {
                       <CheckCircleIcon color="success" />
                     </ListItemIcon>
                     <ListItemText
-                      primary={feature.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      primary={feature
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, (l) => l.toUpperCase())}
                     />
                   </ListItem>
                 ))}
               </List>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
 
         {/* Optimization Suggestions */}
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Optimization Suggestions
               </Typography>
-              
+
               <Stack spacing={2}>
                 {usageMetrics.daysRemaining <= 7 && (
                   <Alert severity="warning" icon={<WarningIcon />}>
                     <Typography variant="body2">
-                      Your subscription renews in {usageMetrics.daysRemaining} days. 
-                      Consider switching to annual billing to save money.
+                      Your subscription renews in {usageMetrics.daysRemaining}{' '}
+                      days. Consider switching to annual billing to save money.
                     </Typography>
                   </Alert>
                 )}
@@ -350,14 +397,24 @@ const SubscriptionAnalytics: React.FC = () => {
                 {getUsagePercentage(usageMetrics.storageUsed, 10) > 80 && (
                   <Alert severity="info">
                     <Typography variant="body2">
-                      You're using {Math.round(getUsagePercentage(usageMetrics.storageUsed, 10))}% of your storage. 
-                      Consider upgrading your plan if you need more space.
+                      You're using{' '}
+                      {Math.round(
+                        getUsagePercentage(usageMetrics.storageUsed, 10)
+                      )}
+                      % of your storage. Consider upgrading your plan if you
+                      need more space.
                     </Typography>
                   </Alert>
                 )}
 
                 {costOptimization.savings.yearlyVsMonthly > 0 && (
-                  <Paper sx={{ p: 2, bgcolor: 'success.light', color: 'success.contrastText' }}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      bgcolor: 'success.light',
+                      color: 'success.contrastText',
+                    }}
+                  >
                     <Stack direction="row" spacing={1} alignItems="center">
                       <TrendingUpIcon />
                       <Box>
@@ -365,60 +422,80 @@ const SubscriptionAnalytics: React.FC = () => {
                           Annual Billing Savings
                         </Typography>
                         <Typography variant="body2">
-                          Switch to annual billing and save {formatCurrency(costOptimization.savings.yearlyVsMonthly)} per year!
+                          Switch to annual billing and save{' '}
+                          {formatCurrency(
+                            costOptimization.savings.yearlyVsMonthly
+                          )}{' '}
+                          per year!
                         </Typography>
                       </Box>
                     </Stack>
                   </Paper>
                 )}
 
-                {usageMetrics.storageUsed < 2 && usageMetrics.apiCalls < 1000 && (
-                  <Paper sx={{ p: 2, bgcolor: 'info.light', color: 'info.contrastText' }}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <TrendingDownIcon />
-                      <Box>
-                        <Typography variant="subtitle2">
-                          Consider Downgrading
-                        </Typography>
-                        <Typography variant="body2">
-                          Based on your usage, you might be able to save money with a lower-tier plan.
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </Paper>
-                )}
+                {usageMetrics.storageUsed < 2 &&
+                  usageMetrics.apiCalls < 1000 && (
+                    <Paper
+                      sx={{
+                        p: 2,
+                        bgcolor: 'info.light',
+                        color: 'info.contrastText',
+                      }}
+                    >
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <TrendingDownIcon />
+                        <Box>
+                          <Typography variant="subtitle2">
+                            Consider Downgrading
+                          </Typography>
+                          <Typography variant="body2">
+                            Based on your usage, you might be able to save money
+                            with a lower-tier plan.
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Paper>
+                  )}
               </Stack>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
 
         {/* Quick Actions */}
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Quick Actions
               </Typography>
-              
+
               <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
                 <Button
                   variant="outlined"
                   startIcon={<AssessmentIcon />}
-                  onClick={() => window.location.href = '/dashboard/subscription/billing-history'}
+                  onClick={() =>
+                    (window.location.href =
+                      '/dashboard/subscription/billing-history')
+                  }
                 >
                   View Billing History
                 </Button>
                 <Button
                   variant="outlined"
                   startIcon={<TrendingUpIcon />}
-                  onClick={() => window.location.href = '/dashboard/subscription/plans'}
+                  onClick={() =>
+                    (window.location.href = '/dashboard/subscription/plans')
+                  }
                 >
                   Upgrade Plan
                 </Button>
                 <Button
                   variant="outlined"
                   startIcon={<SavingsIcon />}
-                  onClick={() => window.location.href = '/dashboard/subscription/payment-methods'}
+                  onClick={() =>
+                    (window.location.href =
+                      '/dashboard/subscription/payment-methods')
+                  }
                 >
                   Manage Payment Methods
                 </Button>
@@ -434,8 +511,8 @@ const SubscriptionAnalytics: React.FC = () => {
               </Stack>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </GridItem>
+      </GridContainer>
     </Box>
   );
 };

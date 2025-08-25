@@ -34,6 +34,12 @@ import { useUIStore } from '../../stores';
 import { useSubscriptionStatus } from '../../hooks/useSubscription';
 import { paymentService } from '../../services/paymentService';
 import LoadingSpinner from '../LoadingSpinner';
+// These components will be used in future refactoring
+// import BillingHistory from './BillingHistory';
+// import PaymentMethodsManagement from './PaymentMethodsManagement';
+// import PlanCards from './PlanCards';
+// import SubscriptionAnalytics from './SubscriptionAnalytics';
+// import { GridContainer, GridItem } from '../common/grid/GridSystem';
 
 interface SubscriptionPlan {
   _id: string;

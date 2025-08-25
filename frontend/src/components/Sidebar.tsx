@@ -128,6 +128,12 @@ const Sidebar = () => {
 
   const settingsItems = [
     {
+      name: 'Components Showcase',
+      path: '/components-showcase',
+      icon: HelpIcon,
+      show: true,
+    },
+    {
       name: 'License Verification',
       path: '/license',
       icon: LicenseIcon,
