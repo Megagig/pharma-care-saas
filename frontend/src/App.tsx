@@ -34,6 +34,7 @@ import ClinicalNotes from './pages/ClinicalNotes';
 import Medications from './pages/Medications';
 import Subscriptions from './pages/Subscriptions';
 import Reports from './pages/Reports';
+import ComponentsShowcase from './pages/ComponentsShowcase';
 
 // RBAC and Enhanced Components
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -225,6 +226,16 @@ function App(): JSX.Element {
                             <SubscriptionManagement />
                           </AppLayout>
                         </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Components Showcase - accessible to everyone */}
+                    <Route
+                      path="/components-showcase"
+                      element={
+                        <AppLayout>
+                          <ComponentsShowcase />
+                        </AppLayout>
                       }
                     />
 

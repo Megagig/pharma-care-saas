@@ -1,5 +1,6 @@
 import React from 'react';
 import { Grid } from '@mui/material';
+import GridItem from './GridItem';
 
 /**
  * Type-safe wrapper components for Material UI v7 Grid system
@@ -10,39 +11,9 @@ import { Grid } from '@mui/material';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyProps = any;
 
-/**
- * Props for Grid items
- */
-export interface GridItemProps {
-  children: React.ReactNode;
-  xs?: number | boolean;
-  sm?: number | boolean;
-  md?: number | boolean;
-  lg?: number | boolean;
-  xl?: number | boolean;
-  sx?: Record<string, unknown>;
-  spacing?: number;
-  style?: React.CSSProperties;
-  className?: string;
-  onClick?: (event: React.MouseEvent) => void;
-  onMouseEnter?: (event: React.MouseEvent) => void;
-  onMouseLeave?: (event: React.MouseEvent) => void;
-  // Allow other props we might need
-  [key: string]: unknown;
-}
-
-/**
- * GridItem - A wrapper around Material UI Grid item with proper typing
- */
-export const GridItem: React.FC<GridItemProps> = ({ children, ...props }) => {
-  // Cast props to avoid MUI v7 type errors
-  const safeProps = {
-    item: true,
-    ...props,
-  } as AnyProps;
-
-  return <Grid {...safeProps}>{children}</Grid>;
-};
+// Re-export the GridItem interface for backward compatibility
+export type { GridItemProps } from './GridItem';
+export { GridItem };
 
 /**
  * Props for Grid containers
