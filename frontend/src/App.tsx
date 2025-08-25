@@ -34,7 +34,7 @@ import ClinicalNotes from './pages/ClinicalNotes';
 import Medications from './pages/Medications';
 import Subscriptions from './pages/Subscriptions';
 import Reports from './pages/Reports';
-import ComponentsShowcase from './pages/ComponentsShowcase';
+import SaasSettings from './pages/SaasSettings';
 
 // RBAC and Enhanced Components
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -229,12 +229,12 @@ function App(): JSX.Element {
                       }
                     />
 
-                    {/* Components Showcase - accessible to everyone */}
+                    {/* SaaS Settings - accessible to everyone */}
                     <Route
-                      path="/components-showcase"
+                      path="/saas-settings"
                       element={
                         <AppLayout>
-                          <ComponentsShowcase />
+                          <SaasSettings />
                         </AppLayout>
                       }
                     />

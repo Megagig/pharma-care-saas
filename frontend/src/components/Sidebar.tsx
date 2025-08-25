@@ -128,9 +128,9 @@ const Sidebar = () => {
 
   const settingsItems = [
     {
-      name: 'Components Showcase',
-      path: '/components-showcase',
-      icon: HelpIcon,
+      name: 'Saas Settings',
+      path: '/saas-settings',
+      icon: SettingsIcon,
       show: true,
     },
     {

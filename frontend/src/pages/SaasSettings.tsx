@@ -24,19 +24,19 @@ import SubscriptionAnalytics from '../components/subscription/SubscriptionAnalyt
 import SubscriptionManagement from '../components/subscription/SubscriptionManagement';
 import GridExample from '../components/common/grid/GridExample';
 
-const ComponentsShowcase: React.FC = () => {
+const SaasSettings: React.FC = () => {
   return (
     <Container maxWidth="xl">
       <Box sx={{ p: 3 }}>
         <Typography variant="h3" component="h1" gutterBottom>
-          Components Showcase
+          Saas Settings
         </Typography>
 
         <GridContainer spacing={4}>
           <GridItem xs={12}>
             <Paper sx={{ p: 3, mb: 4 }}>
               <Typography variant="h4" gutterBottom>
-                RBAC Components
+                Roles
               </Typography>
               <Divider sx={{ mb: 3 }} />
 
@@ -119,7 +119,7 @@ const ComponentsShowcase: React.FC = () => {
           <GridItem xs={12}>
             <Paper sx={{ p: 3, mb: 4 }}>
               <Typography variant="h4" gutterBottom>
-                Admin Components
+                Admin Roles
               </Typography>
               <Divider sx={{ mb: 3 }} />
 
@@ -167,7 +167,7 @@ const ComponentsShowcase: React.FC = () => {
           <GridItem xs={12}>
             <Paper sx={{ p: 3, mb: 4 }}>
               <Typography variant="h4" gutterBottom>
-                License Components
+                License Verification
               </Typography>
               <Divider sx={{ mb: 3 }} />
 
@@ -191,7 +191,7 @@ const ComponentsShowcase: React.FC = () => {
           <GridItem xs={12}>
             <Paper sx={{ p: 3, mb: 4 }}>
               <Typography variant="h4" gutterBottom>
-                Subscription Components
+                Subscriptions
               </Typography>
               <Divider sx={{ mb: 3 }} />
 
@@ -296,7 +296,7 @@ const ComponentsShowcase: React.FC = () => {
           <GridItem xs={12}>
             <Paper sx={{ p: 3, mb: 4 }}>
               <Typography variant="h4" gutterBottom>
-                Grid System Components
+                Grid System
               </Typography>
               <Divider sx={{ mb: 3 }} />
 
@@ -320,4 +320,4 @@ const ComponentsShowcase: React.FC = () => {
   );
 };
 
-export default ComponentsShowcase;
+export default SaasSettings;

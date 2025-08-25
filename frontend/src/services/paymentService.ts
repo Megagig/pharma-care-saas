@@ -58,9 +58,16 @@ interface PaginatedPayments {
 
 class PaymentService {
   private async makeRequest(url: string, options: RequestInit = {}) {
+    // Get the token from localStorage
+    const token = localStorage.getItem('accessToken');
+    if (!token && !url.includes('/public/')) {
+      throw new Error('No access token found');
+    }
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
         ...options.headers,
       },
       credentials: 'include', // Include httpOnly cookies
