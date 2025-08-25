@@ -39,120 +39,142 @@ const subscriptionSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-        index: true
+        index: true,
     },
     planId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'SubscriptionPlan',
-        required: true
+        required: true,
     },
     status: {
         type: String,
-        enum: ['active', 'inactive', 'cancelled', 'expired', 'trial', 'grace_period', 'suspended'],
+        enum: [
+            'active',
+            'inactive',
+            'cancelled',
+            'expired',
+            'trial',
+            'grace_period',
+            'suspended',
+        ],
         default: 'trial',
-        index: true
+        index: true,
     },
     tier: {
         type: String,
-        enum: ['free_trial', 'basic', 'pro', 'enterprise'],
+        enum: ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'],
         required: true,
-        index: true
+        index: true,
     },
     startDate: {
         type: Date,
-        default: Date.now
+        default: Date.now,
     },
     endDate: {
         type: Date,
-        required: true
+        required: true,
     },
     priceAtPurchase: {
         type: Number,
         required: true,
-        min: 0
+        min: 0,
     },
-    paymentHistory: [{
+    paymentHistory: [
+        {
             type: mongoose_1.Schema.Types.ObjectId,
-            ref: 'Payment'
-        }],
+            ref: 'Payment',
+        },
+    ],
     autoRenew: {
         type: Boolean,
-        default: true
+        default: true,
     },
     trialEnd: Date,
     gracePeriodEnd: Date,
     stripeSubscriptionId: {
         type: String,
         sparse: true,
-        index: true
+        index: true,
     },
     stripeCustomerId: {
         type: String,
         sparse: true,
-        index: true
+        index: true,
     },
-    webhookEvents: [{
+    webhookEvents: [
+        {
             eventId: {
                 type: String,
-                required: true
+                required: true,
             },
             eventType: {
                 type: String,
-                required: true
+                required: true,
             },
             processedAt: {
                 type: Date,
-                default: Date.now
+                default: Date.now,
             },
-            data: mongoose_1.Schema.Types.Mixed
-        }],
-    renewalAttempts: [{
+            data: mongoose_1.Schema.Types.Mixed,
+        },
+    ],
+    renewalAttempts: [
+        {
             attemptedAt: {
                 type: Date,
-                default: Date.now
+                default: Date.now,
             },
             successful: {
                 type: Boolean,
-                required: true
+                required: true,
             },
-            error: String
-        }],
-    features: [{
+            error: String,
+        },
+    ],
+    features: [
+        {
             type: String,
-            index: true
-        }],
-    customFeatures: [{
+            index: true,
+        },
+    ],
+    customFeatures: [
+        {
             type: String,
-            index: true
-        }],
-    usageMetrics: [{
+            index: true,
+        },
+    ],
+    usageMetrics: [
+        {
             feature: {
                 type: String,
-                required: true
+                required: true,
             },
             count: {
                 type: Number,
-                default: 0
+                default: 0,
             },
             lastUpdated: {
                 type: Date,
-                default: Date.now
-            }
-        }],
+                default: Date.now,
+            },
+        },
+    ],
     scheduledDowngrade: {
         planId: {
             type: mongoose_1.Schema.Types.ObjectId,
-            ref: 'SubscriptionPlan'
+            ref: 'SubscriptionPlan',
         },
         effectiveDate: Date,
         scheduledAt: {
             type: Date,
-            default: Date.now
-        }
-    }
+            default: Date.now,
+        },
+    },
 }, { timestamps: true });
 subscriptionSchema.methods.isInGracePeriod = function () {
-    return this.status === 'grace_period' && this.gracePeriodEnd && new Date() <= this.gracePeriodEnd;
+    return (this.status === 'grace_period' &&
+        this.gracePeriodEnd &&
+        new Date() <= this.gracePeriodEnd);
 };
 subscriptionSchema.methods.isExpired = function () {
     return new Date() > this.endDate && !this.isInGracePeriod();

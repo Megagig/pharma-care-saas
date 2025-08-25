@@ -3,10 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProfile = exports.getMe = exports.logoutAll = exports.clearCookies = exports.logout = exports.refreshToken = exports.resetPassword = exports.forgotPassword = exports.verifyEmail = exports.login = exports.register = void 0;
+exports.updateProfile = exports.getMe = exports.logoutAll = exports.checkCookies = exports.clearCookies = exports.logout = exports.refreshToken = exports.resetPassword = exports.forgotPassword = exports.verifyEmail = exports.login = exports.register = void 0;
 const User_1 = __importDefault(require("../models/User"));
 const Session_1 = __importDefault(require("../models/Session"));
 const SubscriptionPlan_1 = __importDefault(require("../models/SubscriptionPlan"));
+const Subscription_1 = __importDefault(require("../models/Subscription"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const email_1 = require("../utils/email");
 const crypto_1 = __importDefault(require("crypto"));
@@ -32,11 +33,10 @@ const register = async (req, res) => {
         }
         const freeTrialPlan = await SubscriptionPlan_1.default.findOne({
             name: 'Free Trial',
+            billingInterval: 'monthly',
         });
         if (!freeTrialPlan) {
-            res
-                .status(500)
-                .json({
+            res.status(500).json({
                 message: 'Default subscription plan not found. Please run seed script.',
             });
             return;
@@ -49,8 +49,23 @@ const register = async (req, res) => {
             passwordHash: password,
             role,
             currentPlanId: freeTrialPlan._id,
+            subscriptionTier: 'free_trial',
             status: 'pending',
         });
+        const trialEndDate = new Date();
+        trialEndDate.setDate(trialEndDate.getDate() + (freeTrialPlan.trialDuration || 14));
+        const subscription = await Subscription_1.default.create({
+            userId: user._id,
+            planId: freeTrialPlan._id,
+            tier: 'free_trial',
+            status: 'trial',
+            startDate: new Date(),
+            endDate: trialEndDate,
+            priceAtPurchase: 0,
+            autoRenew: false,
+        });
+        user.currentSubscriptionId = subscription._id;
+        await user.save();
         const verificationToken = user.generateVerificationToken();
         const verificationCode = user.generateVerificationCode();
         await user.save();
@@ -152,13 +167,13 @@ const login = async (req, res) => {
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
             maxAge: 15 * 60 * 1000,
         });
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
             maxAge: 30 * 24 * 60 * 60 * 1000,
         });
         res.json({
@@ -318,7 +333,7 @@ const refreshToken = async (req, res) => {
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
             maxAge: 15 * 60 * 1000,
         });
         res.json({
@@ -377,6 +392,29 @@ const clearCookies = async (req, res) => {
     }
 };
 exports.clearCookies = clearCookies;
+const checkCookies = async (req, res) => {
+    try {
+        const accessToken = req.cookies.accessToken || req.cookies.token;
+        const refreshToken = req.cookies.refreshToken;
+        res.json({
+            success: true,
+            hasCookies: !!(accessToken || refreshToken),
+            hasAccessToken: !!accessToken,
+            hasRefreshToken: !!refreshToken,
+            debug: process.env.NODE_ENV === 'development'
+                ? {
+                    cookies: Object.keys(req.cookies),
+                    userAgent: req.get('User-Agent'),
+                    origin: req.get('Origin'),
+                }
+                : undefined,
+        });
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+exports.checkCookies = checkCookies;
 const logoutAll = async (req, res) => {
     try {
         const { refreshToken } = req.cookies;
@@ -404,7 +442,7 @@ const logoutAll = async (req, res) => {
 exports.logoutAll = logoutAll;
 const getMe = async (req, res) => {
     try {
-        const user = await User_1.default.findById(req.user.userId)
+        const user = await User_1.default.findById(req.user._id)
             .populate('currentPlanId')
             .populate('pharmacyId')
             .select('-passwordHash');
@@ -440,9 +478,7 @@ const updateProfile = async (req, res) => {
         const updates = Object.keys(req.body);
         const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
         if (!isValidOperation) {
-            res
-                .status(400)
-                .json({
+            res.status(400).json({
                 message: 'Invalid updates. Only firstName, lastName, and phone can be updated.',
             });
             return;

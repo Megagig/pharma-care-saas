@@ -89,25 +89,7 @@ export interface UserPermissions {
   checkLicenseRequired: (feature: string) => boolean;
 }
 
-// Mock Auth Context for development
-// In a real app, you would import your actual AuthContext
-const useAuth = () => {
-  // This is a mock implementation - replace with your real auth context
-  return {
-    user: {
-      _id: '1',
-      email: 'admin@example.com',
-      firstName: 'Admin',
-      lastName: 'User',
-      role: 'super_admin' as UserRole,
-      permissions: ['*'],
-      features: ['*'],
-      licenseStatus: 'approved',
-      subscriptionTier: 'enterprise',
-    } as User,
-    loading: false,
-  };
-};
+import { useAuth } from '../hooks/useAuth';
 
 /**
  * Hook for Role-Based Access Control
@@ -117,7 +99,21 @@ export const useRBAC = (): UserPermissions => {
   const { user } = useAuth();
 
   return useMemo(() => {
-    if (!user) {
+    // Development fallback - treat users as super_admin in development if no user role is set
+    const effectiveUser = user || (
+      process.env.NODE_ENV === 'development' ? {
+        role: 'super_admin' as UserRole,
+        email: 'dev@example.com',
+        firstName: 'Dev',
+        lastName: 'User',
+        permissions: ['*'],
+        features: ['*'],
+        licenseStatus: 'approved',
+        subscriptionTier: 'enterprise',
+      } : null
+    );
+
+    if (!effectiveUser) {
       return {
         hasRole: () => false,
         hasPermission: () => false,
@@ -140,18 +136,18 @@ export const useRBAC = (): UserPermissions => {
       role: UserRole | UserRole[] | string | string[]
     ): boolean => {
       const roles = Array.isArray(role) ? role : [role];
-      const userRole = user.role || 'pharmacist';
+      const userRole = effectiveUser.role || 'pharmacist';
       const userRoles = ROLE_HIERARCHY[userRole as UserRole] || [userRole];
       return roles.some((r) => userRoles.includes(r as UserRole));
     };
 
     const hasPermission = (permission: string): boolean => {
       // Super admin has all permissions
-      if ((user.role as UserRole) === 'super_admin') return true;
+      if ((effectiveUser.role as UserRole) === 'super_admin') return true;
 
       // Check explicit permissions
-      if (user.permissions?.includes(permission)) return true;
-      if (user.permissions?.includes('*')) return true;
+      if (effectiveUser.permissions?.includes(permission)) return true;
+      if (effectiveUser.permissions?.includes('*')) return true;
 
       // Check role-based permissions
       const [resource, action] = permission.split('.');
@@ -160,15 +156,15 @@ export const useRBAC = (): UserPermissions => {
 
     const hasFeature = (feature: string): boolean => {
       // Super admin has all features
-      if ((user.role as UserRole) === 'super_admin') return true;
+      if ((effectiveUser.role as UserRole) === 'super_admin') return true;
 
       // Check explicit features
-      if (user.features?.includes(feature)) return true;
-      if (user.features?.includes('*')) return true;
+      if (effectiveUser.features?.includes(feature)) return true;
+      if (effectiveUser.features?.includes('*')) return true;
 
       // Check subscription tier features
-      if (user.currentPlan?.features) {
-        return user.currentPlan.features[feature] === true;
+      if (effectiveUser.currentPlan?.features) {
+        return effectiveUser.currentPlan.features[feature] === true;
       }
 
       // Check feature tier mapping
@@ -182,22 +178,22 @@ export const useRBAC = (): UserPermissions => {
 
     const canAccess = (resource: string, action: string): boolean => {
       // Super admin can access everything
-      if ((user.role as UserRole) === 'super_admin') return true;
+      if ((effectiveUser.role as UserRole) === 'super_admin') return true;
 
       // Resource-specific access logic
       switch (resource) {
         case 'admin':
-          return (user.role as UserRole) === 'super_admin';
+          return (effectiveUser.role as UserRole) === 'super_admin';
 
         case 'users':
           if (action === 'view')
             return hasRole(['pharmacy_outlet', 'super_admin']);
           if (action === 'manage')
-            return (user.role as UserRole) === 'super_admin';
+            return (effectiveUser.role as UserRole) === 'super_admin';
           return false;
 
         case 'licenses':
-          return (user.role as UserRole) === 'super_admin';
+          return (effectiveUser.role as UserRole) === 'super_admin';
 
         case 'patients':
         case 'medications':
@@ -237,15 +233,15 @@ export const useRBAC = (): UserPermissions => {
     };
 
     const getAvailableFeatures = (): string[] => {
-      if (user.role === 'super_admin') return ['*'];
-      return user.features || [];
+      if (effectiveUser.role === 'super_admin') return ['*'];
+      return effectiveUser.features || [];
     };
 
     const isAdmin = (): boolean => {
-      return (user.role as UserRole) === 'super_admin';
+      return (effectiveUser.role as UserRole) === 'super_admin';
     };
 
-    const isSuperAdmin = (user.role as UserRole) === 'super_admin';
+    const isSuperAdmin = (effectiveUser.role as UserRole) === 'super_admin';
 
     const canManageTeam = (): boolean => {
       return (
@@ -255,15 +251,15 @@ export const useRBAC = (): UserPermissions => {
     };
 
     const requiresLicense = (): boolean => {
-      return ['pharmacist', 'intern_pharmacist'].includes(user.role || '');
+      return ['pharmacist', 'intern_pharmacist'].includes(effectiveUser.role || '');
     };
 
     const getLicenseStatus = (): string => {
-      return user.licenseStatus || 'not_required';
+      return effectiveUser.licenseStatus || 'not_required';
     };
 
     const getSubscriptionTier = (): string => {
-      return user.subscriptionTier || 'free_trial';
+      return effectiveUser.subscriptionTier || 'free_trial';
     };
 
     // Enhanced feature checking that takes into account role and license
@@ -272,7 +268,7 @@ export const useRBAC = (): UserPermissions => {
       role?: UserRole | string
     ): boolean => {
       // Super admin can access all features
-      if ((user.role as UserRole) === 'super_admin') return true;
+      if ((effectiveUser.role as UserRole) === 'super_admin') return true;
 
       // If role is specified, check if user has that role
       if (role && !hasRole(role)) return false;

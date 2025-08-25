@@ -4,17 +4,43 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.subscriptionController = exports.SubscriptionController = void 0;
-const stripe_1 = __importDefault(require("stripe"));
 const User_1 = __importDefault(require("../models/User"));
 const Subscription_1 = __importDefault(require("../models/Subscription"));
 const SubscriptionPlan_1 = __importDefault(require("../models/SubscriptionPlan"));
 const FeatureFlag_1 = __importDefault(require("../models/FeatureFlag"));
 const Payment_1 = __importDefault(require("../models/Payment"));
 const emailService_1 = require("../utils/emailService");
-const stripe = new stripe_1.default(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2022-11-15',
-});
+const nombaService_1 = require("../services/nombaService");
 class SubscriptionController {
+    constructor() {
+        this.getAvailablePlans = async (req, res) => {
+            try {
+                const billingInterval = req.query.billingInterval || 'monthly';
+                const plans = await SubscriptionPlan_1.default.find({
+                    isActive: true,
+                    billingInterval: billingInterval,
+                }).sort({
+                    priceNGN: 1,
+                });
+                const transformedPlans = plans.map((plan) => ({
+                    ...plan.toObject(),
+                    tier: plan.tier,
+                    displayFeatures: this.getDisplayFeatures(plan),
+                }));
+                res.json({
+                    success: true,
+                    data: transformedPlans,
+                });
+            }
+            catch (error) {
+                res.status(500).json({
+                    success: false,
+                    message: 'Error fetching plans',
+                    error: error.message,
+                });
+            }
+        };
+    }
     async getCurrentSubscription(req, res) {
         try {
             const subscription = await Subscription_1.default.findOne({
@@ -59,46 +85,76 @@ class SubscriptionController {
             });
         }
     }
-    async getAvailablePlans(req, res) {
-        try {
-            const plans = await SubscriptionPlan_1.default.find({ isActive: true }).sort({
-                priceNGN: 1,
-            });
-            const plansWithFeatures = await Promise.all(plans.map(async (plan) => {
-                const tierMapping = {
-                    'Free Trial': 'free_trial',
-                    Basic: 'basic',
-                    Pro: 'pro',
-                    Enterprise: 'enterprise',
-                };
-                const tier = tierMapping[plan.name] || 'basic';
-                const features = await FeatureFlag_1.default.find({
-                    isActive: true,
-                    allowedTiers: tier,
-                }).select('key name description metadata.category');
-                return {
-                    ...plan.toObject(),
-                    tier,
-                    features,
-                };
-            }));
-            res.json({
-                success: true,
-                data: plansWithFeatures,
-            });
+    getDisplayFeatures(plan) {
+        const features = [];
+        if (plan.tier === 'free_trial') {
+            features.push('Access to all features during trial period');
+            features.push('14-day free trial');
         }
-        catch (error) {
-            res.status(500).json({
-                success: false,
-                message: 'Error fetching plans',
-                error: error.message,
-            });
+        else if (plan.tier === 'basic') {
+            features.push(`Up to ${plan.features.patientLimit || 'unlimited'} patients`);
+            features.push(`${plan.features.clinicalNotesLimit || 'unlimited'} clinical notes`);
+            features.push(`${plan.features.patientRecordsLimit || 'unlimited'} patient records`);
+            features.push('Basic reports');
+            features.push(`${plan.features.teamSize || 1} User`);
+            if (plan.features.emailReminders)
+                features.push('Email reminders');
         }
+        else if (plan.tier === 'pro') {
+            features.push('Unlimited patients');
+            features.push('Unlimited clinical notes');
+            features.push('Unlimited users');
+            features.push('Priority support');
+            if (plan.features.integrations)
+                features.push('Integrations');
+            if (plan.features.emailReminders)
+                features.push('Email reminders');
+            if (plan.features.advancedReports)
+                features.push('Advanced reports');
+            if (plan.features.drugTherapyManagement)
+                features.push('Drug Therapy Management');
+        }
+        else if (plan.tier === 'pharmily') {
+            features.push('Everything in Pro plan');
+            features.push('ADR Reporting');
+            features.push('Drug Interaction Checker');
+            features.push('Dose Calculator');
+            features.push('Advanced Reporting');
+            if (plan.features.integrations)
+                features.push('Integrations');
+            if (plan.features.emailReminders)
+                features.push('Email reminders');
+        }
+        else if (plan.tier === 'network') {
+            features.push('Everything in Pharmily plan');
+            features.push('Multi-location Dashboard');
+            features.push('Shared Patient Records');
+            features.push('Group Analytics');
+            features.push('Clinical Decision Support System (CDSS)');
+            features.push('Team Management');
+            if (plan.features.smsReminders)
+                features.push('SMS reminders');
+        }
+        else if (plan.tier === 'enterprise') {
+            features.push('Everything in Network plan');
+            features.push('Dedicated support');
+            features.push('Team management');
+            features.push('ADR reporting');
+            features.push('Advanced reports');
+            if (plan.features.smsReminders)
+                features.push('SMS reminders');
+            if (plan.features.customIntegrations)
+                features.push('Custom integrations');
+        }
+        return features;
     }
     async createCheckoutSession(req, res) {
         try {
             const { planId, billingInterval = 'monthly' } = req.body;
-            const plan = await SubscriptionPlan_1.default.findById(planId);
+            const plan = await SubscriptionPlan_1.default.findOne({
+                _id: planId,
+                billingInterval: billingInterval,
+            });
             if (!plan) {
                 return res.status(404).json({
                     success: false,
@@ -106,59 +162,85 @@ class SubscriptionController {
                 });
             }
             const user = req.user;
-            let stripeCustomerId = user.stripeCustomerId;
-            if (!stripeCustomerId) {
-                const customer = await stripe.customers.create({
-                    email: user.email,
-                    name: `${user.firstName} ${user.lastName}`,
-                    metadata: {
-                        userId: user._id.toString(),
-                        role: user.role,
-                    },
+            const existingSubscription = await Subscription_1.default.findOne({
+                userId: user._id,
+                status: { $in: ['active', 'trial'] },
+            });
+            if (existingSubscription) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User already has an active subscription',
                 });
-                stripeCustomerId = customer.id;
-                await User_1.default.findByIdAndUpdate(user._id, { stripeCustomerId });
             }
-            const session = await stripe.checkout.sessions.create({
-                customer: stripeCustomerId,
-                payment_method_types: ['card'],
-                line_items: [
-                    {
-                        price_data: {
-                            currency: 'ngn',
-                            product_data: {
-                                name: plan.name,
-                                metadata: {
-                                    planId: plan._id.toString(),
-                                    tier: plan.name.toLowerCase().replace(' ', '_'),
-                                },
-                            },
-                            unit_amount: plan.priceNGN * 100,
-                            recurring: {
-                                interval: billingInterval,
-                            },
-                        },
-                        quantity: 1,
-                    },
-                ],
-                mode: 'subscription',
-                success_url: `${process.env.FRONTEND_URL}/dashboard/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-                cancel_url: `${process.env.FRONTEND_URL}/dashboard/subscription/plans`,
+            const paymentData = {
+                amount: plan.priceNGN,
+                currency: 'NGN',
+                customerEmail: user.email,
+                customerName: `${user.firstName} ${user.lastName}`,
+                description: `${plan.name} Subscription - ${billingInterval}`,
+                callbackUrl: `${process.env.FRONTEND_URL}/subscription-management/success`,
                 metadata: {
                     userId: user._id.toString(),
                     planId: plan._id.toString(),
                     billingInterval,
+                    tier: plan.tier,
                 },
+            };
+            if (process.env.NODE_ENV === 'development' && !nombaService_1.nombaService.isNombaConfigured()) {
+                const mockReference = `mock_${Date.now()}_${user._id}`;
+                const mockCheckoutUrl = `${process.env.FRONTEND_URL}/subscription-management/success?reference=${mockReference}`;
+                await Payment_1.default.create({
+                    userId: user._id,
+                    planId: plan._id,
+                    amount: plan.priceNGN,
+                    currency: 'NGN',
+                    paymentReference: mockReference,
+                    status: 'pending',
+                    paymentMethod: 'nomba',
+                    metadata: paymentData.metadata,
+                });
+                return res.json({
+                    success: true,
+                    data: {
+                        checkoutUrl: mockCheckoutUrl,
+                        reference: mockReference,
+                    },
+                    message: 'Development mode: Mock payment initiated',
+                });
+            }
+            if (!nombaService_1.nombaService.isNombaConfigured()) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Payment service is not properly configured. Please contact support.',
+                });
+            }
+            const paymentResponse = await nombaService_1.nombaService.initiatePayment(paymentData);
+            if (!paymentResponse.success) {
+                return res.status(400).json({
+                    success: false,
+                    message: paymentResponse.message || 'Failed to initialize payment',
+                });
+            }
+            await Payment_1.default.create({
+                userId: user._id,
+                planId: plan._id,
+                amount: plan.priceNGN,
+                currency: 'NGN',
+                paymentReference: paymentResponse.data.reference,
+                status: 'pending',
+                paymentMethod: 'nomba',
+                metadata: paymentData.metadata,
             });
             res.json({
                 success: true,
                 data: {
-                    sessionId: session.id,
-                    sessionUrl: session.url,
+                    checkoutUrl: paymentResponse.data.checkoutUrl,
+                    reference: paymentResponse.data.reference,
                 },
             });
         }
         catch (error) {
+            console.error('Checkout session creation error:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error creating checkout session',
@@ -168,21 +250,55 @@ class SubscriptionController {
     }
     async handleSuccessfulPayment(req, res) {
         try {
-            const { sessionId } = req.body;
-            const session = await stripe.checkout.sessions.retrieve(sessionId);
-            if (!session || session.payment_status !== 'paid') {
+            const { paymentReference } = req.body;
+            if (!paymentReference) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Payment not completed',
+                    message: 'Payment reference is required',
                 });
             }
-            const userId = session.metadata?.userId;
-            const planId = session.metadata?.planId;
-            const billingInterval = session.metadata?.billingInterval || 'monthly';
+            let paymentData;
+            if (process.env.NODE_ENV === 'development' && paymentReference.startsWith('mock_')) {
+                paymentData = {
+                    status: 'success',
+                    reference: paymentReference,
+                    amount: 0,
+                    currency: 'NGN',
+                    customerEmail: '',
+                };
+            }
+            else {
+                const verificationResult = await nombaService_1.nombaService.verifyPayment(paymentReference);
+                if (!verificationResult.success || !verificationResult.data) {
+                    return res.status(400).json({
+                        success: false,
+                        message: verificationResult.message || 'Payment verification failed',
+                    });
+                }
+                paymentData = verificationResult.data;
+                if (paymentData.status !== 'success') {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Payment not completed',
+                    });
+                }
+            }
+            const paymentRecord = await Payment_1.default.findOne({
+                paymentReference: paymentReference,
+            });
+            if (!paymentRecord) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Payment record not found',
+                });
+            }
+            const userId = paymentRecord.userId;
+            const planId = paymentRecord.planId;
+            const billingInterval = paymentRecord.metadata?.billingInterval || 'monthly';
             if (!userId || !planId) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Invalid session metadata',
+                    message: 'Invalid payment metadata',
                 });
             }
             const user = await User_1.default.findById(userId);
@@ -193,7 +309,7 @@ class SubscriptionController {
                     message: 'User or plan not found',
                 });
             }
-            await Subscription_1.default.updateMany({ userId: userId, status: 'active' }, { status: 'cancelled' });
+            await Subscription_1.default.updateMany({ userId: userId, status: { $in: ['active', 'trial'] } }, { status: 'cancelled' });
             const startDate = new Date();
             const endDate = new Date();
             if (billingInterval === 'yearly') {
@@ -202,34 +318,25 @@ class SubscriptionController {
             else {
                 endDate.setMonth(endDate.getMonth() + 1);
             }
-            const tierMapping = {
-                'Free Trial': 'free_trial',
-                Basic: 'basic',
-                Pro: 'pro',
-                Enterprise: 'enterprise',
-            };
-            const tier = tierMapping[plan.name] || 'basic';
-            const features = await FeatureFlag_1.default.find({
-                isActive: true,
-                allowedTiers: tier,
-            });
             const subscription = new Subscription_1.default({
                 userId: userId,
                 planId: planId,
-                tier: tier,
-                status: 'active',
+                tier: plan.tier,
+                status: plan.tier === 'free_trial' ? 'trial' : 'active',
                 startDate: startDate,
                 endDate: endDate,
                 priceAtPurchase: plan.priceNGN,
                 autoRenew: true,
-                stripeSubscriptionId: session.subscription,
-                stripeCustomerId: session.customer,
-                features: features.map((f) => f.key),
+                paymentReference: paymentReference,
+                features: Object.keys(plan.features).filter((key) => plan.features[key] === true),
             });
             await subscription.save();
+            paymentRecord.status = 'completed';
+            paymentRecord.completedAt = new Date();
+            await paymentRecord.save();
             user.currentSubscriptionId = subscription._id;
-            user.subscriptionTier = tier;
-            user.features = features.map((f) => f.key);
+            user.subscriptionTier = plan.tier;
+            user.currentPlanId = planId;
             await user.save();
             await emailService_1.emailService.sendSubscriptionConfirmation(user.email, {
                 firstName: user.firstName,
@@ -258,21 +365,13 @@ class SubscriptionController {
             const { reason } = req.body;
             const subscription = await Subscription_1.default.findOne({
                 userId: req.user._id,
-                status: 'active',
+                status: { $in: ['active', 'trial'] },
             });
             if (!subscription) {
                 return res.status(404).json({
                     success: false,
                     message: 'No active subscription found',
                 });
-            }
-            if (subscription.stripeSubscriptionId) {
-                try {
-                    await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
-                }
-                catch (stripeError) {
-                    console.error('Error cancelling Stripe subscription:', stripeError);
-                }
             }
             const gracePeriodEnd = new Date();
             gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
@@ -324,7 +423,14 @@ class SubscriptionController {
                     message: 'New plan not found',
                 });
             }
-            const tierOrder = ['free_trial', 'basic', 'pro', 'enterprise'];
+            const tierOrder = [
+                'free_trial',
+                'basic',
+                'pro',
+                'pharmily',
+                'network',
+                'enterprise',
+            ];
             const currentTierIndex = tierOrder.indexOf(currentSubscription.tier);
             const newTierIndex = tierOrder.indexOf(newPlan.name.toLowerCase().replace(' ', '_'));
             if (newTierIndex <= currentTierIndex) {
@@ -334,40 +440,24 @@ class SubscriptionController {
                 });
             }
             const currentPlan = currentSubscription.planId;
-            const daysRemaining = Math.ceil((currentSubscription.endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+            const daysRemaining = Math.ceil((currentSubscription.endDate.getTime() - Date.now()) /
+                (1000 * 60 * 60 * 24));
             const totalDaysInPeriod = billingInterval === 'yearly' ? 365 : 30;
             const proratedDiscount = (currentPlan.priceNGN * daysRemaining) / totalDaysInPeriod;
             const upgradeAmount = newPlan.priceNGN - proratedDiscount;
-            if (currentSubscription.stripeSubscriptionId) {
-                try {
-                    const stripeSubscription = await stripe.subscriptions.retrieve(currentSubscription.stripeSubscriptionId);
-                    const price = await stripe.prices.create({
-                        currency: 'ngn',
-                        unit_amount: newPlan.priceNGN * 100,
-                        recurring: {
-                            interval: billingInterval,
-                        },
-                        product_data: {
-                            name: newPlan.name,
-                        },
-                    });
-                    await stripe.subscriptions.update(currentSubscription.stripeSubscriptionId, {
-                        items: [{
-                                id: stripeSubscription.items.data[0]?.id,
-                                price: price.id,
-                            }],
-                        proration_behavior: 'create_prorations',
-                    });
-                }
-                catch (stripeError) {
-                    console.error('Error updating Stripe subscription:', stripeError);
-                }
-            }
+            console.log('Processing subscription upgrade...');
             const tierMapping = {
                 'Free Trial': 'free_trial',
                 Basic: 'basic',
+                'Basic Yearly': 'basic',
                 Pro: 'pro',
+                'Pro Yearly': 'pro',
+                Pharmily: 'pharmily',
+                'Pharmily Yearly': 'pharmily',
+                Network: 'network',
+                'Network Yearly': 'network',
                 Enterprise: 'enterprise',
+                'Enterprise Yearly': 'enterprise',
             };
             const newTier = tierMapping[newPlan.name] || 'basic';
             const features = await FeatureFlag_1.default.find({
@@ -506,34 +596,41 @@ class SubscriptionController {
         }
     }
     async handleWebhook(req, res) {
-        const sig = req.headers['stripe-signature'];
+        const signature = req.headers['x-nomba-signature'];
+        const timestamp = req.headers['x-nomba-timestamp'];
+        if (!signature || !timestamp) {
+            return res
+                .status(400)
+                .json({ error: 'Missing webhook signature or timestamp' });
+        }
         let event;
         try {
-            event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+            const payload = JSON.stringify(req.body);
+            const isValid = nombaService_1.nombaService.verifyWebhookSignature(payload, signature, timestamp);
+            if (!isValid) {
+                console.log('Webhook signature verification failed');
+                return res.status(400).json({ error: 'Invalid webhook signature' });
+            }
+            event = req.body;
         }
         catch (err) {
-            console.log(`Webhook signature verification failed.`, err.message);
-            return res.status(400).send(`Webhook Error: ${err.message}`);
+            console.log('Webhook processing error:', err.message);
+            return res
+                .status(400)
+                .json({ error: `Webhook Error: ${err.message}` });
         }
         try {
-            switch (event.type) {
-                case 'subscription.created':
-                    await this.handleSubscriptionCreated(event.data.object);
+            switch (event.type || event.event) {
+                case 'payment.success':
+                case 'charge.success':
+                    await this.handleNombaPaymentSucceeded(event.data);
                     break;
-                case 'subscription.updated':
-                    await this.handleSubscriptionUpdated(event.data.object);
-                    break;
-                case 'subscription.deleted':
-                    await this.handleSubscriptionDeleted(event.data.object);
-                    break;
-                case 'invoice.payment_succeeded':
-                    await this.handlePaymentSucceeded(event.data.object);
-                    break;
-                case 'invoice.payment_failed':
-                    await this.handlePaymentFailed(event.data.object);
+                case 'payment.failed':
+                case 'charge.failed':
+                    await this.handleNombaPaymentFailed(event.data);
                     break;
                 default:
-                    console.log(`Unhandled event type ${event.type}`);
+                    console.log(`Unhandled event type ${event.type || event.event}`);
             }
             res.json({ received: true });
         }
@@ -542,88 +639,111 @@ class SubscriptionController {
             res.status(500).json({ error: 'Webhook processing failed' });
         }
     }
-    async handleSubscriptionCreated(stripeSubscription) {
-        console.log('Subscription created:', stripeSubscription.id);
+    async handleSubscriptionCreated(subscription) {
+        console.log('Subscription created via Nomba');
     }
-    async handleSubscriptionUpdated(stripeSubscription) {
-        const subscription = await Subscription_1.default.findOne({
-            stripeSubscriptionId: stripeSubscription.id,
-        });
-        if (subscription) {
-            if (stripeSubscription.status === 'active') {
-                subscription.status = 'active';
-            }
-            else if (stripeSubscription.status === 'canceled') {
-                subscription.status = 'cancelled';
-            }
-            await subscription.save();
-        }
+    async handleSubscriptionUpdated(subscription) {
+        console.log('Subscription updated via Nomba');
     }
-    async handleSubscriptionDeleted(stripeSubscription) {
-        const subscription = await Subscription_1.default.findOne({
-            stripeSubscriptionId: stripeSubscription.id,
-        });
-        if (subscription) {
-            subscription.status = 'cancelled';
-            await subscription.save();
-        }
+    async handleSubscriptionDeleted(subscription) {
+        console.log('Subscription deleted via Nomba');
     }
-    async handlePaymentSucceeded(invoice) {
-        const stripeSubscriptionId = invoice.subscription;
-        const subscription = await Subscription_1.default.findOne({
-            stripeSubscriptionId: stripeSubscriptionId,
-        });
-        if (subscription) {
-            const newEndDate = new Date(invoice.period_end * 1000);
-            subscription.endDate = newEndDate;
-            subscription.status = 'active';
-            const payment = new Payment_1.default({
-                user: subscription.userId,
-                subscription: subscription._id,
-                amount: invoice.amount_paid / 100,
-                currency: 'ngn',
-                paymentMethod: 'credit_card',
-                status: 'completed',
-                stripePaymentIntentId: invoice.payment_intent,
-                transactionId: invoice.id,
+    async handlePaymentSucceeded(paymentData) {
+        await this.handleNombaPaymentSucceeded(paymentData);
+    }
+    async handlePaymentFailed(paymentData) {
+        await this.handleNombaPaymentFailed(paymentData);
+    }
+    async handleNombaPaymentSucceeded(paymentData) {
+        try {
+            const reference = paymentData.reference;
+            if (!reference)
+                return;
+            const paymentRecord = await Payment_1.default.findOne({
+                paymentReference: reference,
+                status: 'pending',
             });
-            await payment.save();
-            subscription.paymentHistory.push(payment._id);
-            await subscription.save();
-            const user = await User_1.default.findById(subscription.userId);
-            if (user) {
-                await emailService_1.emailService.sendPaymentConfirmation(user.email, {
-                    firstName: user.firstName,
-                    amount: invoice.amount_paid / 100,
-                    nextBillingDate: newEndDate,
+            if (!paymentRecord) {
+                console.log('Payment record not found for reference:', reference);
+                return;
+            }
+            console.log('Processing Nomba payment success via webhook:', reference);
+            paymentRecord.status = 'completed';
+            paymentRecord.completedAt = new Date();
+            await paymentRecord.save();
+        }
+        catch (error) {
+            console.error('Error handling Nomba payment success:', error);
+        }
+    }
+    async handleNombaPaymentFailed(paymentData) {
+        try {
+            const reference = paymentData.reference;
+            if (!reference)
+                return;
+            await Payment_1.default.updateOne({ paymentReference: reference }, {
+                status: 'failed',
+                failedAt: new Date(),
+            });
+            console.log('Payment failed for reference:', reference);
+        }
+        catch (error) {
+            console.error('Error handling Nomba payment failure:', error);
+        }
+    }
+    async getBillingHistory(req, res) {
+        try {
+            const payments = await Payment_1.default.find({
+                userId: req.user._id,
+            })
+                .populate('planId')
+                .sort({ createdAt: -1 })
+                .limit(50);
+            res.json({
+                success: true,
+                data: payments,
+            });
+        }
+        catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error fetching billing history',
+                error: error.message,
+            });
+        }
+    }
+    async getUsageMetrics(req, res) {
+        try {
+            const subscription = await Subscription_1.default.findOne({
+                userId: req.user._id,
+                status: { $in: ['active', 'trial', 'grace_period'] },
+            }).populate('planId');
+            if (!subscription) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No active subscription found',
                 });
             }
-        }
-    }
-    async handlePaymentFailed(invoice) {
-        const stripeSubscriptionId = invoice.subscription;
-        const subscription = await Subscription_1.default.findOne({
-            stripeSubscriptionId: stripeSubscriptionId,
-        });
-        if (subscription) {
-            subscription.renewalAttempts.push({
-                attemptedAt: new Date(),
-                successful: false,
-                error: 'Payment failed',
+            const usageMetrics = {
+                currentPeriodStart: subscription.startDate,
+                currentPeriodEnd: subscription.endDate,
+                daysRemaining: Math.ceil((subscription.endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+                features: subscription.features,
+                patientsCount: 0,
+                notesCount: 0,
+                teamMembers: 1,
+            };
+            res.json({
+                success: true,
+                data: usageMetrics,
             });
-            const failedAttempts = subscription.renewalAttempts.filter((attempt) => !attempt.successful).length;
-            if (failedAttempts >= 3) {
-                subscription.status = 'suspended';
-            }
-            await subscription.save();
-            const user = await User_1.default.findById(subscription.userId);
-            if (user) {
-                await emailService_1.emailService.sendPaymentFailedNotification(user.email, {
-                    firstName: user.firstName,
-                    attemptNumber: failedAttempts,
-                    nextAttempt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-                });
-            }
+        }
+        catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error fetching usage metrics',
+                error: error.message,
+            });
         }
     }
 }

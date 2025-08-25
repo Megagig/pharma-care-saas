@@ -7,6 +7,7 @@ export declare const resetPassword: (req: Request, res: Response) => Promise<voi
 export declare const refreshToken: (req: Request, res: Response) => Promise<void>;
 export declare const logout: (req: Request, res: Response) => Promise<void>;
 export declare const clearCookies: (req: Request, res: Response) => Promise<void>;
+export declare const checkCookies: (req: Request, res: Response) => Promise<void>;
 export declare const logoutAll: (req: Request, res: Response) => Promise<void>;
 interface AuthRequest extends Request {
     user?: any;

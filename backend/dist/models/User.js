@@ -46,129 +46,150 @@ const userSchema = new mongoose_1.Schema({
         unique: true,
         lowercase: true,
         index: true,
-        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+        match: [
+            /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+            'Please enter a valid email',
+        ],
     },
     phone: {
         type: String,
         index: true,
-        sparse: true
+        sparse: true,
     },
     passwordHash: {
         type: String,
         required: [true, 'Password is required'],
-        minlength: 6
+        minlength: 6,
     },
     firstName: {
         type: String,
         required: [true, 'First name is required'],
-        trim: true
+        trim: true,
     },
     lastName: {
         type: String,
         required: [true, 'Last name is required'],
-        trim: true
+        trim: true,
     },
     role: {
         type: String,
-        enum: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist', 'super_admin'],
+        enum: [
+            'pharmacist',
+            'pharmacy_team',
+            'pharmacy_outlet',
+            'intern_pharmacist',
+            'super_admin',
+        ],
         default: 'pharmacist',
-        index: true
+        index: true,
     },
     status: {
         type: String,
-        enum: ['pending', 'active', 'suspended', 'license_pending', 'license_rejected'],
+        enum: [
+            'pending',
+            'active',
+            'suspended',
+            'license_pending',
+            'license_rejected',
+        ],
         default: 'pending',
-        index: true
+        index: true,
     },
     emailVerified: {
         type: Boolean,
-        default: false
+        default: false,
     },
     verificationToken: {
         type: String,
-        index: { expires: '24h' }
+        index: { expires: '24h' },
     },
     verificationCode: {
         type: String,
-        index: { expires: '24h' }
+        index: { expires: '24h' },
     },
     resetToken: {
         type: String,
-        index: { expires: '1h' }
+        index: { expires: '1h' },
     },
     pharmacyId: {
         type: mongoose_1.default.Schema.Types.ObjectId,
         ref: 'Pharmacy',
-        index: true
+        index: true,
     },
     currentPlanId: {
         type: mongoose_1.default.Schema.Types.ObjectId,
         ref: 'SubscriptionPlan',
-        required: true
+        required: true,
     },
     planOverride: {
-        type: mongoose_1.Schema.Types.Mixed
+        type: mongoose_1.Schema.Types.Mixed,
     },
     currentSubscriptionId: {
         type: mongoose_1.default.Schema.Types.ObjectId,
         ref: 'Subscription',
-        index: true
+        index: true,
     },
     lastLoginAt: Date,
     licenseNumber: {
         type: String,
         sparse: true,
-        index: true
+        index: true,
     },
     licenseDocument: {
         fileName: String,
         filePath: String,
         uploadedAt: Date,
         fileSize: Number,
-        mimeType: String
+        mimeType: String,
     },
     licenseStatus: {
         type: String,
         enum: ['not_required', 'pending', 'approved', 'rejected'],
         default: 'not_required',
-        index: true
+        index: true,
     },
     licenseVerifiedAt: Date,
     licenseVerifiedBy: {
         type: mongoose_1.default.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
     },
     licenseRejectionReason: String,
     parentUserId: {
         type: mongoose_1.default.Schema.Types.ObjectId,
         ref: 'User',
-        index: true
+        index: true,
     },
-    teamMembers: [{
+    teamMembers: [
+        {
             type: mongoose_1.default.Schema.Types.ObjectId,
-            ref: 'User'
-        }],
-    permissions: [{
+            ref: 'User',
+        },
+    ],
+    permissions: [
+        {
             type: String,
-            index: true
-        }],
+            index: true,
+        },
+    ],
     subscriptionTier: {
         type: String,
-        enum: ['free_trial', 'basic', 'pro', 'enterprise'],
+        enum: ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'],
         default: 'free_trial',
-        index: true
+        index: true,
     },
     trialStartDate: Date,
     trialEndDate: Date,
-    features: [{
+    features: [
+        {
             type: String,
-            index: true
-        }],
+            index: true,
+        },
+    ],
     stripeCustomerId: {
         type: String,
         sparse: true,
-        index: true
-    }
+        index: true,
+    },
 }, { timestamps: true });
 userSchema.pre('save', async function (next) {
     if (!this.isModified('passwordHash'))
@@ -181,12 +202,18 @@ userSchema.methods.comparePassword = async function (password) {
 };
 userSchema.methods.generateVerificationToken = function () {
     const token = crypto_1.default.randomBytes(32).toString('hex');
-    this.verificationToken = crypto_1.default.createHash('sha256').update(token).digest('hex');
+    this.verificationToken = crypto_1.default
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
     return token;
 };
 userSchema.methods.generateVerificationCode = function () {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    this.verificationCode = crypto_1.default.createHash('sha256').update(code).digest('hex');
+    this.verificationCode = crypto_1.default
+        .createHash('sha256')
+        .update(code)
+        .digest('hex');
     return code;
 };
 userSchema.methods.generateResetToken = function () {
@@ -203,7 +230,8 @@ userSchema.methods.hasFeature = function (feature) {
 userSchema.pre('save', function (next) {
     if (this.isNew || this.isModified('role')) {
         if (this.role === 'pharmacist' || this.role === 'intern_pharmacist') {
-            this.licenseStatus = this.licenseStatus === 'not_required' ? 'pending' : this.licenseStatus;
+            this.licenseStatus =
+                this.licenseStatus === 'not_required' ? 'pending' : this.licenseStatus;
         }
         else {
             this.licenseStatus = 'not_required';

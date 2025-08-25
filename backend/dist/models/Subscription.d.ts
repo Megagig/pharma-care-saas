@@ -3,7 +3,7 @@ export interface ISubscription extends Document {
     userId: mongoose.Types.ObjectId;
     planId: mongoose.Types.ObjectId;
     status: 'active' | 'inactive' | 'cancelled' | 'expired' | 'trial' | 'grace_period' | 'suspended';
-    tier: 'free_trial' | 'basic' | 'pro' | 'enterprise';
+    tier: 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
     startDate: Date;
     endDate: Date;
     priceAtPurchase: number;

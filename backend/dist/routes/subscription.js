@@ -12,6 +12,11 @@ router.get('/current', auth_1.authOptionalSubscription, subscriptionController_1
 router.get('/plans', subscriptionController_1.subscriptionController.getAvailablePlans);
 router.post('/checkout', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.createCheckoutSession);
 router.post('/confirm-payment', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.handleSuccessfulPayment);
+router.post('/payment-success', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.handleSuccessfulPayment);
 router.post('/cancel', auth_1.auth, subscriptionController_1.subscriptionController.cancelSubscription);
+router.post('/upgrade', auth_1.auth, subscriptionController_1.subscriptionController.upgradeSubscription);
+router.post('/downgrade', auth_1.auth, subscriptionController_1.subscriptionController.downgradeSubscription);
+router.get('/billing-history', auth_1.auth, subscriptionController_1.subscriptionController.getBillingHistory);
+router.get('/usage', auth_1.auth, subscriptionController_1.subscriptionController.getUsageMetrics);
 exports.default = router;
 //# sourceMappingURL=subscription.js.map

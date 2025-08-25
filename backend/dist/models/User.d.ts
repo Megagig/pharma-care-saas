@@ -31,7 +31,7 @@ export interface IUser extends Document {
     parentUserId?: mongoose.Types.ObjectId;
     teamMembers?: mongoose.Types.ObjectId[];
     permissions: string[];
-    subscriptionTier: 'free_trial' | 'basic' | 'pro' | 'enterprise';
+    subscriptionTier: 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
     trialStartDate?: Date;
     trialEndDate?: Date;
     features: string[];
