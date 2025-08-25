@@ -10,11 +10,11 @@ import {
   Box,
   Divider,
   Typography,
-  IconButton,
   useMediaQuery,
   useTheme,
   Badge,
   Chip,
+  Tooltip,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -62,7 +62,7 @@ const Sidebar = () => {
     handleMobileClose();
   }, [location.pathname, handleMobileClose]);
 
-  const drawerWidth = sidebarOpen ? 280 : 64;
+  const drawerWidth = sidebarOpen ? 280 : 56;
 
   const navItems = [
     {
@@ -259,15 +259,22 @@ const Sidebar = () => {
       sx={{
         width: drawerWidth,
         flexShrink: 0,
+        whiteSpace: 'nowrap',
+        position: 'relative',
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
-          position: 'relative',
-          height: '100%',
-          backgroundColor: 'background.paper',
-          borderRight: '1px solid',
-          borderColor: 'grey.200',
-          transition: 'width 0.3s ease',
+          position: 'fixed',
+          height: '100vh',
+          backgroundColor: theme.palette.background.default,
+          borderRight: `1px solid ${theme.palette.divider}`,
+          transition: theme.transitions.create(['width', 'margin'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.standard,
+          }),
+          overflowX: 'hidden',
+          boxShadow: theme.shadows[3],
+          zIndex: theme.zIndex.drawer,
         },
       }}
     >
@@ -280,6 +287,7 @@ const Sidebar = () => {
             justifyContent: sidebarOpen ? 'space-between' : 'center',
             p: sidebarOpen ? 2 : 1,
             minHeight: 64,
+            position: 'relative',
           }}
         >
           {sidebarOpen && (
@@ -294,23 +302,80 @@ const Sidebar = () => {
               PharmaCare
             </Typography>
           )}
-          <IconButton
-            onClick={toggleSidebar}
-            size="small"
-            sx={{
-              color: 'text.secondary',
-              '&:hover': {
-                bgcolor: 'action.hover',
-              },
-            }}
+
+          {/* HIGHLY VISIBLE Toggle Button */}
+          <Tooltip
+            title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+            placement="bottom"
           >
-            <ChevronLeftIcon
+            <Box
               sx={{
-                transform: sidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)',
-                transition: 'transform 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: sidebarOpen ? 44 : 40,
+                height: sidebarOpen ? 44 : 40,
+                backgroundColor: '#1976d2', // Explicit blue color
+                borderRadius: '12px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 16px rgba(25, 118, 210, 0.4)',
+                border: `3px solid #ffffff`,
+                position: 'relative',
+                '&:hover': {
+                  backgroundColor: '#1565c0',
+                  transform: 'scale(1.1)',
+                  boxShadow: '0 6px 24px rgba(25, 118, 210, 0.6)',
+                },
+                '&:active': {
+                  transform: 'scale(0.95)',
+                },
+                // Pulsing animation for maximum visibility
+                '@keyframes visiblePulse': {
+                  '0%': {
+                    boxShadow: '0 4px 16px rgba(25, 118, 210, 0.4)',
+                    transform: 'scale(1)',
+                  },
+                  '50%': {
+                    boxShadow: '0 8px 32px rgba(25, 118, 210, 0.8)',
+                    transform: 'scale(1.05)',
+                  },
+                  '100%': {
+                    boxShadow: '0 4px 16px rgba(25, 118, 210, 0.4)',
+                    transform: 'scale(1)',
+                  },
+                },
+                animation: 'visiblePulse 2s ease-in-out infinite',
+                transition: theme.transitions.create(
+                  ['transform', 'box-shadow', 'background-color'],
+                  {
+                    duration: theme.transitions.duration.shorter,
+                  }
+                ),
+                // Mobile adjustments
+                [theme.breakpoints.down('sm')]: {
+                  width: sidebarOpen ? 40 : 36,
+                  height: sidebarOpen ? 40 : 36,
+                },
               }}
-            />
-          </IconButton>
+              onClick={toggleSidebar}
+            >
+              <ChevronLeftIcon
+                sx={{
+                  transform: sidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)',
+                  transition: theme.transitions.create('transform', {
+                    easing: theme.transitions.easing.easeInOut,
+                    duration: theme.transitions.duration.standard,
+                  }),
+                  fontSize: sidebarOpen ? 28 : 24,
+                  color: '#ffffff',
+                  fontWeight: 'bold',
+                  [theme.breakpoints.down('sm')]: {
+                    fontSize: sidebarOpen ? 24 : 20,
+                  },
+                }}
+              />
+            </Box>
+          </Tooltip>
         </Box>
 
         <Divider sx={{ mx: sidebarOpen ? 2 : 1 }} />

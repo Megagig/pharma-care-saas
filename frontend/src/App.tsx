@@ -18,6 +18,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
+import FloatingToggle from './components/FloatingToggle';
 
 import Landing from './pages/Landing';
 import About from './pages/About';
@@ -273,6 +274,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <Box component="main" sx={{ flex: 1, overflow: 'auto' }}>
           {children}
         </Box>
+        {/* Floating Toggle Button - Always Visible */}
+        <FloatingToggle />
       </Box>
     </Box>
   );
