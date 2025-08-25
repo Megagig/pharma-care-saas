@@ -22,10 +22,11 @@ const FloatingToggle: React.FC = () => {
         onClick={toggleSidebar}
         sx={{
           position: 'fixed',
-          top: 80,
-          left: sidebarOpen ? 300 : 76,
+          // Position exactly on top of "MAIN MENU" text
+          top: sidebarOpen ? 95 : 85, // Right on top of MAIN MENU text
+          left: sidebarOpen ? 140 : 28, // Centered over MAIN MENU when open, over sidebar when closed
           zIndex: theme.zIndex.speedDial,
-          transition: theme.transitions.create(['left'], {
+          transition: theme.transitions.create(['left', 'top'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.standard,
           }),
@@ -49,12 +50,12 @@ const FloatingToggle: React.FC = () => {
           animation: 'floatingPulse 3s ease-in-out infinite',
           // Mobile positioning
           [theme.breakpoints.down('md')]: {
-            left: sidebarOpen ? 280 : 60,
-            top: 70,
+            left: sidebarOpen ? 120 : 24,
+            top: sidebarOpen ? 90 : 80,
           },
           [theme.breakpoints.down('sm')]: {
-            left: sidebarOpen ? 260 : 50,
-            top: 60,
+            left: sidebarOpen ? 100 : 20,
+            top: sidebarOpen ? 85 : 75,
             transform: 'scale(0.9)',
           },
         }}

@@ -382,19 +382,151 @@ const Sidebar = () => {
         {/* Main Navigation */}
         <Box sx={{ pt: 2, pb: 2 }}>
           {sidebarOpen && (
-            <Typography
-              variant="overline"
+            <Box
               sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
                 px: 3,
-                color: 'text.secondary',
-                fontWeight: 600,
-                fontSize: '0.75rem',
-                letterSpacing: '0.1em',
+                mb: 1,
               }}
             >
-              MAIN MENU
-            </Typography>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: 'text.secondary',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.1em',
+                }}
+              >
+                MAIN MENU
+              </Typography>
+
+              {/* Toggle Button next to MAIN MENU */}
+              <Tooltip title="Collapse sidebar" placement="top">
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 32,
+                    height: 32,
+                    backgroundColor: theme.palette.primary.main,
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
+                    border: `2px solid ${theme.palette.primary.light}`,
+                    '&:hover': {
+                      backgroundColor: theme.palette.primary.dark,
+                      transform: 'scale(1.05)',
+                      boxShadow: '0 4px 12px rgba(25, 118, 210, 0.5)',
+                    },
+                    '&:active': {
+                      transform: 'scale(0.95)',
+                    },
+                    // Subtle pulse for visibility
+                    '@keyframes menuTogglePulse': {
+                      '0%': {
+                        boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
+                      },
+                      '50%': {
+                        boxShadow: '0 4px 16px rgba(25, 118, 210, 0.6)',
+                      },
+                      '100%': {
+                        boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
+                      },
+                    },
+                    animation: 'menuTogglePulse 3s ease-in-out infinite',
+                    transition: theme.transitions.create(
+                      ['transform', 'box-shadow', 'background-color'],
+                      {
+                        duration: theme.transitions.duration.shorter,
+                      }
+                    ),
+                  }}
+                  onClick={toggleSidebar}
+                >
+                  <ChevronLeftIcon
+                    sx={{
+                      fontSize: 20,
+                      color: theme.palette.common.white,
+                      fontWeight: 'bold',
+                    }}
+                  />
+                </Box>
+              </Tooltip>
+            </Box>
           )}
+
+          {/* Toggle button for collapsed sidebar */}
+          {!sidebarOpen && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                mb: 1,
+              }}
+            >
+              <Tooltip title="Expand sidebar" placement="right">
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 36,
+                    height: 36,
+                    backgroundColor: theme.palette.primary.main,
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
+                    border: `2px solid ${theme.palette.primary.light}`,
+                    '&:hover': {
+                      backgroundColor: theme.palette.primary.dark,
+                      transform: 'scale(1.05)',
+                      boxShadow: '0 4px 12px rgba(25, 118, 210, 0.5)',
+                    },
+                    '&:active': {
+                      transform: 'scale(0.95)',
+                    },
+                    // Strong pulse for collapsed state
+                    '@keyframes collapsedTogglePulse': {
+                      '0%': {
+                        boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
+                        transform: 'scale(1)',
+                      },
+                      '50%': {
+                        boxShadow: '0 6px 20px rgba(25, 118, 210, 0.7)',
+                        transform: 'scale(1.1)',
+                      },
+                      '100%': {
+                        boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
+                        transform: 'scale(1)',
+                      },
+                    },
+                    animation: 'collapsedTogglePulse 2s ease-in-out infinite',
+                    transition: theme.transitions.create(
+                      ['transform', 'box-shadow', 'background-color'],
+                      {
+                        duration: theme.transitions.duration.shorter,
+                      }
+                    ),
+                  }}
+                  onClick={toggleSidebar}
+                >
+                  <ChevronLeftIcon
+                    sx={{
+                      fontSize: 22,
+                      color: theme.palette.common.white,
+                      fontWeight: 'bold',
+                      transform: 'rotate(180deg)',
+                    }}
+                  />
+                </Box>
+              </Tooltip>
+            </Box>
+          )}
+
           {renderNavItems(navItems)}
         </Box>
 
