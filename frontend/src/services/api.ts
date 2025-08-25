@@ -2,7 +2,7 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
   timeout: 30000,
   withCredentials: true, // Include httpOnly cookies
   headers: {
@@ -47,9 +47,12 @@ export interface ApiResponse<T = unknown> {
 // API helper functions
 export const apiHelpers = {
   get: <T = unknown>(url: string) => api.get<ApiResponse<T>>(url),
-  post: <T = unknown>(url: string, data?: unknown) => api.post<ApiResponse<T>>(url, data),
-  put: <T = unknown>(url: string, data?: unknown) => api.put<ApiResponse<T>>(url, data),
-  patch: <T = unknown>(url: string, data?: unknown) => api.patch<ApiResponse<T>>(url, data),
+  post: <T = unknown>(url: string, data?: unknown) =>
+    api.post<ApiResponse<T>>(url, data),
+  put: <T = unknown>(url: string, data?: unknown) =>
+    api.put<ApiResponse<T>>(url, data),
+  patch: <T = unknown>(url: string, data?: unknown) =>
+    api.patch<ApiResponse<T>>(url, data),
   delete: <T = unknown>(url: string) => api.delete<ApiResponse<T>>(url),
 };
 

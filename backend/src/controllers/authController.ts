@@ -1,6 +1,7 @@
 import User from '../models/User';
 import Session from '../models/Session';
 import SubscriptionPlan from '../models/SubscriptionPlan';
+import Subscription from '../models/Subscription';
 import jwt from 'jsonwebtoken';
 import { sendEmail } from '../utils/email';
 import crypto from 'crypto';
@@ -44,6 +45,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     // Get the Free Trial plan as default
     const freeTrialPlan = await SubscriptionPlan.findOne({
       name: 'Free Trial',
+      billingInterval: 'monthly',
     });
     if (!freeTrialPlan) {
       res.status(500).json({
@@ -61,8 +63,30 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       passwordHash: password, // Will be hashed by pre-save hook
       role,
       currentPlanId: freeTrialPlan._id,
+      subscriptionTier: 'free_trial',
       status: 'pending', // User needs to verify email
     });
+
+    // Create Free Trial subscription
+    const trialEndDate = new Date();
+    trialEndDate.setDate(
+      trialEndDate.getDate() + (freeTrialPlan.trialDuration || 14)
+    );
+
+    const subscription = await Subscription.create({
+      userId: user._id,
+      planId: freeTrialPlan._id,
+      tier: 'free_trial',
+      status: 'trial',
+      startDate: new Date(),
+      endDate: trialEndDate,
+      priceAtPurchase: 0,
+      autoRenew: false, // Free trial doesn't auto-renew
+    });
+
+    // Update user with subscription reference
+    user.currentSubscriptionId = subscription._id;
+    await user.save();
 
     // Generate verification token and code
     const verificationToken = user.generateVerificationToken();

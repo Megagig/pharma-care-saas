@@ -1,4 +1,4 @@
-import { apiClient } from './api';
+import api from './api';
 
 export interface SubscriptionPlan {
   _id: string;
@@ -29,7 +29,14 @@ export interface Subscription {
   _id: string;
   userId: string;
   planId: string;
-  status: 'active' | 'inactive' | 'cancelled' | 'expired' | 'trial' | 'grace_period' | 'suspended';
+  status:
+    | 'active'
+    | 'inactive'
+    | 'cancelled'
+    | 'expired'
+    | 'trial'
+    | 'grace_period'
+    | 'suspended';
   tier: 'free_trial' | 'basic' | 'pro' | 'enterprise';
   startDate: string;
   endDate: string;
@@ -59,110 +66,136 @@ export interface CheckoutSession {
 
 export const subscriptionService = {
   // Get available plans
-  async getPlans() {
-    const response = await apiClient.get('/subscription-management/plans');
+  async getPlans(billingInterval: 'monthly' | 'yearly' = 'monthly') {
+    const response = await api.get('/subscription-management/plans', {
+      params: { billingInterval },
+    });
     return response.data;
   },
 
   // Get current user's subscription
   async getCurrentSubscription() {
-    const response = await apiClient.get('/subscription-management/current');
+    const response = await api.get('/subscription-management/current');
     return response.data;
   },
 
-  // Create Stripe checkout session
-  async createCheckoutSession(planId: string, billingInterval: 'monthly' | 'yearly') {
-    const response = await apiClient.post('/subscription-management/checkout', {
+  // Create Nomba checkout session
+  async createCheckoutSession(
+    planId: string,
+    billingInterval: 'monthly' | 'yearly'
+  ) {
+    const response = await api.post('/subscription-management/checkout', {
       planId,
-      billingInterval
+      billingInterval,
     });
+    return response.data;
+  },
+
+  // Verify payment after Nomba redirect
+  async verifyPayment(paymentReference: string) {
+    const response = await api.post(
+      '/subscription-management/confirm-payment',
+      {
+        paymentReference,
+      }
+    );
     return response.data;
   },
 
   // Cancel subscription
   async cancelSubscription(reason?: string) {
-    const response = await apiClient.post('/subscription-management/cancel', {
-      reason
+    const response = await api.post('/subscription-management/cancel', {
+      reason,
     });
     return response.data;
   },
 
   // Reactivate subscription
   async reactivateSubscription() {
-    const response = await apiClient.post('/subscription-management/reactivate');
+    const response = await api.post('/subscription-management/reactivate');
     return response.data;
   },
 
   // Update subscription
-  async updateSubscription(planId: string, billingInterval: 'monthly' | 'yearly') {
-    const response = await apiClient.put('/subscription-management/update', {
+  async updateSubscription(
+    planId: string,
+    billingInterval: 'monthly' | 'yearly'
+  ) {
+    const response = await api.put('/subscription-management/update', {
       planId,
-      billingInterval
+      billingInterval,
     });
     return response.data;
   },
 
   // Get billing history
   async getBillingHistory() {
-    const response = await apiClient.get('/subscription-management/billing-history');
+    const response = await api.get('/subscription-management/billing-history');
     return response.data;
   },
 
   // Download invoice
   async downloadInvoice(invoiceId: string) {
-    const response = await apiClient.get(`/subscription-management/invoice/${invoiceId}`, {
-      responseType: 'blob'
-    });
+    const response = await api.get(
+      `/subscription-management/invoice/${invoiceId}`,
+      {
+        responseType: 'blob',
+      }
+    );
     return response.data;
   },
 
   // Get usage metrics
   async getUsageMetrics() {
-    const response = await apiClient.get('/subscription-management/usage');
+    const response = await api.get('/subscription-management/usage');
     return response.data;
   },
 
   // Check feature access
   async checkFeatureAccess(featureKey: string) {
-    const response = await apiClient.get(`/subscription-management/features/${featureKey}/check`);
+    const response = await api.get(
+      `/subscription-management/features/${featureKey}/check`
+    );
     return response.data;
   },
 
   // Get subscription status
   async getSubscriptionStatus() {
-    const response = await apiClient.get('/subscription-management/status');
+    const response = await api.get('/subscription-management/status');
     return response.data;
   },
 
   // Update payment method
   async updatePaymentMethod() {
-    const response = await apiClient.post('/subscription-management/payment-method/update');
+    const response = await api.post(
+      '/subscription-management/payment-method/update'
+    );
     return response.data;
   },
 
   // Get upcoming invoice
   async getUpcomingInvoice() {
-    const response = await apiClient.get('/subscription-management/upcoming-invoice');
+    const response = await api.get('/subscription-management/upcoming-invoice');
     return response.data;
   },
 
   // Apply coupon
   async applyCoupon(couponCode: string) {
-    const response = await apiClient.post('/subscription-management/coupon/apply', {
-      couponCode
+    const response = await api.post('/subscription-management/coupon/apply', {
+      couponCode,
     });
     return response.data;
   },
 
   // Remove coupon
   async removeCoupon() {
-    const response = await apiClient.post('/subscription-management/coupon/remove');
+    const response = await api.post('/subscription-management/coupon/remove');
     return response.data;
   },
 
   // Get plan comparison
   async getPlanComparison() {
-    const response = await apiClient.get('/subscription-management/plans/compare');
+    const response = await api.get('/subscription-management/plans/compare');
     return response.data;
   },
 
@@ -180,31 +213,41 @@ export const subscriptionService = {
     };
     additionalRequirements?: string;
   }) {
-    const response = await apiClient.post('/subscription-management/custom-plan/request', requirements);
+    const response = await api.post(
+      '/subscription-management/custom-plan/request',
+      requirements
+    );
     return response.data;
   },
 
   // Get feature usage analytics
-  async getFeatureUsageAnalytics(period: 'week' | 'month' | 'quarter' | 'year' = 'month') {
-    const response = await apiClient.get(`/subscription-management/analytics/usage?period=${period}`);
+  async getFeatureUsageAnalytics(
+    period: 'week' | 'month' | 'quarter' | 'year' = 'month'
+  ) {
+    const response = await api.get(
+      `/subscription-management/analytics/usage?period=${period}`
+    );
     return response.data;
   },
 
   // Extend trial
   async extendTrial(days: number, reason: string) {
-    const response = await apiClient.post('/subscription-management/trial/extend', {
+    const response = await api.post('/subscription-management/trial/extend', {
       days,
-      reason
+      reason,
     });
     return response.data;
   },
 
   // Convert trial to paid
-  async convertTrialToPaid(planId: string, billingInterval: 'monthly' | 'yearly') {
-    const response = await apiClient.post('/subscription-management/trial/convert', {
+  async convertTrialToPaid(
+    planId: string,
+    billingInterval: 'monthly' | 'yearly'
+  ) {
+    const response = await api.post('/subscription-management/trial/convert', {
       planId,
-      billingInterval
+      billingInterval,
     });
     return response.data;
-  }
+  },
 };
