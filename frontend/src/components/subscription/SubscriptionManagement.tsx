@@ -80,13 +80,30 @@ interface CurrentSubscription {
 }
 
 const SubscriptionManagement: React.FC = () => {
+  const addNotification = useUIStore((state) => state.addNotification);
+  const subscriptionStatus = useSubscriptionStatus();
+
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentSubscription, setCurrentSubscription] =
     useState<CurrentSubscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>(
     'monthly'
   );
+
+  // Display error message if there is one
+  useEffect(() => {
+    if (error) {
+      addNotification({
+        title: 'Error',
+        message: error,
+        type: 'error',
+        duration: 5000,
+      });
+      setError(null); // Clear error after showing notification
+    }
+  }, [error, addNotification]);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(
     null
   );
@@ -94,9 +111,6 @@ const SubscriptionManagement: React.FC = () => {
   const [downgradeDialogOpen, setDowngradeDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
-
-  const addNotification = useUIStore((state) => state.addNotification);
-  const subscriptionStatus = useSubscriptionStatus();
 
   const loadData = useCallback(async () => {
     console.log('loadData called');
@@ -106,12 +120,7 @@ const SubscriptionManagement: React.FC = () => {
       console.log('Access token present:', !!token);
       if (!token) {
         console.error('No access token found');
-        addNotification({
-          type: 'error',
-          title: 'Authentication Error',
-          message: 'Please log in to access subscription management',
-          duration: 5000,
-        });
+        setError('Please log in to access subscription management');
         return;
       }
 

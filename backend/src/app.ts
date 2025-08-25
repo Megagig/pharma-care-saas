@@ -20,6 +20,7 @@ import paymentRoutes from './routes/paymentRoutes';
 import adminRoutes from './routes/admin';
 import licenseRoutes from './routes/license';
 import subscriptionManagementRoutes from './routes/subscription';
+import subAnalyticsRoutes from './routes/subscriptionManagement';
 import webhookRoutes from './routes/webhookRoutes';
 import featureFlagRoutes from './routes/featureFlagRoutes';
 import healthRoutes from './routes/healthRoutes';
@@ -80,6 +81,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/license', licenseRoutes);
 app.use('/api/subscription-management', subscriptionManagementRoutes);
+app.use('/api/subscription-management/analytics', subAnalyticsRoutes);
 app.use('/api/feature-flags', featureFlagRoutes);
 
 // Webhooks - no rate limiting and body parsing is raw for signature verification
