@@ -46,12 +46,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       name: 'Free Trial',
     });
     if (!freeTrialPlan) {
-      res
-        .status(500)
-        .json({
-          message:
-            'Default subscription plan not found. Please run seed script.',
-        });
+      res.status(500).json({
+        message: 'Default subscription plan not found. Please run seed script.',
+      });
       return;
     }
 
@@ -187,14 +184,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
@@ -407,7 +404,7 @@ export const refreshToken = async (
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
@@ -461,7 +458,10 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 };
 
 // Clear cookies endpoint (no auth required)
-export const clearCookies = async (req: Request, res: Response): Promise<void> => {
+export const clearCookies = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     // Clear all possible cookie names
     res.clearCookie('refreshToken');
@@ -474,6 +474,34 @@ export const clearCookies = async (req: Request, res: Response): Promise<void> =
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+// Check if authentication cookies exist (lightweight endpoint)
+export const checkCookies = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const accessToken = req.cookies.accessToken || req.cookies.token;
+    const refreshToken = req.cookies.refreshToken;
+
+    res.json({
+      success: true,
+      hasCookies: !!(accessToken || refreshToken),
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      debug:
+        process.env.NODE_ENV === 'development'
+          ? {
+              cookies: Object.keys(req.cookies),
+              userAgent: req.get('User-Agent'),
+              origin: req.get('Origin'),
+            }
+          : undefined,
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -517,7 +545,7 @@ interface AuthRequest extends Request {
 
 export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const user = await User.findById(req.user.userId)
+    const user = await User.findById(req.user._id)
       .populate('currentPlanId')
       .populate('pharmacyId')
       .select('-passwordHash');
@@ -560,12 +588,10 @@ export const updateProfile = async (
     );
 
     if (!isValidOperation) {
-      res
-        .status(400)
-        .json({
-          message:
-            'Invalid updates. Only firstName, lastName, and phone can be updated.',
-        });
+      res.status(400).json({
+        message:
+          'Invalid updates. Only firstName, lastName, and phone can be updated.',
+      });
       return;
     }
 

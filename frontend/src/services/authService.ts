@@ -22,6 +22,11 @@ interface ProfileData {
   phone?: string;
 }
 
+interface AuthError extends Error {
+  status?: number;
+  data?: unknown;
+}
+
 class AuthService {
   private refreshPromise: Promise<boolean> | null = null;
 
@@ -61,12 +66,22 @@ class AuthService {
         if (!url.includes('/auth/me') && !url.includes('/auth/refresh-token')) {
           window.location.href = '/login';
         }
-        throw new Error(data.message || 'Authentication failed');
+        const error: AuthError = new Error(
+          data.message || 'Authentication failed'
+        );
+        error.status = response.status;
+        throw error;
       } else if (response.status === 402) {
         // Payment/subscription required - don't logout, just throw error
-        throw new Error(data.message || 'Subscription required');
+        const error: AuthError = new Error(
+          data.message || 'Subscription required'
+        );
+        error.status = response.status;
+        throw error;
       }
-      throw new Error(data.message || 'An error occurred');
+      const error: AuthError = new Error(data.message || 'An error occurred');
+      error.status = response.status;
+      throw error;
     }
 
     return data;

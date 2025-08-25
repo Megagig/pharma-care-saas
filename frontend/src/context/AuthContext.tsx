@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '../services/authService';
+import { markAuthAttempted, clearSessionState } from '../utils/cookieUtils';
 
 interface SubscriptionPlan {
   _id: string;
@@ -89,14 +90,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const initAuth = async () => {
+    const initAuth = async (): Promise<void> => {
       try {
+        console.log('AuthContext: Starting authentication check...');
+
         // Try to get current user - if successful, we're authenticated
         const userData = await authService.getCurrentUser();
+        console.log('AuthContext: Authentication successful');
         setUser(userData.user);
-      } catch (error) {
-        console.error('Auth initialization failed:', error);
-        // No need to clear localStorage - using httpOnly cookies
+        markAuthAttempted();
+      } catch (error: unknown) {
+        console.error('AuthContext: Auth initialization failed:', error);
+        const authError = error as { status?: number; message?: string };
+
+        // Only clear user on explicit 401 Unauthorized
+        if (authError?.status === 401) {
+          console.log('AuthContext: 401 received - clearing user');
+          setUser(null);
+          clearSessionState();
+        } else {
+          console.log('AuthContext: Non-401 error - keeping current state');
+          // For all other errors (network, server errors, etc.), maintain current state
+          // This prevents losing authentication due to temporary issues
+        }
       } finally {
         setLoading(false);
       }
@@ -104,13 +120,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initAuth();
   }, []);
-
   const login = async (
     credentials: LoginCredentials
   ): Promise<AuthResponse> => {
     const response = await authService.login(credentials);
     if (response.success && response.user) {
       setUser(response.user);
+      markAuthAttempted(); // Mark successful auth attempt
     }
     return response;
   };
@@ -136,6 +152,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout failed:', error);
     } finally {
       setUser(null);
+      clearSessionState(); // Clear session markers
     }
   };
 
@@ -146,6 +163,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout all failed:', error);
     } finally {
       setUser(null);
+      clearSessionState(); // Clear session markers
     }
   };
 
