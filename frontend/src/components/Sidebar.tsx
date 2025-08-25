@@ -120,7 +120,7 @@ const Sidebar = () => {
     },
     {
       name: 'Feature Flags',
-      path: '/admin/feature-flags',
+      path: '/feature-flags',
       icon: SettingsIcon,
       show: hasRole('super_admin') && hasFeature('feature_flag_management'),
     },
