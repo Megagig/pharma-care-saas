@@ -32,11 +32,13 @@ export const useCurrentSubscriptionQuery = () => {
 };
 
 // Available Plans Query
-export const useAvailablePlansQuery = () => {
+export const useAvailablePlansQuery = (
+  billingInterval: 'monthly' | 'yearly' = 'monthly'
+) => {
   return useQuery({
-    queryKey: subscriptionKeys.plans(),
+    queryKey: [...subscriptionKeys.plans(), billingInterval],
     queryFn: async () => {
-      const response = await subscriptionService.getPlans();
+      const response = await subscriptionService.getPlans(billingInterval);
       return response.data as SubscriptionPlan[];
     },
     staleTime: 10 * 60 * 1000, // 10 minutes

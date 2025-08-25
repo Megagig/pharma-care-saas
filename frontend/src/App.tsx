@@ -40,6 +40,7 @@ import SaasSettings from './pages/SaasSettings';
 import AdminDashboard from './components/admin/AdminDashboard';
 import LicenseUpload from './components/license/LicenseUpload';
 import SubscriptionManagement from './components/subscription/SubscriptionManagement';
+import SubscriptionSuccess from './components/subscription/SubscriptionSuccess';
 
 function App(): JSX.Element {
   // Initialize Zustand stores on app startup
@@ -201,6 +202,18 @@ function App(): JSX.Element {
                         <ProtectedRoute>
                           <AppLayout>
                             <SubscriptionManagement />
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Subscription Success Page */}
+                    <Route
+                      path="/subscription/success"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <SubscriptionSuccess />
                           </AppLayout>
                         </ProtectedRoute>
                       }

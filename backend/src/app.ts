@@ -31,7 +31,11 @@ const app: Application = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: [
+      'http://localhost:3000', // Create React App dev server
+      'http://localhost:5173', // Vite dev server
+      process.env.FRONTEND_URL || 'http://localhost:3000',
+    ],
     credentials: true,
   })
 );
