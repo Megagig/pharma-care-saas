@@ -106,8 +106,17 @@ const SubscriptionManagement: React.FC = () => {
   };
 
   // Use plans directly from the query (already filtered by billing interval)
-  const tierOrder = ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'];
-  const filteredPlans = plans.sort((a, b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier));
+  const tierOrder = [
+    'free_trial',
+    'basic',
+    'pro',
+    'pharmily',
+    'network',
+    'enterprise',
+  ];
+  const filteredPlans = plans.sort(
+    (a, b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier)
+  );
 
   const isCurrentPlan = (planId: string) => {
     return currentSubscription?.subscription?.planId?._id === planId;
@@ -158,9 +167,9 @@ const SubscriptionManagement: React.FC = () => {
         billingInterval
       );
 
-      if (response.success && response.data?.checkoutUrl) {
-        // Redirect to Nomba checkout
-        window.location.href = response.data.checkoutUrl;
+      if (response.success && response.data?.authorization_url) {
+        // Redirect to Paystack checkout
+        window.location.href = response.data.authorization_url;
       } else {
         throw new Error(
           response.message || 'Failed to create checkout session'

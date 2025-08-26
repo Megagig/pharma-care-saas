@@ -11,7 +11,8 @@ export interface IPayment extends Document {
     | 'debit_card'
     | 'paypal'
     | 'bank_transfer'
-    | 'nomba';
+    | 'nomba'
+    | 'paystack';
   status: 'pending' | 'completed' | 'failed' | 'refunded';
   paymentReference?: string; // Added for Nomba payment reference
   stripePaymentIntentId?: string;
@@ -74,7 +75,14 @@ const paymentSchema = new Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['credit_card', 'debit_card', 'paypal', 'bank_transfer', 'nomba'],
+      enum: [
+        'credit_card',
+        'debit_card',
+        'paypal',
+        'bank_transfer',
+        'nomba',
+        'paystack',
+      ],
       required: true,
     },
     status: {

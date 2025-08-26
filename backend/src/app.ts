@@ -84,8 +84,8 @@ app.use('/api/payments', paymentRoutes);
 // RBAC and enhanced features
 app.use('/api/admin', adminRoutes);
 app.use('/api/license', licenseRoutes);
-app.use('/api/subscription-management', subscriptionManagementRoutes);
-app.use('/api/subscription-management/analytics', subAnalyticsRoutes);
+app.use('/api/subscription-management', subAnalyticsRoutes); // Using correct subscriptionManagement routes
+app.use('/api/subscription', subscriptionManagementRoutes); // Old routes at /api/subscription
 app.use('/api/feature-flags', featureFlagRoutes);
 
 // Webhooks - no rate limiting and body parsing is raw for signature verification

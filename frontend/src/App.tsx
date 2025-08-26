@@ -222,15 +222,13 @@ function App(): JSX.Element {
                       }
                     />
 
-                    {/* Subscription Success Page */}
+                    {/* Subscription Success Page - No auth required for payment redirection */}
                     <Route
                       path="/subscription/success"
                       element={
-                        <ProtectedRoute>
-                          <AppLayout>
-                            <SubscriptionSuccess />
-                          </AppLayout>
-                        </ProtectedRoute>
+                        <AppLayout>
+                          <SubscriptionSuccess />
+                        </AppLayout>
                       }
                     />
 

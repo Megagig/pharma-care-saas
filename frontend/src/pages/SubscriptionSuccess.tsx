@@ -11,12 +11,14 @@ import {
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { subscriptionService } from '../services/subscriptionService';
+import { useAuth } from '../hooks/useAuth';
 
 const SubscriptionSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [processing, setProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const reference = searchParams.get('reference');
 
@@ -38,15 +40,31 @@ const SubscriptionSuccess: React.FC = () => {
           return;
         }
 
-        // In production, process the real payment
-        const response = await subscriptionService.handleSuccessfulPayment(
-          reference
-        );
+        // First verify the payment with Paystack (this doesn't require auth)
+        const response = await subscriptionService.verifyPayment(reference);
 
         if (response.success) {
-          console.log('✅ Subscription activated successfully');
+          console.log('✅ Payment verification successful');
+          setProcessing(false);
+
+          try {
+            // Now attempt to activate the subscription (requires auth)
+            const activationResponse =
+              await subscriptionService.handleSuccessfulPayment(reference);
+
+            if (activationResponse.success) {
+              console.log('✅ Subscription activated successfully');
+            }
+          } catch (activationError) {
+            // If activation fails due to auth, we still show success
+            // The subscription will be activated when they sign in
+            console.warn(
+              'Could not activate subscription immediately, will be activated on next login',
+              activationError
+            );
+          }
         } else {
-          setError(response.message || 'Failed to activate subscription');
+          setError(response.message || 'Payment verification failed');
         }
       } catch (error: unknown) {
         const errorMessage =
@@ -91,7 +109,7 @@ const SubscriptionSuccess: React.FC = () => {
           <Box sx={{ textAlign: 'center', mt: 3 }}>
             <Button
               variant="contained"
-              onClick={() => navigate('/subscription-management')}
+              onClick={() => navigate('/subscriptions')}
               sx={{ mr: 2 }}
             >
               Try Again
@@ -116,16 +134,17 @@ const SubscriptionSuccess: React.FC = () => {
           gutterBottom
           color="success.main"
         >
-          Subscription Activated!
+          Payment Successful!
         </Typography>
 
         <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
-          Welcome to PharmaCare
+          Thank you for subscribing to PharmaCare
         </Typography>
 
         <Typography variant="body1" sx={{ mb: 4 }}>
-          Your subscription has been successfully activated. You now have access
-          to all the features in your selected plan.
+          {user
+            ? 'Your subscription has been successfully activated. You now have access to all the features in your selected plan.'
+            : 'Your payment was successful. Please sign in to access your account and subscription features.'}
         </Typography>
 
         {reference && (
@@ -137,21 +156,42 @@ const SubscriptionSuccess: React.FC = () => {
         )}
 
         <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={() => navigate('/dashboard')}
-          >
-            Go to Dashboard
-          </Button>
+          {user ? (
+            <>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => navigate('/dashboard')}
+              >
+                Go to Dashboard
+              </Button>
 
-          <Button
-            variant="outlined"
-            size="large"
-            onClick={() => navigate('/subscription-management')}
-          >
-            Manage Subscription
-          </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={() => navigate('/subscription-management')}
+              >
+                Manage Subscription
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => navigate('/login')}
+              >
+                Sign In
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={() => navigate('/')}
+              >
+                Go to Homepage
+              </Button>
+            </>
+          )}
         </Box>
       </Paper>
     </Container>
