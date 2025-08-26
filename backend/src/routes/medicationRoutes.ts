@@ -1,29 +1,93 @@
 import express from 'express';
 import {
-  getMedications,
-  getMedication,
   createMedication,
+  getMedications,
   updateMedication,
   deleteMedication,
-  getPatientMedications,
-  checkInteractions
-} from '../controllers/medicationController';
+} from '../controllers/patientResourcesController';
 import { auth } from '../middlewares/auth';
+import {
+  requirePatientPermission,
+  checkPharmacyAccess,
+} from '../middlewares/patientRBAC';
+import {
+  validateRequest,
+  createMedicationSchema,
+  updateMedicationSchema,
+  medicationParamsSchema,
+  medicationQuerySchema,
+} from '../validators/patientValidators';
 
 const router = express.Router();
 
-router.use(auth); // All medication routes require authentication
+/**
+ * Patient Medication Routes
+ * Base path: /api/patients/:id/medications
+ * Individual medication path: /api/medications/:medId
+ */
 
-router.route('/')
-  .get(getMedications)
-  .post(createMedication);
+// ===============================
+// PATIENT-SCOPED MEDICATION ROUTES
+// ===============================
 
-router.get('/patient/:patientId', getPatientMedications);
-router.post('/interactions', checkInteractions);
+/**
+ * POST /api/patients/:id/medications
+ * Add new medication to patient
+ */
+router.post(
+  '/:id/medications',
+  auth,
+  checkPharmacyAccess,
+  requirePatientPermission('create'),
+  validateRequest(medicationParamsSchema.pick({ id: true }), 'params'),
+  validateRequest(createMedicationSchema, 'body'),
+  createMedication
+);
 
-router.route('/:id')
-  .get(getMedication)
-  .put(updateMedication)
-  .delete(deleteMedication);
+/**
+ * GET /api/patients/:id/medications
+ * Get all medications for a patient with pagination and phase filtering
+ * Query params: ?phase=current|past&page=1&limit=20
+ */
+router.get(
+  '/:id/medications',
+  auth,
+  checkPharmacyAccess,
+  requirePatientPermission('read'),
+  validateRequest(medicationParamsSchema.pick({ id: true }), 'params'),
+  validateRequest(medicationQuerySchema, 'query'),
+  getMedications
+);
+
+// ===============================
+// INDIVIDUAL MEDICATION ROUTES
+// ===============================
+
+/**
+ * PATCH /api/medications/:medId
+ * Update medication information
+ */
+router.patch(
+  '/medications/:medId',
+  auth,
+  checkPharmacyAccess,
+  requirePatientPermission('update'),
+  validateRequest(medicationParamsSchema.pick({ medId: true }), 'params'),
+  validateRequest(updateMedicationSchema, 'body'),
+  updateMedication
+);
+
+/**
+ * DELETE /api/medications/:medId
+ * Delete medication (soft delete)
+ */
+router.delete(
+  '/medications/:medId',
+  auth,
+  checkPharmacyAccess,
+  requirePatientPermission('delete'),
+  validateRequest(medicationParamsSchema.pick({ medId: true }), 'params'),
+  deleteMedication
+);
 
 export default router;

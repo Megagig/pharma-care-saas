@@ -7,5 +7,6 @@ const express_1 = __importDefault(require("express"));
 const webhookController_1 = require("../controllers/webhookController");
 const router = express_1.default.Router();
 router.post('/nomba', webhookController_1.webhookController.handleNombaWebhook.bind(webhookController_1.webhookController));
+router.post('/paystack', webhookController_1.webhookController.handlePaystackWebhook.bind(webhookController_1.webhookController));
 exports.default = router;
 //# sourceMappingURL=webhookRoutes.js.map

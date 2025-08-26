@@ -20,142 +20,191 @@ import {
   TablePagination,
   Avatar,
   Tooltip,
+  CircularProgress,
+  Alert,
+  Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  Autocomplete,
+  Skeleton,
 } from '@mui/material';
-import {
-  Search as SearchIcon,
-  Add as AddIcon,
-  FilterList as FilterListIcon,
-  MoreVert as MoreVertIcon,
-  Edit as EditIcon,
-  Visibility as VisibilityIcon,
-  Delete as DeleteIcon,
-} from '@mui/icons-material';
+import SearchIcon from '@mui/icons-material/Search';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import DeleteIcon from '@mui/icons-material/Delete';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import WarningIcon from '@mui/icons-material/Warning';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import { usePatients, useDeletePatient } from '../queries/usePatients';
+import type {
+  Patient,
+  PatientSearchParams,
+  NigerianState,
+  BloodGroup,
+  Genotype,
+} from '../types/patientManagement';
+
+// Nigerian States for filtering
+const NIGERIAN_STATES: NigerianState[] = [
+  'Abia',
+  'Adamawa',
+  'Akwa Ibom',
+  'Anambra',
+  'Bauchi',
+  'Bayelsa',
+  'Benue',
+  'Borno',
+  'Cross River',
+  'Delta',
+  'Ebonyi',
+  'Edo',
+  'Ekiti',
+  'Enugu',
+  'FCT',
+  'Gombe',
+  'Imo',
+  'Jigawa',
+  'Kaduna',
+  'Kano',
+  'Katsina',
+  'Kebbi',
+  'Kogi',
+  'Kwara',
+  'Lagos',
+  'Nasarawa',
+  'Niger',
+  'Ogun',
+  'Ondo',
+  'Osun',
+  'Oyo',
+  'Plateau',
+  'Rivers',
+  'Sokoto',
+  'Taraba',
+  'Yobe',
+  'Zamfara',
+];
+
+const BLOOD_GROUPS: BloodGroup[] = [
+  'A+',
+  'A-',
+  'B+',
+  'B-',
+  'AB+',
+  'AB-',
+  'O+',
+  'O-',
+];
+const GENOTYPES: Genotype[] = ['AA', 'AS', 'SS', 'AC', 'SC', 'CC'];
 
 const Patients = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-
-  // Mock patient data
-  const patients = [
-    {
-      id: 1,
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      dateOfBirth: '1958-03-15',
-      gender: 'female',
-      phone: '(555) 123-4567',
-      email: 'sarah.johnson@email.com',
-      conditions: ['Hypertension', 'Diabetes'],
-      medications: 5,
-      lastVisit: '2024-01-15',
-      status: 'active',
-    },
-    {
-      id: 2,
-      firstName: 'Michael',
-      lastName: 'Chen',
-      dateOfBirth: '1979-07-22',
-      gender: 'male',
-      phone: '(555) 234-5678',
-      email: 'michael.chen@email.com',
-      conditions: ['Asthma'],
-      medications: 2,
-      lastVisit: '2024-01-12',
-      status: 'active',
-    },
-    {
-      id: 3,
-      firstName: 'Emma',
-      lastName: 'Wilson',
-      dateOfBirth: '1991-11-08',
-      gender: 'female',
-      phone: '(555) 345-6789',
-      email: 'emma.wilson@email.com',
-      conditions: ['Migraine', 'Anxiety'],
-      medications: 3,
-      lastVisit: '2024-01-10',
-      status: 'inactive',
-    },
-    {
-      id: 4,
-      firstName: 'David',
-      lastName: 'Rodriguez',
-      dateOfBirth: '1965-05-30',
-      gender: 'male',
-      phone: '(555) 456-7890',
-      email: 'david.rodriguez@email.com',
-      conditions: ['Arthritis', 'High Cholesterol'],
-      medications: 4,
-      lastVisit: '2024-01-08',
-      status: 'active',
-    },
-    {
-      id: 5,
-      firstName: 'Lisa',
-      lastName: 'Anderson',
-      dateOfBirth: '1983-12-03',
-      gender: 'female',
-      phone: '(555) 567-8901',
-      email: 'lisa.anderson@email.com',
-      conditions: ['Depression'],
-      medications: 1,
-      lastVisit: '2024-01-05',
-      status: 'pending',
-    },
-  ];
-
-  const filteredPatients = patients.filter((patient) => {
-    const matchesSearch =
-      patient.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.email.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesFilter =
-      filterStatus === 'all' || patient.status === filterStatus;
-
-    return matchesSearch && matchesFilter;
+  // Search and filter state
+  const [searchParams, setSearchParams] = useState<PatientSearchParams>({
+    page: 1,
+    limit: 10,
   });
+  const [quickSearch, setQuickSearch] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+  // React Query hooks
+  const {
+    data: patientsResponse,
+    isLoading,
+    isError,
+    error,
+  } = usePatients(searchParams);
+
+  const deletePatientMutation = useDeletePatient();
+
+  // Computed values
+  const patients =
+    patientsResponse?.data?.results || patientsResponse?.data || [];
+  const totalPatients = patientsResponse?.meta?.total || 0;
+  const currentPage = (searchParams.page || 1) - 1; // MUI pagination is 0-based
+
+  // Event handlers
+  const handleQuickSearch = (value: string) => {
+    setQuickSearch(value);
+    setSearchParams((prev) => ({
+      ...prev,
+      q: value || undefined,
+      page: 1, // Reset to first page on search
+    }));
+  };
+
+  const handleAdvancedFilter = (filters: Partial<PatientSearchParams>) => {
+    setSearchParams((prev) => ({
+      ...prev,
+      ...filters,
+      page: 1, // Reset to first page on filter change
+    }));
+  };
+
+  const handlePageChange = (_: unknown, newPage: number) => {
+    setSearchParams((prev) => ({
+      ...prev,
+      page: newPage + 1, // Convert to 1-based pagination
+    }));
+  };
+
+  const handleRowsPerPageChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const newLimit = parseInt(event.target.value, 10);
+    setSearchParams((prev) => ({
+      ...prev,
+      limit: newLimit,
+      page: 1, // Reset to first page
+    }));
+  };
+
+  const handleMenuClick = (
+    event: React.MouseEvent<HTMLElement>,
+    patientId: string
+  ) => {
     setAnchorEl(event.currentTarget);
+    setSelectedPatient(patientId);
   };
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+    setSelectedPatient(null);
   };
 
-  const handleChangePage = (_: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const getStatusColor = (
-    status: string
-  ): 'success' | 'error' | 'warning' | 'default' => {
-    switch (status) {
-      case 'active':
-        return 'success';
-      case 'inactive':
-        return 'error';
-      case 'pending':
-        return 'warning';
-      default:
-        return 'default';
+  const handleDeletePatient = async () => {
+    if (selectedPatient) {
+      try {
+        await deletePatientMutation.mutateAsync(selectedPatient);
+        handleMenuClose();
+      } catch (error) {
+        console.error('Failed to delete patient:', error);
+      }
     }
   };
 
-  const calculateAge = (dateOfBirth: string) => {
+  const handleViewPatient = (patientId: string) => {
+    // TODO: Navigate to patient details page
+    console.log('Navigate to patient:', patientId);
+    handleMenuClose();
+  };
+
+  const handleEditPatient = (patientId: string) => {
+    // TODO: Navigate to edit patient page
+    console.log('Edit patient:', patientId);
+    handleMenuClose();
+  };
+
+  // Utility functions
+  const calculateAge = (dob?: string): number | null => {
+    if (!dob) return null;
+
     const today = new Date();
-    const birthDate = new Date(dateOfBirth);
+    const birthDate = new Date(dob);
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
 
@@ -169,9 +218,56 @@ const Patients = () => {
     return age;
   };
 
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName[0]}${lastName[0]}`.toUpperCase();
+  const getInitials = (firstName: string, lastName: string): string => {
+    return `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
   };
+
+  const formatNigerianPhone = (phone?: string): string => {
+    if (!phone) return 'N/A';
+    // Format Nigerian E.164 numbers (+234XXXXXXXXXX) to readable format
+    if (phone.startsWith('+234')) {
+      const number = phone.slice(4);
+      return `+234 ${number.slice(0, 3)} ${number.slice(3, 6)} ${number.slice(
+        6
+      )}`;
+    }
+    return phone;
+  };
+
+  const getDisplayName = (patient: Patient): string => {
+    return patient.displayName || `${patient.firstName} ${patient.lastName}`;
+  };
+
+  const getPatientAge = (patient: Patient): string => {
+    if (patient.age !== undefined) return `${patient.age} years`;
+    if (patient.calculatedAge !== undefined)
+      return `${patient.calculatedAge} years`;
+
+    const calculatedAge = calculateAge(patient.dob);
+    return calculatedAge ? `${calculatedAge} years` : 'Unknown';
+  };
+
+  // Loading and error states
+  if (isError) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          <Typography variant="h6">Failed to load patients</Typography>
+          <Typography variant="body2">
+            {(error as any)?.message ||
+              'An unexpected error occurred while loading patient data.'}
+          </Typography>
+        </Alert>
+        <Button
+          variant="outlined"
+          onClick={() => window.location.reload()}
+          sx={{ mt: 2 }}
+        >
+          Retry
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: 3 }}>
@@ -180,69 +276,169 @@ const Patients = () => {
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           mb: 4,
+          flexWrap: 'wrap',
+          gap: 2,
         }}
       >
-        <Box>
+        <Box sx={{ flex: 1, minWidth: 300 }}>
           <Typography
             variant="h4"
             component="h1"
-            sx={{ fontWeight: 600, mb: 1 }}
+            sx={{
+              fontWeight: 600,
+              mb: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+            }}
           >
-            Patients
+            <LocalHospitalIcon color="primary" />
+            Patient Management
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Manage and track your patient information and medical records
+            Comprehensive patient care and medical records management
+            {totalPatients > 0 && (
+              <Chip
+                label={`${totalPatients} total patients`}
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ ml: 2 }}
+              />
+            )}
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          sx={{ borderRadius: 2, py: 1.5, px: 3 }}
-        >
-          Add New Patient
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <Button
+            variant="outlined"
+            startIcon={<FilterListIcon />}
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            sx={{ borderRadius: 2 }}
+          >
+            {showAdvancedFilters ? 'Hide Filters' : 'Advanced Filters'}
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PersonAddIcon />}
+            sx={{ borderRadius: 2, py: 1.5, px: 3 }}
+            onClick={() => {
+              /* TODO: Navigate to create patient */
+            }}
+          >
+            Add New Patient
+          </Button>
+        </Box>
       </Box>
 
       {/* Search and Filters */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          {/* Quick Search */}
+          <Box
+            sx={{ display: 'flex', gap: 2, mb: showAdvancedFilters ? 3 : 0 }}
+          >
             <TextField
-              placeholder="Search patients by name or email..."
+              placeholder="Search patients by name, MRN, phone, or email..."
               variant="outlined"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={quickSearch}
+              onChange={(e) => handleQuickSearch(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon />
+                    <SearchIcon color="action" />
                   </InputAdornment>
                 ),
               }}
               sx={{ flexGrow: 1, minWidth: 300 }}
             />
-            <TextField
-              select
-              label="Status"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              sx={{ minWidth: 120 }}
-            >
-              <MenuItem value="all">All Status</MenuItem>
-              <MenuItem value="active">Active</MenuItem>
-              <MenuItem value="inactive">Inactive</MenuItem>
-              <MenuItem value="pending">Pending</MenuItem>
-            </TextField>
-            <Button
-              variant="outlined"
-              startIcon={<FilterListIcon />}
-              sx={{ borderRadius: 2 }}
-            >
-              More Filters
-            </Button>
           </Box>
+
+          {/* Advanced Filters */}
+          {showAdvancedFilters && (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: 2,
+                pt: 2,
+                borderTop: 1,
+                borderColor: 'divider',
+              }}
+            >
+              <Autocomplete
+                options={NIGERIAN_STATES}
+                value={searchParams.state || null}
+                onChange={(_, value) =>
+                  handleAdvancedFilter({ state: value || undefined })
+                }
+                renderInput={(params) => (
+                  <TextField {...params} label="State" size="small" />
+                )}
+              />
+
+              <FormControl size="small">
+                <InputLabel>Blood Group</InputLabel>
+                <Select
+                  value={searchParams.bloodGroup || ''}
+                  label="Blood Group"
+                  onChange={(e) =>
+                    handleAdvancedFilter({
+                      bloodGroup: (e.target.value as BloodGroup) || undefined,
+                    })
+                  }
+                >
+                  <MenuItem value="">All Blood Groups</MenuItem>
+                  {BLOOD_GROUPS.map((group) => (
+                    <MenuItem key={group} value={group}>
+                      {group}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small">
+                <InputLabel>Genotype</InputLabel>
+                <Select
+                  value={searchParams.genotype || ''}
+                  label="Genotype"
+                  onChange={(e) =>
+                    handleAdvancedFilter({
+                      genotype: (e.target.value as Genotype) || undefined,
+                    })
+                  }
+                >
+                  <MenuItem value="">All Genotypes</MenuItem>
+                  {GENOTYPES.map((genotype) => (
+                    <MenuItem key={genotype} value={genotype}>
+                      {genotype}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <TextField
+                label="MRN"
+                size="small"
+                value={searchParams.mrn || ''}
+                onChange={(e) =>
+                  handleAdvancedFilter({ mrn: e.target.value || undefined })
+                }
+                placeholder="PHM-LAG-001"
+              />
+
+              <TextField
+                label="Phone Number"
+                size="small"
+                value={searchParams.phone || ''}
+                onChange={(e) =>
+                  handleAdvancedFilter({ phone: e.target.value || undefined })
+                }
+                placeholder="+234812345678"
+              />
+            </Box>
+          )}
         </CardContent>
       </Card>
 
@@ -253,23 +449,65 @@ const Patients = () => {
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 600 }}>Patient</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>MRN</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Age/Gender</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Contact</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Conditions</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Medications</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Last Visit</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Location</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Medical Info</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Vitals</TableCell>
                 <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>
                   Actions
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredPatients
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((patient) => (
+              {isLoading ? (
+                // Loading skeleton
+                Array.from({ length: searchParams.limit || 10 }).map(
+                  (_, index) => (
+                    <TableRow key={index}>
+                      {Array.from({ length: 8 }).map((_, cellIndex) => (
+                        <TableCell key={cellIndex}>
+                          <Skeleton variant="text" height={40} />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  )
+                )
+              ) : patients.length === 0 ? (
+                // Empty state
+                <TableRow>
+                  <TableCell colSpan={8} sx={{ textAlign: 'center', py: 6 }}>
+                    <Stack spacing={2} alignItems="center">
+                      <LocalHospitalIcon
+                        sx={{ fontSize: 48, color: 'text.secondary' }}
+                      />
+                      <Typography variant="h6" color="text.secondary">
+                        No patients found
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {quickSearch || Object.keys(searchParams).length > 2
+                          ? 'Try adjusting your search or filter criteria'
+                          : 'Add your first patient to get started with patient management'}
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        startIcon={<PersonAddIcon />}
+                        sx={{ mt: 2 }}
+                        onClick={() => {
+                          /* TODO: Navigate to create patient */
+                        }}
+                      >
+                        Add First Patient
+                      </Button>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                // Patient data rows
+                patients.map((patient) => (
                   <TableRow
-                    key={patient.id}
+                    key={patient._id}
                     hover
                     sx={{ '&:hover': { bgcolor: 'action.hover' } }}
                   >
@@ -288,72 +526,114 @@ const Patients = () => {
                         </Avatar>
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {patient.firstName} {patient.lastName}
+                            {getDisplayName(patient)}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            ID: {patient.id}
+                            {patient.otherNames && `(${patient.otherNames})`}
                           </Typography>
                         </Box>
                       </Box>
                     </TableCell>
+
+                    <TableCell>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 500, fontFamily: 'monospace' }}
+                      >
+                        {patient.mrn}
+                      </Typography>
+                    </TableCell>
+
                     <TableCell>
                       <Typography variant="body2">
-                        {calculateAge(patient.dateOfBirth)} years
+                        {getPatientAge(patient)}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {patient.gender}
+                        {patient.gender
+                          ? patient.gender.charAt(0).toUpperCase() +
+                            patient.gender.slice(1)
+                          : 'Unknown'}
                       </Typography>
                     </TableCell>
+
                     <TableCell>
-                      <Typography variant="body2">{patient.phone}</Typography>
+                      <Typography variant="body2">
+                        {formatNigerianPhone(patient.phone)}
+                      </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {patient.email}
+                        {patient.email || 'No email'}
                       </Typography>
                     </TableCell>
+
+                    <TableCell>
+                      <Typography variant="body2">
+                        {patient.state || 'Unknown'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {patient.lga || 'Unknown LGA'}
+                      </Typography>
+                    </TableCell>
+
                     <TableCell>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {patient.conditions
-                          .slice(0, 2)
-                          .map((condition, index) => (
-                            <Chip
-                              key={index}
-                              label={condition}
-                              size="small"
-                              variant="outlined"
-                              sx={{ fontSize: '0.75rem', height: 24 }}
-                            />
-                          ))}
-                        {patient.conditions.length > 2 && (
+                        {patient.bloodGroup && (
                           <Chip
-                            label={`+${patient.conditions.length - 2}`}
+                            label={patient.bloodGroup}
                             size="small"
+                            color="primary"
                             variant="outlined"
-                            sx={{ fontSize: '0.75rem', height: 24 }}
+                            sx={{ fontSize: '0.75rem' }}
+                          />
+                        )}
+                        {patient.genotype && (
+                          <Chip
+                            label={patient.genotype}
+                            size="small"
+                            color={
+                              patient.genotype.includes('S')
+                                ? 'warning'
+                                : 'success'
+                            }
+                            variant="outlined"
+                            sx={{ fontSize: '0.75rem' }}
+                          />
+                        )}
+                        {patient.hasActiveDTP && (
+                          <Chip
+                            label="DTP"
+                            size="small"
+                            color="error"
+                            icon={<WarningIcon sx={{ fontSize: 14 }} />}
+                            sx={{ fontSize: '0.75rem' }}
                           />
                         )}
                       </Box>
                     </TableCell>
+
                     <TableCell>
-                      <Chip
-                        label={patient.medications}
-                        size="small"
-                        color="primary"
-                        sx={{ minWidth: 40 }}
-                      />
+                      {patient.latestVitals ? (
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            BP: {patient.latestVitals.bpSys}/
+                            {patient.latestVitals.bpDia} mmHg
+                          </Typography>
+                          {patient.weightKg && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              display="block"
+                            >
+                              Weight: {patient.weightKg}kg
+                            </Typography>
+                          )}
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          No vitals recorded
+                        </Typography>
+                      )}
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {new Date(patient.lastVisit).toLocaleDateString()}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={patient.status}
-                        size="small"
-                        color={getStatusColor(patient.status)}
-                        sx={{ textTransform: 'capitalize', minWidth: 70 }}
-                      />
-                    </TableCell>
+
                     <TableCell sx={{ textAlign: 'center' }}>
                       <Box
                         sx={{
@@ -363,19 +643,27 @@ const Patients = () => {
                         }}
                       >
                         <Tooltip title="View Details">
-                          <IconButton size="small" color="primary">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleViewPatient(patient._id)}
+                          >
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Edit Patient">
-                          <IconButton size="small" color="primary">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleEditPatient(patient._id)}
+                          >
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="More Actions">
                           <IconButton
                             size="small"
-                            onClick={handleMenuClick}
+                            onClick={(e) => handleMenuClick(e, patient._id)}
                             color="primary"
                           >
                             <MoreVertIcon fontSize="small" />
@@ -384,20 +672,24 @@ const Patients = () => {
                       </Box>
                     </TableCell>
                   </TableRow>
-                ))}
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
 
         <TablePagination
           component="div"
-          count={filteredPatients.length}
-          page={page}
-          onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[5, 10, 25, 50]}
+          count={totalPatients}
+          page={currentPage}
+          onPageChange={handlePageChange}
+          rowsPerPage={searchParams.limit || 10}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          rowsPerPageOptions={[5, 10, 25, 50, 100]}
           sx={{ borderTop: 1, borderColor: 'divider' }}
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}–${to} of ${count !== -1 ? count : `more than ${to}`}`
+          }
         />
       </Card>
 
@@ -407,19 +699,31 @@ const Patients = () => {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
         PaperProps={{
-          sx: { minWidth: 160 },
+          sx: { minWidth: 180 },
         }}
       >
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem
+          onClick={() => selectedPatient && handleViewPatient(selectedPatient)}
+        >
           <VisibilityIcon sx={{ mr: 1, fontSize: 18 }} />
-          View Profile
+          View Patient Profile
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem
+          onClick={() => selectedPatient && handleEditPatient(selectedPatient)}
+        >
           <EditIcon sx={{ mr: 1, fontSize: 18 }} />
-          Edit Patient
+          Edit Patient Info
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
-          <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
+        <MenuItem
+          onClick={handleDeletePatient}
+          sx={{ color: 'error.main' }}
+          disabled={deletePatientMutation.isPending}
+        >
+          {deletePatientMutation.isPending ? (
+            <CircularProgress size={18} sx={{ mr: 1 }} />
+          ) : (
+            <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
+          )}
           Delete Patient
         </MenuItem>
       </Menu>

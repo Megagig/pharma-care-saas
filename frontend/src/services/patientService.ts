@@ -1,11 +1,53 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import {
+  Patient,
+  Allergy,
+  Condition,
+  MedicationRecord,
+  ClinicalAssessment,
+  DrugTherapyProblem,
+  CarePlan,
+  Visit,
+  PatientSummary,
+  ApiResponse,
+  PaginatedResponse,
+  PatientSearchParams,
+  AllergySearchParams,
+  MedicationSearchParams,
+  DTPSearchParams,
+  CreatePatientData,
+  UpdatePatientData,
+  CreateAllergyData,
+  UpdateAllergyData,
+  CreateConditionData,
+  UpdateConditionData,
+  CreateMedicationData,
+  UpdateMedicationData,
+  CreateAssessmentData,
+  UpdateAssessmentData,
+  CreateDTPData,
+  UpdateDTPData,
+  CreateCarePlanData,
+  UpdateCarePlanData,
+  CreateVisitData,
+  UpdateVisitData,
+  VisitAttachment,
+} from '../types/patientManagement';
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 interface RequestOptions extends RequestInit {
   headers?: Record<string, string>;
 }
 
 class PatientService {
-  async makeRequest(url: string, options: RequestOptions = {}): Promise<unknown> {
+  /**
+   * Base request method with error handling and authentication
+   */
+  private async makeRequest<T>(
+    url: string,
+    options: RequestOptions = {}
+  ): Promise<T> {
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -15,59 +57,613 @@ class PatientService {
       ...options,
     };
 
-    const response = await fetch(`${API_BASE_URL}${url}`, config);
-    const data = await response.json();
+    try {
+      const response = await fetch(`${API_BASE_URL}${url}`, config);
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || 'An error occurred');
+      if (!response.ok) {
+        throw new Error(
+          data.error?.message || data.message || 'An error occurred'
+        );
+      }
+
+      return data as T;
+    } catch (error) {
+      console.error('API Request failed:', error);
+      throw error;
     }
-
-    return data;
   }
 
-  async getPatients(params: Record<string, string> = {}): Promise<unknown> {
-    const queryString = new URLSearchParams(params).toString();
-    return this.makeRequest(`/patients?${queryString}`);
+  // =============================================
+  // PATIENT MANAGEMENT CORE
+  // =============================================
+
+  /**
+   * Get paginated list of patients with search and filtering
+   */
+  async getPatients(
+    params: PatientSearchParams = {}
+  ): Promise<PaginatedResponse<Patient>> {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<PaginatedResponse<Patient>>(
+      `/patients?${searchParams.toString()}`
+    );
   }
 
-  async getPatient(patientId: string): Promise<unknown> {
-    return this.makeRequest(`/patients/${patientId}`);
+  /**
+   * Get patient details by ID
+   */
+  async getPatient(
+    patientId: string
+  ): Promise<ApiResponse<{ patient: Patient }>> {
+    return this.makeRequest<ApiResponse<{ patient: Patient }>>(
+      `/patients/${patientId}`
+    );
   }
 
-  async getPatientById(patientId: string): Promise<unknown> {
-    return this.makeRequest(`/patients/${patientId}`);
+  /**
+   * Get patient summary with counts
+   */
+  async getPatientSummary(
+    patientId: string
+  ): Promise<ApiResponse<PatientSummary>> {
+    return this.makeRequest<ApiResponse<PatientSummary>>(
+      `/patients/${patientId}/summary`
+    );
   }
 
-  async createPatient(patientData: Record<string, unknown>): Promise<unknown> {
-    return this.makeRequest('/patients', {
+  /**
+   * Create new patient
+   */
+  async createPatient(
+    patientData: CreatePatientData
+  ): Promise<ApiResponse<{ patient: Patient }>> {
+    return this.makeRequest<ApiResponse<{ patient: Patient }>>('/patients', {
       method: 'POST',
       body: JSON.stringify(patientData),
     });
   }
 
-  async updatePatient(patientId: string, patientData: Record<string, unknown>): Promise<unknown> {
-    return this.makeRequest(`/patients/${patientId}`, {
-      method: 'PUT',
-      body: JSON.stringify(patientData),
-    });
+  /**
+   * Update existing patient
+   */
+  async updatePatient(
+    patientId: string,
+    patientData: UpdatePatientData
+  ): Promise<ApiResponse<{ patient: Patient }>> {
+    return this.makeRequest<ApiResponse<{ patient: Patient }>>(
+      `/patients/${patientId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(patientData),
+      }
+    );
   }
 
-  async deletePatient(patientId: string): Promise<unknown> {
-    return this.makeRequest(`/patients/${patientId}`, {
+  /**
+   * Delete patient (soft delete)
+   */
+  async deletePatient(patientId: string): Promise<ApiResponse<null>> {
+    return this.makeRequest<ApiResponse<null>>(`/patients/${patientId}`, {
       method: 'DELETE',
     });
   }
 
-  async searchPatients(query: string): Promise<unknown> {
-    return this.makeRequest(`/patients/search?q=${encodeURIComponent(query)}`);
+  /**
+   * Search patients with query string
+   */
+  async searchPatients(query: string): Promise<PaginatedResponse<Patient>> {
+    return this.makeRequest<PaginatedResponse<Patient>>(
+      `/patients/search?q=${encodeURIComponent(query)}`
+    );
   }
 
-  async getPatientMedications(patientId: string): Promise<unknown> {
-    return this.makeRequest(`/medications/patient/${patientId}`);
+  // =============================================
+  // ALLERGY MANAGEMENT
+  // =============================================
+
+  /**
+   * Get patient allergies
+   */
+  async getAllergies(
+    patientId: string,
+    params: AllergySearchParams = {}
+  ): Promise<PaginatedResponse<Allergy>> {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<PaginatedResponse<Allergy>>(
+      `/patients/${patientId}/allergies?${searchParams.toString()}`
+    );
   }
 
-  async getPatientNotes(patientId: string): Promise<unknown> {
-    return this.makeRequest(`/notes/patient/${patientId}`);
+  /**
+   * Get critical allergies (severe) for patient
+   */
+  async getCriticalAllergies(
+    patientId: string
+  ): Promise<ApiResponse<{ allergies: Allergy[]; summary: any }>> {
+    return this.makeRequest<
+      ApiResponse<{ allergies: Allergy[]; summary: any }>
+    >(`/patients/${patientId}/allergies/critical`);
+  }
+
+  /**
+   * Create new allergy
+   */
+  async createAllergy(
+    patientId: string,
+    allergyData: CreateAllergyData
+  ): Promise<ApiResponse<{ allergy: Allergy }>> {
+    return this.makeRequest<ApiResponse<{ allergy: Allergy }>>(
+      `/patients/${patientId}/allergies`,
+      {
+        method: 'POST',
+        body: JSON.stringify(allergyData),
+      }
+    );
+  }
+
+  /**
+   * Update allergy
+   */
+  async updateAllergy(
+    allergyId: string,
+    allergyData: UpdateAllergyData
+  ): Promise<ApiResponse<{ allergy: Allergy }>> {
+    return this.makeRequest<ApiResponse<{ allergy: Allergy }>>(
+      `/allergies/${allergyId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(allergyData),
+      }
+    );
+  }
+
+  /**
+   * Delete allergy
+   */
+  async deleteAllergy(allergyId: string): Promise<ApiResponse<null>> {
+    return this.makeRequest<ApiResponse<null>>(`/allergies/${allergyId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * Search allergies by substance
+   */
+  async searchAllergies(
+    substance: string,
+    limit = 10
+  ): Promise<ApiResponse<{ results: any[] }>> {
+    return this.makeRequest<ApiResponse<{ results: any[] }>>(
+      `/allergies/search?substance=${encodeURIComponent(
+        substance
+      )}&limit=${limit}`
+    );
+  }
+
+  // =============================================
+  // CONDITION MANAGEMENT
+  // =============================================
+
+  /**
+   * Get patient conditions
+   */
+  async getConditions(
+    patientId: string,
+    params: { status?: string; page?: number; limit?: number } = {}
+  ): Promise<PaginatedResponse<Condition>> {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<PaginatedResponse<Condition>>(
+      `/patients/${patientId}/conditions?${searchParams.toString()}`
+    );
+  }
+
+  /**
+   * Create new condition
+   */
+  async createCondition(
+    patientId: string,
+    conditionData: CreateConditionData
+  ): Promise<ApiResponse<{ condition: Condition }>> {
+    return this.makeRequest<ApiResponse<{ condition: Condition }>>(
+      `/patients/${patientId}/conditions`,
+      {
+        method: 'POST',
+        body: JSON.stringify(conditionData),
+      }
+    );
+  }
+
+  /**
+   * Update condition
+   */
+  async updateCondition(
+    conditionId: string,
+    conditionData: UpdateConditionData
+  ): Promise<ApiResponse<{ condition: Condition }>> {
+    return this.makeRequest<ApiResponse<{ condition: Condition }>>(
+      `/conditions/${conditionId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(conditionData),
+      }
+    );
+  }
+
+  /**
+   * Delete condition
+   */
+  async deleteCondition(conditionId: string): Promise<ApiResponse<null>> {
+    return this.makeRequest<ApiResponse<null>>(`/conditions/${conditionId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // =============================================
+  // MEDICATION MANAGEMENT
+  // =============================================
+
+  /**
+   * Get patient medications
+   */
+  async getMedications(
+    patientId: string,
+    params: MedicationSearchParams = {}
+  ): Promise<PaginatedResponse<MedicationRecord>> {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<PaginatedResponse<MedicationRecord>>(
+      `/patients/${patientId}/medications?${searchParams.toString()}`
+    );
+  }
+
+  /**
+   * Create new medication
+   */
+  async createMedication(
+    patientId: string,
+    medicationData: CreateMedicationData
+  ): Promise<ApiResponse<{ medication: MedicationRecord }>> {
+    return this.makeRequest<ApiResponse<{ medication: MedicationRecord }>>(
+      `/patients/${patientId}/medications`,
+      {
+        method: 'POST',
+        body: JSON.stringify(medicationData),
+      }
+    );
+  }
+
+  /**
+   * Update medication
+   */
+  async updateMedication(
+    medicationId: string,
+    medicationData: UpdateMedicationData
+  ): Promise<ApiResponse<{ medication: MedicationRecord }>> {
+    return this.makeRequest<ApiResponse<{ medication: MedicationRecord }>>(
+      `/medications/${medicationId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(medicationData),
+      }
+    );
+  }
+
+  /**
+   * Delete medication
+   */
+  async deleteMedication(medicationId: string): Promise<ApiResponse<null>> {
+    return this.makeRequest<ApiResponse<null>>(`/medications/${medicationId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // =============================================
+  // CLINICAL ASSESSMENT MANAGEMENT
+  // =============================================
+
+  /**
+   * Get patient clinical assessments
+   */
+  async getAssessments(
+    patientId: string,
+    params: { page?: number; limit?: number } = {}
+  ): Promise<PaginatedResponse<ClinicalAssessment>> {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<PaginatedResponse<ClinicalAssessment>>(
+      `/patients/${patientId}/assessments?${searchParams.toString()}`
+    );
+  }
+
+  /**
+   * Create new clinical assessment
+   */
+  async createAssessment(
+    patientId: string,
+    assessmentData: CreateAssessmentData
+  ): Promise<ApiResponse<{ assessment: ClinicalAssessment }>> {
+    return this.makeRequest<ApiResponse<{ assessment: ClinicalAssessment }>>(
+      `/patients/${patientId}/assessments`,
+      {
+        method: 'POST',
+        body: JSON.stringify(assessmentData),
+      }
+    );
+  }
+
+  /**
+   * Update clinical assessment
+   */
+  async updateAssessment(
+    assessmentId: string,
+    assessmentData: UpdateAssessmentData
+  ): Promise<ApiResponse<{ assessment: ClinicalAssessment }>> {
+    return this.makeRequest<ApiResponse<{ assessment: ClinicalAssessment }>>(
+      `/assessments/${assessmentId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(assessmentData),
+      }
+    );
+  }
+
+  // =============================================
+  // DRUG THERAPY PROBLEM (DTP) MANAGEMENT
+  // =============================================
+
+  /**
+   * Get patient DTPs
+   */
+  async getDTPs(
+    patientId: string,
+    params: DTPSearchParams = {}
+  ): Promise<PaginatedResponse<DrugTherapyProblem>> {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<PaginatedResponse<DrugTherapyProblem>>(
+      `/patients/${patientId}/dtps?${searchParams.toString()}`
+    );
+  }
+
+  /**
+   * Create new DTP
+   */
+  async createDTP(
+    patientId: string,
+    dtpData: CreateDTPData
+  ): Promise<ApiResponse<{ dtp: DrugTherapyProblem }>> {
+    return this.makeRequest<ApiResponse<{ dtp: DrugTherapyProblem }>>(
+      `/patients/${patientId}/dtps`,
+      {
+        method: 'POST',
+        body: JSON.stringify(dtpData),
+      }
+    );
+  }
+
+  /**
+   * Update DTP
+   */
+  async updateDTP(
+    dtpId: string,
+    dtpData: UpdateDTPData
+  ): Promise<ApiResponse<{ dtp: DrugTherapyProblem }>> {
+    return this.makeRequest<ApiResponse<{ dtp: DrugTherapyProblem }>>(
+      `/dtps/${dtpId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(dtpData),
+      }
+    );
+  }
+
+  // =============================================
+  // CARE PLAN MANAGEMENT
+  // =============================================
+
+  /**
+   * Get patient care plans
+   */
+  async getCarePlans(
+    patientId: string,
+    params: { page?: number; limit?: number } = {}
+  ): Promise<PaginatedResponse<CarePlan>> {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<PaginatedResponse<CarePlan>>(
+      `/patients/${patientId}/careplans?${searchParams.toString()}`
+    );
+  }
+
+  /**
+   * Create new care plan
+   */
+  async createCarePlan(
+    patientId: string,
+    carePlanData: CreateCarePlanData
+  ): Promise<ApiResponse<{ carePlan: CarePlan }>> {
+    return this.makeRequest<ApiResponse<{ carePlan: CarePlan }>>(
+      `/patients/${patientId}/careplans`,
+      {
+        method: 'POST',
+        body: JSON.stringify(carePlanData),
+      }
+    );
+  }
+
+  /**
+   * Update care plan
+   */
+  async updateCarePlan(
+    carePlanId: string,
+    carePlanData: UpdateCarePlanData
+  ): Promise<ApiResponse<{ carePlan: CarePlan }>> {
+    return this.makeRequest<ApiResponse<{ carePlan: CarePlan }>>(
+      `/careplans/${carePlanId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(carePlanData),
+      }
+    );
+  }
+
+  // =============================================
+  // VISIT MANAGEMENT
+  // =============================================
+
+  /**
+   * Get patient visits
+   */
+  async getVisits(
+    patientId: string,
+    params: { page?: number; limit?: number } = {}
+  ): Promise<PaginatedResponse<Visit>> {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<PaginatedResponse<Visit>>(
+      `/patients/${patientId}/visits?${searchParams.toString()}`
+    );
+  }
+
+  /**
+   * Get visit details
+   */
+  async getVisit(visitId: string): Promise<ApiResponse<{ visit: Visit }>> {
+    return this.makeRequest<ApiResponse<{ visit: Visit }>>(
+      `/visits/${visitId}`
+    );
+  }
+
+  /**
+   * Create new visit
+   */
+  async createVisit(
+    patientId: string,
+    visitData: CreateVisitData
+  ): Promise<ApiResponse<{ visit: Visit }>> {
+    return this.makeRequest<ApiResponse<{ visit: Visit }>>(
+      `/patients/${patientId}/visits`,
+      {
+        method: 'POST',
+        body: JSON.stringify(visitData),
+      }
+    );
+  }
+
+  /**
+   * Update visit
+   */
+  async updateVisit(
+    visitId: string,
+    visitData: UpdateVisitData
+  ): Promise<ApiResponse<{ visit: Visit }>> {
+    return this.makeRequest<ApiResponse<{ visit: Visit }>>(
+      `/visits/${visitId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(visitData),
+      }
+    );
+  }
+
+  /**
+   * Add attachment to visit
+   */
+  async addVisitAttachment(
+    visitId: string,
+    attachmentData: Omit<VisitAttachment, 'uploadedAt'>
+  ): Promise<ApiResponse<{ visit: Visit }>> {
+    return this.makeRequest<ApiResponse<{ visit: Visit }>>(
+      `/visits/${visitId}/attachments`,
+      {
+        method: 'POST',
+        body: JSON.stringify(attachmentData),
+      }
+    );
+  }
+
+  // =============================================
+  // UTILITY METHODS
+  // =============================================
+
+  /**
+   * Upload file and return URL (for attachments, etc.)
+   */
+  async uploadFile(
+    file: File
+  ): Promise<{ url: string; fileName: string; fileSize: number }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/upload`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'File upload failed');
+    }
+
+    return {
+      url: data.url,
+      fileName: file.name,
+      fileSize: file.size,
+    };
   }
 }
 

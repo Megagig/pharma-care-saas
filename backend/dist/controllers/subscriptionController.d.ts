@@ -8,6 +8,7 @@ export declare class SubscriptionController {
     getAvailablePlans: (req: AuthRequest, res: Response) => Promise<any>;
     private getDisplayFeatures;
     createCheckoutSession(req: AuthRequest, res: Response): Promise<any>;
+    verifyPaymentByReference(req: Request, res: Response): Promise<any>;
     handleSuccessfulPayment(req: AuthRequest, res: Response): Promise<any>;
     cancelSubscription(req: AuthRequest, res: Response): Promise<any>;
     upgradeSubscription(req: AuthRequest, res: Response): Promise<any>;
@@ -19,8 +20,11 @@ export declare class SubscriptionController {
     private handleSubscriptionDeleted;
     private handlePaymentSucceeded;
     private handlePaymentFailed;
-    private handleNombaPaymentSucceeded;
-    private handleNombaPaymentFailed;
+    private handlePaystackPaymentSucceeded;
+    private handlePaystackPaymentFailed;
+    private handlePaystackSubscriptionCreated;
+    private handlePaystackSubscriptionDisabled;
+    private processSubscriptionActivation;
     getBillingHistory(req: AuthRequest, res: Response): Promise<any>;
     getUsageMetrics(req: AuthRequest, res: Response): Promise<any>;
 }

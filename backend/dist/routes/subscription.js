@@ -11,6 +11,7 @@ router.post('/webhook', express_1.default.raw({ type: 'application/json' }), sub
 router.get('/current', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.getCurrentSubscription);
 router.get('/plans', subscriptionController_1.subscriptionController.getAvailablePlans);
 router.post('/checkout', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.createCheckoutSession);
+router.get('/verify', subscriptionController_1.subscriptionController.verifyPaymentByReference);
 router.post('/confirm-payment', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.handleSuccessfulPayment);
 router.post('/payment-success', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.handleSuccessfulPayment);
 router.post('/cancel', auth_1.auth, subscriptionController_1.subscriptionController.cancelSubscription);
