@@ -3,7 +3,7 @@ import { tenancyGuardPlugin, addAuditFields } from '../utils/tenancyGuard';
 
 export interface IMedicationRecord extends Document {
   _id: mongoose.Types.ObjectId;
-  pharmacyId: mongoose.Types.ObjectId;
+  workplaceId: mongoose.Types.ObjectId;
   patientId: mongoose.Types.ObjectId; // ref Patient, indexed
   phase: 'past' | 'current';
   medicationName: string;
@@ -25,9 +25,9 @@ export interface IMedicationRecord extends Document {
 
 const medicationRecordSchema = new Schema(
   {
-    pharmacyId: {
+    workplaceId: {
       type: Schema.Types.ObjectId,
-      ref: 'Pharmacy',
+      ref: 'Workplace',
       required: true,
       index: true,
     },
@@ -160,12 +160,14 @@ const medicationRecordSchema = new Schema(
 addAuditFields(medicationRecordSchema);
 
 // Apply tenancy guard plugin
-medicationRecordSchema.plugin(tenancyGuardPlugin);
+medicationRecordSchema.plugin(tenancyGuardPlugin, {
+  pharmacyIdField: 'workplaceId',
+});
 
 // Indexes for efficient querying
-medicationRecordSchema.index({ pharmacyId: 1, patientId: 1, phase: 1 });
-medicationRecordSchema.index({ pharmacyId: 1, medicationName: 1 });
-medicationRecordSchema.index({ pharmacyId: 1, isDeleted: 1 });
+medicationRecordSchema.index({ workplaceId: 1, patientId: 1, phase: 1 });
+medicationRecordSchema.index({ workplaceId: 1, medicationName: 1 });
+medicationRecordSchema.index({ workplaceId: 1, isDeleted: 1 });
 medicationRecordSchema.index({ phase: 1, startDate: -1 });
 medicationRecordSchema.index({ adherence: 1 });
 medicationRecordSchema.index({ createdAt: -1 });
@@ -231,27 +233,27 @@ medicationRecordSchema.pre('save', function (this: IMedicationRecord) {
 medicationRecordSchema.statics.findByPatient = function (
   patientId: mongoose.Types.ObjectId,
   phase?: string,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query: any = { patientId };
   if (phase) {
     query.phase = phase;
   }
 
-  const baseQuery = pharmacyId
-    ? this.find(query).setOptions({ pharmacyId })
+  const baseQuery = workplaceId
+    ? this.find(query).setOptions({ workplaceId })
     : this.find(query);
   return baseQuery.sort({ phase: 1, startDate: -1 });
 };
 
 // Static method to find current medications
 medicationRecordSchema.statics.findCurrentMedications = function (
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = { phase: 'current' };
 
-  const baseQuery = pharmacyId
-    ? this.find(query).setOptions({ pharmacyId })
+  const baseQuery = workplaceId
+    ? this.find(query).setOptions({ workplaceId })
     : this.find(query);
   return baseQuery.sort({ startDate: -1 });
 };
@@ -259,14 +261,14 @@ medicationRecordSchema.statics.findCurrentMedications = function (
 // Static method to search by medication name
 medicationRecordSchema.statics.searchByName = function (
   searchTerm: string,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = {
     medicationName: new RegExp(searchTerm, 'i'), // Case-insensitive search
   };
 
-  const baseQuery = pharmacyId
-    ? this.find(query).setOptions({ pharmacyId })
+  const baseQuery = workplaceId
+    ? this.find(query).setOptions({ workplaceId })
     : this.find(query);
   return baseQuery.sort({ medicationName: 1 });
 };

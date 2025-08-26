@@ -574,7 +574,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = await User.findById(req.user._id)
       .populate('currentPlanId')
-      .populate('pharmacyId')
+      .populate('workplaceId')
       .select('-passwordHash');
 
     if (!user) {

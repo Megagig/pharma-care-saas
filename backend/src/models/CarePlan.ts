@@ -3,7 +3,7 @@ import { tenancyGuardPlugin, addAuditFields } from '../utils/tenancyGuard';
 
 export interface ICarePlan extends Document {
   _id: mongoose.Types.ObjectId;
-  pharmacyId: mongoose.Types.ObjectId;
+  workplaceId: mongoose.Types.ObjectId;
   patientId: mongoose.Types.ObjectId;
   visitId?: mongoose.Types.ObjectId;
   goals: string[]; // (1)(2)(3)
@@ -21,9 +21,9 @@ export interface ICarePlan extends Document {
 
 const carePlanSchema = new Schema(
   {
-    pharmacyId: {
+    workplaceId: {
       type: Schema.Types.ObjectId,
-      ref: 'Pharmacy',
+      ref: 'Workplace',
       required: true,
       index: true,
     },
@@ -127,14 +127,14 @@ const carePlanSchema = new Schema(
 addAuditFields(carePlanSchema);
 
 // Apply tenancy guard plugin
-carePlanSchema.plugin(tenancyGuardPlugin);
+carePlanSchema.plugin(tenancyGuardPlugin, { pharmacyIdField: 'workplaceId' });
 
 // Indexes for efficient querying
-carePlanSchema.index({ pharmacyId: 1, patientId: 1, createdAt: -1 });
-carePlanSchema.index({ pharmacyId: 1, visitId: 1 });
-carePlanSchema.index({ pharmacyId: 1, planQuality: 1 });
-carePlanSchema.index({ pharmacyId: 1, dtpSummary: 1 });
-carePlanSchema.index({ pharmacyId: 1, isDeleted: 1 });
+carePlanSchema.index({ workplaceId: 1, patientId: 1, createdAt: -1 });
+carePlanSchema.index({ workplaceId: 1, visitId: 1 });
+carePlanSchema.index({ workplaceId: 1, planQuality: 1 });
+carePlanSchema.index({ workplaceId: 1, dtpSummary: 1 });
+carePlanSchema.index({ workplaceId: 1, isDeleted: 1 });
 carePlanSchema.index({ followUpDate: 1 }, { sparse: true });
 carePlanSchema.index({ createdAt: -1 });
 
@@ -258,13 +258,13 @@ carePlanSchema.pre('save', function (this: ICarePlan) {
 carePlanSchema.statics.findByPatient = function (
   patientId: mongoose.Types.ObjectId,
   limit?: number,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = { patientId };
 
   let baseQuery;
-  if (pharmacyId) {
-    baseQuery = this.find(query).setOptions({ pharmacyId });
+  if (workplaceId) {
+    baseQuery = this.find(query).setOptions({ workplaceId });
   } else {
     baseQuery = this.find(query);
   }
@@ -281,13 +281,13 @@ carePlanSchema.statics.findByPatient = function (
 // Static method to find latest care plan for a patient
 carePlanSchema.statics.findLatestByPatient = function (
   patientId: mongoose.Types.ObjectId,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = { patientId };
 
-  if (pharmacyId) {
+  if (workplaceId) {
     return this.findOne(query)
-      .setOptions({ pharmacyId })
+      .setOptions({ workplaceId })
       .sort({ createdAt: -1 });
   }
   return this.findOne(query).sort({ createdAt: -1 });
@@ -296,24 +296,24 @@ carePlanSchema.statics.findLatestByPatient = function (
 // Static method to find care plans by visit
 carePlanSchema.statics.findByVisit = function (
   visitId: mongoose.Types.ObjectId,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = { visitId };
 
-  if (pharmacyId) {
-    return this.find(query).setOptions({ pharmacyId });
+  if (workplaceId) {
+    return this.find(query).setOptions({ workplaceId });
   }
   return this.find(query);
 };
 
 // Static method to find care plans needing review
 carePlanSchema.statics.findNeedingReview = function (
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = { planQuality: 'needsReview' };
 
-  if (pharmacyId) {
-    return this.find(query).setOptions({ pharmacyId }).sort({ createdAt: -1 });
+  if (workplaceId) {
+    return this.find(query).setOptions({ workplaceId }).sort({ createdAt: -1 });
   }
   return this.find(query).sort({ createdAt: -1 });
 };
@@ -321,7 +321,7 @@ carePlanSchema.statics.findNeedingReview = function (
 // Static method to find due follow-ups
 carePlanSchema.statics.findDueFollowUps = function (
   daysAhead: number = 7,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const today = new Date();
   const futureDate = new Date();
@@ -334,9 +334,9 @@ carePlanSchema.statics.findDueFollowUps = function (
     },
   };
 
-  if (pharmacyId) {
+  if (workplaceId) {
     return this.find(query)
-      .setOptions({ pharmacyId })
+      .setOptions({ workplaceId })
       .sort({ followUpDate: 1 });
   }
   return this.find(query).sort({ followUpDate: 1 });
@@ -344,7 +344,7 @@ carePlanSchema.statics.findDueFollowUps = function (
 
 // Static method to find overdue follow-ups
 carePlanSchema.statics.findOverdueFollowUps = function (
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const today = new Date();
 
@@ -352,9 +352,9 @@ carePlanSchema.statics.findOverdueFollowUps = function (
     followUpDate: { $lt: today },
   };
 
-  if (pharmacyId) {
+  if (workplaceId) {
     return this.find(query)
-      .setOptions({ pharmacyId })
+      .setOptions({ workplaceId })
       .sort({ followUpDate: 1 });
   }
   return this.find(query).sort({ followUpDate: 1 });

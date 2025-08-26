@@ -420,7 +420,123 @@ const MultiStepRegister = () => {
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
-        return <Step1Content />;
+        return (
+          <Stack spacing={3}>
+            <Box sx={{ textAlign: 'center', mb: 2 }}>
+              <PersonOutlineIcon
+                sx={{ fontSize: 48, color: 'primary.main', mb: 1 }}
+              />
+              <Typography variant="h5" gutterBottom>
+                Personal Information
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Let's start with your basic information
+              </Typography>
+            </Box>
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                fullWidth
+                label="First Name"
+                name="firstName"
+                value={userForm.firstName}
+                onChange={handleUserFormChange}
+                required
+              />
+              <TextField
+                fullWidth
+                label="Last Name"
+                name="lastName"
+                value={userForm.lastName}
+                onChange={handleUserFormChange}
+                required
+              />
+            </Stack>
+
+            <TextField
+              fullWidth
+              label="Email"
+              name="email"
+              type="email"
+              value={userForm.email}
+              onChange={handleUserFormChange}
+              required
+            />
+
+            <TextField
+              fullWidth
+              label="Phone Number"
+              name="phone"
+              value={userForm.phone}
+              onChange={handleUserFormChange}
+              required
+            />
+
+            <TextField
+              fullWidth
+              label="Professional License Number"
+              name="licenseNumber"
+              value={userForm.licenseNumber}
+              onChange={handleUserFormChange}
+              helperText="You can add or verify your license later in your profile"
+            />
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                fullWidth
+                label="Password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                value={userForm.password}
+                onChange={handleUserFormChange}
+                required
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={handleTogglePasswordVisibility}
+                        edge="end"
+                      >
+                        {showPassword ? (
+                          <VisibilityOffIcon />
+                        ) : (
+                          <VisibilityIcon />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Confirm Password"
+                name="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={userForm.confirmPassword}
+                onChange={handleUserFormChange}
+                required
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle confirm password visibility"
+                        onClick={handleToggleConfirmPasswordVisibility}
+                        edge="end"
+                      >
+                        {showConfirmPassword ? (
+                          <VisibilityOffIcon />
+                        ) : (
+                          <VisibilityIcon />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Stack>
+          </Stack>
+        );
       case 1:
         return <Step2Content />;
       case 2:
@@ -429,120 +545,6 @@ const MultiStepRegister = () => {
         return null;
     }
   };
-
-  // Step 1: Personal Information
-  const Step1Content = () => (
-    <Stack spacing={3}>
-      <Box sx={{ textAlign: 'center', mb: 2 }}>
-        <PersonOutlineIcon
-          sx={{ fontSize: 48, color: 'primary.main', mb: 1 }}
-        />
-        <Typography variant="h5" gutterBottom>
-          Personal Information
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Let's start with your basic information
-        </Typography>
-      </Box>
-
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <TextField
-          fullWidth
-          label="First Name"
-          name="firstName"
-          value={userForm.firstName}
-          onChange={handleUserFormChange}
-          required
-        />
-        <TextField
-          fullWidth
-          label="Last Name"
-          name="lastName"
-          value={userForm.lastName}
-          onChange={handleUserFormChange}
-          required
-        />
-      </Stack>
-
-      <TextField
-        fullWidth
-        label="Email Address"
-        name="email"
-        type="email"
-        value={userForm.email}
-        onChange={handleUserFormChange}
-        required
-      />
-
-      <TextField
-        fullWidth
-        label="Phone Number (Optional)"
-        name="phone"
-        value={userForm.phone}
-        onChange={handleUserFormChange}
-      />
-
-      <TextField
-        fullWidth
-        label="License Number (Optional - no validation at signup)"
-        name="licenseNumber"
-        value={userForm.licenseNumber}
-        onChange={handleUserFormChange}
-        helperText="You can add or verify your license later in your profile"
-      />
-
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <TextField
-          fullWidth
-          label="Password"
-          name="password"
-          type={showPassword ? 'text' : 'password'}
-          value={userForm.password}
-          onChange={handleUserFormChange}
-          required
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label="toggle password visibility"
-                  onClick={handleTogglePasswordVisibility}
-                  edge="end"
-                >
-                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-        <TextField
-          fullWidth
-          label="Confirm Password"
-          name="confirmPassword"
-          type={showConfirmPassword ? 'text' : 'password'}
-          value={userForm.confirmPassword}
-          onChange={handleUserFormChange}
-          required
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label="toggle confirm password visibility"
-                  onClick={handleToggleConfirmPasswordVisibility}
-                  edge="end"
-                >
-                  {showConfirmPassword ? (
-                    <VisibilityOffIcon />
-                  ) : (
-                    <VisibilityIcon />
-                  )}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Stack>
-    </Stack>
-  );
 
   // Step 2: Workplace Setup
   const Step2Content = () => (
