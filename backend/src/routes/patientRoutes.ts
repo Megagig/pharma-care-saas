@@ -5,23 +5,87 @@ import {
   createPatient,
   updatePatient,
   deletePatient,
-  searchPatients
+  searchPatients,
+  getPatientSummary,
 } from '../controllers/patientController';
 import { auth } from '../middlewares/auth';
+import {
+  requirePatientRead,
+  requirePatientCreate,
+  requirePatientUpdate,
+  requirePatientDelete,
+  checkPharmacyAccess,
+  checkPatientPlanLimits,
+} from '../middlewares/patientRBAC';
+import {
+  validateRequest,
+  createPatientSchema,
+  updatePatientSchema,
+  patientParamsSchema,
+  searchSchema,
+} from '../validators/patientValidators';
+import { patientManagementErrorHandler } from '../utils/responseHelpers';
 
 const router = express.Router();
 
-router.use(auth); // All patient routes require authentication
+// Apply authentication and pharmacy access check to all routes
+router.use(auth);
+router.use(checkPharmacyAccess);
 
-router.route('/')
-  .get(getPatients)
-  .post(createPatient);
+// GET /api/patients - List patients with search and pagination
+router.get(
+  '/',
+  requirePatientRead,
+  validateRequest(searchSchema, 'query'),
+  getPatients
+);
 
-router.get('/search', searchPatients);
+// GET /api/patients/search - Search patients
+router.get('/search', requirePatientRead, searchPatients);
 
-router.route('/:id')
-  .get(getPatient)
-  .put(updatePatient)
-  .delete(deletePatient);
+// POST /api/patients - Create new patient
+router.post(
+  '/',
+  requirePatientCreate,
+  checkPatientPlanLimits,
+  validateRequest(createPatientSchema, 'body'),
+  createPatient
+);
+
+// GET /api/patients/:id - Get patient details
+router.get(
+  '/:id',
+  requirePatientRead,
+  validateRequest(patientParamsSchema, 'params'),
+  getPatient
+);
+
+// GET /api/patients/:id/summary - Get patient summary
+router.get(
+  '/:id/summary',
+  requirePatientRead,
+  validateRequest(patientParamsSchema, 'params'),
+  getPatientSummary
+);
+
+// PATCH /api/patients/:id - Update patient
+router.patch(
+  '/:id',
+  requirePatientUpdate,
+  validateRequest(patientParamsSchema, 'params'),
+  validateRequest(updatePatientSchema, 'body'),
+  updatePatient
+);
+
+// DELETE /api/patients/:id - Delete patient (soft delete)
+router.delete(
+  '/:id',
+  requirePatientDelete,
+  validateRequest(patientParamsSchema, 'params'),
+  deletePatient
+);
+
+// Error handling middleware
+router.use(patientManagementErrorHandler);
 
 export default router;

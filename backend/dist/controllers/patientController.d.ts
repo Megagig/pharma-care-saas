@@ -1,12 +1,9 @@
-import { Request, Response } from 'express';
-interface AuthRequest extends Request {
-    user?: any;
-}
-export declare const getPatients: (req: AuthRequest, res: Response) => Promise<void>;
-export declare const getPatient: (req: AuthRequest, res: Response) => Promise<void>;
-export declare const createPatient: (req: AuthRequest, res: Response) => Promise<void>;
-export declare const updatePatient: (req: AuthRequest, res: Response) => Promise<void>;
-export declare const deletePatient: (req: AuthRequest, res: Response) => Promise<void>;
-export declare const searchPatients: (req: AuthRequest, res: Response) => Promise<void>;
-export {};
+import { Response } from 'express';
+export declare const getPatients: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getPatient: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const createPatient: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const updatePatient: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const deletePatient: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const searchPatients: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getPatientSummary: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 //# sourceMappingURL=patientController.d.ts.map
