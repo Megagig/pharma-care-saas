@@ -24,7 +24,6 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Pricing from './pages/Pricing';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import MultiStepRegister from './pages/MultiStepRegister';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
@@ -97,8 +96,6 @@ function App(): JSX.Element {
                     <Route path="/pricing" element={<Pricing />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<MultiStepRegister />} />
-                    <Route path="/register-old" element={<Register />} />{' '}
-                    {/* Keep old register as fallback */}
                     <Route path="/verify-email" element={<VerifyEmail />} />
                     <Route
                       path="/forgot-password"

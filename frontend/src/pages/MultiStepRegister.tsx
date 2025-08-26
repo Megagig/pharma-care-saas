@@ -538,420 +538,448 @@ const MultiStepRegister = () => {
           </Stack>
         );
       case 1:
-        return <Step2Content />;
+        return (
+          <Stack spacing={3}>
+            <Box sx={{ textAlign: 'center', mb: 2 }}>
+              <BusinessOutlinedIcon
+                sx={{ fontSize: 48, color: 'primary.main', mb: 1 }}
+              />
+              <Typography variant="h5" gutterBottom>
+                Workplace Setup
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                How would you like to set up your workplace?
+              </Typography>
+            </Box>
+
+            <FormControl component="fieldset">
+              <FormLabel component="legend" sx={{ mb: 2 }}>
+                Choose your setup option:
+              </FormLabel>
+              <RadioGroup
+                value={workplaceFlow}
+                onChange={(e) =>
+                  setWorkplaceFlow(e.target.value as WorkplaceFlow)
+                }
+              >
+                <Paper
+                  sx={{
+                    p: 2,
+                    mb: 2,
+                    border: workplaceFlow === 'create' ? 2 : 1,
+                    borderColor:
+                      workplaceFlow === 'create' ? 'primary.main' : 'divider',
+                  }}
+                >
+                  <FormControlLabel
+                    value="create"
+                    control={<Radio />}
+                    label={
+                      <Box>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 'medium' }}
+                        >
+                          Create a new workplace
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Set up your pharmacy, hospital, clinic, or
+                          organization
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Paper>
+
+                <Paper
+                  sx={{
+                    p: 2,
+                    mb: 2,
+                    border: workplaceFlow === 'join' ? 2 : 1,
+                    borderColor:
+                      workplaceFlow === 'join' ? 'primary.main' : 'divider',
+                  }}
+                >
+                  <FormControlLabel
+                    value="join"
+                    control={<Radio />}
+                    label={
+                      <Box>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 'medium' }}
+                        >
+                          Join an existing workplace
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Use an invite code from your workplace owner
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Paper>
+
+                <Paper
+                  sx={{
+                    p: 2,
+                    border: workplaceFlow === 'skip' ? 2 : 1,
+                    borderColor:
+                      workplaceFlow === 'skip' ? 'primary.main' : 'divider',
+                  }}
+                >
+                  <FormControlLabel
+                    value="skip"
+                    control={<Radio />}
+                    label={
+                      <Box>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 'medium' }}
+                        >
+                          Skip for now
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Access general features only (Knowledge Hub, CPD,
+                          Forum)
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Paper>
+              </RadioGroup>
+            </FormControl>
+
+            {workplaceFlow === 'create' && (
+              <Stack spacing={3} sx={{ mt: 3 }}>
+                <Divider>
+                  <Chip label="Workplace Details" />
+                </Divider>
+
+                <TextField
+                  fullWidth
+                  label="Workplace Name"
+                  name="name"
+                  value={workplaceForm.name}
+                  onChange={handleWorkplaceFormChange}
+                  required
+                  placeholder="e.g., Central Pharmacy, City Hospital"
+                />
+
+                <FormControl fullWidth>
+                  <InputLabel>Workplace Type</InputLabel>
+                  <Select
+                    value={workplaceForm.type}
+                    onChange={(e) =>
+                      setWorkplaceForm((prev) => ({
+                        ...prev,
+                        type: e.target.value,
+                      }))
+                    }
+                    label="Workplace Type"
+                  >
+                    {workplaceTypes.map((type) => (
+                      <MenuItem key={type.value} value={type.value}>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          {type.icon}
+                          {type.label}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <TextField
+                    fullWidth
+                    label="License Number"
+                    name="licenseNumber"
+                    value={workplaceForm.licenseNumber}
+                    onChange={handleWorkplaceFormChange}
+                    required
+                    placeholder="PCN/PHARMACYLIC/2024/001"
+                  />
+                  <TextField
+                    fullWidth
+                    label="Workplace Email"
+                    name="email"
+                    type="email"
+                    value={workplaceForm.email}
+                    onChange={handleWorkplaceFormChange}
+                    required
+                  />
+                </Stack>
+
+                <TextField
+                  fullWidth
+                  label="Address (Optional)"
+                  name="address"
+                  value={workplaceForm.address}
+                  onChange={handleWorkplaceFormChange}
+                  multiline
+                  rows={2}
+                />
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <FormControl fullWidth>
+                    <InputLabel>State (Optional)</InputLabel>
+                    <Select
+                      value={workplaceForm.state}
+                      onChange={(e) =>
+                        setWorkplaceForm((prev) => ({
+                          ...prev,
+                          state: e.target.value,
+                        }))
+                      }
+                      label="State (Optional)"
+                    >
+                      {nigerianStates.map((state) => (
+                        <MenuItem key={state} value={state}>
+                          {state}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    fullWidth
+                    label="LGA (Optional)"
+                    name="lga"
+                    value={workplaceForm.lga}
+                    onChange={handleWorkplaceFormChange}
+                  />
+                </Stack>
+              </Stack>
+            )}
+            {workplaceFlow === 'join' && (
+              <Stack spacing={3} sx={{ mt: 3 }}>
+                <Divider>
+                  <Chip label="Join Workplace" />
+                </Divider>
+
+                <Box>
+                  <Stack direction="row" spacing={2} alignItems="flex-end">
+                    <TextField
+                      fullWidth
+                      label="Invite Code"
+                      name="inviteCode"
+                      value={joinForm.inviteCode}
+                      onChange={handleJoinFormChange}
+                      placeholder="ABC123"
+                      helperText="Enter the 6-character invite code from your workplace"
+                    />
+                    <Button
+                      variant="outlined"
+                      onClick={handleFindWorkplace}
+                      disabled={loading || !joinForm.inviteCode.trim()}
+                      sx={{ minWidth: 120 }}
+                    >
+                      {loading ? <CircularProgress size={20} /> : 'Find'}
+                    </Button>
+                  </Stack>
+                </Box>
+
+                {foundWorkplace && (
+                  <Paper
+                    sx={{
+                      p: 3,
+                      bgcolor: 'success.light',
+                      color: 'success.contrastText',
+                    }}
+                  >
+                    <Typography variant="h6" gutterBottom>
+                      ✅ Workplace Found!
+                    </Typography>
+                    <Typography variant="body1" gutterBottom>
+                      <strong>{foundWorkplace.name}</strong>
+                    </Typography>
+                    <Typography variant="body2">
+                      Type: {foundWorkplace.type} | Location:{' '}
+                      {foundWorkplace.state}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      Team Size: {foundWorkplace.teamSize} members
+                    </Typography>
+                  </Paper>
+                )}
+
+                {foundWorkplace && (
+                  <FormControl fullWidth>
+                    <InputLabel>Your Role</InputLabel>
+                    <Select
+                      value={joinForm.workplaceRole}
+                      onChange={(e) =>
+                        setJoinForm((prev) => ({
+                          ...prev,
+                          workplaceRole: e.target.value,
+                        }))
+                      }
+                      label="Your Role"
+                    >
+                      {workplaceRoles.map((role) => (
+                        <MenuItem key={role} value={role}>
+                          {role}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              </Stack>
+            )}
+            {workplaceFlow === 'skip' && (
+              <Paper sx={{ p: 3, mt: 3, bgcolor: 'warning.light' }}>
+                <Typography variant="h6" gutterBottom color="warning.dark">
+                  Limited Access Mode
+                </Typography>
+                <Typography variant="body2" color="warning.dark" paragraph>
+                  By skipping workplace setup, you'll have access to:
+                </Typography>
+                <Stack
+                  component="ul"
+                  spacing={1}
+                  sx={{ pl: 2, color: 'warning.dark' }}
+                >
+                  <Typography component="li" variant="body2">
+                    ✅ Knowledge Hub & Resources
+                  </Typography>
+                  <Typography component="li" variant="body2">
+                    ✅ CPD Tracking
+                  </Typography>
+                  <Typography component="li" variant="body2">
+                    ✅ Professional Forum
+                  </Typography>
+                  <Typography component="li" variant="body2">
+                    ❌ Patient Management (requires workplace)
+                  </Typography>
+                  <Typography component="li" variant="body2">
+                    ❌ Medication Management (requires workplace)
+                  </Typography>
+                  <Typography component="li" variant="body2">
+                    ❌ Billing & Reports (requires workplace)
+                  </Typography>
+                </Stack>
+                <Typography
+                  variant="body2"
+                  color="warning.dark"
+                  sx={{ mt: 2, fontStyle: 'italic' }}
+                >
+                  You can create or join a workplace anytime from your
+                  dashboard.
+                </Typography>
+              </Paper>
+            )}
+          </Stack>
+        );
       case 2:
-        return <Step3Content />;
+        return (
+          <Stack spacing={3}>
+            <Box sx={{ textAlign: 'center', mb: 2 }}>
+              <CheckCircleOutlineIcon
+                sx={{ fontSize: 48, color: 'success.main', mb: 1 }}
+              />
+              <Typography variant="h5" gutterBottom>
+                Almost Done!
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Review your information and complete registration
+              </Typography>
+            </Box>
+
+            {/* Summary */}
+            <Paper sx={{ p: 3, bgcolor: 'grey.50' }}>
+              <Typography variant="h6" gutterBottom>
+                Registration Summary
+              </Typography>
+
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Name:
+                  </Typography>
+                  <Typography variant="body1">
+                    {userForm.firstName} {userForm.lastName}
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Email:
+                  </Typography>
+                  <Typography variant="body1">{userForm.email}</Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Workplace Setup:
+                  </Typography>
+                  {workplaceFlow === 'create' && (
+                    <Typography variant="body1">
+                      Creating new workplace:{' '}
+                      <strong>{workplaceForm.name}</strong> (
+                      {workplaceForm.type})
+                    </Typography>
+                  )}
+                  {workplaceFlow === 'join' && (
+                    <Typography variant="body1">
+                      Joining: <strong>{foundWorkplace?.name}</strong> as{' '}
+                      {joinForm.workplaceRole}
+                    </Typography>
+                  )}
+                  {workplaceFlow === 'skip' && (
+                    <Typography variant="body1">
+                      Independent account (no workplace)
+                    </Typography>
+                  )}
+                </Box>
+
+                {workplaceFlow === 'create' && (
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    🎉 You'll get a 14-day free trial to explore all features!
+                  </Alert>
+                )}
+
+                {workplaceFlow === 'join' && (
+                  <Alert severity="success" sx={{ mt: 2 }}>
+                    🤝 You'll inherit your workplace's subscription plan!
+                  </Alert>
+                )}
+              </Stack>
+            </Paper>
+
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={agreeToTerms}
+                  onChange={(e) => setAgreeToTerms(e.target.checked)}
+                />
+              }
+              label={
+                <Typography variant="body2">
+                  I agree to the{' '}
+                  <Link
+                    to="/terms"
+                    target="_blank"
+                    style={{ color: 'inherit' }}
+                  >
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link
+                    to="/privacy"
+                    target="_blank"
+                    style={{ color: 'inherit' }}
+                  >
+                    Privacy Policy
+                  </Link>
+                </Typography>
+              }
+            />
+          </Stack>
+        );
       default:
         return null;
     }
   };
-
-  // Step 2: Workplace Setup
-  const Step2Content = () => (
-    <Stack spacing={3}>
-      <Box sx={{ textAlign: 'center', mb: 2 }}>
-        <BusinessOutlinedIcon
-          sx={{ fontSize: 48, color: 'primary.main', mb: 1 }}
-        />
-        <Typography variant="h5" gutterBottom>
-          Workplace Setup
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          How would you like to set up your workplace?
-        </Typography>
-      </Box>
-
-      <FormControl component="fieldset">
-        <FormLabel component="legend" sx={{ mb: 2 }}>
-          Choose your setup option:
-        </FormLabel>
-        <RadioGroup
-          value={workplaceFlow}
-          onChange={(e) => setWorkplaceFlow(e.target.value as WorkplaceFlow)}
-        >
-          <Paper
-            sx={{
-              p: 2,
-              mb: 2,
-              border: workplaceFlow === 'create' ? 2 : 1,
-              borderColor:
-                workplaceFlow === 'create' ? 'primary.main' : 'divider',
-            }}
-          >
-            <FormControlLabel
-              value="create"
-              control={<Radio />}
-              label={
-                <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
-                    Create a new workplace
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Set up your pharmacy, hospital, clinic, or organization
-                  </Typography>
-                </Box>
-              }
-            />
-          </Paper>
-
-          <Paper
-            sx={{
-              p: 2,
-              mb: 2,
-              border: workplaceFlow === 'join' ? 2 : 1,
-              borderColor:
-                workplaceFlow === 'join' ? 'primary.main' : 'divider',
-            }}
-          >
-            <FormControlLabel
-              value="join"
-              control={<Radio />}
-              label={
-                <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
-                    Join an existing workplace
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Use an invite code from your workplace owner
-                  </Typography>
-                </Box>
-              }
-            />
-          </Paper>
-
-          <Paper
-            sx={{
-              p: 2,
-              border: workplaceFlow === 'skip' ? 2 : 1,
-              borderColor:
-                workplaceFlow === 'skip' ? 'primary.main' : 'divider',
-            }}
-          >
-            <FormControlLabel
-              value="skip"
-              control={<Radio />}
-              label={
-                <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
-                    Skip for now
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Access general features only (Knowledge Hub, CPD, Forum)
-                  </Typography>
-                </Box>
-              }
-            />
-          </Paper>
-        </RadioGroup>
-      </FormControl>
-
-      {workplaceFlow === 'create' && <CreateWorkplaceForm />}
-      {workplaceFlow === 'join' && <JoinWorkplaceForm />}
-      {workplaceFlow === 'skip' && <SkipWorkplaceInfo />}
-    </Stack>
-  );
-
-  const CreateWorkplaceForm = () => (
-    <Stack spacing={3} sx={{ mt: 3 }}>
-      <Divider>
-        <Chip label="Workplace Details" />
-      </Divider>
-
-      <TextField
-        fullWidth
-        label="Workplace Name"
-        name="name"
-        value={workplaceForm.name}
-        onChange={handleWorkplaceFormChange}
-        required
-        placeholder="e.g., Central Pharmacy, City Hospital"
-      />
-
-      <FormControl fullWidth>
-        <InputLabel>Workplace Type</InputLabel>
-        <Select
-          value={workplaceForm.type}
-          onChange={(e) =>
-            setWorkplaceForm((prev) => ({ ...prev, type: e.target.value }))
-          }
-          label="Workplace Type"
-        >
-          {workplaceTypes.map((type) => (
-            <MenuItem key={type.value} value={type.value}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {type.icon}
-                {type.label}
-              </Box>
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <TextField
-          fullWidth
-          label="License Number"
-          name="licenseNumber"
-          value={workplaceForm.licenseNumber}
-          onChange={handleWorkplaceFormChange}
-          required
-          placeholder="PCN/PHARMACYLIC/2024/001"
-        />
-        <TextField
-          fullWidth
-          label="Workplace Email"
-          name="email"
-          type="email"
-          value={workplaceForm.email}
-          onChange={handleWorkplaceFormChange}
-          required
-        />
-      </Stack>
-
-      <TextField
-        fullWidth
-        label="Address (Optional)"
-        name="address"
-        value={workplaceForm.address}
-        onChange={handleWorkplaceFormChange}
-        multiline
-        rows={2}
-      />
-
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <FormControl fullWidth>
-          <InputLabel>State (Optional)</InputLabel>
-          <Select
-            value={workplaceForm.state}
-            onChange={(e) =>
-              setWorkplaceForm((prev) => ({ ...prev, state: e.target.value }))
-            }
-            label="State (Optional)"
-          >
-            {nigerianStates.map((state) => (
-              <MenuItem key={state} value={state}>
-                {state}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <TextField
-          fullWidth
-          label="LGA (Optional)"
-          name="lga"
-          value={workplaceForm.lga}
-          onChange={handleWorkplaceFormChange}
-        />
-      </Stack>
-    </Stack>
-  );
-
-  const JoinWorkplaceForm = () => (
-    <Stack spacing={3} sx={{ mt: 3 }}>
-      <Divider>
-        <Chip label="Join Workplace" />
-      </Divider>
-
-      <Box>
-        <Stack direction="row" spacing={2} alignItems="flex-end">
-          <TextField
-            fullWidth
-            label="Invite Code"
-            name="inviteCode"
-            value={joinForm.inviteCode}
-            onChange={handleJoinFormChange}
-            placeholder="ABC123"
-            helperText="Enter the 6-character invite code from your workplace"
-          />
-          <Button
-            variant="outlined"
-            onClick={handleFindWorkplace}
-            disabled={loading || !joinForm.inviteCode.trim()}
-            sx={{ minWidth: 120 }}
-          >
-            {loading ? <CircularProgress size={20} /> : 'Find'}
-          </Button>
-        </Stack>
-      </Box>
-
-      {foundWorkplace && (
-        <Paper
-          sx={{ p: 3, bgcolor: 'success.light', color: 'success.contrastText' }}
-        >
-          <Typography variant="h6" gutterBottom>
-            ✅ Workplace Found!
-          </Typography>
-          <Typography variant="body1" gutterBottom>
-            <strong>{foundWorkplace.name}</strong>
-          </Typography>
-          <Typography variant="body2">
-            Type: {foundWorkplace.type} | Location: {foundWorkplace.state}
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 1 }}>
-            Team Size: {foundWorkplace.teamSize} members
-          </Typography>
-        </Paper>
-      )}
-
-      {foundWorkplace && (
-        <FormControl fullWidth>
-          <InputLabel>Your Role</InputLabel>
-          <Select
-            value={joinForm.workplaceRole}
-            onChange={(e) =>
-              setJoinForm((prev) => ({
-                ...prev,
-                workplaceRole: e.target.value,
-              }))
-            }
-            label="Your Role"
-          >
-            {workplaceRoles.map((role) => (
-              <MenuItem key={role} value={role}>
-                {role}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      )}
-    </Stack>
-  );
-
-  const SkipWorkplaceInfo = () => (
-    <Paper sx={{ p: 3, mt: 3, bgcolor: 'warning.light' }}>
-      <Typography variant="h6" gutterBottom color="warning.dark">
-        Limited Access Mode
-      </Typography>
-      <Typography variant="body2" color="warning.dark" paragraph>
-        By skipping workplace setup, you'll have access to:
-      </Typography>
-      <Stack component="ul" spacing={1} sx={{ pl: 2, color: 'warning.dark' }}>
-        <Typography component="li" variant="body2">
-          ✅ Knowledge Hub & Resources
-        </Typography>
-        <Typography component="li" variant="body2">
-          ✅ CPD Tracking
-        </Typography>
-        <Typography component="li" variant="body2">
-          ✅ Professional Forum
-        </Typography>
-        <Typography component="li" variant="body2">
-          ❌ Patient Management (requires workplace)
-        </Typography>
-        <Typography component="li" variant="body2">
-          ❌ Medication Management (requires workplace)
-        </Typography>
-        <Typography component="li" variant="body2">
-          ❌ Billing & Reports (requires workplace)
-        </Typography>
-      </Stack>
-      <Typography
-        variant="body2"
-        color="warning.dark"
-        sx={{ mt: 2, fontStyle: 'italic' }}
-      >
-        You can create or join a workplace anytime from your dashboard.
-      </Typography>
-    </Paper>
-  );
-
-  // Step 3: Confirmation
-  const Step3Content = () => (
-    <Stack spacing={3}>
-      <Box sx={{ textAlign: 'center', mb: 2 }}>
-        <CheckCircleOutlineIcon
-          sx={{ fontSize: 48, color: 'success.main', mb: 1 }}
-        />
-        <Typography variant="h5" gutterBottom>
-          Almost Done!
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Review your information and complete registration
-        </Typography>
-      </Box>
-
-      {/* Summary */}
-      <Paper sx={{ p: 3, bgcolor: 'grey.50' }}>
-        <Typography variant="h6" gutterBottom>
-          Registration Summary
-        </Typography>
-
-        <Stack spacing={2}>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary">
-              Name:
-            </Typography>
-            <Typography variant="body1">
-              {userForm.firstName} {userForm.lastName}
-            </Typography>
-          </Box>
-
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary">
-              Email:
-            </Typography>
-            <Typography variant="body1">{userForm.email}</Typography>
-          </Box>
-
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary">
-              Workplace Setup:
-            </Typography>
-            {workplaceFlow === 'create' && (
-              <Typography variant="body1">
-                Creating new workplace: <strong>{workplaceForm.name}</strong> (
-                {workplaceForm.type})
-              </Typography>
-            )}
-            {workplaceFlow === 'join' && (
-              <Typography variant="body1">
-                Joining: <strong>{foundWorkplace?.name}</strong> as{' '}
-                {joinForm.workplaceRole}
-              </Typography>
-            )}
-            {workplaceFlow === 'skip' && (
-              <Typography variant="body1">
-                Independent account (no workplace)
-              </Typography>
-            )}
-          </Box>
-
-          {workplaceFlow === 'create' && (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              🎉 You'll get a 14-day free trial to explore all features!
-            </Alert>
-          )}
-
-          {workplaceFlow === 'join' && (
-            <Alert severity="success" sx={{ mt: 2 }}>
-              🤝 You'll inherit your workplace's subscription plan!
-            </Alert>
-          )}
-        </Stack>
-      </Paper>
-
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={agreeToTerms}
-            onChange={(e) => setAgreeToTerms(e.target.checked)}
-          />
-        }
-        label={
-          <Typography variant="body2">
-            I agree to the{' '}
-            <Link to="/terms" target="_blank" style={{ color: 'inherit' }}>
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link to="/privacy" target="_blank" style={{ color: 'inherit' }}>
-              Privacy Policy
-            </Link>
-          </Typography>
-        }
-      />
-    </Stack>
-  );
 
   return (
     <Box
