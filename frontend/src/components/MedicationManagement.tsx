@@ -11,7 +11,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   FormControl,
   InputLabel,
   MenuItem,
@@ -21,18 +20,9 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
-  Alert,
-  Autocomplete,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   IconButton,
 } from '@mui/material';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 // Icons
@@ -41,10 +31,6 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MedicationIcon from '@mui/icons-material/Medication';
 import SearchIcon from '@mui/icons-material/Search';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import WarningIcon from '@mui/icons-material/Warning';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import HistoryIcon from '@mui/icons-material/History';
 
 import { useRBAC } from '../hooks/useRBAC';
 import {
@@ -53,26 +39,19 @@ import {
   LoadingState,
 } from './common/ErrorDisplay';
 import {
-  useNotifications,
   useCRUDNotifications,
+  NotificationError,
 } from './common/NotificationSystem';
 import { useAsyncOperation } from '../hooks/useErrorHandling';
-import { useResponsive, useResponsiveDialog } from '../hooks/useResponsive';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   ResponsiveContainer,
   ResponsiveHeader,
   ResponsiveCard,
-  ResponsiveGrid,
 } from './common/ResponsiveComponents';
-import ResponsiveTable, {
-  ResponsiveTableColumn,
-  ResponsiveTableAction,
-} from './common/ResponsiveTable';
 
 import {
   usePatientMedications,
-  useCurrentMedications,
-  usePastMedications,
   useCreateMedication,
   useUpdateMedication,
   useDeleteMedication,
@@ -81,12 +60,16 @@ import type {
   MedicationRecord,
   CreateMedicationData,
   UpdateMedicationData,
+  RBACPermissions,
 } from '../types/patientManagement';
 
 // Simple RBACGuard component for this file
-const RBACGuard: React.FC<{ action: string; children: React.ReactNode }> = ({ action, children }) => {
+const RBACGuard: React.FC<{ action: string; children: React.ReactNode }> = ({
+  action,
+  children,
+}) => {
   const { canAccess } = useRBAC();
-  return canAccess(action, 'medication') ? <>{children}</> : null;
+  return canAccess(action as keyof RBACPermissions) ? <>{children}</> : null;
 };
 
 interface MedicationManagementProps {
@@ -107,72 +90,21 @@ interface MedicationFormData {
   notes?: string;
 }
 
-const MEDICATION_ROUTES = [
-  'Oral',
-  'Topical',
-  'Intravenous (IV)',
-  'Intramuscular (IM)',
-  'Subcutaneous',
-  'Inhalation',
-  'Rectal',
-  'Sublingual',
-  'Nasal',
-  'Transdermal',
-];
-
-const COMMON_FREQUENCIES = [
-  'Once daily',
-  'Twice daily',
-  'Three times daily',
-  'Four times daily',
-  'Every 6 hours',
-  'Every 8 hours',
-  'Every 12 hours',
-  'As needed',
-  'Weekly',
-  'Monthly',
-];
-
-const COMMON_MEDICATIONS = [
-  'Paracetamol',
-  'Ibuprofen',
-  'Amoxicillin',
-  'Ciprofloxacin',
-  'Metronidazole',
-  'Chloroquine',
-  'Artemether-Lumefantrine (Coartem)',
-  'Artesunate-Amodiaquine',
-  'Lisinopril',
-  'Amlodipine',
-  'Metformin',
-  'Glibenclamide',
-  'Omeprazole',
-  'Ranitidine',
-  'Salbutamol',
-  'Prednisolone',
-  'Diclofenac',
-  'Tramadol',
-  'Vitamin B Complex',
-  'Folic Acid',
-  'Iron tablets',
-  'Multivitamins',
-];
-
 const MedicationManagement: React.FC<MedicationManagementProps> = ({
   patientId,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedMedication, setSelectedMedication] = useState<MedicationRecord | null>(null);
+  const [selectedMedication, setSelectedMedication] =
+    useState<MedicationRecord | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [phaseFilter, setPhaseFilter] = useState<'all' | 'current' | 'past'>('all');
+  const [phaseFilter, setPhaseFilter] = useState<'all' | 'current' | 'past'>(
+    'all'
+  );
 
   // Enhanced notifications, error handling and responsive design
-  const { showError, showSuccess } = useNotifications();
   const crudNotifications = useCRUDNotifications();
   const { executeOperation, isLoading } = useAsyncOperation();
-  const { isMobile, getSpacing } = useResponsive();
-  const dialogProps = useResponsiveDialog();
-  const { canAccess } = useRBAC();
+  const { isMobile } = useResponsive();
 
   // React Query hooks
   const {
@@ -181,13 +113,12 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
     isError: allError,
     error,
   } = usePatientMedications(patientId);
-  const { data: currentMedications } = useCurrentMedications(patientId);
-  const { data: pastMedications } = usePastMedications(patientId);
   const createMedicationMutation = useCreateMedication();
   const updateMedicationMutation = useUpdateMedication();
   const deleteMedicationMutation = useDeleteMedication();
 
-  const allMedications = allMedicationsResponse?.medications || allMedicationsResponse || [];
+  const allMedications =
+    allMedicationsResponse?.medications || allMedicationsResponse || [];
 
   // Form setup
   const {
@@ -195,7 +126,6 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
     handleSubmit,
     reset,
     formState: { errors },
-    watch,
   } = useForm<MedicationFormData>({
     defaultValues: {
       phase: 'current',
@@ -250,7 +180,9 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
         frequency: medication.frequency || '',
         route: medication.route || 'Oral',
         duration: medication.duration || '',
-        startDate: medication.startDate ? new Date(medication.startDate) : undefined,
+        startDate: medication.startDate
+          ? new Date(medication.startDate)
+          : undefined,
         endDate: medication.endDate ? new Date(medication.endDate) : undefined,
         adherence: medication.adherence || 'good',
         notes: medication.notes || '',
@@ -296,14 +228,16 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
     };
 
     const operation = selectedMedication
-      ? () => updateMedicationMutation.mutateAsync({
-          medicationId: selectedMedication._id,
-          medicationData: medicationData as UpdateMedicationData,
-        })
-      : () => createMedicationMutation.mutateAsync({
-          patientId,
-          medicationData: medicationData as CreateMedicationData,
-        });
+      ? () =>
+          updateMedicationMutation.mutateAsync({
+            medicationId: selectedMedication._id,
+            medicationData: medicationData as UpdateMedicationData,
+          })
+      : () =>
+          createMedicationMutation.mutateAsync({
+            patientId,
+            medicationData: medicationData as CreateMedicationData,
+          });
 
     await executeOperation(
       selectedMedication ? 'updateMedication' : 'createMedication',
@@ -319,7 +253,10 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
         },
         onError: (error) => {
           const operation = selectedMedication ? 'update' : 'create';
-          crudNotifications[`${operation}Failed`]('medication', error);
+          crudNotifications[`${operation}Failed`](
+            'medication',
+            error as NotificationError
+          );
         },
       }
     );
@@ -339,37 +276,18 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
             crudNotifications.deleted('medication');
           },
           onError: (error) => {
-            crudNotifications.deleteFailed('medication', error);
+            crudNotifications.deleteFailed(
+              'medication',
+              error as NotificationError
+            );
           },
         }
       );
     }
   };
 
-  const getAdherenceColor = (
-    adherence?: 'good' | 'poor' | 'unknown'
-  ): 'success' | 'error' | 'warning' => {
-    switch (adherence) {
-      case 'good':
-        return 'success';
-      case 'poor':
-        return 'error';
-      default:
-        return 'warning';
-    }
-  };
-
   const getPhaseColor = (phase: 'current' | 'past'): 'primary' | 'default' => {
     return phase === 'current' ? 'primary' : 'default';
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '—';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
   };
 
   return (
@@ -379,11 +297,7 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
           loading={allLoading}
           error={allError ? error : null}
           loadingComponent={
-            <LoadingSkeleton 
-              variant="table" 
-              count={5} 
-              animation="wave"
-            />
+            <LoadingSkeleton variant="table" count={5} animation="wave" />
           }
           errorComponent={
             <ErrorDisplay
@@ -400,7 +314,9 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
               subtitle="Start by adding the patient's current medications or medication history."
             >
               <Box sx={{ textAlign: 'center', py: 4 }}>
-                <MedicationIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                <MedicationIcon
+                  sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }}
+                />
                 <RBACGuard action="canCreate">
                   <Button
                     variant="contained"
@@ -418,17 +334,31 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
           {/* Header */}
           <ResponsiveHeader
             title="Medication Management"
-            subtitle={`${allMedications.length} medication${allMedications.length !== 1 ? 's' : ''} recorded`}
+            subtitle={`${allMedications.length} medication${
+              allMedications.length !== 1 ? 's' : ''
+            } recorded`}
             actions={
               <RBACGuard action="canCreate">
                 <Button
                   variant="contained"
-                  startIcon={isLoading('createMedication') ? <CircularProgress size={16} /> : <AddIcon />}
+                  startIcon={
+                    isLoading('createMedication') ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <AddIcon />
+                    )
+                  }
                   onClick={() => handleOpenDialog()}
-                  disabled={isLoading('createMedication') || isLoading('updateMedication') || isLoading('deleteMedication')}
+                  disabled={
+                    isLoading('createMedication') ||
+                    isLoading('updateMedication') ||
+                    isLoading('deleteMedication')
+                  }
                   fullWidth={isMobile}
                 >
-                  {isLoading('createMedication') ? 'Adding...' : 'Add Medication'}
+                  {isLoading('createMedication')
+                    ? 'Adding...'
+                    : 'Add Medication'}
                 </Button>
               </RBACGuard>
             }
@@ -448,14 +378,18 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     InputProps={{
-                      startAdornment: <SearchIcon sx={{ mr: 1, opacity: 0.5 }} />,
+                      startAdornment: (
+                        <SearchIcon sx={{ mr: 1, opacity: 0.5 }} />
+                      ),
                     }}
                     sx={{ mr: 2 }}
                   />
                   <ToggleButtonGroup
                     value={phaseFilter}
                     exclusive
-                    onChange={(_, newFilter) => newFilter && setPhaseFilter(newFilter)}
+                    onChange={(_, newFilter) =>
+                      newFilter && setPhaseFilter(newFilter)
+                    }
                     size="small"
                   >
                     <ToggleButton value="all">All</ToggleButton>
@@ -463,34 +397,61 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
                     <ToggleButton value="past">Past</ToggleButton>
                   </ToggleButtonGroup>
                 </Box>
-                
+
                 {filteredMedications.length === 0 ? (
-                  <Typography color="text.secondary">No medications found.</Typography>
+                  <Typography color="text.secondary">
+                    No medications found.
+                  </Typography>
                 ) : (
                   <Stack spacing={1}>
                     {filteredMedications.map((medication: MedicationRecord) => (
                       <Card key={medication._id} variant="outlined">
                         <CardContent sx={{ py: 1 }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
                             <Box>
-                              <Typography variant="subtitle2">{medication.medicationName}</Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {medication.dose} • {medication.frequency || 'As directed'}
+                              <Typography variant="subtitle2">
+                                {medication.medicationName}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {medication.dose} •{' '}
+                                {medication.frequency || 'As directed'}
                               </Typography>
                             </Box>
                             <Box sx={{ display: 'flex', gap: 1 }}>
                               <Chip
-                                label={medication.phase === 'current' ? 'Current' : 'Past'}
+                                label={
+                                  medication.phase === 'current'
+                                    ? 'Current'
+                                    : 'Past'
+                                }
                                 size="small"
                                 color={getPhaseColor(medication.phase)}
                               />
                               <RBACGuard action="canUpdate">
-                                <IconButton size="small" onClick={() => handleOpenDialog(medication)}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleOpenDialog(medication)}
+                                >
                                   <EditIcon />
                                 </IconButton>
                               </RBACGuard>
                               <RBACGuard action="canDelete">
-                                <IconButton size="small" color="error" onClick={() => handleDeleteMedication(medication._id)}>
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() =>
+                                    handleDeleteMedication(medication._id)
+                                  }
+                                >
                                   <DeleteIcon />
                                 </IconButton>
                               </RBACGuard>
@@ -517,11 +478,13 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <MedicationIcon color="primary" />
                 <Typography variant="h6">
-                  {selectedMedication ? 'Edit Medication' : 'Add New Medication'}
+                  {selectedMedication
+                    ? 'Edit Medication'
+                    : 'Add New Medication'}
                 </Typography>
               </Box>
             </DialogTitle>
-            
+
             <DialogContent>
               <form onSubmit={handleSubmit(handleSaveMedication)}>
                 <Stack spacing={3} sx={{ mt: 1 }}>
@@ -588,7 +551,9 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
               <Button
                 onClick={handleSubmit(handleSaveMedication)}
                 variant="contained"
-                disabled={isLoading('createMedication') || isLoading('updateMedication')}
+                disabled={
+                  isLoading('createMedication') || isLoading('updateMedication')
+                }
               >
                 {selectedMedication ? 'Update' : 'Add'}
               </Button>

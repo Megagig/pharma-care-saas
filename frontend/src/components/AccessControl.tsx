@@ -1,11 +1,13 @@
 import React from 'react';
-import useRBAC from '../hooks/useRBAC';
+import { useRBAC } from '../hooks/useRBAC';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import type { RBACPermissions } from '../types/patientManagement';
 
 // Component for conditional rendering based on permissions
 interface ConditionalRenderProps {
   children: React.ReactNode;
   requiredRole?: string | string[];
-  requiredPermission?: string;
+  requiredPermission?: keyof RBACPermissions;
   requiredFeature?: string;
   fallback?: React.ReactNode;
 }
@@ -17,19 +19,26 @@ export const ConditionalRender: React.FC<ConditionalRenderProps> = ({
   requiredFeature,
   fallback = null,
 }) => {
-  const { hasRole, hasPermission, hasFeature } = useRBAC();
+  const { role, canAccess } = useRBAC();
+  const { isFeatureEnabled } = useFeatureAccess();
 
   let hasAccess = true;
 
-  if (requiredRole && !hasRole(requiredRole)) {
+  // Check role requirement
+  if (requiredRole) {
+    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    if (!roles.includes(role)) {
+      hasAccess = false;
+    }
+  }
+
+  // Check permission requirement
+  if (requiredPermission && !canAccess(requiredPermission)) {
     hasAccess = false;
   }
 
-  if (requiredPermission && !hasPermission(requiredPermission)) {
-    hasAccess = false;
-  }
-
-  if (requiredFeature && !hasFeature(requiredFeature)) {
+  // Check feature requirement
+  if (requiredFeature && !isFeatureEnabled(requiredFeature)) {
     hasAccess = false;
   }
 

@@ -38,7 +38,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import FlagIcon from '@mui/icons-material/Flag';
 import RemoveIcon from '@mui/icons-material/Remove';
 
-import { useRBAC, RBACGuard } from '../hooks/useRBAC';
+import { RBACGuard } from '../hooks/useRBAC';
 
 import {
   usePatientCarePlans,
@@ -71,13 +71,6 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
   const [selectedCarePlan, setSelectedCarePlan] = useState<CarePlan | null>(
     null
   );
-
-  // RBAC permissions
-  const { canAccess } = useRBAC();
-
-  // Using canAccess for actual permission checks
-  const canCreateCarePlan = canAccess('canCreate');
-  const canUpdateCarePlan = canAccess('canUpdate');
 
   // React Query hooks
   const {

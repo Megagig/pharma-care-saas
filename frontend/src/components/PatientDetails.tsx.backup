@@ -16,6 +16,7 @@ import {
   Skeleton,
   Tooltip,
   Paper,
+  Grid,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
@@ -30,7 +31,6 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 
-import { useRBAC } from '../hooks/useRBAC';
 import { RBACGuard } from '../hooks/useRBAC';
 
 import { usePatient } from '../queries/usePatients';
@@ -77,10 +77,6 @@ const PatientDetails = () => {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
   const [currentTab, setCurrentTab] = useState(0);
-
-  // RBAC permissions
-  // RBAC hook for role-based access control
-  useRBAC();
 
   // React Query hooks
   const {
@@ -313,22 +309,24 @@ const PatientDetails = () => {
               </Stack>
             </Box>
 
-            <Stack spacing={1} alignItems="flex-end">
-              <Typography variant="body2" color="text.secondary">
-                Contact
-              </Typography>
-              <Typography variant="body2">
-                {formatNigerianPhone(patient.phone)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {patient.email || 'No email'}
-              </Typography>
-              <Typography variant="body2">
-                {patient.state && patient.lga
-                  ? `${patient.lga}, ${patient.state}`
-                  : patient.state || 'Unknown location'}
-              </Typography>
-            </Stack>
+            <Box>
+              <Stack spacing={1} alignItems="flex-end">
+                <Typography variant="body2" color="text.secondary">
+                  Contact
+                </Typography>
+                <Typography variant="body2">
+                  {formatNigerianPhone(patient.phone)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {patient.email || 'No email'}
+                </Typography>
+                <Typography variant="body2">
+                  {patient.state && patient.lga
+                    ? `${patient.lga}, ${patient.state}`
+                    : patient.state || 'Unknown location'}
+                </Typography>
+              </Stack>
+            </Box>
           </Box>
         </CardContent>
       </Card>
@@ -494,13 +492,7 @@ const PatientDetails = () => {
 // Overview Tab Component
 const PatientOverviewTab = ({ patient }: { patient: Patient }) => {
   return (
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-        gap: 3,
-      }}
-    >
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
       <Card variant="outlined">
         <CardContent>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
@@ -530,7 +522,10 @@ const PatientOverviewTab = ({ patient }: { patient: Patient }) => {
               <Typography variant="body2" color="text.secondary">
                 Gender
               </Typography>
-              <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>
+              <Typography
+                variant="body1"
+                sx={{ textTransform: 'capitalize' }}
+              >
                 {patient.gender || 'Not specified'}
               </Typography>
             </Box>
@@ -538,7 +533,10 @@ const PatientOverviewTab = ({ patient }: { patient: Patient }) => {
               <Typography variant="body2" color="text.secondary">
                 Marital Status
               </Typography>
-              <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>
+              <Typography
+                variant="body1"
+                sx={{ textTransform: 'capitalize' }}
+              >
                 {patient.maritalStatus || 'Not specified'}
               </Typography>
             </Box>
@@ -556,55 +554,54 @@ const PatientOverviewTab = ({ patient }: { patient: Patient }) => {
               <Typography variant="body2" color="text.secondary">
                 Blood Group
               </Typography>
-              <Typography variant="body1">
-                {patient.bloodGroup || 'Not determined'}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Genotype
-              </Typography>
-              <Typography variant="body1">
-                {patient.genotype || 'Not determined'}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Weight
-              </Typography>
-              <Typography variant="body1">
-                {patient.weightKg ? `${patient.weightKg} kg` : 'Not recorded'}
-              </Typography>
-            </Box>
-            {patient.latestVitals && (
+              <Typography variant="body1">{patient.bloodGroup || 'Not determined'}
               <Box>
                 <Typography variant="body2" color="text.secondary">
-                  Latest Vitals
+                  Genotype
                 </Typography>
                 <Typography variant="body1">
-                  BP: {patient.latestVitals.bpSys}/{patient.latestVitals.bpDia}{' '}
-                  mmHg
-                  {patient.latestVitals.tempC &&
-                    `, Temp: ${patient.latestVitals.tempC}°C`}
+                  {patient.genotype || 'Not determined'}
                 </Typography>
               </Box>
-            )}
-          </Stack>
-        </CardContent>
-      </Card>
+              <Box>
+                <Typography variant="body2" color="text.secondary">
+                  Weight
+                </Typography>
+                <Typography variant="body1">
+                  {patient.weightKg ? `${patient.weightKg} kg` : 'Not recorded'}
+                </Typography>
+              </Box>
+              {patient.latestVitals && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Latest Vitals
+                  </Typography>
+                  <Typography variant="body1">
+                    BP: {patient.latestVitals.bpSys}/
+                    {patient.latestVitals.bpDia} mmHg
+                    {patient.latestVitals.tempC &&
+                      `, Temp: ${patient.latestVitals.tempC}°C`}
+                  </Typography>
+                </Box>
+              )}
+              {patient.genotype && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Genotype
+                  </Typography>
+                  <Typography variant="body1">{patient.genotype}</Typography>
+                </Box>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
 
       <Card variant="outlined" sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
         <CardContent>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
             Contact & Location
           </Typography>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
-              gap: 2,
-            }}
-          >
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 2 }}>
             <Box>
               <Typography variant="body2" color="text.secondary">
                 Phone

@@ -7,7 +7,6 @@ import {
   CardContent,
   Button,
   Stack,
-  Alert,
   TextField,
   MenuItem,
   FormControl,
@@ -18,12 +17,9 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
-  Chip,
   CircularProgress,
   Divider,
   InputAdornment,
-  Tabs,
-  Tab,
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -32,26 +28,20 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 // Icons
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
-import CloseIcon from '@mui/icons-material/Close';
 import BiotechIcon from '@mui/icons-material/Biotech';
-import ThermostatIcon from '@mui/icons-material/Thermostat';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import SearchIcon from '@mui/icons-material/Search';
 
-import { useRBAC, RBACGuard } from '../hooks/useRBAC';
+import { RBACGuard } from '../hooks/useRBAC';
 import {
   ErrorDisplay,
   LoadingSkeleton,
   LoadingState,
 } from './common/ErrorDisplay';
-import {
-  useNotifications,
-  useCRUDNotifications,
-} from './common/NotificationSystem';
+import { useCRUDNotifications } from './common/NotificationSystem';
 import { useAsyncOperation } from '../hooks/useErrorHandling';
-import { useResponsive, useResponsiveDialog } from '../hooks/useResponsive';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   ResponsiveContainer,
   ResponsiveHeader,
@@ -108,17 +98,11 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
   const [selectedAssessment, setSelectedAssessment] =
     useState<ClinicalAssessment | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [tabValue, setTabValue] = useState(0);
 
   // Enhanced notifications, error handling and responsive design
-  const { showError, showSuccess } = useNotifications();
   const crudNotifications = useCRUDNotifications();
   const { executeOperation, isLoading } = useAsyncOperation();
   const { isMobile } = useResponsive();
-  const dialogProps = useResponsiveDialog();
-
-  // RBAC permissions
-  const { canAccess } = useRBAC();
 
   // React Query hooks
   const {
@@ -169,12 +153,12 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
         heartSounds: assessment.vitals?.heartSounds || '',
         pallor: assessment.vitals?.pallor || 'none',
         dehydration: assessment.vitals?.dehydration || 'none',
-        pcv: assessment.labResults?.pcv,
-        mcs: assessment.labResults?.mcs || '',
-        eucr: assessment.labResults?.eucr || '',
-        fbc: assessment.labResults?.fbc || '',
-        fbs: assessment.labResults?.fbs,
-        hba1c: assessment.labResults?.hba1c,
+        pcv: assessment.labs?.pcv,
+        mcs: assessment.labs?.mcs || '',
+        eucr: assessment.labs?.eucr || '',
+        fbc: assessment.labs?.fbc || '',
+        fbs: assessment.labs?.fbs,
+        hba1c: assessment.labs?.hba1c,
         recordedAt: new Date(assessment.recordedAt),
       });
     } else {
@@ -216,11 +200,11 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
         pallor: formData.pallor,
         dehydration: formData.dehydration,
       },
-      labResults: {
+      labs: {
         pcv: formData.pcv,
-        mcs: formData.mcs?.trim() || undefined,
-        eucr: formData.eucr?.trim() || undefined,
-        fbc: formData.fbc?.trim() || undefined,
+        mcs: formData.mcs || undefined,
+        eucr: formData.eucr || undefined,
+        fbc: formData.fbc || undefined,
         fbs: formData.fbs,
         hba1c: formData.hba1c,
       },
@@ -253,7 +237,10 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
         },
         onError: (error: unknown) => {
           const operation = selectedAssessment ? 'update' : 'create';
-          crudNotifications[`${operation}Failed`]('assessment', error as any);
+          crudNotifications[`${operation}Failed`](
+            'assessment',
+            error instanceof Error ? error : new Error('Unknown error')
+          );
         },
       }
     );
@@ -267,13 +254,6 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
-
-  const getBPStatus = (sys?: number, dia?: number) => {
-    if (!sys || !dia) return 'unknown';
-    if (sys < 120 && dia < 80) return 'normal';
-    if (sys < 140 && dia < 90) return 'elevated';
-    return 'high';
   };
 
   const getFilteredAssessments = () => {
@@ -463,19 +443,19 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                                 >
                                   Lab Results
                                 </Typography>
-                                {assessment.labResults?.pcv && (
+                                {assessment.labs?.pcv && (
                                   <Typography variant="body2">
-                                    PCV: {assessment.labResults.pcv}%
+                                    PCV: {assessment.labs.pcv}%
                                   </Typography>
                                 )}
-                                {assessment.labResults?.fbs && (
+                                {assessment.labs?.fbs && (
                                   <Typography variant="body2">
-                                    FBS: {assessment.labResults.fbs} mg/dL
+                                    FBS: {assessment.labs.fbs} mg/dL
                                   </Typography>
                                 )}
-                                {assessment.labResults?.hba1c && (
+                                {assessment.labs?.hba1c && (
                                   <Typography variant="body2">
-                                    HbA1c: {assessment.labResults.hba1c}%
+                                    HbA1c: {assessment.labs.hba1c}%
                                   </Typography>
                                 )}
                               </Box>
@@ -638,7 +618,7 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                             {...field}
                             label="Temperature"
                             type="number"
-                            step="0.1"
+                            inputProps={{ step: '0.1' }}
                             InputProps={{
                               endAdornment: (
                                 <InputAdornment position="end">
@@ -846,7 +826,7 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                             {...field}
                             label="HbA1c"
                             type="number"
-                            step="0.1"
+                            inputProps={{ step: '0.1' }}
                             InputProps={{
                               endAdornment: (
                                 <InputAdornment position="end">

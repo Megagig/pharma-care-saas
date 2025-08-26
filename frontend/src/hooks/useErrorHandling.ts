@@ -46,7 +46,10 @@ export const useErrorHandler = () => {
     if (!error) return 'unknown';
 
     // Network errors
-    if ((error as AppError).code === 'NETWORK_ERROR' || (error as AppError).message === 'Network Error') {
+    if (
+      (error as AppError).code === 'NETWORK_ERROR' ||
+      (error as AppError).message === 'Network Error'
+    ) {
       return 'network';
     }
 
@@ -80,6 +83,7 @@ export const useErrorHandler = () => {
     (key: string, error: ErrorInput) => {
       if (!error) {
         setErrors((prev) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [key]: _, ...rest } = prev;
           return rest;
         });
@@ -89,8 +93,14 @@ export const useErrorHandler = () => {
       const errorState: ErrorState = {
         error: error instanceof Error ? error : new Error(String(error)),
         message:
-          (error as AppError)?.response?.data?.message || (error as AppError)?.message || String(error),
-        code: (error as AppError)?.response?.data?.code || (error as AppError)?.code || null,
+          (error as AppError)?.response?.data?.message ||
+          (error as AppError)?.message ||
+          String(error),
+        code: String(
+          (error as AppError)?.response?.data?.code ||
+            (error as AppError)?.code ||
+            ''
+        ),
         type: classifyError(error),
         timestamp: new Date(),
       };
@@ -108,7 +118,8 @@ export const useErrorHandler = () => {
 
   const clearError = useCallback((key: string) => {
     setErrors((prev) => {
-      const { [key]: removed, ...rest } = prev;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [key]: _, ...rest } = prev;
       return rest;
     });
   }, []);
@@ -162,6 +173,7 @@ export const useLoadingState = () => {
 
   const clearLoadingState = useCallback((key: string) => {
     setLoading((prev) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { [key]: _, ...rest } = prev;
       return rest;
     });
@@ -289,6 +301,7 @@ export const useRetryLogic = () => {
         const result = await operation();
         // Success - reset retry count
         setRetryCount((prev) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [key]: _, ...rest } = prev;
           return rest;
         });
@@ -319,6 +332,7 @@ export const useRetryLogic = () => {
 
   const resetRetryCount = useCallback((key: string) => {
     setRetryCount((prev) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { [key]: _, ...rest } = prev;
       return rest;
     });
@@ -351,7 +365,7 @@ export const useDataFetch = <T>(
     retryOnError?: boolean;
     maxRetries?: number;
     onSuccess?: (data: T) => void;
-    onError?: (error: any) => void;
+    onError?: (error: unknown) => void;
   } = {}
 ) => {
   const [data, setData] = useState<T | null>(null);
@@ -387,7 +401,7 @@ export const useDataFetch = <T>(
         onSuccess: (data) => {
           setData(data);
           setIsInitialized(true);
-          if (onSuccess) onSuccess(data);
+          if (onSuccess && data !== null) onSuccess(data);
         },
         onError,
       });
@@ -442,7 +456,7 @@ export const useFormSubmission = <T, R = unknown>(
       data: T,
       options: {
         onSuccess?: (result: R) => void;
-        onError?: (error: any) => void;
+        onError?: (error: unknown) => void;
         validateBeforeSubmit?: (data: T) => string | null;
       } = {}
     ) => {

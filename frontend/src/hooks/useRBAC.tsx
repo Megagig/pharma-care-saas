@@ -10,6 +10,11 @@ interface UseRBACReturn {
   isPharmacist: boolean;
   isTechnician: boolean;
   isAdmin: boolean;
+  hasRole: (requiredRole: string | string[]) => boolean;
+  hasPermission: (permission: string) => boolean;
+  hasFeature: (feature: string) => boolean;
+  requiresLicense: () => boolean;
+  getLicenseStatus: () => string;
 }
 
 /**
@@ -75,6 +80,61 @@ export const useRBAC = (): UseRBACReturn => {
     return permissions[action];
   };
 
+  const hasRole = (requiredRole: string | string[]): boolean => {
+    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    return roles.includes(role);
+  };
+
+  const hasPermission = (permission: string): boolean => {
+    // Map permission strings to RBACPermissions keys
+    switch (permission) {
+      case 'create':
+        return permissions.canCreate;
+      case 'read':
+        return permissions.canRead;
+      case 'update':
+        return permissions.canUpdate;
+      case 'delete':
+        return permissions.canDelete;
+      case 'manage':
+        return permissions.canManage;
+      default:
+        return false;
+    }
+  };
+
+  const hasFeature = (feature: string): boolean => {
+    // Basic feature access based on role
+    // In a real implementation, this would check against feature flags/subscription
+    switch (feature) {
+      case 'advanced_analytics':
+        return role === 'owner' || role === 'admin';
+      case 'user_management':
+        return role === 'owner' || role === 'admin';
+      case 'pharmacy_management':
+        return role === 'owner' || role === 'admin' || role === 'pharmacist';
+      case 'patient_management':
+        return true; // All roles can access basic patient management
+      default:
+        return true; // Default to true for unknown features
+    }
+  };
+
+  const requiresLicense = (): boolean => {
+    // Only pharmacists require license verification
+    return role === 'pharmacist';
+  };
+
+  const getLicenseStatus = (): string => {
+    // In a real implementation, this would fetch from user data
+    // For now, return approved for non-pharmacist roles
+    if (role !== 'pharmacist') {
+      return 'approved';
+    }
+    // This would typically come from user.licenseStatus
+    return user?.licenseStatus || 'pending';
+  };
+
   return {
     permissions,
     canAccess,
@@ -83,6 +143,11 @@ export const useRBAC = (): UseRBACReturn => {
     isPharmacist: role === 'pharmacist',
     isTechnician: role === 'technician',
     isAdmin: role === 'admin',
+    hasRole,
+    hasPermission,
+    hasFeature,
+    requiresLicense,
+    getLicenseStatus,
   };
 };
 

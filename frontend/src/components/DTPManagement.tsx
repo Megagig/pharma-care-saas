@@ -42,7 +42,6 @@ import ErrorIcon from '@mui/icons-material/Error';
 import SearchIcon from '@mui/icons-material/Search';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 
-import { useRBAC } from '../hooks/useRBAC';
 import { RBACGuard } from '../hooks/useRBAC';
 
 import {
@@ -122,7 +121,7 @@ const DTPManagement: React.FC<DTPManagementProps> = ({ patientId }) => {
   >('all');
 
   // RBAC permissions
-  const {} = useRBAC();
+  // const {} = useRBAC(); // TODO: Add specific permissions when needed
 
   // React Query hooks
   const {

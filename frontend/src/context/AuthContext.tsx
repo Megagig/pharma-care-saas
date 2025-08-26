@@ -29,6 +29,7 @@ interface User {
   currentPlan: SubscriptionPlan;
   pharmacyId?: string;
   lastLoginAt?: Date;
+  licenseStatus?: 'pending' | 'approved' | 'rejected';
   subscription?: {
     status: 'active' | 'canceled' | 'expired' | 'pending';
     expiresAt: string;

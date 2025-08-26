@@ -1,9 +1,7 @@
 import React from 'react';
 import { Fab, Tooltip, useTheme } from '@mui/material';
-import {
-  Menu as MenuIcon,
-  MenuOpen as MenuOpenIcon,
-} from '@mui/icons-material';
+import MenuIcon from '@mui/icons-material/Menu';
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import { useUIStore } from '../stores';
 
 const FloatingToggle: React.FC = () => {
