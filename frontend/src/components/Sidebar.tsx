@@ -37,7 +37,7 @@ const AdminIcon = AdminPanelSettings;
 const LicenseIcon = Assignment;
 const SubscriptionIcon = SubscriptionsTwoTone;
 import { useUIStore } from '../stores';
-import useRBAC from '../hooks/useRBAC';
+import { useRBAC } from '../hooks/useRBAC';
 import { ConditionalRender } from './AccessControl';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
 

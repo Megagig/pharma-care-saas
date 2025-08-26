@@ -38,7 +38,6 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import SearchIcon from '@mui/icons-material/Search';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 
-import { useRBAC } from '../hooks/useRBAC';
 import { RBACGuard } from '../hooks/useRBAC';
 import NoteIcon from '@mui/icons-material/Note';
 
@@ -71,9 +70,6 @@ const VisitManagement: React.FC<VisitManagementProps> = ({ patientId }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-
-  // RBAC permissions
-  const {} = useRBAC();
   const [tabValue, setTabValue] = useState(0);
   const [attachments, setAttachments] = useState<VisitAttachment[]>([]);
 
@@ -390,9 +386,15 @@ const VisitManagement: React.FC<VisitManagementProps> = ({ patientId }) => {
                     </Stack>
                   </Box>
 
-                  <GridContainer spacing={2}>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                      gap: 2,
+                    }}
+                  >
                     {visit.soap.subjective && (
-                      <GridItem xs={12} md={6}>
+                      <Box>
                         <Typography
                           variant="subtitle2"
                           color="primary"
@@ -411,11 +413,11 @@ const VisitManagement: React.FC<VisitManagementProps> = ({ patientId }) => {
                         >
                           {visit.soap.subjective}
                         </Typography>
-                      </GridItem>
+                      </Box>
                     )}
 
                     {visit.soap.objective && (
-                      <GridItem xs={12} md={6}>
+                      <Box>
                         <Typography
                           variant="subtitle2"
                           color="primary"
@@ -434,11 +436,11 @@ const VisitManagement: React.FC<VisitManagementProps> = ({ patientId }) => {
                         >
                           {visit.soap.objective}
                         </Typography>
-                      </GridItem>
+                      </Box>
                     )}
 
                     {visit.soap.assessment && (
-                      <GridItem xs={12} md={6}>
+                      <Box>
                         <Typography
                           variant="subtitle2"
                           color="primary"
@@ -457,11 +459,11 @@ const VisitManagement: React.FC<VisitManagementProps> = ({ patientId }) => {
                         >
                           {visit.soap.assessment}
                         </Typography>
-                      </GridItem>
+                      </Box>
                     )}
 
                     {visit.soap.plan && (
-                      <GridItem xs={12} md={6}>
+                      <Box>
                         <Typography
                           variant="subtitle2"
                           color="primary"
@@ -480,9 +482,9 @@ const VisitManagement: React.FC<VisitManagementProps> = ({ patientId }) => {
                         >
                           {visit.soap.plan}
                         </Typography>
-                      </GridItem>
+                      </Box>
                     )}
-                  </GridContainer>
+                  </Box>
                 </CardContent>
               </Card>
             ))}

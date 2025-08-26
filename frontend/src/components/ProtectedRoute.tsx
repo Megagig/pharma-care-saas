@@ -5,7 +5,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import WarningIcon from '@mui/icons-material/Warning';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { useAuth } from '../hooks/useAuth';
-import useRBAC from '../hooks/useRBAC';
+import { useRBAC } from '../hooks/useRBAC';
 import LoadingSpinner from './LoadingSpinner';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
 
