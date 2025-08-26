@@ -133,7 +133,7 @@ const DTPManagement: React.FC<DTPManagementProps> = ({ patientId }) => {
   const createDTPMutation = useCreateDTP();
   const updateDTPMutation = useUpdateDTP();
 
-  const dtps = dtpsResponse?.dtps || dtpsResponse || [];
+  const dtps = dtpsResponse?.data?.results || [];
 
   // Form setup
   const {

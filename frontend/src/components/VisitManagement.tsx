@@ -83,7 +83,7 @@ const VisitManagement: React.FC<VisitManagementProps> = ({ patientId }) => {
   const createVisitMutation = useCreateVisit();
   const updateVisitMutation = useUpdateVisit();
 
-  const visits = visitsResponse?.visits || visitsResponse || [];
+  const visits = visitsResponse?.data?.results || [];
 
   // Form setup
   const {
