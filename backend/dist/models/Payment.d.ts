@@ -5,7 +5,7 @@ export interface IPayment extends Document {
     subscription?: mongoose.Types.ObjectId;
     amount: number;
     currency: string;
-    paymentMethod: 'credit_card' | 'debit_card' | 'paypal' | 'bank_transfer' | 'nomba';
+    paymentMethod: 'credit_card' | 'debit_card' | 'paypal' | 'bank_transfer' | 'nomba' | 'paystack';
     status: 'pending' | 'completed' | 'failed' | 'refunded';
     paymentReference?: string;
     stripePaymentIntentId?: string;

@@ -14,8 +14,14 @@ import errorHandler from './middlewares/errorHandler';
 import authRoutes from './routes/authRoutes';
 import subscriptionRoutes from './routes/subscriptionRoutes';
 import patientRoutes from './routes/patientRoutes';
-import noteRoutes from './routes/noteRoutes';
+import allergyRoutes from './routes/allergyRoutes';
+import conditionRoutes from './routes/conditionRoutes';
 import medicationRoutes from './routes/medicationRoutes';
+import assessmentRoutes from './routes/assessmentRoutes';
+import dtpRoutes from './routes/dtpRoutes';
+import carePlanRoutes from './routes/carePlanRoutes';
+import visitRoutes from './routes/visitRoutes';
+import noteRoutes from './routes/noteRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import adminRoutes from './routes/admin';
 import licenseRoutes from './routes/license';
@@ -76,9 +82,28 @@ app.use('/api/health/feature-flags', healthRoutes);
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+
+// Patient Management routes
 app.use('/api/patients', patientRoutes);
+app.use('/api/patients', allergyRoutes);
+app.use('/api/patients', conditionRoutes);
+app.use('/api/patients', medicationRoutes);
+app.use('/api/patients', assessmentRoutes);
+app.use('/api/patients', dtpRoutes);
+app.use('/api/patients', carePlanRoutes);
+app.use('/api/patients', visitRoutes);
+
+// Individual resource routes
+app.use('/api', allergyRoutes);
+app.use('/api', conditionRoutes);
+app.use('/api', medicationRoutes);
+app.use('/api', assessmentRoutes);
+app.use('/api', dtpRoutes);
+app.use('/api', carePlanRoutes);
+app.use('/api', visitRoutes);
+
+// Other routes
 app.use('/api/notes', noteRoutes);
-app.use('/api/medications', medicationRoutes);
 app.use('/api/payments', paymentRoutes);
 
 // RBAC and enhanced features
