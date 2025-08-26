@@ -62,7 +62,7 @@ export const getPatients = asyncHandler(
 
     // Tenant filtering (automatic via tenancy guard, but explicit for admin cross-tenant)
     if (!context.isAdmin) {
-      query.pharmacyId = context.pharmacyId;
+      query.workplaceId = context.workplaceId;
     }
 
     // Search functionality
@@ -131,8 +131,8 @@ export const getPatient = asyncHandler(
 
     ensureResourceExists(patient, 'Patient', id);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -175,17 +175,17 @@ export const createPatient = asyncHandler(
 
     try {
       // Generate MRN
-      const pharmacyCode = 'GEN'; // TODO: Get from pharmacy settings
+      const workplaceCode = 'GEN'; // TODO: Get from workplace settings
       const patientCount = await Patient.countDocuments({
-        pharmacyId: context.pharmacyId,
+        workplaceId: context.workplaceId,
       });
-      const mrn = generateMRN(pharmacyCode, patientCount + 1);
+      const mrn = generateMRN(workplaceCode, patientCount + 1);
 
       // Create patient
       const patient = new Patient({
         ...patientData,
         mrn,
-        pharmacyId: context.pharmacyId,
+        workplaceId: context.workplaceId,
         createdBy: context.userId,
         isDeleted: false,
       });
@@ -200,7 +200,7 @@ export const createPatient = asyncHandler(
         const allergyDocs = allergies.map((allergy: any) => ({
           ...allergy,
           patientId: patient._id,
-          pharmacyId: context.pharmacyId,
+          workplaceId: context.workplaceId,
           createdBy: context.userId,
         }));
         relatedData.allergies = await Allergy.insertMany(allergyDocs, {
@@ -213,7 +213,7 @@ export const createPatient = asyncHandler(
         const conditionDocs = conditions.map((condition: any) => ({
           ...condition,
           patientId: patient._id,
-          pharmacyId: context.pharmacyId,
+          workplaceId: context.workplaceId,
           createdBy: context.userId,
         }));
         relatedData.conditions = await Condition.insertMany(conditionDocs, {
@@ -226,7 +226,7 @@ export const createPatient = asyncHandler(
         const medicationDocs = medications.map((medication: any) => ({
           ...medication,
           patientId: patient._id,
-          pharmacyId: context.pharmacyId,
+          workplaceId: context.workplaceId,
           createdBy: context.userId,
         }));
         relatedData.medications = await MedicationRecord.insertMany(
@@ -240,7 +240,7 @@ export const createPatient = asyncHandler(
         const assessmentDoc = new ClinicalAssessment({
           ...assessment,
           patientId: patient._id,
-          pharmacyId: context.pharmacyId,
+          workplaceId: context.workplaceId,
           createdBy: context.userId,
         });
         await assessmentDoc.save({ session });
@@ -261,7 +261,7 @@ export const createPatient = asyncHandler(
         const dtpDocs = dtps.map((dtp: any) => ({
           ...dtp,
           patientId: patient._id,
-          pharmacyId: context.pharmacyId,
+          workplaceId: context.workplaceId,
           createdBy: context.userId,
         }));
         const createdDTPs = await DrugTherapyProblem.insertMany(dtpDocs, {
@@ -284,7 +284,7 @@ export const createPatient = asyncHandler(
         const carePlanDoc = new CarePlan({
           ...carePlan,
           patientId: patient._id,
-          pharmacyId: context.pharmacyId,
+          workplaceId: context.workplaceId,
           createdBy: context.userId,
         });
         await carePlanDoc.save({ session });
@@ -337,8 +337,8 @@ export const updatePatient = asyncHandler(
     const patient = await Patient.findById(id);
     ensureResourceExists(patient, 'Patient', id);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -383,8 +383,8 @@ export const deletePatient = asyncHandler(
     const patient = await Patient.findById(id);
     ensureResourceExists(patient, 'Patient', id);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -435,7 +435,7 @@ export const searchPatients = asyncHandler(
 
     // Tenant filtering
     if (!context.isAdmin) {
-      query.pharmacyId = context.pharmacyId;
+      query.workplaceId = context.workplaceId;
     }
 
     const patients = await Patient.find(query)
@@ -483,8 +483,8 @@ export const getPatientSummary = asyncHandler(
     const patient = await Patient.findById(id);
     ensureResourceExists(patient, 'Patient', id);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 

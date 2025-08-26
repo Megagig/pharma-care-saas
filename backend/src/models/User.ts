@@ -24,7 +24,14 @@ export interface IUser extends Document {
   verificationToken?: string;
   verificationCode?: string;
   resetToken?: string;
-  pharmacyId?: mongoose.Types.ObjectId;
+  workplaceId?: mongoose.Types.ObjectId; // Changed from pharmacyId
+  workplaceRole?:
+    | 'Owner'
+    | 'Staff'
+    | 'Pharmacist'
+    | 'Cashier'
+    | 'Technician'
+    | 'Assistant'; // Role within workplace
   currentPlanId: mongoose.Types.ObjectId;
   planOverride?: Record<string, any>;
   currentSubscriptionId?: mongoose.Types.ObjectId;
@@ -145,9 +152,22 @@ const userSchema = new Schema(
       type: String,
       index: { expires: '1h' },
     },
-    pharmacyId: {
+    workplaceId: {
+      // Changed from pharmacyId
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Pharmacy',
+      ref: 'Workplace',
+      index: true,
+    },
+    workplaceRole: {
+      type: String,
+      enum: [
+        'Owner',
+        'Staff',
+        'Pharmacist',
+        'Cashier',
+        'Technician',
+        'Assistant',
+      ],
       index: true,
     },
     currentPlanId: {

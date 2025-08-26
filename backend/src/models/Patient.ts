@@ -22,8 +22,8 @@ export interface IPatientVitals {
 
 export interface IPatient extends Document {
   _id: mongoose.Types.ObjectId;
-  pharmacyId: mongoose.Types.ObjectId; // ref Pharmacy, indexed
-  mrn: string; // generated patient code, unique per pharmacy
+  workplaceId: mongoose.Types.ObjectId; // ref Workplace, indexed (changed from pharmacyId)
+  mrn: string; // generated patient code, unique per workplace
 
   // Demography
   firstName: string;
@@ -61,9 +61,9 @@ export interface IPatient extends Document {
 
 const patientSchema = new Schema(
   {
-    pharmacyId: {
+    workplaceId: {
       type: Schema.Types.ObjectId,
-      ref: 'Pharmacy',
+      ref: 'Workplace',
       required: true,
       index: true,
     },
@@ -228,11 +228,11 @@ addAuditFields(patientSchema);
 patientSchema.plugin(tenancyGuardPlugin);
 
 // Compound indexes for tenancy and uniqueness
-patientSchema.index({ pharmacyId: 1, mrn: 1 }, { unique: true });
-patientSchema.index({ pharmacyId: 1, lastName: 1, firstName: 1 });
-patientSchema.index({ pharmacyId: 1, isDeleted: 1 });
-patientSchema.index({ pharmacyId: 1, phone: 1 }, { sparse: true });
-patientSchema.index({ pharmacyId: 1, email: 1 }, { sparse: true });
+patientSchema.index({ workplaceId: 1, mrn: 1 }, { unique: true });
+patientSchema.index({ workplaceId: 1, lastName: 1, firstName: 1 });
+patientSchema.index({ workplaceId: 1, isDeleted: 1 });
+patientSchema.index({ workplaceId: 1, phone: 1 }, { sparse: true });
+patientSchema.index({ workplaceId: 1, email: 1 }, { sparse: true });
 patientSchema.index({ hasActiveDTP: 1 });
 patientSchema.index({ createdAt: -1 });
 
@@ -302,11 +302,11 @@ patientSchema.pre('save', function (this: IPatient) {
 
 // Static method to generate next MRN
 patientSchema.statics.generateNextMRN = async function (
-  pharmacyId: mongoose.Types.ObjectId,
-  pharmacyCode: string
+  workplaceId: mongoose.Types.ObjectId,
+  workplaceCode: string
 ): Promise<string> {
   const lastPatient = await this.findOne(
-    { pharmacyId },
+    { workplaceId },
     {},
     { sort: { createdAt: -1 }, bypassTenancyGuard: true }
   );
@@ -319,7 +319,7 @@ patientSchema.statics.generateNextMRN = async function (
     }
   }
 
-  return `PHM-${pharmacyCode}-${sequence.toString().padStart(5, '0')}`;
+  return `${workplaceCode}-${sequence.toString().padStart(4, '0')}`;
 };
 
 export default mongoose.model<IPatient>('Patient', patientSchema);
