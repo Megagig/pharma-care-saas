@@ -82,7 +82,7 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
   const createCarePlanMutation = useCreateCarePlan();
   const updateCarePlanMutation = useUpdateCarePlan();
 
-  const carePlans = carePlansResponse?.carePlans || carePlansResponse || [];
+  const carePlans = carePlansResponse?.data?.results || [];
   const latestCarePlan = carePlans[0]; // Assuming sorted by date desc
 
   // Form setup

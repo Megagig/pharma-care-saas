@@ -194,9 +194,9 @@ class PatientService {
    */
   async getCriticalAllergies(
     patientId: string
-  ): Promise<ApiResponse<{ allergies: Allergy[]; summary: any }>> {
+  ): Promise<ApiResponse<{ allergies: Allergy[]; summary: unknown }>> {
     return this.makeRequest<
-      ApiResponse<{ allergies: Allergy[]; summary: any }>
+      ApiResponse<{ allergies: Allergy[]; summary: unknown }>
     >(`/patients/${patientId}/allergies/critical`);
   }
 
@@ -247,8 +247,8 @@ class PatientService {
   async searchAllergies(
     substance: string,
     limit = 10
-  ): Promise<ApiResponse<{ results: any[] }>> {
-    return this.makeRequest<ApiResponse<{ results: any[] }>>(
+  ): Promise<ApiResponse<{ results: unknown[] }>> {
+    return this.makeRequest<ApiResponse<{ results: unknown[] }>>(
       `/allergies/search?substance=${encodeURIComponent(
         substance
       )}&limit=${limit}`

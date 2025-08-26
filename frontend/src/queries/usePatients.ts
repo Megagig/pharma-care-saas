@@ -3,39 +3,27 @@ import { patientService } from '../services/patientService';
 import { queryKeys } from '../lib/queryClient';
 import { useUIStore } from '../stores';
 import type {
-  Patient,
-  Allergy,
-  Condition,
-  MedicationRecord,
-  ClinicalAssessment,
-  DrugTherapyProblem,
-  CarePlan,
-  Visit,
-  PatientSummary,
-  PatientSearchParams,
-  AllergySearchParams,
-  MedicationSearchParams,
-  DTPSearchParams,
   CreatePatientData,
   UpdatePatientData,
+  PatientSearchParams,
+  AllergySearchParams,
   CreateAllergyData,
   UpdateAllergyData,
   CreateConditionData,
   UpdateConditionData,
   CreateMedicationData,
   UpdateMedicationData,
-  CreateAssessmentData,
-  UpdateAssessmentData,
-  CreateDTPData,
-  UpdateDTPData,
-  CreateCarePlanData,
-  UpdateCarePlanData,
-  CreateVisitData,
-  UpdateVisitData,
 } from '../types/patientManagement';
 
+// Error type for API calls
+type ApiError =
+  | {
+      message?: string;
+    }
+  | Error;
+
 // Hook to fetch all patients with optional filters
-export const usePatients = (filters: Record<string, any> = {}) => {
+export const usePatients = (filters: PatientSearchParams = {}) => {
   return useQuery({
     queryKey: queryKeys.patients.list(filters),
     queryFn: () => patientService.getPatients(filters),
@@ -47,7 +35,7 @@ export const usePatients = (filters: Record<string, any> = {}) => {
 export const usePatient = (patientId: string) => {
   return useQuery({
     queryKey: queryKeys.patients.detail(patientId),
-    queryFn: () => patientService.getPatientById(patientId),
+    queryFn: () => patientService.getPatient(patientId),
     enabled: !!patientId, // Only run query if patientId exists
     select: (data) => data.data || data,
   });
@@ -69,20 +57,24 @@ export const useCreatePatient = () => {
   const addNotification = useUIStore((state) => state.addNotification);
 
   return useMutation({
-    mutationFn: patientService.createPatient,
+    mutationFn: (patientData: CreatePatientData) =>
+      patientService.createPatient(patientData),
     onSuccess: (data) => {
       // Invalidate and refetch patients list
       queryClient.invalidateQueries({ queryKey: queryKeys.patients.lists() });
 
       // Show success notification
+      const patient = data.data?.patient;
       addNotification({
         type: 'success',
         title: 'Patient Created',
-        message: `Patient ${data.firstName} ${data.lastName} has been successfully created.`,
+        message: `Patient ${patient?.firstName || ''} ${
+          patient?.lastName || ''
+        } has been successfully created.`,
         duration: 5000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       // Show error notification
       addNotification({
         type: 'error',
@@ -105,7 +97,7 @@ export const useUpdatePatient = () => {
       patientData,
     }: {
       patientId: string;
-      patientData: any;
+      patientData: UpdatePatientData;
     }) => patientService.updatePatient(patientId, patientData),
     onSuccess: (data, variables) => {
       // Update the specific patient in cache
@@ -125,7 +117,7 @@ export const useUpdatePatient = () => {
         duration: 5000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       // Show error notification
       addNotification({
         type: 'error',
@@ -143,8 +135,8 @@ export const useDeletePatient = () => {
   const addNotification = useUIStore((state) => state.addNotification);
 
   return useMutation({
-    mutationFn: patientService.deletePatient,
-    onSuccess: (data, patientId) => {
+    mutationFn: (patientId: string) => patientService.deletePatient(patientId),
+    onSuccess: (_, patientId) => {
       // Remove patient from cache
       queryClient.removeQueries({
         queryKey: queryKeys.patients.detail(patientId),
@@ -161,7 +153,7 @@ export const useDeletePatient = () => {
         duration: 5000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       // Show error notification
       addNotification({
         type: 'error',
@@ -177,17 +169,7 @@ export const useDeletePatient = () => {
 export const usePatientMedications = (patientId: string) => {
   return useQuery({
     queryKey: queryKeys.medications.byPatient(patientId),
-    queryFn: () => patientService.getPatientMedications(patientId),
-    enabled: !!patientId,
-    select: (data) => data.data || data,
-  });
-};
-
-// Hook to fetch patient clinical notes
-export const usePatientNotes = (patientId: string) => {
-  return useQuery({
-    queryKey: queryKeys.clinicalNotes.byPatient(patientId),
-    queryFn: () => patientService.getPatientNotes(patientId),
+    queryFn: () => patientService.getMedications(patientId),
     enabled: !!patientId,
     select: (data) => data.data || data,
   });
@@ -203,20 +185,13 @@ export const usePatientAllergies = (
 ) => {
   return useQuery({
     queryKey: queryKeys.allergies.byPatient(patientId),
-    queryFn: () => patientService.getPatientAllergies(patientId, params),
+    queryFn: () => patientService.getAllergies(patientId, params),
     enabled: !!patientId,
     select: (data) => data.data || data,
   });
 };
 
-export const useAllergy = (allergyId: string) => {
-  return useQuery({
-    queryKey: queryKeys.allergies.detail(allergyId),
-    queryFn: () => patientService.getAllergyById(allergyId),
-    enabled: !!allergyId,
-    select: (data) => data.data || data,
-  });
-};
+// Remove individual allergy hook since there's no such service method
 
 export const useCreateAllergy = () => {
   const queryClient = useQueryClient();
@@ -230,7 +205,7 @@ export const useCreateAllergy = () => {
       patientId: string;
       allergyData: CreateAllergyData;
     }) => patientService.createAllergy(patientId, allergyData),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.allergies.byPatient(variables.patientId),
       });
@@ -245,7 +220,7 @@ export const useCreateAllergy = () => {
         duration: 4000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       addNotification({
         type: 'error',
         title: 'Failed to Add Allergy',
@@ -282,7 +257,7 @@ export const useUpdateAllergy = () => {
         duration: 4000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       addNotification({
         type: 'error',
         title: 'Update Failed',
@@ -298,8 +273,8 @@ export const useDeleteAllergy = () => {
   const addNotification = useUIStore((state) => state.addNotification);
 
   return useMutation({
-    mutationFn: patientService.deleteAllergy,
-    onSuccess: (data, allergyId) => {
+    mutationFn: (allergyId: string) => patientService.deleteAllergy(allergyId),
+    onSuccess: (_, allergyId) => {
       queryClient.removeQueries({
         queryKey: queryKeys.allergies.detail(allergyId),
       });
@@ -312,7 +287,7 @@ export const useDeleteAllergy = () => {
         duration: 4000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       addNotification({
         type: 'error',
         title: 'Deletion Failed',
@@ -330,20 +305,13 @@ export const useDeleteAllergy = () => {
 export const usePatientConditions = (patientId: string) => {
   return useQuery({
     queryKey: queryKeys.conditions.byPatient(patientId),
-    queryFn: () => patientService.getPatientConditions(patientId),
+    queryFn: () => patientService.getConditions(patientId),
     enabled: !!patientId,
     select: (data) => data.data || data,
   });
 };
 
-export const useCondition = (conditionId: string) => {
-  return useQuery({
-    queryKey: queryKeys.conditions.detail(conditionId),
-    queryFn: () => patientService.getConditionById(conditionId),
-    enabled: !!conditionId,
-    select: (data) => data.data || data,
-  });
-};
+// Remove individual condition hook since there's no such service method
 
 export const useCreateCondition = () => {
   const queryClient = useQueryClient();
@@ -357,7 +325,7 @@ export const useCreateCondition = () => {
       patientId: string;
       conditionData: CreateConditionData;
     }) => patientService.createCondition(patientId, conditionData),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.conditions.byPatient(variables.patientId),
       });
@@ -372,7 +340,7 @@ export const useCreateCondition = () => {
         duration: 4000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       addNotification({
         type: 'error',
         title: 'Failed to Add Condition',
@@ -409,7 +377,7 @@ export const useUpdateCondition = () => {
         duration: 4000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       addNotification({
         type: 'error',
         title: 'Update Failed',
@@ -425,8 +393,9 @@ export const useDeleteCondition = () => {
   const addNotification = useUIStore((state) => state.addNotification);
 
   return useMutation({
-    mutationFn: patientService.deleteCondition,
-    onSuccess: (data, conditionId) => {
+    mutationFn: (conditionId: string) =>
+      patientService.deleteCondition(conditionId),
+    onSuccess: (_, conditionId) => {
       queryClient.removeQueries({
         queryKey: queryKeys.conditions.detail(conditionId),
       });
@@ -439,7 +408,7 @@ export const useDeleteCondition = () => {
         duration: 4000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       addNotification({
         type: 'error',
         title: 'Deletion Failed',
@@ -458,7 +427,7 @@ export const useCurrentMedications = (patientId: string) => {
   return useQuery({
     queryKey: queryKeys.medications.current(patientId),
     queryFn: () =>
-      patientService.getPatientMedications(patientId, { phase: 'current' }),
+      patientService.getMedications(patientId, { phase: 'current' }),
     enabled: !!patientId,
     select: (data) => data.data || data,
   });
@@ -467,21 +436,13 @@ export const useCurrentMedications = (patientId: string) => {
 export const usePastMedications = (patientId: string) => {
   return useQuery({
     queryKey: queryKeys.medications.past(patientId),
-    queryFn: () =>
-      patientService.getPatientMedications(patientId, { phase: 'past' }),
+    queryFn: () => patientService.getMedications(patientId, { phase: 'past' }),
     enabled: !!patientId,
     select: (data) => data.data || data,
   });
 };
 
-export const useMedication = (medicationId: string) => {
-  return useQuery({
-    queryKey: queryKeys.medications.detail(medicationId),
-    queryFn: () => patientService.getMedicationById(medicationId),
-    enabled: !!medicationId,
-    select: (data) => data.data || data,
-  });
-};
+// Remove individual medication hook since there's no such service method
 
 export const useCreateMedication = () => {
   const queryClient = useQueryClient();
@@ -495,7 +456,7 @@ export const useCreateMedication = () => {
       patientId: string;
       medicationData: CreateMedicationData;
     }) => patientService.createMedication(patientId, medicationData),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.medications.byPatient(variables.patientId),
       });
@@ -510,7 +471,7 @@ export const useCreateMedication = () => {
         duration: 4000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       addNotification({
         type: 'error',
         title: 'Failed to Add Medication',
@@ -549,7 +510,7 @@ export const useUpdateMedication = () => {
         duration: 4000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       addNotification({
         type: 'error',
         title: 'Update Failed',
@@ -565,8 +526,9 @@ export const useDeleteMedication = () => {
   const addNotification = useUIStore((state) => state.addNotification);
 
   return useMutation({
-    mutationFn: patientService.deleteMedication,
-    onSuccess: (data, medicationId) => {
+    mutationFn: (medicationId: string) =>
+      patientService.deleteMedication(medicationId),
+    onSuccess: (_, medicationId) => {
       queryClient.removeQueries({
         queryKey: queryKeys.medications.detail(medicationId),
       });
@@ -581,7 +543,7 @@ export const useDeleteMedication = () => {
         duration: 4000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       addNotification({
         type: 'error',
         title: 'Deletion Failed',

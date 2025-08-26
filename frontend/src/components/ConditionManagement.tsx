@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { extractResults } from '../utils/apiHelpers';
 import {
   Box,
   Typography,
@@ -146,7 +147,7 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
   const updateConditionMutation = useUpdateCondition();
   const deleteConditionMutation = useDeleteCondition();
 
-  const conditions = conditionsResponse?.conditions || conditionsResponse || [];
+  const conditions = extractResults(conditionsResponse);
 
   // Form setup
   const {

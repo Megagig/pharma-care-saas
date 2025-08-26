@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { extractResults } from '../utils/apiHelpers';
 import {
   Box,
   Typography,
@@ -118,7 +119,7 @@ const AllergyManagement: React.FC<AllergyManagementProps> = ({ patientId }) => {
   const updateAllergyMutation = useUpdateAllergy();
   const deleteAllergyMutation = useDeleteAllergy();
 
-  const allergies = allergiesResponse?.allergies || allergiesResponse || [];
+  const allergies = extractResults(allergiesResponse);
 
   // Form setup
   const {

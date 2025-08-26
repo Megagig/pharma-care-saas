@@ -5,7 +5,7 @@ import {
   Route,
   Navigate,
 } from 'react-router-dom';
-import { ThemeProvider, CssBaseline, Box } from '@mui/material';
+import { ThemeProvider, CssBaseline, Box, Toolbar } from '@mui/material';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'react-hot-toast';
@@ -38,6 +38,10 @@ import SaasSettings from './pages/SaasSettings';
 import FeatureFlagsPage from './pages/FeatureFlags';
 import Settings from './pages/Settings';
 import Help from './pages/Help';
+
+// Patient Management Components
+import PatientForm from './components/PatientForm';
+import PatientManagement from './components/PatientManagement';
 
 // RBAC and Enhanced Components
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -119,6 +123,43 @@ function App(): JSX.Element {
                         >
                           <AppLayout>
                             <Patients />
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/patients/new"
+                      element={
+                        <ProtectedRoute
+                          requiredFeature="patient_management"
+                          requiresActiveSubscription
+                        >
+                          <AppLayout>
+                            <PatientForm />
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/patients/:patientId"
+                      element={
+                        <ProtectedRoute
+                          requiredFeature="patient_management"
+                          requiresActiveSubscription
+                        >
+                          <PatientManagement />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/patients/:patientId/edit"
+                      element={
+                        <ProtectedRoute
+                          requiredFeature="patient_management"
+                          requiresActiveSubscription
+                        >
+                          <AppLayout>
+                            <PatientForm />
                           </AppLayout>
                         </ProtectedRoute>
                       }
@@ -316,6 +357,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
+      <Toolbar /> {/* This creates space for the fixed AppBar */}
       <Box sx={{ display: 'flex', flex: 1 }}>
         <ErrorBoundary>
           <Sidebar />

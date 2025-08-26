@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { extractResults } from '../utils/apiHelpers';
 import {
   Box,
   Button,
@@ -117,8 +118,7 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
   const updateMedicationMutation = useUpdateMedication();
   const deleteMedicationMutation = useDeleteMedication();
 
-  const allMedications =
-    allMedicationsResponse?.medications || allMedicationsResponse || [];
+  const medications = extractResults(allMedicationsResponse);
 
   // Form setup
   const {
@@ -144,16 +144,16 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
 
   // Get filtered medications based on phase
   const getFilteredMedications = () => {
-    let medications = allMedications;
+    let filteredMedications = medications;
 
     if (phaseFilter !== 'all') {
-      medications = medications.filter(
+      filteredMedications = filteredMedications.filter(
         (med: MedicationRecord) => med.phase === phaseFilter
       );
     }
 
     if (searchTerm) {
-      medications = medications.filter(
+      filteredMedications = filteredMedications.filter(
         (med: MedicationRecord) =>
           med.medicationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (med.purposeIndication &&
@@ -163,7 +163,7 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
       );
     }
 
-    return medications;
+    return filteredMedications;
   };
 
   const filteredMedications = getFilteredMedications();
@@ -329,13 +329,13 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
               </Box>
             </ResponsiveCard>
           }
-          isEmpty={!allLoading && !allError && allMedications.length === 0}
+          isEmpty={!allLoading && !allError && filteredMedications.length === 0}
         >
           {/* Header */}
           <ResponsiveHeader
             title="Medication Management"
-            subtitle={`${allMedications.length} medication${
-              allMedications.length !== 1 ? 's' : ''
+            subtitle={`${filteredMedications.length} medication${
+              filteredMedications.length !== 1 ? 's' : ''
             } recorded`}
             actions={
               <RBACGuard action="canCreate">
@@ -365,11 +365,11 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
           />
 
           {/* Simple medication list */}
-          {allMedications.length > 0 && (
+          {filteredMedications.length > 0 && (
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Medications ({allMedications.length})
+                  Medications ({filteredMedications.length})
                 </Typography>
                 <Box sx={{ mb: 2 }}>
                   <TextField

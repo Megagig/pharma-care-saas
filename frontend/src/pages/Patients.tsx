@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -45,6 +46,7 @@ import type {
   NigerianState,
   BloodGroup,
   Genotype,
+  PaginatedResponse,
 } from '../types/patientManagement';
 
 // Nigerian States for filtering
@@ -101,6 +103,8 @@ const BLOOD_GROUPS: BloodGroup[] = [
 const GENOTYPES: Genotype[] = ['AA', 'AS', 'SS', 'AC', 'SC', 'CC'];
 
 const Patients = () => {
+  const navigate = useNavigate();
+
   // Search and filter state
   const [searchParams, setSearchParams] = useState<PatientSearchParams>({
     page: 1,
@@ -122,12 +126,13 @@ const Patients = () => {
   const deletePatientMutation = useDeletePatient();
 
   // Computed values
-  const patients =
-    patientsResponse?.data?.results || patientsResponse?.data || [];
-  const totalPatients = patientsResponse?.meta?.total || 0;
-  const currentPage = (searchParams.page || 1) - 1; // MUI pagination is 0-based
-
-  // Event handlers
+  const patients = Array.isArray(patientsResponse)
+    ? patientsResponse
+    : (patientsResponse as PaginatedResponse<Patient>)?.data?.results || [];
+  const totalPatients = Array.isArray(patientsResponse)
+    ? patientsResponse.length
+    : (patientsResponse as PaginatedResponse<Patient>)?.meta?.total || 0;
+  const currentPage = (searchParams.page || 1) - 1; // MUI pagination is 0-based  // Event handlers
   const handleQuickSearch = (value: string) => {
     setQuickSearch(value);
     setSearchParams((prev) => ({
@@ -188,14 +193,12 @@ const Patients = () => {
   };
 
   const handleViewPatient = (patientId: string) => {
-    // TODO: Navigate to patient details page
-    console.log('Navigate to patient:', patientId);
+    navigate(`/patients/${patientId}`);
     handleMenuClose();
   };
 
   const handleEditPatient = (patientId: string) => {
-    // TODO: Navigate to edit patient page
-    console.log('Edit patient:', patientId);
+    navigate(`/patients/${patientId}/edit`);
     handleMenuClose();
   };
 
@@ -254,8 +257,9 @@ const Patients = () => {
         <Alert severity="error" sx={{ mb: 3 }}>
           <Typography variant="h6">Failed to load patients</Typography>
           <Typography variant="body2">
-            {(error as any)?.message ||
-              'An unexpected error occurred while loading patient data.'}
+            {error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred while loading patient data.'}
           </Typography>
         </Alert>
         <Button
@@ -323,9 +327,7 @@ const Patients = () => {
             variant="contained"
             startIcon={<PersonAddIcon />}
             sx={{ borderRadius: 2, py: 1.5, px: 3 }}
-            onClick={() => {
-              /* TODO: Navigate to create patient */
-            }}
+            onClick={() => navigate('/patients/new')}
           >
             Add New Patient
           </Button>
@@ -494,9 +496,7 @@ const Patients = () => {
                         variant="contained"
                         startIcon={<PersonAddIcon />}
                         sx={{ mt: 2 }}
-                        onClick={() => {
-                          /* TODO: Navigate to create patient */
-                        }}
+                        onClick={() => navigate('/patients/new')}
                       >
                         Add First Patient
                       </Button>
@@ -505,7 +505,7 @@ const Patients = () => {
                 </TableRow>
               ) : (
                 // Patient data rows
-                patients.map((patient) => (
+                patients.map((patient: Patient) => (
                   <TableRow
                     key={patient._id}
                     hover

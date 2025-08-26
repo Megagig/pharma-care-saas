@@ -105,6 +105,7 @@ export const requirePatientPermission = (
 ) => {
   return (req: PatientAuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
+      console.log('RBAC - No user in request');
       res.status(401).json({
         message: 'Authentication required',
         code: 'AUTH_REQUIRED',
@@ -118,6 +119,15 @@ export const requirePatientPermission = (
       action,
       resource
     );
+
+    console.log('RBAC check:', {
+      userRole,
+      action,
+      resource,
+      hasPermission,
+      mappedRole: mapToPatientManagementRole(userRole),
+      userId: req.user._id,
+    });
 
     if (!hasPermission) {
       res.status(403).json({
@@ -164,18 +174,43 @@ export const checkPharmacyAccess = async (
   next: NextFunction
 ): Promise<void> => {
   // Skip pharmacy check for admin users (they have cross-tenant access)
-  if (req.isAdmin) {
+  if (req.isAdmin || req.user?.role === 'super_admin') {
+    console.log('Super admin access granted');
     next();
     return;
   }
 
-  // For non-admin users, ensure they have a pharmacy association
+  // Debug logging for development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('checkPharmacyAccess debug:', {
+      userId: req.user?._id,
+      pharmacyId: req.user?.pharmacyId,
+      currentPlanId: req.user?.currentPlanId,
+      role: req.user?.role,
+      status: req.user?.status,
+      isAdmin: req.isAdmin,
+    });
+  }
+
+  // For non-admin users, ensure they have a pharmacy association OR an active subscription plan
+  // Users with an active subscription plan can access patient management features even without a pharmacy
   if (!req.user?.pharmacyId && !req.user?.currentPlanId) {
     res.status(403).json({
       message: 'No pharmacy association found',
       code: 'NO_PHARMACY_ACCESS',
       requiresAction: 'pharmacy_setup',
     });
+    return;
+  }
+
+  // If user has a plan but no pharmacy, allow access for development/trial users
+  if (!req.user?.pharmacyId && req.user?.currentPlanId) {
+    // This allows trial users to access patient management without setting up a pharmacy first
+    console.log(
+      'Allowing access with plan but no pharmacy:',
+      req.user?.currentPlanId
+    );
+    next();
     return;
   }
 
@@ -192,7 +227,7 @@ export const checkPatientPlanLimits = async (
 ): Promise<void> => {
   try {
     // Skip plan checks for admin users
-    if (req.isAdmin) {
+    if (req.isAdmin || req.user?.role === 'super_admin') {
       next();
       return;
     }
