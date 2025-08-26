@@ -10,6 +10,28 @@ interface RegisterData {
   role?: string;
 }
 
+interface RegisterWithWorkplaceData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phone?: string;
+  licenseNumber?: string;
+  role?: string;
+  workplaceFlow: 'create' | 'join' | 'skip';
+  workplace?: {
+    name: string;
+    type: string;
+    licenseNumber: string;
+    email: string;
+    address?: string;
+    state?: string;
+    lga?: string;
+  };
+  inviteCode?: string;
+  workplaceRole?: string;
+}
+
 interface LoginCredentials {
   email: string;
   password: string;
@@ -123,6 +145,19 @@ class AuthService {
     return this.makeRequest('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
+    });
+  }
+
+  async registerWithWorkplace(userData: RegisterWithWorkplaceData) {
+    return this.makeRequest('/auth/register-with-workplace', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async findWorkplaceByInviteCode(inviteCode: string) {
+    return this.makeRequest(`/auth/workplace/invite/${inviteCode}`, {
+      method: 'GET',
     });
   }
 

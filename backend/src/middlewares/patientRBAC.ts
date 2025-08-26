@@ -166,14 +166,14 @@ export const requireClinicalAssessmentAccess = requirePatientPermission(
 export const requireVitalsAccess = requirePatientPermission('create', 'vitals');
 
 /**
- * Middleware to check pharmacy ownership for non-admin users
+ * Middleware to check workplace ownership for non-admin users
  */
-export const checkPharmacyAccess = async (
+export const checkWorkplaceAccess = async (
   req: PatientAuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  // Skip pharmacy check for admin users (they have cross-tenant access)
+  // Skip workplace check for admin users (they have cross-tenant access)
   if (req.isAdmin || req.user?.role === 'super_admin') {
     console.log('Super admin access granted');
     next();
@@ -182,9 +182,9 @@ export const checkPharmacyAccess = async (
 
   // Debug logging for development
   if (process.env.NODE_ENV === 'development') {
-    console.log('checkPharmacyAccess debug:', {
+    console.log('checkWorkplaceAccess debug:', {
       userId: req.user?._id,
-      pharmacyId: req.user?.pharmacyId,
+      workplaceId: req.user?.workplaceId,
       currentPlanId: req.user?.currentPlanId,
       role: req.user?.role,
       status: req.user?.status,
@@ -192,22 +192,22 @@ export const checkPharmacyAccess = async (
     });
   }
 
-  // For non-admin users, ensure they have a pharmacy association OR an active subscription plan
-  // Users with an active subscription plan can access patient management features even without a pharmacy
-  if (!req.user?.pharmacyId && !req.user?.currentPlanId) {
+  // For non-admin users, ensure they have a workplace association OR an active subscription plan
+  // Users with an active subscription plan can access patient management features even without a workplace
+  if (!req.user?.workplaceId && !req.user?.currentPlanId) {
     res.status(403).json({
-      message: 'No pharmacy association found',
-      code: 'NO_PHARMACY_ACCESS',
-      requiresAction: 'pharmacy_setup',
+      message: 'No workplace association found',
+      code: 'NO_WORKPLACE_ACCESS',
+      requiresAction: 'workplace_setup',
     });
     return;
   }
 
-  // If user has a plan but no pharmacy, allow access for development/trial users
-  if (!req.user?.pharmacyId && req.user?.currentPlanId) {
-    // This allows trial users to access patient management without setting up a pharmacy first
+  // If user has a plan but no workplace, allow access for development/trial users
+  if (!req.user?.workplaceId && req.user?.currentPlanId) {
+    // This allows trial users to access patient management without setting up a workplace first
     console.log(
-      'Allowing access with plan but no pharmacy:',
+      'Allowing access with plan but no workplace:',
       req.user?.currentPlanId
     );
     next();
@@ -216,6 +216,9 @@ export const checkPharmacyAccess = async (
 
   next();
 };
+
+// Backward compatibility alias
+export const checkPharmacyAccess = checkWorkplaceAccess;
 
 /**
  * Plan gate middleware for Patient Management features
@@ -249,10 +252,10 @@ export const checkPatientPlanLimits = async (
       const maxPatients = planFeatures.maxPatients || 0;
 
       if (maxPatients > 0) {
-        // Get current patient count for this pharmacy
+        // Get current patient count for this workplace
         const Patient = require('../models/Patient').default;
         const currentCount = await Patient.countDocuments({
-          pharmacyId: req.user?.pharmacyId,
+          workplaceId: req.user?.workplaceId,
           isDeleted: false,
         });
 

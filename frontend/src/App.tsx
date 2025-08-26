@@ -25,6 +25,7 @@ import Contact from './pages/Contact';
 import Pricing from './pages/Pricing';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import MultiStepRegister from './pages/MultiStepRegister';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -95,14 +96,15 @@ function App(): JSX.Element {
                     <Route path="/contact" element={<Contact />} />
                     <Route path="/pricing" element={<Pricing />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
+                    <Route path="/register" element={<MultiStepRegister />} />
+                    <Route path="/register-old" element={<Register />} />{' '}
+                    {/* Keep old register as fallback */}
                     <Route path="/verify-email" element={<VerifyEmail />} />
                     <Route
                       path="/forgot-password"
                       element={<ForgotPassword />}
                     />
                     <Route path="/reset-password" element={<ResetPassword />} />
-
                     {/* Protected Routes */}
                     <Route
                       path="/dashboard"
@@ -214,7 +216,6 @@ function App(): JSX.Element {
                         </ProtectedRoute>
                       }
                     />
-
                     {/* Admin Routes */}
                     <Route
                       path="/admin"
@@ -226,7 +227,6 @@ function App(): JSX.Element {
                         </ProtectedRoute>
                       }
                     />
-
                     {/* Feature Flags Route */}
                     <Route
                       path="/feature-flags"
@@ -238,7 +238,6 @@ function App(): JSX.Element {
                         </ProtectedRoute>
                       }
                     />
-
                     {/* License Management */}
                     <Route
                       path="/license"
@@ -250,7 +249,6 @@ function App(): JSX.Element {
                         </ProtectedRoute>
                       }
                     />
-
                     {/* Enhanced Subscription Management */}
                     <Route
                       path="/subscription-management"
@@ -262,7 +260,6 @@ function App(): JSX.Element {
                         </ProtectedRoute>
                       }
                     />
-
                     {/* Subscription Success Page - No auth required for payment redirection */}
                     <Route
                       path="/subscription/success"
@@ -272,7 +269,6 @@ function App(): JSX.Element {
                         </AppLayout>
                       }
                     />
-
                     {/* Subscription Plans - This should not require active subscription */}
                     <Route
                       path="/dashboard/subscription/plans"
@@ -284,7 +280,6 @@ function App(): JSX.Element {
                         </ProtectedRoute>
                       }
                     />
-
                     <Route
                       path="/subscription/plans"
                       element={
@@ -295,7 +290,6 @@ function App(): JSX.Element {
                         </ProtectedRoute>
                       }
                     />
-
                     {/* SaaS Settings - accessible to everyone */}
                     <Route
                       path="/saas-settings"
@@ -305,7 +299,6 @@ function App(): JSX.Element {
                         </AppLayout>
                       }
                     />
-
                     {/* Settings Page */}
                     <Route
                       path="/settings"
@@ -317,7 +310,6 @@ function App(): JSX.Element {
                         </ProtectedRoute>
                       }
                     />
-
                     {/* Help & Support Page */}
                     <Route
                       path="/help"
@@ -329,7 +321,6 @@ function App(): JSX.Element {
                         </ProtectedRoute>
                       }
                     />
-
                     {/* Redirect any unknown routes to dashboard */}
                     <Route
                       path="*"

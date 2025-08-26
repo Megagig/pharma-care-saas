@@ -271,11 +271,11 @@ export const asyncHandler = (fn: Function) => {
 
 // Tenant access checker helper
 export const checkTenantAccess = (
-  resourcePharmacyId: string,
-  userPharmacyId: string,
+  resourceWorkplaceId: string,
+  userWorkplaceId: string,
   isAdmin: boolean = false
 ): void => {
-  if (!isAdmin && resourcePharmacyId !== userPharmacyId) {
+  if (!isAdmin && resourceWorkplaceId !== userWorkplaceId) {
     throw createTenantViolationError();
   }
 };
@@ -365,7 +365,7 @@ export const respondWithPaginatedResults = <T>(
 export const getRequestContext = (req: AuthRequest) => ({
   userId: req.user?._id,
   userRole: req.user?.role,
-  pharmacyId: req.user?.pharmacyId?.toString() || '',
+  workplaceId: req.user?.workplaceId?.toString() || '',
   isAdmin: (req as any).isAdmin || false,
   canManage: (req as any).canManage || false,
   timestamp: new Date().toISOString(),
@@ -384,7 +384,7 @@ export const createAuditLog = (
   resourceId,
   userId: context.userId,
   userRole: context.userRole,
-  pharmacyId: context.pharmacyId,
+  workplaceId: context.workplaceId,
   changes,
   timestamp: context.timestamp,
 });
