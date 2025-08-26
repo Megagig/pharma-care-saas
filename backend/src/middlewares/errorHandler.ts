@@ -9,6 +9,14 @@ interface CustomError extends Error {
 const errorHandler = (err: CustomError, req: Request, res: Response, next: NextFunction): void => {
   console.error(err.stack);
 
+  // JSON parsing error
+  if (err instanceof SyntaxError && 'body' in err) {
+    res.status(400).json({
+      message: 'Invalid JSON format in request body'
+    });
+    return;
+  }
+
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {
     const message = 'Resource not found';

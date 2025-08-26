@@ -1,262 +1,733 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Plus, Filter, MoreHorizontal, Edit, Eye, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  TextField,
+  MenuItem,
+  InputAdornment,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  IconButton,
+  Menu,
+  TablePagination,
+  Avatar,
+  Tooltip,
+  CircularProgress,
+  Alert,
+  Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  Autocomplete,
+  Skeleton,
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import DeleteIcon from '@mui/icons-material/Delete';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import WarningIcon from '@mui/icons-material/Warning';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import { usePatients, useDeletePatient } from '../queries/usePatients';
+import type {
+  Patient,
+  PatientSearchParams,
+  NigerianState,
+  BloodGroup,
+  Genotype,
+} from '../types/patientManagement';
+
+// Nigerian States for filtering
+const NIGERIAN_STATES: NigerianState[] = [
+  'Abia',
+  'Adamawa',
+  'Akwa Ibom',
+  'Anambra',
+  'Bauchi',
+  'Bayelsa',
+  'Benue',
+  'Borno',
+  'Cross River',
+  'Delta',
+  'Ebonyi',
+  'Edo',
+  'Ekiti',
+  'Enugu',
+  'FCT',
+  'Gombe',
+  'Imo',
+  'Jigawa',
+  'Kaduna',
+  'Kano',
+  'Katsina',
+  'Kebbi',
+  'Kogi',
+  'Kwara',
+  'Lagos',
+  'Nasarawa',
+  'Niger',
+  'Ogun',
+  'Ondo',
+  'Osun',
+  'Oyo',
+  'Plateau',
+  'Rivers',
+  'Sokoto',
+  'Taraba',
+  'Yobe',
+  'Zamfara',
+];
+
+const BLOOD_GROUPS: BloodGroup[] = [
+  'A+',
+  'A-',
+  'B+',
+  'B-',
+  'AB+',
+  'AB-',
+  'O+',
+  'O-',
+];
+const GENOTYPES: Genotype[] = ['AA', 'AS', 'SS', 'AC', 'SC', 'CC'];
 
 const Patients = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  // Search and filter state
+  const [searchParams, setSearchParams] = useState<PatientSearchParams>({
+    page: 1,
+    limit: 10,
+  });
+  const [quickSearch, setQuickSearch] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  // Mock patient data
-  const patients = [
-    {
-      id: 1,
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      dateOfBirth: '1958-03-15',
-      gender: 'female',
-      phone: '(555) 123-4567',
-      email: 'sarah.johnson@email.com',
-      conditions: ['Hypertension', 'Diabetes'],
-      medications: 5,
-      lastVisit: '2024-01-15',
-      status: 'active'
-    },
-    {
-      id: 2,
-      firstName: 'Michael',
-      lastName: 'Chen',
-      dateOfBirth: '1979-07-22',
-      gender: 'male',
-      phone: '(555) 234-5678',
-      email: 'michael.chen@email.com',
-      conditions: ['Diabetes Type 2'],
-      medications: 3,
-      lastVisit: '2024-01-14',
-      status: 'active'
-    },
-    {
-      id: 3,
-      firstName: 'Emily',
-      lastName: 'Rodriguez',
-      dateOfBirth: '1995-11-08',
-      gender: 'female',
-      phone: '(555) 345-6789',
-      email: 'emily.rodriguez@email.com',
-      conditions: ['Asthma'],
-      medications: 2,
-      lastVisit: '2024-01-13',
-      status: 'active'
-    },
-    {
-      id: 4,
-      firstName: 'David',
-      lastName: 'Thompson',
-      dateOfBirth: '1951-09-30',
-      gender: 'male',
-      phone: '(555) 456-7890',
-      email: 'david.thompson@email.com',
-      conditions: ['Heart Disease', 'High Cholesterol'],
-      medications: 7,
-      lastVisit: '2024-01-10',
-      status: 'inactive'
+  // React Query hooks
+  const {
+    data: patientsResponse,
+    isLoading,
+    isError,
+    error,
+  } = usePatients(searchParams);
+
+  const deletePatientMutation = useDeletePatient();
+
+  // Computed values
+  const patients =
+    patientsResponse?.data?.results || patientsResponse?.data || [];
+  const totalPatients = patientsResponse?.meta?.total || 0;
+  const currentPage = (searchParams.page || 1) - 1; // MUI pagination is 0-based
+
+  // Event handlers
+  const handleQuickSearch = (value: string) => {
+    setQuickSearch(value);
+    setSearchParams((prev) => ({
+      ...prev,
+      q: value || undefined,
+      page: 1, // Reset to first page on search
+    }));
+  };
+
+  const handleAdvancedFilter = (filters: Partial<PatientSearchParams>) => {
+    setSearchParams((prev) => ({
+      ...prev,
+      ...filters,
+      page: 1, // Reset to first page on filter change
+    }));
+  };
+
+  const handlePageChange = (_: unknown, newPage: number) => {
+    setSearchParams((prev) => ({
+      ...prev,
+      page: newPage + 1, // Convert to 1-based pagination
+    }));
+  };
+
+  const handleRowsPerPageChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const newLimit = parseInt(event.target.value, 10);
+    setSearchParams((prev) => ({
+      ...prev,
+      limit: newLimit,
+      page: 1, // Reset to first page
+    }));
+  };
+
+  const handleMenuClick = (
+    event: React.MouseEvent<HTMLElement>,
+    patientId: string
+  ) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedPatient(patientId);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedPatient(null);
+  };
+
+  const handleDeletePatient = async () => {
+    if (selectedPatient) {
+      try {
+        await deletePatientMutation.mutateAsync(selectedPatient);
+        handleMenuClose();
+      } catch (error) {
+        console.error('Failed to delete patient:', error);
+      }
     }
-  ];
+  };
 
-  const calculateAge = (dateOfBirth) => {
+  const handleViewPatient = (patientId: string) => {
+    // TODO: Navigate to patient details page
+    console.log('Navigate to patient:', patientId);
+    handleMenuClose();
+  };
+
+  const handleEditPatient = (patientId: string) => {
+    // TODO: Navigate to edit patient page
+    console.log('Edit patient:', patientId);
+    handleMenuClose();
+  };
+
+  // Utility functions
+  const calculateAge = (dob?: string): number | null => {
+    if (!dob) return null;
+
     const today = new Date();
-    const birthDate = new Date(dateOfBirth);
+    const birthDate = new Date(dob);
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
       age--;
     }
+
     return age;
   };
 
-  const filteredPatients = patients.filter(patient => {
-    const matchesSearch = `${patient.firstName} ${patient.lastName}`.toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || patient.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  const getInitials = (firstName: string, lastName: string): string => {
+    return `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
+  };
+
+  const formatNigerianPhone = (phone?: string): string => {
+    if (!phone) return 'N/A';
+    // Format Nigerian E.164 numbers (+234XXXXXXXXXX) to readable format
+    if (phone.startsWith('+234')) {
+      const number = phone.slice(4);
+      return `+234 ${number.slice(0, 3)} ${number.slice(3, 6)} ${number.slice(
+        6
+      )}`;
+    }
+    return phone;
+  };
+
+  const getDisplayName = (patient: Patient): string => {
+    return patient.displayName || `${patient.firstName} ${patient.lastName}`;
+  };
+
+  const getPatientAge = (patient: Patient): string => {
+    if (patient.age !== undefined) return `${patient.age} years`;
+    if (patient.calculatedAge !== undefined)
+      return `${patient.calculatedAge} years`;
+
+    const calculatedAge = calculateAge(patient.dob);
+    return calculatedAge ? `${calculatedAge} years` : 'Unknown';
+  };
+
+  // Loading and error states
+  if (isError) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          <Typography variant="h6">Failed to load patients</Typography>
+          <Typography variant="body2">
+            {(error as any)?.message ||
+              'An unexpected error occurred while loading patient data.'}
+          </Typography>
+        </Alert>
+        <Button
+          variant="outlined"
+          onClick={() => window.location.reload()}
+          sx={{ mt: 2 }}
+        >
+          Retry
+        </Button>
+      </Box>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6">
+    <Box sx={{ p: 3 }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Patients</h1>
-          <p className="text-gray-600">Manage your patient records and information</p>
-        </div>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
-          <Plus className="w-4 h-4" />
-          <span>Add Patient</span>
-        </button>
-      </div>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          mb: 4,
+          flexWrap: 'wrap',
+          gap: 2,
+        }}
+      >
+        <Box sx={{ flex: 1, minWidth: 300 }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{
+              fontWeight: 600,
+              mb: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+            }}
+          >
+            <LocalHospitalIcon color="primary" />
+            Patient Management
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Comprehensive patient care and medical records management
+            {totalPatients > 0 && (
+              <Chip
+                label={`${totalPatients} total patients`}
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ ml: 2 }}
+              />
+            )}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <Button
+            variant="outlined"
+            startIcon={<FilterListIcon />}
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            sx={{ borderRadius: 2 }}
+          >
+            {showAdvancedFilters ? 'Hide Filters' : 'Advanced Filters'}
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PersonAddIcon />}
+            sx={{ borderRadius: 2, py: 1.5, px: 3 }}
+            onClick={() => {
+              /* TODO: Navigate to create patient */
+            }}
+          >
+            Add New Patient
+          </Button>
+        </Box>
+      </Box>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search patients..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          {/* Quick Search */}
+          <Box
+            sx={{ display: 'flex', gap: 2, mb: showAdvancedFilters ? 3 : 0 }}
+          >
+            <TextField
+              placeholder="Search patients by name, MRN, phone, or email..."
+              variant="outlined"
+              value={quickSearch}
+              onChange={(e) => handleQuickSearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ flexGrow: 1, minWidth: 300 }}
             />
-          </div>
-          <div className="flex space-x-2">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          </Box>
+
+          {/* Advanced Filters */}
+          {showAdvancedFilters && (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: 2,
+                pt: 2,
+                borderTop: 1,
+                borderColor: 'divider',
+              }}
             >
-              <option value="all">All Patients</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2">
-              <Filter className="w-4 h-4" />
-              <span>Filters</span>
-            </button>
-          </div>
-        </div>
-      </div>
+              <Autocomplete
+                options={NIGERIAN_STATES}
+                value={searchParams.state || null}
+                onChange={(_, value) =>
+                  handleAdvancedFilter({ state: value || undefined })
+                }
+                renderInput={(params) => (
+                  <TextField {...params} label="State" size="small" />
+                )}
+              />
 
-      {/* Patient Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Patient
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Age/Gender
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contact
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Conditions
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Medications
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Visit
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="relative px-6 py-3">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredPatients.map((patient) => (
-                <tr key={patient.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {patient.firstName} {patient.lastName}
-                      </div>
-                      <div className="text-sm text-gray-500">{patient.email}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {calculateAge(patient.dateOfBirth)} years
-                    </div>
-                    <div className="text-sm text-gray-500 capitalize">{patient.gender}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{patient.phone}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {patient.conditions.map((condition, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                        >
-                          {condition}
-                        </span>
+              <FormControl size="small">
+                <InputLabel>Blood Group</InputLabel>
+                <Select
+                  value={searchParams.bloodGroup || ''}
+                  label="Blood Group"
+                  onChange={(e) =>
+                    handleAdvancedFilter({
+                      bloodGroup: (e.target.value as BloodGroup) || undefined,
+                    })
+                  }
+                >
+                  <MenuItem value="">All Blood Groups</MenuItem>
+                  {BLOOD_GROUPS.map((group) => (
+                    <MenuItem key={group} value={group}>
+                      {group}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small">
+                <InputLabel>Genotype</InputLabel>
+                <Select
+                  value={searchParams.genotype || ''}
+                  label="Genotype"
+                  onChange={(e) =>
+                    handleAdvancedFilter({
+                      genotype: (e.target.value as Genotype) || undefined,
+                    })
+                  }
+                >
+                  <MenuItem value="">All Genotypes</MenuItem>
+                  {GENOTYPES.map((genotype) => (
+                    <MenuItem key={genotype} value={genotype}>
+                      {genotype}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <TextField
+                label="MRN"
+                size="small"
+                value={searchParams.mrn || ''}
+                onChange={(e) =>
+                  handleAdvancedFilter({ mrn: e.target.value || undefined })
+                }
+                placeholder="PHM-LAG-001"
+              />
+
+              <TextField
+                label="Phone Number"
+                size="small"
+                value={searchParams.phone || ''}
+                onChange={(e) =>
+                  handleAdvancedFilter({ phone: e.target.value || undefined })
+                }
+                placeholder="+234812345678"
+              />
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Patients Table */}
+      <Card>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 600 }}>Patient</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>MRN</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Age/Gender</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Contact</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Location</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Medical Info</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Vitals</TableCell>
+                <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>
+                  Actions
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                // Loading skeleton
+                Array.from({ length: searchParams.limit || 10 }).map(
+                  (_, index) => (
+                    <TableRow key={index}>
+                      {Array.from({ length: 8 }).map((_, cellIndex) => (
+                        <TableCell key={cellIndex}>
+                          <Skeleton variant="text" height={40} />
+                        </TableCell>
                       ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{patient.medications} meds</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {patient.lastVisit}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      patient.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {patient.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="relative group">
-                      <button className="text-gray-400 hover:text-gray-600">
-                        <MoreHorizontal className="w-5 h-5" />
-                      </button>
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                        <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Details
-                        </button>
-                        <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit Patient
-                        </button>
-                        <button className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete Patient
-                        </button>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </TableRow>
+                  )
+                )
+              ) : patients.length === 0 ? (
+                // Empty state
+                <TableRow>
+                  <TableCell colSpan={8} sx={{ textAlign: 'center', py: 6 }}>
+                    <Stack spacing={2} alignItems="center">
+                      <LocalHospitalIcon
+                        sx={{ fontSize: 48, color: 'text.secondary' }}
+                      />
+                      <Typography variant="h6" color="text.secondary">
+                        No patients found
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {quickSearch || Object.keys(searchParams).length > 2
+                          ? 'Try adjusting your search or filter criteria'
+                          : 'Add your first patient to get started with patient management'}
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        startIcon={<PersonAddIcon />}
+                        sx={{ mt: 2 }}
+                        onClick={() => {
+                          /* TODO: Navigate to create patient */
+                        }}
+                      >
+                        Add First Patient
+                      </Button>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                // Patient data rows
+                patients.map((patient) => (
+                  <TableRow
+                    key={patient._id}
+                    hover
+                    sx={{ '&:hover': { bgcolor: 'action.hover' } }}
+                  >
+                    <TableCell>
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+                      >
+                        <Avatar
+                          sx={{
+                            bgcolor: 'primary.main',
+                            width: 40,
+                            height: 40,
+                          }}
+                        >
+                          {getInitials(patient.firstName, patient.lastName)}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {getDisplayName(patient)}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {patient.otherNames && `(${patient.otherNames})`}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
 
-        {filteredPatients.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No patients found matching your criteria.</p>
-          </div>
-        )}
-      </div>
+                    <TableCell>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 500, fontFamily: 'monospace' }}
+                      >
+                        {patient.mrn}
+                      </Typography>
+                    </TableCell>
 
-      {/* Pagination */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-500">
-            Showing 1 to {filteredPatients.length} of {patients.length} patients
-          </div>
-          <div className="flex space-x-2">
-            <button className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-              Previous
-            </button>
-            <button className="px-3 py-1 bg-blue-600 text-white rounded-md">1</button>
-            <button className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50">2</button>
-            <button className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50">
-              Next
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {getPatientAge(patient)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {patient.gender
+                          ? patient.gender.charAt(0).toUpperCase() +
+                            patient.gender.slice(1)
+                          : 'Unknown'}
+                      </Typography>
+                    </TableCell>
+
+                    <TableCell>
+                      <Typography variant="body2">
+                        {formatNigerianPhone(patient.phone)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {patient.email || 'No email'}
+                      </Typography>
+                    </TableCell>
+
+                    <TableCell>
+                      <Typography variant="body2">
+                        {patient.state || 'Unknown'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {patient.lga || 'Unknown LGA'}
+                      </Typography>
+                    </TableCell>
+
+                    <TableCell>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {patient.bloodGroup && (
+                          <Chip
+                            label={patient.bloodGroup}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            sx={{ fontSize: '0.75rem' }}
+                          />
+                        )}
+                        {patient.genotype && (
+                          <Chip
+                            label={patient.genotype}
+                            size="small"
+                            color={
+                              patient.genotype.includes('S')
+                                ? 'warning'
+                                : 'success'
+                            }
+                            variant="outlined"
+                            sx={{ fontSize: '0.75rem' }}
+                          />
+                        )}
+                        {patient.hasActiveDTP && (
+                          <Chip
+                            label="DTP"
+                            size="small"
+                            color="error"
+                            icon={<WarningIcon sx={{ fontSize: 14 }} />}
+                            sx={{ fontSize: '0.75rem' }}
+                          />
+                        )}
+                      </Box>
+                    </TableCell>
+
+                    <TableCell>
+                      {patient.latestVitals ? (
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            BP: {patient.latestVitals.bpSys}/
+                            {patient.latestVitals.bpDia} mmHg
+                          </Typography>
+                          {patient.weightKg && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              display="block"
+                            >
+                              Weight: {patient.weightKg}kg
+                            </Typography>
+                          )}
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          No vitals recorded
+                        </Typography>
+                      )}
+                    </TableCell>
+
+                    <TableCell sx={{ textAlign: 'center' }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          gap: 0.5,
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Tooltip title="View Details">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleViewPatient(patient._id)}
+                          >
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit Patient">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleEditPatient(patient._id)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="More Actions">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuClick(e, patient._id)}
+                            color="primary"
+                          >
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <TablePagination
+          component="div"
+          count={totalPatients}
+          page={currentPage}
+          onPageChange={handlePageChange}
+          rowsPerPage={searchParams.limit || 10}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          rowsPerPageOptions={[5, 10, 25, 50, 100]}
+          sx={{ borderTop: 1, borderColor: 'divider' }}
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}–${to} of ${count !== -1 ? count : `more than ${to}`}`
+          }
+        />
+      </Card>
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        PaperProps={{
+          sx: { minWidth: 180 },
+        }}
+      >
+        <MenuItem
+          onClick={() => selectedPatient && handleViewPatient(selectedPatient)}
+        >
+          <VisibilityIcon sx={{ mr: 1, fontSize: 18 }} />
+          View Patient Profile
+        </MenuItem>
+        <MenuItem
+          onClick={() => selectedPatient && handleEditPatient(selectedPatient)}
+        >
+          <EditIcon sx={{ mr: 1, fontSize: 18 }} />
+          Edit Patient Info
+        </MenuItem>
+        <MenuItem
+          onClick={handleDeletePatient}
+          sx={{ color: 'error.main' }}
+          disabled={deletePatientMutation.isPending}
+        >
+          {deletePatientMutation.isPending ? (
+            <CircularProgress size={18} sx={{ mr: 1 }} />
+          ) : (
+            <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
+          )}
+          Delete Patient
+        </MenuItem>
+      </Menu>
+    </Box>
   );
 };
 
