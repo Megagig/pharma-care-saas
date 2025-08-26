@@ -13,4 +13,14 @@ router.post(
   webhookController.handleNombaWebhook.bind(webhookController)
 );
 
+/**
+ * @route POST /api/webhooks/paystack
+ * @desc Handles webhooks from Paystack payment gateway
+ * @access Public - secured by webhook signature
+ */
+router.post(
+  '/paystack',
+  webhookController.handlePaystackWebhook.bind(webhookController)
+);
+
 export default router;

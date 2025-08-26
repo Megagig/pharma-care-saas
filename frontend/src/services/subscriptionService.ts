@@ -77,7 +77,7 @@ export interface CheckoutSession {
 export const subscriptionService = {
   // Get available plans
   async getPlans(billingInterval: 'monthly' | 'yearly' = 'monthly') {
-    const response = await api.get('/subscription-management/plans', {
+    const response = await api.get('/subscription/plans', {
       params: { billingInterval },
     });
     return response.data;
@@ -85,47 +85,73 @@ export const subscriptionService = {
 
   // Get current user's subscription
   async getCurrentSubscription() {
-    const response = await api.get('/subscription-management/current');
+    const response = await api.get('/subscription/current');
     return response.data;
   },
 
-  // Create Nomba checkout session
+  // Create checkout session with Paystack
   async createCheckoutSession(
     planId: string,
     billingInterval: 'monthly' | 'yearly'
   ) {
-    const response = await api.post('/subscription-management/checkout', {
-      planId,
-      billingInterval,
-    });
-    return response.data;
+    try {
+      const callbackUrl = `${window.location.origin}/subscription/success`;
+      console.log('Creating checkout session with:', {
+        planId,
+        billingInterval,
+        callbackUrl,
+      });
+
+      const response = await api.post('/subscription/checkout', {
+        planId,
+        billingInterval,
+        callbackUrl,
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating checkout session:', {
+        message: error.message,
+        responseData: error.response?.data,
+        status: error.response?.status,
+      });
+
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || 'Failed to create checkout session',
+        error: error.message,
+      };
+    }
   },
 
-  // Verify payment after Nomba redirect
+  // Verify payment after Paystack redirect
   async verifyPayment(paymentReference: string) {
-    const response = await api.post(
-      '/subscription-management/confirm-payment',
-      {
-        paymentReference,
-      }
-    );
-    return response.data;
+    try {
+      const response = await api.get(
+        `/subscription/verify?reference=${paymentReference}`
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error('Error verifying payment:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to verify payment',
+      };
+    }
   },
 
   // Handle successful payment (for both simulation and real payments)
   async handleSuccessfulPayment(paymentReference: string) {
-    const response = await api.post(
-      '/subscription-management/payment-success',
-      {
-        paymentReference,
-      }
-    );
+    const response = await api.post('/subscription/payment-success', {
+      paymentReference,
+    });
     return response.data;
   },
 
   // Cancel subscription
   async cancelSubscription(reason?: string) {
-    const response = await api.post('/subscription-management/cancel', {
+    const response = await api.post('/subscription/cancel', {
       reason,
     });
     return response.data;
@@ -133,7 +159,7 @@ export const subscriptionService = {
 
   // Reactivate subscription
   async reactivateSubscription() {
-    const response = await api.post('/subscription-management/reactivate');
+    const response = await api.post('/subscription/reactivate');
     return response.data;
   },
 
@@ -142,7 +168,7 @@ export const subscriptionService = {
     planId: string,
     billingInterval: 'monthly' | 'yearly'
   ) {
-    const response = await api.put('/subscription-management/update', {
+    const response = await api.put('/subscription/update', {
       planId,
       billingInterval,
     });
@@ -151,58 +177,53 @@ export const subscriptionService = {
 
   // Get billing history
   async getBillingHistory() {
-    const response = await api.get('/subscription-management/billing-history');
+    const response = await api.get('/subscription/billing-history');
     return response.data;
   },
 
   // Download invoice
   async downloadInvoice(invoiceId: string) {
-    const response = await api.get(
-      `/subscription-management/invoice/${invoiceId}`,
-      {
-        responseType: 'blob',
-      }
-    );
+    const response = await api.get(`/subscription/invoice/${invoiceId}`, {
+      responseType: 'blob',
+    });
     return response.data;
   },
 
   // Get usage metrics
   async getUsageMetrics() {
-    const response = await api.get('/subscription-management/usage');
+    const response = await api.get('/subscription/usage');
     return response.data;
   },
 
   // Check feature access
   async checkFeatureAccess(featureKey: string) {
     const response = await api.get(
-      `/subscription-management/features/${featureKey}/check`
+      `/subscription/features/${featureKey}/check`
     );
     return response.data;
   },
 
   // Get subscription status
   async getSubscriptionStatus() {
-    const response = await api.get('/subscription-management/status');
+    const response = await api.get('/subscription/status');
     return response.data;
   },
 
   // Update payment method
   async updatePaymentMethod() {
-    const response = await api.post(
-      '/subscription-management/payment-method/update'
-    );
+    const response = await api.post('/subscription/payment-method/update');
     return response.data;
   },
 
   // Get upcoming invoice
   async getUpcomingInvoice() {
-    const response = await api.get('/subscription-management/upcoming-invoice');
+    const response = await api.get('/subscription/upcoming-invoice');
     return response.data;
   },
 
   // Apply coupon
   async applyCoupon(couponCode: string) {
-    const response = await api.post('/subscription-management/coupon/apply', {
+    const response = await api.post('/subscription/coupon/apply', {
       couponCode,
     });
     return response.data;
@@ -210,13 +231,13 @@ export const subscriptionService = {
 
   // Remove coupon
   async removeCoupon() {
-    const response = await api.post('/subscription-management/coupon/remove');
+    const response = await api.post('/subscription/coupon/remove');
     return response.data;
   },
 
   // Get plan comparison
   async getPlanComparison() {
-    const response = await api.get('/subscription-management/plans/compare');
+    const response = await api.get('/subscription/plans/compare');
     return response.data;
   },
 
@@ -235,7 +256,7 @@ export const subscriptionService = {
     additionalRequirements?: string;
   }) {
     const response = await api.post(
-      '/subscription-management/custom-plan/request',
+      '/subscription/custom-plan/request',
       requirements
     );
     return response.data;
@@ -246,14 +267,14 @@ export const subscriptionService = {
     period: 'week' | 'month' | 'quarter' | 'year' = 'month'
   ) {
     const response = await api.get(
-      `/subscription-management/analytics/usage?period=${period}`
+      `/subscription/analytics/usage?period=${period}`
     );
     return response.data;
   },
 
   // Extend trial
   async extendTrial(days: number, reason: string) {
-    const response = await api.post('/subscription-management/trial/extend', {
+    const response = await api.post('/subscription/trial/extend', {
       days,
       reason,
     });
@@ -265,7 +286,7 @@ export const subscriptionService = {
     planId: string,
     billingInterval: 'monthly' | 'yearly'
   ) {
-    const response = await api.post('/subscription-management/trial/convert', {
+    const response = await api.post('/subscription/trial/convert', {
       planId,
       billingInterval,
     });

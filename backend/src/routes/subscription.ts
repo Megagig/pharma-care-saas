@@ -23,6 +23,9 @@ router.post(
   authOptionalSubscription,
   subscriptionController.createCheckoutSession
 );
+// Add a route specifically for handling Paystack redirects without requiring authentication
+router.get('/verify', subscriptionController.verifyPaymentByReference);
+
 router.post(
   '/confirm-payment',
   authOptionalSubscription,
@@ -40,15 +43,7 @@ router.post('/upgrade', auth, subscriptionController.upgradeSubscription);
 router.post('/downgrade', auth, subscriptionController.downgradeSubscription);
 
 // Additional routes for subscription management
-router.get(
-  '/billing-history',
-  auth,
-  subscriptionController.getBillingHistory
-);
-router.get(
-  '/usage',
-  auth,
-  subscriptionController.getUsageMetrics
-);
+router.get('/billing-history', auth, subscriptionController.getBillingHistory);
+router.get('/usage', auth, subscriptionController.getUsageMetrics);
 
 export default router;

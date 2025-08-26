@@ -3,14 +3,100 @@ import crypto from 'crypto';
 import Subscription from '../models/Subscription';
 import User from '../models/User';
 import Payment from '../models/Payment';
+import SubscriptionPlan from '../models/SubscriptionPlan';
 import { emailService } from '../utils/emailService';
 import logger from '../utils/logger';
+import { paystackService } from '../services/paystackService';
 
 /**
  * Webhook handler for Nomba payment integration
  * See: https://developer.nomba.com/introduction/get-api-keys
  */
 export class WebhookController {
+  /**
+   * Handles incoming webhook events from the Paystack payment gateway
+   */
+  async handlePaystackWebhook(req: Request, res: Response): Promise<void> {
+    try {
+      const webhookSecret = process.env.PAYSTACK_WEBHOOK_SECRET;
+
+      if (!webhookSecret) {
+        logger.error('PAYSTACK_WEBHOOK_SECRET is not configured');
+        res
+          .status(500)
+          .json({ success: false, message: 'Webhook secret not configured' });
+        return;
+      }
+
+      // Verify webhook signature
+      const signature = req.headers['x-paystack-signature'] as string;
+      if (!signature) {
+        logger.error('Missing Paystack webhook signature');
+        res.status(400).json({ success: false, message: 'Missing signature' });
+        return;
+      }
+
+      // Validate webhook signature
+      const isValid = this.verifyPaystackSignature(
+        webhookSecret,
+        signature,
+        req.body
+      );
+
+      if (!isValid) {
+        logger.error('Invalid Paystack webhook signature');
+        res.status(401).json({ success: false, message: 'Invalid signature' });
+        return;
+      }
+
+      // Process webhook event
+      const event = req.body;
+
+      logger.info(`Processing Paystack webhook: ${event.event}`, {
+        eventId: event.id,
+        eventType: event.event,
+      });
+
+      switch (event.event) {
+        case 'charge.success':
+          await this.handlePaystackSuccessfulCharge(event.data);
+          break;
+
+        case 'subscription.create':
+          await this.handlePaystackSubscriptionCreated(event.data);
+          break;
+
+        case 'subscription.disable':
+          await this.handlePaystackSubscriptionDisabled(event.data);
+          break;
+
+        case 'invoice.create':
+          await this.handlePaystackInvoiceCreated(event.data);
+          break;
+
+        default:
+          logger.info(`Unhandled Paystack webhook event type: ${event.event}`);
+      }
+
+      // Respond to the webhook
+      res.status(200).json({ success: true, message: 'Webhook processed' });
+    } catch (error) {
+      logger.error('Error processing Paystack webhook', {
+        error: (error as Error).message,
+        stack: (error as Error).stack,
+      });
+
+      res.status(500).json({
+        success: false,
+        message: 'Error processing webhook',
+        error:
+          process.env.NODE_ENV === 'development'
+            ? (error as Error).message
+            : undefined,
+      });
+    }
+  }
+
   /**
    * Handles incoming webhook events from the Nomba payment gateway
    */
@@ -553,6 +639,225 @@ export class WebhookController {
         eventId: event.id,
       });
     }
+  }
+
+  /**
+   * Verify the signature of the Paystack webhook payload
+   */
+  private verifyPaystackSignature(
+    secret: string,
+    signature: string,
+    payload: any
+  ): boolean {
+    const hash = crypto
+      .createHmac('sha512', secret)
+      .update(JSON.stringify(payload))
+      .digest('hex');
+
+    return hash === signature;
+  }
+
+  /**
+   * Handle successful charge webhook event from Paystack
+   */
+  private async handlePaystackSuccessfulCharge(data: any): Promise<void> {
+    try {
+      const { reference, amount, metadata, customer, authorization } = data;
+
+      // Extract user and plan IDs from metadata
+      const userId = metadata?.userId;
+      const planId = metadata?.planId;
+
+      if (!userId || !planId) {
+        logger.error('Missing userId or planId in payment metadata', {
+          reference,
+        });
+        return;
+      }
+
+      // Find the user
+      const user = await User.findById(userId);
+      if (!user) {
+        logger.error('User not found for payment', { userId, reference });
+        return;
+      }
+
+      // Find the subscription plan
+      const plan = await SubscriptionPlan.findById(planId);
+      if (!plan) {
+        logger.error('Subscription plan not found', { planId, reference });
+        return;
+      }
+
+      // Create payment record
+      const payment = await Payment.create({
+        userId: user._id,
+        planId,
+        amount: amount / 100, // Convert from kobo to naira
+        currency: 'NGN',
+        paymentMethod: 'credit_card',
+        status: 'completed',
+        completedAt: new Date(),
+        paymentReference: reference,
+        transactionId: data.id?.toString(),
+        metadata: {
+          planName: plan.name,
+          planTier: plan.tier,
+          billingInterval: plan.billingInterval,
+          paymentProvider: 'paystack',
+          authorizationCode: authorization?.authorization_code,
+          cardDetails: {
+            last4: authorization?.last4,
+            cardType: authorization?.card_type,
+            bank: authorization?.bank,
+          },
+        },
+      });
+
+      logger.info('Payment recorded successfully', {
+        paymentId: payment._id,
+        userId,
+        reference,
+      });
+
+      // Calculate subscription duration based on billing interval
+      const startDate = new Date();
+      const endDate = new Date();
+
+      if (plan.billingInterval === 'monthly') {
+        endDate.setMonth(endDate.getMonth() + 1);
+      } else if (plan.billingInterval === 'yearly') {
+        endDate.setFullYear(endDate.getFullYear() + 1);
+      }
+
+      // Check for existing subscription
+      const existingSubscription = await Subscription.findOne({
+        userId,
+        status: { $in: ['active', 'trial'] },
+      });
+
+      if (existingSubscription) {
+        // Update existing subscription
+        await Subscription.findByIdAndUpdate(existingSubscription._id, {
+          planId: plan._id,
+          status: 'active',
+          tier: plan.tier,
+          startDate,
+          endDate,
+          priceAtPurchase: plan.priceNGN,
+          $push: {
+            paymentHistory: payment._id,
+            webhookEvents: {
+              eventId: data.id.toString(),
+              eventType: 'charge.success',
+              processedAt: new Date(),
+              data: { reference },
+            },
+          },
+          features: Object.keys(plan.features).filter(
+            (key) => plan.features[key as keyof typeof plan.features] === true
+          ),
+          autoRenew: true,
+        });
+
+        logger.info('Existing subscription updated after payment', {
+          subscriptionId: existingSubscription._id,
+          status: 'active',
+        });
+      } else {
+        // Create new subscription
+        const subscription = await Subscription.create({
+          userId,
+          planId: plan._id,
+          status: 'active',
+          tier: plan.tier,
+          startDate,
+          endDate,
+          priceAtPurchase: plan.priceNGN,
+          paymentHistory: [payment._id],
+          webhookEvents: [
+            {
+              eventId: data.id.toString(),
+              eventType: 'charge.success',
+              processedAt: new Date(),
+              data: { reference },
+            },
+          ],
+          features: Object.keys(plan.features).filter(
+            (key) => plan.features[key as keyof typeof plan.features] === true
+          ),
+          autoRenew: true,
+          usageMetrics: [],
+        });
+
+        logger.info('New subscription created after payment', {
+          subscriptionId: subscription._id,
+          status: 'active',
+        });
+      }
+
+      // Send email notification to user
+      await emailService
+        .sendEmail({
+          to: user.email,
+          subject: 'Subscription Payment Successful',
+          text: `Dear ${user.firstName}, your payment of ₦${
+            amount / 100
+          } has been received and your ${
+            plan.name
+          } subscription is now active.`,
+          html: `
+          <h2>Subscription Payment Successful</h2>
+          <p>Dear ${user.firstName},</p>
+          <p>We have received your payment of <strong>₦${
+            amount / 100
+          }</strong> for the <strong>${plan.name}</strong> plan.</p>
+          <p>Your subscription is now active and will be valid until ${endDate.toLocaleDateString()}.</p>
+          <p>Thank you for choosing our service!</p>
+        `,
+        })
+        .catch((err) => {
+          logger.error('Failed to send payment confirmation email', {
+            error: err.message,
+            userId,
+          });
+        });
+    } catch (error) {
+      logger.error('Error handling Paystack successful charge', {
+        error: (error as Error).message,
+        stack: (error as Error).stack,
+      });
+    }
+  }
+
+  /**
+   * Handle subscription created webhook event from Paystack
+   */
+  private async handlePaystackSubscriptionCreated(data: any): Promise<void> {
+    logger.info('Paystack subscription created webhook received', {
+      subscriptionCode: data.subscription_code,
+      customerEmail: data.customer?.email,
+    });
+  }
+
+  /**
+   * Handle subscription disabled webhook event from Paystack
+   */
+  private async handlePaystackSubscriptionDisabled(data: any): Promise<void> {
+    logger.info('Paystack subscription disabled webhook received', {
+      subscriptionCode: data.subscription_code,
+      customerEmail: data.customer?.email,
+    });
+  }
+
+  /**
+   * Handle invoice created webhook event from Paystack
+   */
+  private async handlePaystackInvoiceCreated(data: any): Promise<void> {
+    logger.info('Paystack invoice created webhook received', {
+      invoiceCode: data.invoice_code,
+      customerEmail: data.customer?.email,
+    });
   }
 }
 

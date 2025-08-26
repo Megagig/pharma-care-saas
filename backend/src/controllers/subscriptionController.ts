@@ -5,7 +5,7 @@ import SubscriptionPlan from '../models/SubscriptionPlan';
 import FeatureFlag from '../models/FeatureFlag';
 import Payment from '../models/Payment';
 import { emailService } from '../utils/emailService';
-import { nombaService } from '../services/nombaService';
+import { paystackService, PaystackService } from '../services/paystackService';
 
 interface AuthRequest extends Request {
   user?: any;
@@ -157,10 +157,27 @@ export class SubscriptionController {
     return features;
   }
 
-  // Create Nomba checkout session
+  // Create Paystack checkout session
   async createCheckoutSession(req: AuthRequest, res: Response): Promise<any> {
     try {
+      console.log('createCheckoutSession - Request received:', {
+        body: req.body,
+        user: req.user
+          ? {
+              id: req.user._id,
+              email: req.user.email,
+              role: req.user.role,
+              hasSubscription: !!req.user.currentSubscriptionId,
+            }
+          : 'No user',
+      });
+
       const { planId, billingInterval = 'monthly' } = req.body;
+
+      console.log('Looking for subscription plan:', {
+        planId,
+        billingInterval,
+      });
 
       const plan = await SubscriptionPlan.findOne({
         _id: planId,
@@ -176,41 +193,80 @@ export class SubscriptionController {
 
       const user = req.user;
 
+      if (!user) {
+        console.error('createCheckoutSession - No user in request');
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+      }
+
+      console.log(
+        'Checking for existing subscription for user:',
+        user._id.toString()
+      );
+
       // Check if user already has active subscription
       const existingSubscription = await Subscription.findOne({
         userId: user._id,
         status: { $in: ['active', 'trial'] },
       });
 
+      console.log(
+        'Existing subscription check result:',
+        existingSubscription
+          ? {
+              id: existingSubscription._id,
+              status: existingSubscription.status,
+              planId: existingSubscription.planId,
+              endDate: existingSubscription.endDate,
+            }
+          : 'No active subscription'
+      );
+
       if (existingSubscription) {
+        console.log('User already has an active subscription, returning 400');
         return res.status(400).json({
           success: false,
           message: 'User already has an active subscription',
         });
       }
 
-      // Create payment with Nomba
+      // Create payment with Paystack
       const paymentData = {
-        amount: plan.priceNGN,
+        email: user.email,
+        amount: PaystackService.convertToKobo(plan.priceNGN), // Convert to kobo using static method
         currency: 'NGN',
-        customerEmail: user.email,
-        customerName: `${user.firstName} ${user.lastName}`,
-        description: `${plan.name} Subscription - ${billingInterval}`,
-        callbackUrl: `${process.env.FRONTEND_URL}/subscription-management/success`,
+        callback_url:
+          req.body.callbackUrl ||
+          `${process.env.FRONTEND_URL}/subscription/success`,
         metadata: {
           userId: user._id.toString(),
           planId: plan._id.toString(),
           billingInterval,
           tier: plan.tier,
+          customerName: `${user.firstName} ${user.lastName}`,
+          planName: plan.name,
         },
+        channels: [
+          'card',
+          'bank',
+          'ussd',
+          'qr',
+          'mobile_money',
+          'bank_transfer',
+        ],
       };
 
-      // Check if this is development mode without Nomba credentials or if Nomba is not configured
-      if (process.env.NODE_ENV === 'development' && !nombaService.isNombaConfigured()) {
+      // Check if this is development mode without Paystack credentials or if Paystack is not configured
+      if (
+        process.env.NODE_ENV === 'development' &&
+        !paystackService.isConfigured()
+      ) {
         // Mock payment response for development
         const mockReference = `mock_${Date.now()}_${user._id}`;
-        const mockCheckoutUrl = `${process.env.FRONTEND_URL}/subscription-management/success?reference=${mockReference}`;
-        
+        const mockCheckoutUrl = `${process.env.FRONTEND_URL}/subscription-management/checkout?reference=${mockReference}&planId=${planId}`;
+
         // Store pending payment record with mock data
         await Payment.create({
           userId: user._id,
@@ -219,34 +275,46 @@ export class SubscriptionController {
           currency: 'NGN',
           paymentReference: mockReference,
           status: 'pending',
-          paymentMethod: 'nomba',
+          paymentMethod: 'paystack',
           metadata: paymentData.metadata,
         });
 
         return res.json({
           success: true,
           data: {
-            checkoutUrl: mockCheckoutUrl,
+            authorization_url: mockCheckoutUrl,
+            access_code: 'mock_access_code',
             reference: mockReference,
           },
           message: 'Development mode: Mock payment initiated',
         });
       }
 
-      // Check if Nomba is configured in production
-      if (!nombaService.isNombaConfigured()) {
+      // Check if Paystack is configured in production
+      if (!paystackService.isConfigured()) {
         return res.status(500).json({
           success: false,
-          message: 'Payment service is not properly configured. Please contact support.',
+          message:
+            'Payment service is not properly configured. Please contact support.',
         });
       }
 
-      const paymentResponse = await nombaService.initiatePayment(paymentData);
+      const paymentResponse = await paystackService.initializeTransaction(
+        paymentData
+      );
 
       if (!paymentResponse.success) {
+        console.error('Paystack payment initialization failed:', {
+          message: paymentResponse.message,
+          error: paymentResponse.error,
+          details: paymentResponse.details,
+        });
+
         return res.status(400).json({
           success: false,
           message: paymentResponse.message || 'Failed to initialize payment',
+          error: paymentResponse.error,
+          details: paymentResponse.details,
         });
       }
 
@@ -258,14 +326,15 @@ export class SubscriptionController {
         currency: 'NGN',
         paymentReference: paymentResponse.data!.reference,
         status: 'pending',
-        paymentMethod: 'nomba',
+        paymentMethod: 'paystack',
         metadata: paymentData.metadata,
       });
 
       res.json({
         success: true,
         data: {
-          checkoutUrl: paymentResponse.data!.checkoutUrl,
+          authorization_url: paymentResponse.data!.authorization_url,
+          access_code: paymentResponse.data!.access_code,
           reference: paymentResponse.data!.reference,
         },
       });
@@ -274,6 +343,51 @@ export class SubscriptionController {
       res.status(500).json({
         success: false,
         message: 'Error creating checkout session',
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  // Verify payment by reference (public method for Paystack callback)
+  async verifyPaymentByReference(req: Request, res: Response): Promise<any> {
+    try {
+      const reference = req.query.reference as string;
+
+      if (!reference) {
+        return res.status(400).json({
+          success: false,
+          message: 'Payment reference is required',
+        });
+      }
+
+      // Verify with Paystack
+      const verificationResult = await paystackService.verifyTransaction(
+        reference
+      );
+
+      if (!verificationResult.success || !verificationResult.data) {
+        return res.status(400).json({
+          success: false,
+          message: verificationResult.message || 'Payment verification failed',
+        });
+      }
+
+      const paymentData = verificationResult.data;
+
+      // Return basic payment verification info
+      return res.status(200).json({
+        success: true,
+        data: {
+          status: paymentData.status,
+          reference: paymentData.reference,
+          amount: paymentData.amount,
+        },
+      });
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error verifying payment',
         error: (error as Error).message,
       });
     }
@@ -293,7 +407,10 @@ export class SubscriptionController {
 
       // Check if this is a development mode mock payment
       let paymentData: any;
-      if (process.env.NODE_ENV === 'development' && paymentReference.startsWith('mock_')) {
+      if (
+        process.env.NODE_ENV === 'development' &&
+        paymentReference.startsWith('mock_')
+      ) {
         // Mock verification for development
         paymentData = {
           status: 'success',
@@ -303,15 +420,16 @@ export class SubscriptionController {
           customerEmail: '',
         };
       } else {
-        // Verify payment with Nomba
-        const verificationResult = await nombaService.verifyPayment(
+        // Verify payment with Paystack
+        const verificationResult = await paystackService.verifyTransaction(
           paymentReference
         );
 
         if (!verificationResult.success || !verificationResult.data) {
           return res.status(400).json({
             success: false,
-            message: verificationResult.message || 'Payment verification failed',
+            message:
+              verificationResult.message || 'Payment verification failed',
           });
         }
 
@@ -738,15 +856,12 @@ export class SubscriptionController {
     }
   }
 
-  // Nomba webhook handler
+  // Paystack webhook handler
   async handleWebhook(req: Request, res: Response): Promise<any> {
-    const signature = req.headers['x-nomba-signature'] as string;
-    const timestamp = req.headers['x-nomba-timestamp'] as string;
+    const signature = req.headers['x-paystack-signature'] as string;
 
-    if (!signature || !timestamp) {
-      return res
-        .status(400)
-        .json({ error: 'Missing webhook signature or timestamp' });
+    if (!signature) {
+      return res.status(400).json({ error: 'Missing webhook signature' });
     }
 
     let event;
@@ -754,10 +869,9 @@ export class SubscriptionController {
       const payload = JSON.stringify(req.body);
 
       // Verify webhook signature
-      const isValid = nombaService.verifyWebhookSignature(
+      const isValid = paystackService.verifyWebhookSignature(
         payload,
-        signature,
-        timestamp
+        signature
       );
       if (!isValid) {
         console.log('Webhook signature verification failed');
@@ -773,17 +887,21 @@ export class SubscriptionController {
     }
 
     try {
-      switch (event.type || event.event) {
-        case 'payment.success':
+      switch (event.event) {
         case 'charge.success':
-          await this.handleNombaPaymentSucceeded(event.data);
+          await this.handlePaystackPaymentSucceeded(event.data);
           break;
-        case 'payment.failed':
         case 'charge.failed':
-          await this.handleNombaPaymentFailed(event.data);
+          await this.handlePaystackPaymentFailed(event.data);
+          break;
+        case 'subscription.create':
+          await this.handlePaystackSubscriptionCreated(event.data);
+          break;
+        case 'subscription.disable':
+          await this.handlePaystackSubscriptionDisabled(event.data);
           break;
         default:
-          console.log(`Unhandled event type ${event.type || event.event}`);
+          console.log(`Unhandled event type ${event.event}`);
       }
 
       res.json({ received: true });
@@ -809,17 +927,25 @@ export class SubscriptionController {
   }
 
   private async handlePaymentSucceeded(paymentData: any) {
-    // Handle successful payment from Nomba webhook
-    await this.handleNombaPaymentSucceeded(paymentData);
+    // Handle successful payment from payment provider webhook
+    console.log(
+      'Payment succeeded',
+      paymentData?.reference || 'Unknown reference'
+    );
+    // Process payment success logic here
   }
 
   private async handlePaymentFailed(paymentData: any) {
-    // Handle failed payment from Nomba webhook
-    await this.handleNombaPaymentFailed(paymentData);
+    // Handle failed payment from payment provider webhook
+    console.log(
+      'Payment failed',
+      paymentData?.reference || 'Unknown reference'
+    );
+    // Process payment failure logic here
   }
 
-  // Nomba-specific webhook handlers
-  private async handleNombaPaymentSucceeded(paymentData: any) {
+  // Paystack-specific webhook handlers
+  private async handlePaystackPaymentSucceeded(paymentData: any) {
     try {
       const reference = paymentData.reference;
       if (!reference) return;
@@ -836,18 +962,24 @@ export class SubscriptionController {
       }
 
       // Process the subscription activation (this logic is also in handleSuccessfulPayment)
-      console.log('Processing Nomba payment success via webhook:', reference);
+      console.log(
+        'Processing Paystack payment success via webhook:',
+        reference
+      );
 
       // Update payment status
       paymentRecord.status = 'completed';
       paymentRecord.completedAt = new Date();
       await paymentRecord.save();
+
+      // Process subscription activation
+      await this.processSubscriptionActivation(paymentRecord);
     } catch (error) {
-      console.error('Error handling Nomba payment success:', error);
+      console.error('Error handling Paystack payment success:', error);
     }
   }
 
-  private async handleNombaPaymentFailed(paymentData: any) {
+  private async handlePaystackPaymentFailed(paymentData: any) {
     try {
       const reference = paymentData.reference;
       if (!reference) return;
@@ -863,7 +995,85 @@ export class SubscriptionController {
 
       console.log('Payment failed for reference:', reference);
     } catch (error) {
-      console.error('Error handling Nomba payment failure:', error);
+      console.error('Error handling Paystack payment failure:', error);
+    }
+  }
+
+  private async handlePaystackSubscriptionCreated(subscriptionData: any) {
+    console.log('Paystack subscription created:', subscriptionData);
+  }
+
+  private async handlePaystackSubscriptionDisabled(subscriptionData: any) {
+    console.log('Paystack subscription disabled:', subscriptionData);
+  }
+
+  private async processSubscriptionActivation(paymentRecord: any) {
+    try {
+      const userId = paymentRecord.userId;
+      const planId = paymentRecord.planId;
+      const billingInterval =
+        paymentRecord.metadata?.billingInterval || 'monthly';
+
+      const user = await User.findById(userId);
+      const plan = await SubscriptionPlan.findById(planId);
+
+      if (!user || !plan) {
+        console.error('User or plan not found for subscription activation');
+        return;
+      }
+
+      // Cancel existing active subscriptions
+      await Subscription.updateMany(
+        { userId: userId, status: { $in: ['active', 'trial'] } },
+        { status: 'cancelled' }
+      );
+
+      // Calculate subscription period
+      const startDate = new Date();
+      const endDate = new Date();
+      if (billingInterval === 'yearly') {
+        endDate.setFullYear(endDate.getFullYear() + 1);
+      } else {
+        endDate.setMonth(endDate.getMonth() + 1);
+      }
+
+      // Create new subscription
+      const subscription = new Subscription({
+        userId: userId,
+        planId: planId,
+        tier: plan.tier,
+        status: plan.tier === 'free_trial' ? 'trial' : 'active',
+        startDate: startDate,
+        endDate: endDate,
+        priceAtPurchase: plan.priceNGN,
+        autoRenew: true,
+        paymentReference: paymentRecord.paymentReference,
+        features: Object.keys(plan.features).filter(
+          (key: string) => (plan.features as any)[key] === true
+        ),
+      });
+
+      await subscription.save();
+
+      // Update user subscription info
+      user.currentSubscriptionId = subscription._id;
+      user.subscriptionTier = plan.tier;
+      user.currentPlanId = planId;
+      await user.save();
+
+      // Send confirmation email
+      await emailService.sendSubscriptionConfirmation(user.email, {
+        firstName: user.firstName,
+        planName: plan.name,
+        amount: plan.priceNGN,
+        billingInterval: billingInterval,
+        startDate: startDate,
+        endDate: endDate,
+      });
+
+      console.log('Subscription activated successfully for user:', userId);
+    } catch (error) {
+      console.error('Error processing subscription activation:', error);
     }
   }
 
@@ -915,7 +1125,7 @@ export class SubscriptionController {
         features: subscription.features,
         // Add more usage tracking here as needed
         patientsCount: 0, // Would be fetched from actual patient records
-        notesCount: 0,    // Would be fetched from actual notes
+        notesCount: 0, // Would be fetched from actual notes
         teamMembers: 1,
       };
 
