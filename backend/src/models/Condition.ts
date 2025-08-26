@@ -3,7 +3,7 @@ import { tenancyGuardPlugin, addAuditFields } from '../utils/tenancyGuard';
 
 export interface ICondition extends Document {
   _id: mongoose.Types.ObjectId;
-  pharmacyId: mongoose.Types.ObjectId;
+  workplaceId: mongoose.Types.ObjectId;
   patientId: mongoose.Types.ObjectId;
   name: string; // e.g., Hypertension
   snomedId?: string;
@@ -19,9 +19,9 @@ export interface ICondition extends Document {
 
 const conditionSchema = new Schema(
   {
-    pharmacyId: {
+    workplaceId: {
       type: Schema.Types.ObjectId,
-      ref: 'Pharmacy',
+      ref: 'Workplace',
       required: true,
       index: true,
     },
@@ -88,20 +88,20 @@ const conditionSchema = new Schema(
 addAuditFields(conditionSchema);
 
 // Apply tenancy guard plugin
-conditionSchema.plugin(tenancyGuardPlugin);
+conditionSchema.plugin(tenancyGuardPlugin, { pharmacyIdField: 'workplaceId' });
 
 // Indexes for efficient querying
-conditionSchema.index({ pharmacyId: 1, patientId: 1 });
-conditionSchema.index({ pharmacyId: 1, name: 1 });
-conditionSchema.index({ pharmacyId: 1, status: 1 });
-conditionSchema.index({ pharmacyId: 1, isDeleted: 1 });
+conditionSchema.index({ workplaceId: 1, patientId: 1 });
+conditionSchema.index({ workplaceId: 1, name: 1 });
+conditionSchema.index({ workplaceId: 1, status: 1 });
+conditionSchema.index({ workplaceId: 1, isDeleted: 1 });
 conditionSchema.index({ snomedId: 1 }, { sparse: true });
 conditionSchema.index({ onsetDate: -1 });
 conditionSchema.index({ createdAt: -1 });
 
 // Compound index to prevent duplicate conditions for the same patient
 conditionSchema.index(
-  { pharmacyId: 1, patientId: 1, name: 1 },
+  { workplaceId: 1, patientId: 1, name: 1 },
   { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } }
 );
 
@@ -134,27 +134,27 @@ conditionSchema.pre('save', function (this: ICondition) {
 conditionSchema.statics.findByPatient = function (
   patientId: mongoose.Types.ObjectId,
   status?: string,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query: any = { patientId };
   if (status) {
     query.status = status;
   }
 
-  if (pharmacyId) {
-    return this.find(query).setOptions({ pharmacyId }).sort({ onsetDate: -1 });
+  if (workplaceId) {
+    return this.find(query).setOptions({ workplaceId }).sort({ onsetDate: -1 });
   }
   return this.find(query).sort({ onsetDate: -1 });
 };
 
 // Static method to find active conditions
 conditionSchema.statics.findActiveConditions = function (
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = { status: 'active' };
 
-  if (pharmacyId) {
-    return this.find(query).setOptions({ pharmacyId }).sort({ createdAt: -1 });
+  if (workplaceId) {
+    return this.find(query).setOptions({ workplaceId }).sort({ createdAt: -1 });
   }
   return this.find(query).sort({ createdAt: -1 });
 };
@@ -162,14 +162,14 @@ conditionSchema.statics.findActiveConditions = function (
 // Static method to search by condition name
 conditionSchema.statics.searchByName = function (
   searchTerm: string,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = {
     name: new RegExp(searchTerm, 'i'), // Case-insensitive search
   };
 
-  if (pharmacyId) {
-    return this.find(query).setOptions({ pharmacyId }).sort({ name: 1 });
+  if (workplaceId) {
+    return this.find(query).setOptions({ workplaceId }).sort({ name: 1 });
   }
   return this.find(query).sort({ name: 1 });
 };

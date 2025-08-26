@@ -7,7 +7,7 @@ import {
 
 export interface IDrugTherapyProblem extends Document {
   _id: mongoose.Types.ObjectId;
-  pharmacyId: mongoose.Types.ObjectId;
+  workplaceId: mongoose.Types.ObjectId;
   patientId: mongoose.Types.ObjectId;
   visitId?: mongoose.Types.ObjectId;
   type:
@@ -30,9 +30,9 @@ export interface IDrugTherapyProblem extends Document {
 
 const drugTherapyProblemSchema = new Schema(
   {
-    pharmacyId: {
+    workplaceId: {
       type: Schema.Types.ObjectId,
-      ref: 'Pharmacy',
+      ref: 'Workplace',
       required: true,
       index: true,
     },
@@ -90,7 +90,9 @@ const drugTherapyProblemSchema = new Schema(
 addAuditFields(drugTherapyProblemSchema);
 
 // Apply tenancy guard plugin
-drugTherapyProblemSchema.plugin(tenancyGuardPlugin);
+drugTherapyProblemSchema.plugin(tenancyGuardPlugin, {
+  pharmacyIdField: 'workplaceId',
+});
 
 // Indexes for efficient querying
 drugTherapyProblemSchema.index({ pharmacyId: 1, patientId: 1, status: 1 });
@@ -204,7 +206,7 @@ drugTherapyProblemSchema.post(
         .model('DrugTherapyProblem')
         .countDocuments({
           patientId: this.patientId,
-          pharmacyId: this.pharmacyId,
+          workplaceId: this.workplaceId,
           status: 'unresolved',
           isDeleted: { $ne: true },
         });
@@ -225,15 +227,15 @@ drugTherapyProblemSchema.post(
 drugTherapyProblemSchema.statics.findByPatient = function (
   patientId: mongoose.Types.ObjectId,
   status?: string,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query: any = { patientId };
   if (status) {
     query.status = status;
   }
 
-  const baseQuery = pharmacyId
-    ? this.find(query).setOptions({ pharmacyId })
+  const baseQuery = workplaceId
+    ? this.find(query).setOptions({ workplaceId })
     : this.find(query);
   return baseQuery.sort({ status: 1, createdAt: -1 }); // Show unresolved first
 };
@@ -242,40 +244,40 @@ drugTherapyProblemSchema.statics.findByPatient = function (
 drugTherapyProblemSchema.statics.findByType = function (
   type: string,
   status?: string,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query: any = { type };
   if (status) {
     query.status = status;
   }
 
-  const baseQuery = pharmacyId
-    ? this.find(query).setOptions({ pharmacyId })
+  const baseQuery = workplaceId
+    ? this.find(query).setOptions({ workplaceId })
     : this.find(query);
   return baseQuery.sort({ createdAt: -1 });
 };
 
 // Static method to find unresolved DTPs
 drugTherapyProblemSchema.statics.findUnresolved = function (
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = { status: 'unresolved' };
 
-  const baseQuery = pharmacyId
-    ? this.find(query).setOptions({ pharmacyId })
+  const baseQuery = workplaceId
+    ? this.find(query).setOptions({ workplaceId })
     : this.find(query);
   return baseQuery.sort({ createdAt: -1 });
 };
 
 // Static method to get DTP statistics
 drugTherapyProblemSchema.statics.getStatistics = async function (
-  pharmacyId?: mongoose.Types.ObjectId,
+  workplaceId?: mongoose.Types.ObjectId,
   dateRange?: { start: Date; end: Date }
 ) {
   const matchStage: any = {};
 
-  if (pharmacyId) {
-    matchStage.pharmacyId = pharmacyId;
+  if (workplaceId) {
+    matchStage.workplaceId = workplaceId;
   }
 
   if (dateRange) {

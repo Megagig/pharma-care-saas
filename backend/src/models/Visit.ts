@@ -19,7 +19,7 @@ export interface ISOAPNotes {
 
 export interface IVisit extends Document {
   _id: mongoose.Types.ObjectId;
-  pharmacyId: mongoose.Types.ObjectId;
+  workplaceId: mongoose.Types.ObjectId;
   patientId: mongoose.Types.ObjectId;
   date: Date;
   soap: ISOAPNotes;
@@ -106,9 +106,9 @@ const soapSchema = new Schema(
 
 const visitSchema = new Schema(
   {
-    pharmacyId: {
+    workplaceId: {
       type: Schema.Types.ObjectId,
-      ref: 'Pharmacy',
+      ref: 'Workplace',
       required: true,
       index: true,
     },
@@ -173,12 +173,12 @@ const visitSchema = new Schema(
 addAuditFields(visitSchema);
 
 // Apply tenancy guard plugin
-visitSchema.plugin(tenancyGuardPlugin);
+visitSchema.plugin(tenancyGuardPlugin, { pharmacyIdField: 'workplaceId' });
 
 // Indexes for efficient querying
-visitSchema.index({ pharmacyId: 1, patientId: 1, date: -1 });
-visitSchema.index({ pharmacyId: 1, date: -1 });
-visitSchema.index({ pharmacyId: 1, isDeleted: 1 });
+visitSchema.index({ workplaceId: 1, patientId: 1, date: -1 });
+visitSchema.index({ workplaceId: 1, date: -1 });
+visitSchema.index({ workplaceId: 1, isDeleted: 1 });
 visitSchema.index({ createdAt: -1 });
 
 // Virtual to populate patient details
@@ -295,13 +295,13 @@ visitSchema.pre('save', function (this: IVisit) {
 visitSchema.statics.findByPatient = function (
   patientId: mongoose.Types.ObjectId,
   limit?: number,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = { patientId };
 
   let baseQuery;
-  if (pharmacyId) {
-    baseQuery = this.find(query).setOptions({ pharmacyId });
+  if (workplaceId) {
+    baseQuery = this.find(query).setOptions({ workplaceId });
   } else {
     baseQuery = this.find(query);
   }
@@ -319,7 +319,7 @@ visitSchema.statics.findByPatient = function (
 visitSchema.statics.findByDateRange = function (
   startDate: Date,
   endDate: Date,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = {
     date: {
@@ -328,8 +328,8 @@ visitSchema.statics.findByDateRange = function (
     },
   };
 
-  if (pharmacyId) {
-    return this.find(query).setOptions({ pharmacyId }).sort({ date: -1 });
+  if (workplaceId) {
+    return this.find(query).setOptions({ workplaceId }).sort({ date: -1 });
   }
   return this.find(query).sort({ date: -1 });
 };
@@ -337,7 +337,7 @@ visitSchema.statics.findByDateRange = function (
 // Static method to find recent visits
 visitSchema.statics.findRecent = function (
   days: number = 7,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
@@ -349,8 +349,8 @@ visitSchema.statics.findRecent = function (
     },
   };
 
-  if (pharmacyId) {
-    return this.find(query).setOptions({ pharmacyId }).sort({ date: -1 });
+  if (workplaceId) {
+    return this.find(query).setOptions({ workplaceId }).sort({ date: -1 });
   }
   return this.find(query).sort({ date: -1 });
 };
@@ -358,7 +358,7 @@ visitSchema.statics.findRecent = function (
 // Static method to search visits by SOAP content
 visitSchema.statics.searchByContent = function (
   searchTerm: string,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const regex = new RegExp(searchTerm, 'i');
   const query = {
@@ -370,8 +370,8 @@ visitSchema.statics.searchByContent = function (
     ],
   };
 
-  if (pharmacyId) {
-    return this.find(query).setOptions({ pharmacyId }).sort({ date: -1 });
+  if (workplaceId) {
+    return this.find(query).setOptions({ workplaceId }).sort({ date: -1 });
   }
   return this.find(query).sort({ date: -1 });
 };

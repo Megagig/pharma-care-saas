@@ -23,7 +23,7 @@ export interface ILabs {
 
 export interface IClinicalAssessment extends Document {
   _id: mongoose.Types.ObjectId;
-  pharmacyId: mongoose.Types.ObjectId;
+  workplaceId: mongoose.Types.ObjectId;
   patientId: mongoose.Types.ObjectId;
   visitId?: mongoose.Types.ObjectId; // ref Visit
   vitals?: IVitals;
@@ -132,9 +132,9 @@ const labsSchema = new Schema(
 
 const clinicalAssessmentSchema = new Schema(
   {
-    pharmacyId: {
+    workplaceId: {
       type: Schema.Types.ObjectId,
-      ref: 'Pharmacy',
+      ref: 'Workplace',
       required: true,
       index: true,
     },
@@ -177,12 +177,18 @@ const clinicalAssessmentSchema = new Schema(
 addAuditFields(clinicalAssessmentSchema);
 
 // Apply tenancy guard plugin
-clinicalAssessmentSchema.plugin(tenancyGuardPlugin);
+clinicalAssessmentSchema.plugin(tenancyGuardPlugin, {
+  pharmacyIdField: 'workplaceId',
+});
 
 // Indexes for efficient querying
-clinicalAssessmentSchema.index({ pharmacyId: 1, patientId: 1, recordedAt: -1 });
-clinicalAssessmentSchema.index({ pharmacyId: 1, visitId: 1 });
-clinicalAssessmentSchema.index({ pharmacyId: 1, isDeleted: 1 });
+clinicalAssessmentSchema.index({
+  workplaceId: 1,
+  patientId: 1,
+  recordedAt: -1,
+});
+clinicalAssessmentSchema.index({ workplaceId: 1, visitId: 1 });
+clinicalAssessmentSchema.index({ workplaceId: 1, isDeleted: 1 });
 clinicalAssessmentSchema.index({ recordedAt: -1 });
 clinicalAssessmentSchema.index({ createdAt: -1 });
 
@@ -257,13 +263,13 @@ clinicalAssessmentSchema.pre('save', function (this: IClinicalAssessment) {
 clinicalAssessmentSchema.statics.findByPatient = function (
   patientId: mongoose.Types.ObjectId,
   limit?: number,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = { patientId };
 
   let baseQuery;
-  if (pharmacyId) {
-    baseQuery = this.find(query).setOptions({ pharmacyId });
+  if (workplaceId) {
+    baseQuery = this.find(query).setOptions({ workplaceId });
   } else {
     baseQuery = this.find(query);
   }
@@ -280,13 +286,13 @@ clinicalAssessmentSchema.statics.findByPatient = function (
 // Static method to find latest assessment for a patient
 clinicalAssessmentSchema.statics.findLatestByPatient = function (
   patientId: mongoose.Types.ObjectId,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = { patientId };
 
-  if (pharmacyId) {
+  if (workplaceId) {
     return this.findOne(query)
-      .setOptions({ pharmacyId })
+      .setOptions({ workplaceId })
       .sort({ recordedAt: -1 });
   }
   return this.findOne(query).sort({ recordedAt: -1 });
@@ -295,12 +301,14 @@ clinicalAssessmentSchema.statics.findLatestByPatient = function (
 // Static method to find assessments by visit
 clinicalAssessmentSchema.statics.findByVisit = function (
   visitId: mongoose.Types.ObjectId,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = { visitId };
 
-  if (pharmacyId) {
-    return this.find(query).setOptions({ pharmacyId }).sort({ recordedAt: -1 });
+  if (workplaceId) {
+    return this.find(query)
+      .setOptions({ workplaceId })
+      .sort({ recordedAt: -1 });
   }
   return this.find(query).sort({ recordedAt: -1 });
 };
