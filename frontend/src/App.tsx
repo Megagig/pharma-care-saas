@@ -18,6 +18,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
+import { NotificationProvider } from './components/common/NotificationSystem';
 
 import Landing from './pages/Landing';
 import About from './pages/About';
@@ -62,270 +63,277 @@ function App(): JSX.Element {
           <CssBaseline />
           <AuthProvider>
             <FeatureFlagProvider>
-              <Router>
-                <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-                  <Toaster
-                    position="top-right"
-                    toastOptions={{
-                      duration: 4000,
-                      style: {
-                        background: '#363636',
-                        color: '#fff',
-                      },
-                      success: {
-                        duration: 3000,
-                        iconTheme: {
-                          primary: '#4ade80',
-                          secondary: '#fff',
-                        },
-                      },
-                      error: {
+              <NotificationProvider>
+                <Router>
+                  <Box
+                    sx={{ minHeight: '100vh', bgcolor: 'background.default' }}
+                  >
+                    <Toaster
+                      position="top-right"
+                      toastOptions={{
                         duration: 4000,
-                        iconTheme: {
-                          primary: '#ef4444',
-                          secondary: '#fff',
+                        style: {
+                          background: '#363636',
+                          color: '#fff',
                         },
-                      },
-                    }}
-                  />
-                  <Routes>
-                    {/* Public Routes */}
-                    <Route path="/" element={<Landing />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/pricing" element={<Pricing />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<MultiStepRegister />} />
-                    <Route path="/verify-email" element={<VerifyEmail />} />
-                    <Route
-                      path="/forgot-password"
-                      element={<ForgotPassword />}
+                        success: {
+                          duration: 3000,
+                          iconTheme: {
+                            primary: '#4ade80',
+                            secondary: '#fff',
+                          },
+                        },
+                        error: {
+                          duration: 4000,
+                          iconTheme: {
+                            primary: '#ef4444',
+                            secondary: '#fff',
+                          },
+                        },
+                      }}
                     />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    {/* Protected Routes */}
-                    <Route
-                      path="/dashboard"
-                      element={
-                        <ProtectedRoute requiresActiveSubscription>
+                    <Routes>
+                      {/* Public Routes */}
+                      <Route path="/" element={<Landing />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/pricing" element={<Pricing />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/register" element={<MultiStepRegister />} />
+                      <Route path="/verify-email" element={<VerifyEmail />} />
+                      <Route
+                        path="/forgot-password"
+                        element={<ForgotPassword />}
+                      />
+                      <Route
+                        path="/reset-password"
+                        element={<ResetPassword />}
+                      />
+                      {/* Protected Routes */}
+                      <Route
+                        path="/dashboard"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <Dashboard />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/patients"
+                        element={
+                          <ProtectedRoute
+                            requiredFeature="patient_management"
+                            requiresActiveSubscription
+                          >
+                            <AppLayout>
+                              <Patients />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/patients/new"
+                        element={
+                          <ProtectedRoute
+                            requiredFeature="patient_management"
+                            requiresActiveSubscription
+                          >
+                            <AppLayout>
+                              <PatientForm />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/patients/:patientId"
+                        element={
+                          <ProtectedRoute
+                            requiredFeature="patient_management"
+                            requiresActiveSubscription
+                          >
+                            <PatientManagement />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/patients/:patientId/edit"
+                        element={
+                          <ProtectedRoute
+                            requiredFeature="patient_management"
+                            requiresActiveSubscription
+                          >
+                            <AppLayout>
+                              <PatientForm />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/notes"
+                        element={
+                          <ProtectedRoute
+                            requiredFeature="clinical_notes"
+                            requiresLicense
+                            requiresActiveSubscription
+                          >
+                            <AppLayout>
+                              <ClinicalNotes />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/medications"
+                        element={
+                          <ProtectedRoute
+                            requiredFeature="medication_management"
+                            requiresActiveSubscription
+                          >
+                            <AppLayout>
+                              <Medications />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/subscriptions"
+                        element={
+                          <ProtectedRoute>
+                            <AppLayout>
+                              <Subscriptions />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/reports"
+                        element={
+                          <ProtectedRoute
+                            requiredFeature="basic_reports"
+                            requiresActiveSubscription
+                          >
+                            <AppLayout>
+                              <Reports />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Admin Routes */}
+                      <Route
+                        path="/admin"
+                        element={
+                          <ProtectedRoute requiredRole="super_admin">
+                            <AppLayout>
+                              <AdminDashboard />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Feature Flags Route */}
+                      <Route
+                        path="/feature-flags"
+                        element={
+                          <ProtectedRoute requiredRole="super_admin">
+                            <AppLayout>
+                              <FeatureFlagsPage />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* License Management */}
+                      <Route
+                        path="/license"
+                        element={
+                          <ProtectedRoute>
+                            <AppLayout>
+                              <LicenseUpload />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Enhanced Subscription Management */}
+                      <Route
+                        path="/subscription-management"
+                        element={
+                          <ProtectedRoute>
+                            <AppLayout>
+                              <SubscriptionManagement />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Subscription Success Page - No auth required for payment redirection */}
+                      <Route
+                        path="/subscription/success"
+                        element={
                           <AppLayout>
-                            <Dashboard />
+                            <SubscriptionSuccess />
                           </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/patients"
-                      element={
-                        <ProtectedRoute
-                          requiredFeature="patient_management"
-                          requiresActiveSubscription
-                        >
+                        }
+                      />
+                      {/* Subscription Plans - This should not require active subscription */}
+                      <Route
+                        path="/dashboard/subscription/plans"
+                        element={
+                          <ProtectedRoute>
+                            <AppLayout>
+                              <SubscriptionManagement />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/subscription/plans"
+                        element={
+                          <ProtectedRoute>
+                            <AppLayout>
+                              <SubscriptionManagement />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* SaaS Settings - accessible to everyone */}
+                      <Route
+                        path="/saas-settings"
+                        element={
                           <AppLayout>
-                            <Patients />
+                            <SaasSettings />
                           </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/patients/new"
-                      element={
-                        <ProtectedRoute
-                          requiredFeature="patient_management"
-                          requiresActiveSubscription
-                        >
-                          <AppLayout>
-                            <PatientForm />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/patients/:patientId"
-                      element={
-                        <ProtectedRoute
-                          requiredFeature="patient_management"
-                          requiresActiveSubscription
-                        >
-                          <PatientManagement />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/patients/:patientId/edit"
-                      element={
-                        <ProtectedRoute
-                          requiredFeature="patient_management"
-                          requiresActiveSubscription
-                        >
-                          <AppLayout>
-                            <PatientForm />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/notes"
-                      element={
-                        <ProtectedRoute
-                          requiredFeature="clinical_notes"
-                          requiresLicense
-                          requiresActiveSubscription
-                        >
-                          <AppLayout>
-                            <ClinicalNotes />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/medications"
-                      element={
-                        <ProtectedRoute
-                          requiredFeature="medication_management"
-                          requiresActiveSubscription
-                        >
-                          <AppLayout>
-                            <Medications />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/subscriptions"
-                      element={
-                        <ProtectedRoute>
-                          <AppLayout>
-                            <Subscriptions />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/reports"
-                      element={
-                        <ProtectedRoute
-                          requiredFeature="basic_reports"
-                          requiresActiveSubscription
-                        >
-                          <AppLayout>
-                            <Reports />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    {/* Admin Routes */}
-                    <Route
-                      path="/admin"
-                      element={
-                        <ProtectedRoute requiredRole="super_admin">
-                          <AppLayout>
-                            <AdminDashboard />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    {/* Feature Flags Route */}
-                    <Route
-                      path="/feature-flags"
-                      element={
-                        <ProtectedRoute requiredRole="super_admin">
-                          <AppLayout>
-                            <FeatureFlagsPage />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    {/* License Management */}
-                    <Route
-                      path="/license"
-                      element={
-                        <ProtectedRoute>
-                          <AppLayout>
-                            <LicenseUpload />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    {/* Enhanced Subscription Management */}
-                    <Route
-                      path="/subscription-management"
-                      element={
-                        <ProtectedRoute>
-                          <AppLayout>
-                            <SubscriptionManagement />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    {/* Subscription Success Page - No auth required for payment redirection */}
-                    <Route
-                      path="/subscription/success"
-                      element={
-                        <AppLayout>
-                          <SubscriptionSuccess />
-                        </AppLayout>
-                      }
-                    />
-                    {/* Subscription Plans - This should not require active subscription */}
-                    <Route
-                      path="/dashboard/subscription/plans"
-                      element={
-                        <ProtectedRoute>
-                          <AppLayout>
-                            <SubscriptionManagement />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/subscription/plans"
-                      element={
-                        <ProtectedRoute>
-                          <AppLayout>
-                            <SubscriptionManagement />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    {/* SaaS Settings - accessible to everyone */}
-                    <Route
-                      path="/saas-settings"
-                      element={
-                        <AppLayout>
-                          <SaasSettings />
-                        </AppLayout>
-                      }
-                    />
-                    {/* Settings Page */}
-                    <Route
-                      path="/settings"
-                      element={
-                        <ProtectedRoute>
-                          <AppLayout>
-                            <Settings />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    {/* Help & Support Page */}
-                    <Route
-                      path="/help"
-                      element={
-                        <ProtectedRoute>
-                          <AppLayout>
-                            <Help />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    {/* Redirect any unknown routes to dashboard */}
-                    <Route
-                      path="*"
-                      element={<Navigate to="/dashboard" replace />}
-                    />
-                  </Routes>
-                </Box>
-              </Router>
+                        }
+                      />
+                      {/* Settings Page */}
+                      <Route
+                        path="/settings"
+                        element={
+                          <ProtectedRoute>
+                            <AppLayout>
+                              <Settings />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Help & Support Page */}
+                      <Route
+                        path="/help"
+                        element={
+                          <ProtectedRoute>
+                            <AppLayout>
+                              <Help />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Redirect any unknown routes to dashboard */}
+                      <Route
+                        path="*"
+                        element={<Navigate to="/dashboard" replace />}
+                      />
+                    </Routes>
+                  </Box>
+                </Router>
+              </NotificationProvider>
             </FeatureFlagProvider>
           </AuthProvider>
         </ThemeProvider>

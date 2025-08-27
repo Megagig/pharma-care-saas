@@ -33,7 +33,7 @@ declare module '../../types/User' {
     currentSubscription?: SubscriptionDetails;
     stripeCustomerId?: string;
     subscription?: {
-      status: 'active' | 'canceled' | 'expired' | 'pending';
+      status: 'active' | 'canceled' | 'expired' | 'pending' | 'trial';
       expiresAt: string;
       canceledAt?: string;
       tier?: string;
@@ -46,7 +46,7 @@ declare module '../../types/User' {
 interface SubscriptionDetails {
   id: string;
   plan: string;
-  status: 'active' | 'canceled' | 'expired' | 'pending';
+  status: 'active' | 'canceled' | 'expired' | 'pending' | 'trial';
   startDate: string;
   endDate: string;
   autoRenew: boolean;
