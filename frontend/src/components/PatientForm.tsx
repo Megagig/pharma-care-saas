@@ -39,6 +39,7 @@ import {
 import type {
   CreatePatientData,
   UpdatePatientData,
+  Patient,
   NigerianState,
   BloodGroup,
   Genotype,
@@ -152,7 +153,12 @@ const PatientForm = () => {
   const createPatientMutation = useCreatePatient();
   const updatePatientMutation = useUpdatePatient();
 
-  const patient = patientResponse?.data?.patient;
+  const patient =
+    'patient' in (patientResponse || {})
+      ? (patientResponse as { patient: Patient }).patient
+      : 'data' in (patientResponse || {})
+      ? (patientResponse as { data: { patient: Patient } }).data?.patient
+      : undefined;
 
   // Form setup
   const {
@@ -160,7 +166,7 @@ const PatientForm = () => {
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isSubmitting, isDirty },
+    formState: { errors, isSubmitting },
     reset,
   } = useForm<PatientFormData>({
     defaultValues: {
@@ -273,7 +279,7 @@ const PatientForm = () => {
         const result = await createPatientMutation.mutateAsync(
           patientData as CreatePatientData
         );
-        const newPatientId = result.data?.patient?._id;
+        const newPatientId = result?.data?.patient?._id;
         navigate(newPatientId ? `/patients/${newPatientId}` : '/patients');
       }
     } catch (error) {
@@ -366,7 +372,18 @@ const PatientForm = () => {
         {/* Form */}
         <Card>
           <CardContent sx={{ p: 4 }}>
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              onKeyDown={(e) => {
+                // Prevent form submission on Enter key unless on the final step
+                if (e.key === 'Enter' && activeStep < steps.length - 1) {
+                  e.preventDefault();
+                  if (canProceedToNext()) {
+                    handleNext();
+                  }
+                }
+              }}
+            >
               {/* Step 0: Demographics */}
               {activeStep === 0 && (
                 <Stack spacing={3}>
@@ -788,7 +805,7 @@ const PatientForm = () => {
                       type="submit"
                       variant="contained"
                       startIcon={<SaveIcon />}
-                      disabled={isSubmitting || !isDirty}
+                      disabled={isSubmitting}
                       sx={{ minWidth: 120 }}
                     >
                       {isSubmitting

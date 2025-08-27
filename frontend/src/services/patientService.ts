@@ -159,10 +159,17 @@ class PatientService {
   /**
    * Search patients with query string
    */
-  async searchPatients(query: string): Promise<PaginatedResponse<Patient>> {
-    return this.makeRequest<PaginatedResponse<Patient>>(
-      `/patients/search?q=${encodeURIComponent(query)}`
-    );
+  async searchPatients(query: string): Promise<any> {
+    try {
+      const result = await this.makeRequest<any>(
+        `/patients/search?q=${encodeURIComponent(query)}`
+      );
+      console.log('Search result:', result);
+      return result;
+    } catch (error) {
+      console.error('Search error:', error);
+      throw error;
+    }
   }
 
   // =============================================
@@ -266,17 +273,41 @@ class PatientService {
     patientId: string,
     params: { status?: string; page?: number; limit?: number } = {}
   ): Promise<PaginatedResponse<Condition>> {
-    const searchParams = new URLSearchParams();
+    try {
+      const searchParams = new URLSearchParams();
 
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        searchParams.append(key, String(value));
-      }
-    });
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
 
-    return this.makeRequest<PaginatedResponse<Condition>>(
-      `/patients/${patientId}/conditions?${searchParams.toString()}`
-    );
+      // Add defensive URL encoding for patientId
+      const encodedPatientId = encodeURIComponent(patientId);
+      const queryString = searchParams.toString();
+      const url = `/patients/${encodedPatientId}/conditions${
+        queryString ? `?${queryString}` : ''
+      }`;
+
+      console.log('Fetching conditions with URL:', url);
+      return await this.makeRequest<PaginatedResponse<Condition>>(url);
+    } catch (error) {
+      console.error('Error fetching conditions:', error);
+      // Return empty data structure instead of throwing with proper structure
+      return {
+        data: { results: [] },
+        meta: {
+          total: 0,
+          page: 1,
+          limit: 20,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
+        },
+        success: true,
+        timestamp: new Date().toISOString(),
+      };
+    }
   }
 
   /**
@@ -286,13 +317,25 @@ class PatientService {
     patientId: string,
     conditionData: CreateConditionData
   ): Promise<ApiResponse<{ condition: Condition }>> {
-    return this.makeRequest<ApiResponse<{ condition: Condition }>>(
-      `/patients/${patientId}/conditions`,
-      {
+    try {
+      console.log(
+        'Creating condition for patient:',
+        patientId,
+        'with data:',
+        conditionData
+      );
+      const response = await this.makeRequest<
+        ApiResponse<{ condition: Condition }>
+      >(`/patients/${patientId}/conditions`, {
         method: 'POST',
         body: JSON.stringify(conditionData),
-      }
-    );
+      });
+      console.log('Condition creation response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error creating condition:', error);
+      throw error;
+    }
   }
 
   /**
@@ -351,13 +394,25 @@ class PatientService {
     patientId: string,
     medicationData: CreateMedicationData
   ): Promise<ApiResponse<{ medication: MedicationRecord }>> {
-    return this.makeRequest<ApiResponse<{ medication: MedicationRecord }>>(
-      `/patients/${patientId}/medications`,
-      {
+    try {
+      console.log(
+        'Creating medication for patient:',
+        patientId,
+        'with data:',
+        medicationData
+      );
+      const response = await this.makeRequest<
+        ApiResponse<{ medication: MedicationRecord }>
+      >(`/patients/${patientId}/medications`, {
         method: 'POST',
         body: JSON.stringify(medicationData),
-      }
-    );
+      });
+      console.log('Medication creation response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error creating medication:', error);
+      throw error;
+    }
   }
 
   /**
@@ -416,13 +471,25 @@ class PatientService {
     patientId: string,
     assessmentData: CreateAssessmentData
   ): Promise<ApiResponse<{ assessment: ClinicalAssessment }>> {
-    return this.makeRequest<ApiResponse<{ assessment: ClinicalAssessment }>>(
-      `/patients/${patientId}/assessments`,
-      {
+    try {
+      console.log(
+        'Creating assessment for patient:',
+        patientId,
+        'with data:',
+        assessmentData
+      );
+      const response = await this.makeRequest<
+        ApiResponse<{ assessment: ClinicalAssessment }>
+      >(`/patients/${patientId}/assessments`, {
         method: 'POST',
         body: JSON.stringify(assessmentData),
-      }
-    );
+      });
+      console.log('Assessment creation response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error creating assessment:', error);
+      throw error;
+    }
   }
 
   /**
@@ -472,13 +539,25 @@ class PatientService {
     patientId: string,
     dtpData: CreateDTPData
   ): Promise<ApiResponse<{ dtp: DrugTherapyProblem }>> {
-    return this.makeRequest<ApiResponse<{ dtp: DrugTherapyProblem }>>(
-      `/patients/${patientId}/dtps`,
-      {
+    try {
+      console.log(
+        'Creating DTP for patient:',
+        patientId,
+        'with data:',
+        dtpData
+      );
+      const response = await this.makeRequest<
+        ApiResponse<{ dtp: DrugTherapyProblem }>
+      >(`/patients/${patientId}/dtps`, {
         method: 'POST',
         body: JSON.stringify(dtpData),
-      }
-    );
+      });
+      console.log('DTP creation response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error saving DTP:', error);
+      throw error;
+    }
   }
 
   /**

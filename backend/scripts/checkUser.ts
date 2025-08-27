@@ -29,7 +29,11 @@ async function checkUserData() {
       console.log('Subscription planId:', subscription.planId);
       console.log('Subscription startDate:', subscription.startDate);
       console.log('Subscription endDate:', subscription.endDate);
-      console.log('Subscription isActive:', subscription.isActive);
+      console.log('Subscription isExpired:', subscription.isExpired());
+      console.log(
+        'Subscription isInGracePeriod:',
+        subscription.isInGracePeriod()
+      );
 
       // Check if subscription is expired
       const now = new Date();

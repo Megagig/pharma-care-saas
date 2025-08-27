@@ -126,13 +126,22 @@ const Patients = () => {
   const deletePatientMutation = useDeletePatient();
 
   // Computed values
-  const patients = Array.isArray(patientsResponse)
-    ? patientsResponse
-    : (patientsResponse as PaginatedResponse<Patient>)?.data?.results || [];
-  const totalPatients = Array.isArray(patientsResponse)
-    ? patientsResponse.length
-    : (patientsResponse as PaginatedResponse<Patient>)?.meta?.total || 0;
-  const currentPage = (searchParams.page || 1) - 1; // MUI pagination is 0-based  // Event handlers
+  const patients = patientsResponse?.data?.results || [];
+  const totalPatients = patientsResponse?.meta?.total || 0;
+  const currentPage = (searchParams.page || 1) - 1; // MUI pagination is 0-based
+
+  // Debug logging
+  console.log('Patients page data:', {
+    patientsResponse,
+    patients: patients.length,
+    totalPatients,
+    searchParams,
+    isLoading,
+    isError,
+    error,
+  });
+
+  // Event handlers
   const handleQuickSearch = (value: string) => {
     setQuickSearch(value);
     setSearchParams((prev) => ({
