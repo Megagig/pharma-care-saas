@@ -21,7 +21,9 @@ export const useSubscriptionStatus = () => {
   return {
     status: user?.subscription?.status || 'inactive',
     isActive:
-      user?.subscription?.status === 'active' || user?.role === 'super_admin',
+      user?.subscription?.status === 'active' ||
+      user?.subscription?.status === 'trial' ||
+      user?.role === 'super_admin',
     tier: 'free', // getSubscriptionTier(),
     expiresAt: user?.subscription?.expiresAt || null,
     daysRemaining: calculateDaysRemaining(),
