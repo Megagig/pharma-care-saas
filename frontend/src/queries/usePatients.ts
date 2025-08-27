@@ -36,6 +36,7 @@ export const usePatient = (patientId: string) => {
     queryKey: queryKeys.patients.detail(patientId),
     queryFn: () => patientService.getPatient(patientId),
     enabled: !!patientId, // Only run query if patientId exists
+    refetchOnWindowFocus: false,
   });
 };
 
