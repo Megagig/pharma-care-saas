@@ -575,11 +575,31 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     const user = await User.findById(req.user._id)
       .populate('currentPlanId')
       .populate('workplaceId')
+      .populate('currentSubscriptionId')
       .select('-passwordHash');
 
     if (!user) {
       res.status(404).json({ message: 'User not found' });
       return;
+    }
+
+    // Get user's active subscription if not populated
+    let userSubscription = user.currentSubscriptionId;
+    let subscriptionData = null;
+
+    if (!userSubscription) {
+      subscriptionData = await Subscription.findOne({
+        userId: user._id,
+        status: { $in: ['active', 'trial', 'grace_period'] },
+      }).populate('planId');
+    } else if (typeof userSubscription === 'object' && userSubscription._id) {
+      // If it's already populated
+      subscriptionData = userSubscription;
+    } else {
+      // If it's just an ObjectId, populate it
+      subscriptionData = await Subscription.findById(userSubscription).populate(
+        'planId'
+      );
     }
 
     res.json({
@@ -595,6 +615,10 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
         emailVerified: user.emailVerified,
         currentPlan: user.currentPlanId,
         workplace: user.workplaceId,
+        workplaceRole: user.workplaceRole,
+        subscriptionTier: user.subscriptionTier,
+        subscription: subscriptionData,
+        hasSubscription: !!subscriptionData,
         lastLoginAt: user.lastLoginAt,
       },
     });
@@ -859,9 +883,41 @@ export const registerWithWorkplace = async (
           );
         }
       } else if (workplaceFlow === 'skip') {
-        // Independent user - no workplace, limited features
-        // No subscription created - user can only access general features
-        // They'll need to create/join a workplace later or upgrade to access workplace features
+        // Independent user - still gets free trial but no workplace
+        // Create trial subscription for independent user
+        const trialEndDate = new Date();
+        trialEndDate.setDate(trialEndDate.getDate() + 14);
+
+        const subscriptionArray = await Subscription.create(
+          [
+            {
+              userId: createdUser._id,
+              planId: freeTrialPlan._id,
+              tier: 'free_trial',
+              status: 'trial',
+              startDate: new Date(),
+              endDate: trialEndDate,
+              priceAtPurchase: 0,
+              autoRenew: false,
+            },
+          ],
+          { session }
+        );
+
+        subscription = subscriptionArray[0];
+
+        if (!subscription) {
+          throw new Error('Failed to create subscription');
+        }
+
+        // Update user with subscription
+        await User.findByIdAndUpdate(
+          createdUser!._id,
+          {
+            currentSubscriptionId: subscription!._id,
+          },
+          { session }
+        );
       }
 
       // Generate verification token and code
