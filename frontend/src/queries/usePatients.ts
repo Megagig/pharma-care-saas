@@ -27,7 +27,6 @@ export const usePatients = (filters: PatientSearchParams = {}) => {
   return useQuery({
     queryKey: queryKeys.patients.list(filters),
     queryFn: () => patientService.getPatients(filters),
-    select: (data) => data.data || data, // Handle different response structures
   });
 };
 
@@ -47,7 +46,25 @@ export const useSearchPatients = (searchQuery: string) => {
     queryKey: queryKeys.patients.search(searchQuery),
     queryFn: () => patientService.searchPatients(searchQuery),
     enabled: !!searchQuery && searchQuery.length >= 2, // Only search with 2+ characters
-    select: (data) => data.data || data,
+    select: (data: any) => {
+      // Properly handle response structure regardless of format
+      if (data.patients) {
+        return {
+          data: {
+            results: data.patients,
+          },
+          meta: {
+            total: data.total || 0,
+            page: 1,
+            limit: data.patients?.length || 10,
+            totalPages: 1,
+            hasNext: false,
+            hasPrev: false,
+          },
+        };
+      }
+      return data.data || data;
+    },
   });
 };
 
@@ -60,11 +77,15 @@ export const useCreatePatient = () => {
     mutationFn: (patientData: CreatePatientData) =>
       patientService.createPatient(patientData),
     onSuccess: (data) => {
-      // Invalidate and refetch patients list
+      // Invalidate and refetch patients list - be more aggressive about cache invalidation
+      queryClient.invalidateQueries({ queryKey: queryKeys.patients.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.patients.lists() });
 
+      // Also refetch the current page to ensure data is fresh
+      queryClient.refetchQueries({ queryKey: queryKeys.patients.lists() });
+
       // Show success notification
-      const patient = data.data?.patient;
+      const patient = data?.data?.patient;
       addNotification({
         type: 'success',
         title: 'Patient Created',
@@ -307,7 +328,45 @@ export const usePatientConditions = (patientId: string) => {
     queryKey: queryKeys.conditions.byPatient(patientId),
     queryFn: () => patientService.getConditions(patientId),
     enabled: !!patientId,
-    select: (data) => data.data || data,
+    select: (data: any) => {
+      console.log('Condition data:', data);
+      // Handle various response formats
+      if (data?.data?.conditions) {
+        return {
+          results: data.data.conditions,
+          total: data.data.total || 0,
+        };
+      } else if (data?.conditions) {
+        return {
+          results: data.conditions,
+          total: data.total || 0,
+        };
+      } else if (data?.results) {
+        return data;
+      } else if (Array.isArray(data)) {
+        return {
+          results: data,
+          total: data.length,
+        };
+      } else if (data?.data && Array.isArray(data.data)) {
+        return {
+          results: data.data,
+          total: data.data.length,
+        };
+      } else if (data?.data?.results) {
+        return {
+          results: data.data.results,
+          total: data.meta?.total || 0,
+        };
+      }
+      // Default case - return empty results to prevent UI errors
+      return { results: [], total: 0 };
+    },
+    retry: 1, // Reduced retries to avoid excessive 422 errors
+    retryDelay: () => 1000, // Fixed delay of 1 second
+    // TanStack Query v4 uses onSettled, onSuccess, and onError
+    // We'll use staleTime to reduce refetch frequency
+    staleTime: 30000, // 30 seconds
   });
 };
 

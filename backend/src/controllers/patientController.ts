@@ -44,8 +44,8 @@ import {
 export const getPatients = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const {
-      page,
-      limit,
+      page = 1,
+      limit = 10,
       q,
       name,
       mrn,
@@ -56,6 +56,13 @@ export const getPatients = asyncHandler(
       sort,
     } = req.query as any;
     const context = getRequestContext(req);
+
+    // Parse pagination parameters
+    const parsedPage = Math.max(1, parseInt(page as string) || 1);
+    const parsedLimit = Math.min(
+      50,
+      Math.max(1, parseInt(limit as string) || 10)
+    );
 
     // Build query
     const query: any = {};
@@ -98,8 +105,8 @@ export const getPatients = asyncHandler(
     const [patients, total] = await Promise.all([
       Patient.find(query)
         .sort(sort || '-createdAt')
-        .limit(limit)
-        .skip((page - 1) * limit)
+        .limit(parsedLimit)
+        .skip((parsedPage - 1) * parsedLimit)
         .select('-__v')
         .lean(),
       Patient.countDocuments(query),
@@ -109,8 +116,8 @@ export const getPatients = asyncHandler(
       res,
       patients,
       total,
-      page,
-      limit,
+      parsedPage,
+      parsedLimit,
       `Found ${total} patients`
     );
   }
