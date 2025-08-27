@@ -96,7 +96,7 @@ export const getPatients = asyncHandler(
     }
 
     if (mrn) query.mrn = new RegExp(mrn, 'i');
-    if (phone) query.phone = new RegExp(phone, 'i');
+    if (phone) query.phone = new RegExp(phone.replace('+', '\\+'), 'i');
     if (state) query.state = state;
     if (bloodGroup) query.bloodGroup = bloodGroup;
     if (genotype) query.genotype = genotype;

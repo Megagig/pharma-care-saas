@@ -310,7 +310,7 @@ const Patients = () => {
             <LocalHospitalIcon color="primary" />
             Patient Management
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography component="div" variant="body1" color="text.secondary">
             Comprehensive patient care and medical records management
             {totalPatients > 0 && (
               <Chip
