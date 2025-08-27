@@ -90,18 +90,9 @@ const PatientDetails = () => {
     error,
   } = usePatient(patientId || '');
 
-  const {
-    patient: patientOverview,
-    allergies,
-    conditions,
-    currentMedications,
-    activeDTPs,
-    latestAssessment,
-    isLoading: overviewLoading,
-    isError: overviewError,
-  } = usePatientOverview(patientId || '');
+  
 
-  const patient = patientResponse?.data?.patient || patientOverview?.data;
+  const patient = patientResponse?.data?.patient;
 
   // Utility functions
   const calculateAge = (dob?: string): number | null => {
@@ -157,7 +148,7 @@ const PatientDetails = () => {
   };
 
   // Loading state
-  if (patientLoading || overviewLoading) {
+  if (patientLoading) {
     return (
       <Box sx={{ p: 3 }}>
         <Skeleton
@@ -176,7 +167,7 @@ const PatientDetails = () => {
   }
 
   // Error state
-  if (patientError || overviewError || !patient) {
+  if (patientError || !patient) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -333,65 +324,7 @@ const PatientDetails = () => {
         </CardContent>
       </Card>
 
-      {/* Quick Stats Cards */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 2,
-          mb: 3,
-        }}
-      >
-        <Paper sx={{ p: 2, textAlign: 'center' }}>
-          <LocalHospitalIcon color="primary" sx={{ fontSize: 32, mb: 1 }} />
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {allergies?.data?.length || 0}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Allergies
-          </Typography>
-        </Paper>
-
-        <Paper sx={{ p: 2, textAlign: 'center' }}>
-          <PersonIcon color="primary" sx={{ fontSize: 32, mb: 1 }} />
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {conditions?.data?.length || 0}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Conditions
-          </Typography>
-        </Paper>
-
-        <Paper sx={{ p: 2, textAlign: 'center' }}>
-          <MedicationIcon color="primary" sx={{ fontSize: 32, mb: 1 }} />
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {currentMedications?.data?.length || 0}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Medications
-          </Typography>
-        </Paper>
-
-        <Paper sx={{ p: 2, textAlign: 'center' }}>
-          <WarningIcon color="error" sx={{ fontSize: 32, mb: 1 }} />
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {activeDTPs?.data?.length || 0}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Active DTPs
-          </Typography>
-        </Paper>
-
-        <Paper sx={{ p: 2, textAlign: 'center' }}>
-          <AssessmentIcon color="primary" sx={{ fontSize: 32, mb: 1 }} />
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {latestAssessment?.data ? '✓' : '—'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Latest Vitals
-          </Typography>
-        </Paper>
-      </Box>
+      
 
       {/* Tabs */}
       <Card>

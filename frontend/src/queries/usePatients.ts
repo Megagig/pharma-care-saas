@@ -36,7 +36,6 @@ export const usePatient = (patientId: string) => {
     queryKey: queryKeys.patients.detail(patientId),
     queryFn: () => patientService.getPatient(patientId),
     enabled: !!patientId, // Only run query if patientId exists
-    select: (data) => data.data || data,
   });
 };
 
@@ -192,7 +191,6 @@ export const usePatientMedications = (patientId: string) => {
     queryKey: queryKeys.medications.byPatient(patientId),
     queryFn: () => patientService.getMedications(patientId),
     enabled: !!patientId,
-    select: (data) => data.data || data,
   });
 };
 
@@ -208,7 +206,6 @@ export const usePatientAllergies = (
     queryKey: queryKeys.allergies.byPatient(patientId),
     queryFn: () => patientService.getAllergies(patientId, params),
     enabled: !!patientId,
-    select: (data) => data.data || data,
   });
 };
 
@@ -488,7 +485,6 @@ export const useCurrentMedications = (patientId: string) => {
     queryFn: () =>
       patientService.getMedications(patientId, { phase: 'current' }),
     enabled: !!patientId,
-    select: (data) => data.data || data,
   });
 };
 
@@ -497,7 +493,6 @@ export const usePastMedications = (patientId: string) => {
     queryKey: queryKeys.medications.past(patientId),
     queryFn: () => patientService.getMedications(patientId, { phase: 'past' }),
     enabled: !!patientId,
-    select: (data) => data.data || data,
   });
 };
 
@@ -622,7 +617,6 @@ export const usePatientSummary = (patientId: string) => {
     queryKey: queryKeys.patients.summary(patientId),
     queryFn: () => patientService.getPatientSummary(patientId),
     enabled: !!patientId,
-    select: (data) => data.data || data,
     staleTime: 2 * 60 * 1000, // 2 minutes - summary data can be slightly stale
   });
 };

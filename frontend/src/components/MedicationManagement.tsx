@@ -118,7 +118,7 @@ const MedicationManagement: React.FC<MedicationManagementProps> = ({
   const updateMedicationMutation = useUpdateMedication();
   const deleteMedicationMutation = useDeleteMedication();
 
-  const medications = extractResults(allMedicationsResponse);
+  const medications = allMedicationsResponse?.data?.results || [];
 
   // Form setup
   const {

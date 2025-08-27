@@ -119,7 +119,7 @@ const AllergyManagement: React.FC<AllergyManagementProps> = ({ patientId }) => {
   const updateAllergyMutation = useUpdateAllergy();
   const deleteAllergyMutation = useDeleteAllergy();
 
-  const allergies = extractResults(allergiesResponse);
+  const allergies = allergiesResponse?.data?.results || [];
 
   // Form setup
   const {

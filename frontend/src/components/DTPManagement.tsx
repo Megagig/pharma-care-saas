@@ -68,45 +68,40 @@ interface DTPFormData {
 
 const DTP_TYPES: { value: DTPType; label: string; description: string }[] = [
   {
-    value: 'untreated_condition',
-    label: 'Untreated Condition',
-    description:
-      'Patient has a condition requiring drug therapy but is not receiving it',
-  },
-  {
-    value: 'improper_drug_selection',
-    label: 'Improper Drug Selection',
-    description: 'Wrong drug chosen for the condition or patient',
-  },
-  {
-    value: 'sub_therapeutic_dosage',
-    label: 'Sub-therapeutic Dosage',
-    description: 'Dose is too low to achieve therapeutic effect',
-  },
-  {
-    value: 'overdosage',
-    label: 'Overdosage',
-    description: 'Dose is too high, potentially causing harm',
-  },
-  {
-    value: 'adverse_drug_reaction',
-    label: 'Adverse Drug Reaction',
-    description: 'Patient experiencing unwanted effects from medication',
-  },
-  {
-    value: 'drug_interaction',
-    label: 'Drug Interaction',
-    description: 'Medications interacting in harmful ways',
-  },
-  {
-    value: 'unnecessary_therapy',
+    value: 'unnecessary',
     label: 'Unnecessary Therapy',
     description: 'Patient receiving drug therapy that is not needed',
   },
   {
-    value: 'non_adherence',
+    value: 'wrongDrug',
+    label: 'Improper Drug Selection',
+    description: 'Wrong drug chosen for the condition or patient',
+  },
+  {
+    value: 'doseTooLow',
+    label: 'Sub-therapeutic Dosage',
+    description: 'Dose is too low to achieve therapeutic effect',
+  },
+  {
+    value: 'doseTooHigh',
+    label: 'Overdosage',
+    description: 'Dose is too high, potentially causing harm',
+  },
+  {
+    value: 'adverseReaction',
+    label: 'Adverse Drug Reaction',
+    description: 'Patient experiencing unwanted effects from medication',
+  },
+  {
+    value: 'inappropriateAdherence',
     label: 'Non-adherence',
     description: 'Patient not taking medication as prescribed',
+  },
+  {
+    value: 'needsAdditional',
+    label: 'Untreated Condition',
+    description:
+      'Patient has a condition requiring drug therapy but is not receiving it',
   },
 ];
 

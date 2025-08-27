@@ -161,7 +161,7 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
     defaultValues: {
       name: '',
       snomedId: '',
-      onsetDate: undefined,
+      onsetDate: null,
       status: 'active',
       notes: '',
     },
@@ -195,7 +195,7 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
       reset({
         name: '',
         snomedId: '',
-        onsetDate: undefined,
+        onsetDate: null,
         status: 'active',
         notes: '',
       });
@@ -214,7 +214,7 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
       const conditionData: CreateConditionData | UpdateConditionData = {
         name: formData.name.trim(),
         snomedId: formData.snomedId?.trim() || undefined,
-        onsetDate: formData.onsetDate?.toISOString(),
+        onsetDate: formData.onsetDate ? formData.onsetDate.toISOString() : undefined,
         status: formData.status,
         notes: formData.notes?.trim() || undefined,
       };
@@ -644,7 +644,7 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                         />
                       )}
                       renderOption={(props, option) => (
-                        <Box component="li" {...props}>
+                        <li {...props}>
                           <Box>
                             <Typography variant="body2">
                               {option.name}
@@ -657,7 +657,7 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                               SNOMED: {option.snomedId}
                             </Typography>
                           </Box>
-                        </Box>
+                        </li>
                       )}
                     />
                   )}
