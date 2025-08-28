@@ -31,11 +31,31 @@ import {
 import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
 import Assignment from '@mui/icons-material/Assignment';
 import SubscriptionsTwoTone from '@mui/icons-material/SubscriptionsTwoTone';
+// Pharmacy module icons - using default imports
+import Reviews from '@mui/icons-material/Reviews';
+import MedicalServices from '@mui/icons-material/MedicalServices';
+import Science from '@mui/icons-material/Science';
+import Forum from '@mui/icons-material/Forum';
+import MenuBook from '@mui/icons-material/MenuBook';
+import Psychology from '@mui/icons-material/Psychology';
+import Analytics from '@mui/icons-material/Analytics';
+import SupervisorAccount from '@mui/icons-material/SupervisorAccount';
+import Tune from '@mui/icons-material/Tune';
 
 // Use imported icons with aliases
 const AdminIcon = AdminPanelSettings;
 const LicenseIcon = Assignment;
 const SubscriptionIcon = SubscriptionsTwoTone;
+// Pharmacy module icon aliases
+const ReviewsIcon = Reviews;
+const MedicalServicesIcon = MedicalServices;
+const ScienceIcon = Science;
+const ForumIcon = Forum;
+const MenuBookIcon = MenuBook;
+const PsychologyIcon = Psychology;
+const AnalyticsIcon = Analytics;
+const SupervisorAccountIcon = SupervisorAccount;
+const TuneIcon = Tune;
 import { useUIStore } from '../stores';
 import { useRBAC } from '../hooks/useRBAC';
 import { ConditionalRender } from './AccessControl';
@@ -111,6 +131,72 @@ const Sidebar = () => {
     },
   ];
 
+  const pharmacyModules = [
+    {
+      name: 'Medication Therapy Review',
+      path: '/pharmacy/medication-therapy',
+      icon: ReviewsIcon,
+      show: true,
+      badge: 'Coming Soon',
+    },
+    {
+      name: 'Clinical Interventions',
+      path: '/pharmacy/clinical-interventions',
+      icon: MedicalServicesIcon,
+      show: true,
+      badge: 'Coming Soon',
+    },
+    {
+      name: 'Lab Result Integration',
+      path: '/pharmacy/lab-integration',
+      icon: ScienceIcon,
+      show: true,
+      badge: 'Coming Soon',
+    },
+    {
+      name: 'Communication Hub',
+      path: '/pharmacy/communication',
+      icon: ForumIcon,
+      show: true,
+      badge: 'Coming Soon',
+    },
+    {
+      name: 'Drug Information Center',
+      path: '/pharmacy/drug-information',
+      icon: MenuBookIcon,
+      show: true,
+      badge: 'Coming Soon',
+    },
+    {
+      name: 'Clinical Decision Support',
+      path: '/pharmacy/decision-support',
+      icon: PsychologyIcon,
+      show: true,
+      badge: 'Coming Soon',
+    },
+    {
+      name: 'Reports & Analytics',
+      path: '/pharmacy/reports',
+      icon: AnalyticsIcon,
+      show: true,
+      badge: 'Coming Soon',
+    },
+    {
+      name: 'User Management',
+      path: '/pharmacy/user-management',
+      icon: SupervisorAccountIcon,
+      show: true,
+      badge: 'Coming Soon',
+    },
+    {
+      name: 'Settings & Config',
+      path: '/pharmacy/settings',
+      icon: TuneIcon,
+      show: true,
+      badge: 'Coming Soon',
+    },
+  ];
+
   const adminItems = [
     {
       name: 'Admin Panel',
@@ -173,80 +259,104 @@ const Sidebar = () => {
           const isActive = location.pathname === item.path;
           const IconComponent = item.icon;
 
-          return (
-            <ListItem key={item.name} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                component={Link}
-                to={item.path}
-                sx={{
-                  minHeight: 48,
-                  borderRadius: 2,
-                  mx: 1,
-                  justifyContent: sidebarOpen ? 'initial' : 'center',
-                  px: sidebarOpen ? 2 : 1,
-                  backgroundColor: isActive ? 'primary.main' : 'transparent',
-                  color: isActive ? 'white' : 'text.primary',
+          const listItemButton = (
+            <ListItemButton
+              component={Link}
+              to={item.path}
+              sx={{
+                minHeight: 48,
+                borderRadius: 2,
+                mx: 1,
+                justifyContent: sidebarOpen ? 'initial' : 'center',
+                px: sidebarOpen ? 2 : 1,
+                backgroundColor: isActive ? 'primary.main' : 'transparent',
+                color: isActive ? 'white' : 'text.primary',
+                '&:hover': {
+                  backgroundColor: isActive ? 'primary.dark' : 'action.hover',
+                },
+                '&.Mui-selected': {
+                  backgroundColor: 'primary.main',
+                  color: 'white',
                   '&:hover': {
-                    backgroundColor: isActive ? 'primary.dark' : 'action.hover',
+                    backgroundColor: 'primary.dark',
                   },
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'white',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                  },
+                },
+              }}
+              selected={isActive}
+            >
+              <ListItemIcon
+                sx={{
+                  color: isActive ? 'white' : 'text.secondary',
+                  minWidth: sidebarOpen ? 40 : 0,
+                  mr: sidebarOpen ? 2 : 0,
+                  justifyContent: 'center',
                 }}
-                selected={isActive}
               >
-                <ListItemIcon
-                  sx={{
-                    color: isActive ? 'white' : 'text.secondary',
-                    minWidth: sidebarOpen ? 40 : 0,
-                    mr: sidebarOpen ? 2 : 0,
-                    justifyContent: 'center',
-                  }}
-                >
-                  {item.badge ? (
-                    <Badge
-                      badgeContent={
-                        item.badge === 'Premium' || item.badge === 'Pro'
-                          ? '!'
-                          : '•'
-                      }
-                      color={item.badge === 'Rejected' ? 'error' : 'warning'}
-                    >
-                      <IconComponent fontSize="small" />
-                    </Badge>
-                  ) : (
+                {item.badge ? (
+                  <Badge
+                    badgeContent={
+                      item.badge === 'Premium' ||
+                      item.badge === 'Pro' ||
+                      item.badge === 'Coming Soon'
+                        ? '!'
+                        : '•'
+                    }
+                    color={
+                      item.badge === 'Rejected'
+                        ? 'error'
+                        : item.badge === 'Coming Soon'
+                        ? 'info'
+                        : 'warning'
+                    }
+                  >
                     <IconComponent fontSize="small" />
-                  )}
-                </ListItemIcon>
-                {sidebarOpen && (
-                  <Box display="flex" alignItems="center" width="100%">
-                    <ListItemText
-                      primary={item.name}
-                      primaryTypographyProps={{
-                        fontSize: '0.875rem',
-                        fontWeight: isActive ? 600 : 400,
+                  </Badge>
+                ) : (
+                  <IconComponent fontSize="small" />
+                )}
+              </ListItemIcon>
+              {sidebarOpen && (
+                <Box display="flex" alignItems="center" width="100%">
+                  <ListItemText
+                    primary={item.name}
+                    primaryTypographyProps={{
+                      fontSize: '0.875rem',
+                      fontWeight: isActive ? 600 : 400,
+                    }}
+                  />
+                  {item.badge && (
+                    <Chip
+                      label={item.badge}
+                      size="small"
+                      color={
+                        item.badge === 'Rejected'
+                          ? 'error'
+                          : item.badge === 'Coming Soon'
+                          ? 'info'
+                          : 'warning'
+                      }
+                      variant="outlined"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.6rem',
+                        ml: 1,
                       }}
                     />
-                    {item.badge && (
-                      <Chip
-                        label={item.badge}
-                        size="small"
-                        color={item.badge === 'Rejected' ? 'error' : 'warning'}
-                        variant="outlined"
-                        sx={{
-                          height: 20,
-                          fontSize: '0.6rem',
-                          ml: 1,
-                        }}
-                      />
-                    )}
-                  </Box>
-                )}
-              </ListItemButton>
+                  )}
+                </Box>
+              )}
+            </ListItemButton>
+          );
+
+          return (
+            <ListItem key={item.name} disablePadding sx={{ mb: 0.5 }}>
+              {!sidebarOpen ? (
+                <Tooltip title={item.name} placement="right">
+                  {listItemButton}
+                </Tooltip>
+              ) : (
+                listItemButton
+              )}
             </ListItem>
           );
         })}
@@ -528,6 +638,27 @@ const Sidebar = () => {
           )}
 
           {renderNavItems(navItems)}
+        </Box>
+
+        <Divider sx={{ mx: sidebarOpen ? 2 : 1 }} />
+
+        {/* Pharmacy Tools Section */}
+        <Box sx={{ pt: 2, pb: 2 }}>
+          {sidebarOpen && (
+            <Typography
+              variant="overline"
+              sx={{
+                px: 3,
+                color: 'text.secondary',
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                letterSpacing: '0.1em',
+              }}
+            >
+              PHARMACY TOOLS
+            </Typography>
+          )}
+          {renderNavItems(pharmacyModules)}
         </Box>
 
         <Divider sx={{ mx: sidebarOpen ? 2 : 1 }} />

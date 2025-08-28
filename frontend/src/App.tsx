@@ -40,6 +40,20 @@ import FeatureFlagsPage from './pages/FeatureFlags';
 import Settings from './pages/Settings';
 import Help from './pages/Help';
 
+// Pharmacy Module Components
+import MedicationTherapyReview from './pages/MedicationTherapyReview';
+import ClinicalInterventions from './pages/ClinicalInterventions';
+import LabResultIntegration from './pages/LabResultIntegration';
+import CommunicationHub from './pages/CommunicationHub';
+import DrugInformationCenter from './pages/DrugInformationCenter';
+import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
+import PharmacyReports from './pages/PharmacyReports';
+import PharmacyUserManagement from './pages/PharmacyUserManagement';
+import PharmacySettings from './pages/PharmacySettings';
+
+// Test Components
+import SidebarTest from './components/SidebarTest';
+
 // Patient Management Components
 import PatientForm from './components/PatientForm';
 import PatientManagement from './components/PatientManagement';
@@ -220,6 +234,99 @@ function App(): JSX.Element {
                           </ProtectedRoute>
                         }
                       />
+
+                      {/* Pharmacy Module Routes */}
+                      <Route
+                        path="/pharmacy/medication-therapy"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <MedicationTherapyReview />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/pharmacy/clinical-interventions"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <ClinicalInterventions />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/pharmacy/lab-integration"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <LabResultIntegration />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/pharmacy/communication"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <CommunicationHub />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/pharmacy/drug-information"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <DrugInformationCenter />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/pharmacy/decision-support"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <ClinicalDecisionSupport />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/pharmacy/reports"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <PharmacyReports />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/pharmacy/user-management"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <PharmacyUserManagement />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/pharmacy/settings"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <PharmacySettings />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+
                       {/* Admin Routes */}
                       <Route
                         path="/admin"
@@ -321,6 +428,17 @@ function App(): JSX.Element {
                           <ProtectedRoute>
                             <AppLayout>
                               <Help />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Sidebar Test Page - Development Only */}
+                      <Route
+                        path="/test/sidebar"
+                        element={
+                          <ProtectedRoute>
+                            <AppLayout>
+                              <SidebarTest />
                             </AppLayout>
                           </ProtectedRoute>
                         }
