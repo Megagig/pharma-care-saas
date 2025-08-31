@@ -25,7 +25,6 @@ import {
 } from '@mui/material';
 import {
   Check as CheckIcon,
-  Close as CloseIcon,
   Star as StarIcon,
   Bolt as BoltIcon,
   Stars as StarsIcon,
@@ -206,15 +205,11 @@ const Pricing = () => {
                   height: '100%',
                   position: 'relative',
                   border: plan.isPopular ? 2 : 1,
-                  borderColor: plan.isPopular
-                    ? 'primary.main'
-                    : 'grey.200',
+                  borderColor: plan.isPopular ? 'primary.main' : 'grey.200',
                   transform: plan.isPopular ? 'scale(1.05)' : 'scale(1)',
                   transition: 'all 0.3s ease-in-out',
                   '&:hover': {
-                    transform: plan.isPopular
-                      ? 'scale(1.05)'
-                      : 'scale(1.02)',
+                    transform: plan.isPopular ? 'scale(1.05)' : 'scale(1.02)',
                     boxShadow: plan.isPopular ? 6 : 4,
                   },
                 }}
@@ -315,8 +310,7 @@ const Pricing = () => {
                           color="text.secondary"
                           sx={{ ml: 1 }}
                         >
-                          /
-                          {billingInterval === 'monthly' ? 'month' : 'year'}
+                          /{billingInterval === 'monthly' ? 'month' : 'year'}
                         </Typography>
                       </Box>
                     )}
@@ -373,7 +367,7 @@ const Pricing = () => {
                     </Typography>
                     <List disablePadding>
                       {plan.displayFeatures.map(
-                        (feature: any, featureIndex: number) => (
+                        (feature: string, featureIndex: number) => (
                           <ListItem
                             key={featureIndex}
                             disablePadding

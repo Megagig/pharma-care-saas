@@ -27,6 +27,7 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 
 // Import existing components
 import PatientDashboard from './PatientDashboard';
+import { MTRStatusIndicator } from './MTRStatusIndicator';
 import AllergyManagement from './AllergyManagement';
 import ConditionManagement from './ConditionManagement';
 import MedicationManagement from './MedicationManagement';
@@ -34,6 +35,7 @@ import ClinicalAssessment from './ClinicalAssessment';
 import DTPManagement from './DTPManagement';
 import CarePlanManagement from './CarePlanManagement';
 import VisitManagement from './VisitManagement';
+import PatientMTRWidget from './PatientMTRWidget';
 
 import { usePatient } from '../queries/usePatients';
 import { useRBAC } from '../hooks/useRBAC';
@@ -173,6 +175,7 @@ const PatientManagement = () => {
       <WarningIcon />,
       <AssignmentIcon />,
       <VisibilityIcon />,
+      <AssignmentIcon />,
     ];
     return icons[index];
   };
@@ -186,6 +189,7 @@ const PatientManagement = () => {
     'DTPs',
     'Care Plans',
     'Visits',
+    'MTR Sessions',
   ];
 
   return (
@@ -231,6 +235,11 @@ const PatientManagement = () => {
                       size="small"
                     />
                   )}
+                <MTRStatusIndicator
+                  patientId={patientId || ''}
+                  variant="chip"
+                  showActions={false}
+                />
               </Stack>
             </Box>
             <Button
@@ -325,6 +334,12 @@ const PatientManagement = () => {
         <TabPanel value={currentTab} index={7}>
           <Box sx={{ p: 3 }}>
             <VisitManagement patientId={patientId || ''} />
+          </Box>
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={8}>
+          <Box sx={{ p: 3 }}>
+            <PatientMTRWidget patientId={patientId || ''} />
           </Box>
         </TabPanel>
       </Box>

@@ -11,7 +11,8 @@ export interface IUser extends Document {
     verificationToken?: string;
     verificationCode?: string;
     resetToken?: string;
-    pharmacyId?: mongoose.Types.ObjectId;
+    workplaceId?: mongoose.Types.ObjectId;
+    workplaceRole?: 'Owner' | 'Staff' | 'Pharmacist' | 'Cashier' | 'Technician' | 'Assistant';
     currentPlanId: mongoose.Types.ObjectId;
     planOverride?: Record<string, any>;
     currentSubscriptionId?: mongoose.Types.ObjectId;

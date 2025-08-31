@@ -13,7 +13,7 @@ exports.createAllergy = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
     const allergyData = req.body;
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const existingAllergy = await Allergy_1.default.findOne({
         patientId,
         substance: allergyData.substance,
@@ -25,7 +25,7 @@ exports.createAllergy = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
     const allergy = new Allergy_1.default({
         ...allergyData,
         patientId,
-        pharmacyId: patient.pharmacyId,
+        workplaceId: patient.workplaceId,
         createdBy: context.userId,
         isDeleted: false,
     });
@@ -39,7 +39,7 @@ exports.getAllergies = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const query = { patientId };
     if (severity) {
         query.severity = severity;
@@ -78,7 +78,7 @@ exports.getAllergy = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
         .populate('createdBy', 'firstName lastName')
         .populate('updatedBy', 'firstName lastName');
     (0, responseHelpers_1.ensureResourceExists)(allergy, 'Allergy', allergyId);
-    (0, responseHelpers_1.checkTenantAccess)(allergy.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(allergy.workplaceId.toString(), context.workplaceId, context.isAdmin);
     (0, responseHelpers_1.sendSuccess)(res, { allergy }, 'Allergy details retrieved successfully');
 });
 exports.updateAllergy = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -87,7 +87,7 @@ exports.updateAllergy = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
     const updates = req.body;
     const allergy = await Allergy_1.default.findById(allergyId);
     (0, responseHelpers_1.ensureResourceExists)(allergy, 'Allergy', allergyId);
-    (0, responseHelpers_1.checkTenantAccess)(allergy.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(allergy.workplaceId.toString(), context.workplaceId, context.isAdmin);
     if (updates.substance && updates.substance !== allergy.substance) {
         const existingAllergy = await Allergy_1.default.findOne({
             patientId: allergy.patientId,
@@ -113,7 +113,7 @@ exports.deleteAllergy = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const allergy = await Allergy_1.default.findById(allergyId);
     (0, responseHelpers_1.ensureResourceExists)(allergy, 'Allergy', allergyId);
-    (0, responseHelpers_1.checkTenantAccess)(allergy.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(allergy.workplaceId.toString(), context.workplaceId, context.isAdmin);
     allergy.isDeleted = true;
     allergy.updatedBy = context.userId;
     await allergy.save();
@@ -125,7 +125,7 @@ exports.getCriticalAllergies = (0, responseHelpers_1.asyncHandler)(async (req, r
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const criticalAllergies = await Allergy_1.default.find({
         patientId,
         severity: 'severe',
@@ -153,7 +153,7 @@ exports.searchAllergies = (0, responseHelpers_1.asyncHandler)(async (req, res) =
         substance: searchRegex,
     };
     if (!context.isAdmin) {
-        query.pharmacyId = context.pharmacyId;
+        query.workplaceId = context.workplaceId;
     }
     const allergies = await Allergy_1.default.find(query)
         .populate('patientId', 'firstName lastName mrn')

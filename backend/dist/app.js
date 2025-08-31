@@ -32,6 +32,8 @@ const subscriptionManagement_1 = __importDefault(require("./routes/subscriptionM
 const webhookRoutes_1 = __importDefault(require("./routes/webhookRoutes"));
 const featureFlagRoutes_1 = __importDefault(require("./routes/featureFlagRoutes"));
 const healthRoutes_1 = __importDefault(require("./routes/healthRoutes"));
+const mtrRoutes_1 = __importDefault(require("./routes/mtrRoutes"));
+const auditRoutes_1 = __importDefault(require("./routes/auditRoutes"));
 const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
@@ -84,6 +86,8 @@ app.use('/api', carePlanRoutes_1.default);
 app.use('/api', visitRoutes_1.default);
 app.use('/api/notes', noteRoutes_1.default);
 app.use('/api/payments', paymentRoutes_1.default);
+app.use('/api/mtr', mtrRoutes_1.default);
+app.use('/api/audit', auditRoutes_1.default);
 app.use('/api/admin', admin_1.default);
 app.use('/api/license', license_1.default);
 app.use('/api/subscription-management', subscriptionManagement_1.default);

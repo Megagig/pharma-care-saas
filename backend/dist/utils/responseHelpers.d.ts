@@ -38,7 +38,7 @@ export declare const createDuplicateError: (resource: string, field?: string) =>
 export declare const createBusinessRuleError: (rule: string) => PatientManagementError;
 export declare const patientManagementErrorHandler: (error: Error, req: Request, res: Response, next: NextFunction) => void;
 export declare const asyncHandler: (fn: Function) => (req: Request, res: Response, next: NextFunction) => void;
-export declare const checkTenantAccess: (resourcePharmacyId: string, userPharmacyId: string, isAdmin?: boolean) => void;
+export declare const checkTenantAccess: (resourceWorkplaceId: string, userWorkplaceId: string, isAdmin?: boolean) => void;
 export declare const ensureResourceExists: <T>(resource: T | null, name: string, id?: string) => T;
 export declare const validateBusinessRules: {
     validateBloodPressure: (systolic?: number, diastolic?: number) => void;
@@ -51,7 +51,7 @@ export declare const respondWithPaginatedResults: <T>(res: Response, results: T[
 export declare const getRequestContext: (req: AuthRequest) => {
     userId: any;
     userRole: "pharmacist" | "pharmacy_team" | "pharmacy_outlet" | "intern_pharmacist" | "super_admin" | undefined;
-    pharmacyId: string;
+    workplaceId: string;
     isAdmin: any;
     canManage: any;
     timestamp: string;
@@ -62,7 +62,7 @@ export declare const createAuditLog: (action: string, resourceType: string, reso
     resourceId: string;
     userId: any;
     userRole: "pharmacist" | "pharmacy_team" | "pharmacy_outlet" | "intern_pharmacist" | "super_admin" | undefined;
-    pharmacyId: string;
+    workplaceId: string;
     changes: any;
     timestamp: string;
 };

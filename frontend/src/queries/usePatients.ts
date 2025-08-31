@@ -46,7 +46,7 @@ export const useSearchPatients = (searchQuery: string) => {
     queryKey: queryKeys.patients.search(searchQuery),
     queryFn: () => patientService.searchPatients(searchQuery),
     enabled: !!searchQuery && searchQuery.length >= 2, // Only search with 2+ characters
-    select: (data: any) => {
+    select: (data: unknown) => {
       // Properly handle response structure regardless of format
       if (data.patients) {
         return {
@@ -326,7 +326,7 @@ export const usePatientConditions = (patientId: string) => {
     queryKey: queryKeys.conditions.byPatient(patientId),
     queryFn: () => patientService.getConditions(patientId),
     enabled: !!patientId,
-    select: (data: any) => {
+    select: (data: unknown) => {
       console.log('Condition data:', data);
       // Handle various response formats
       if (data?.data?.conditions) {

@@ -4,7 +4,7 @@ import { queryKeys } from '../lib/queryClient';
 import { useUIStore } from '../stores';
 
 // Hook to fetch all medications with optional filters
-export const useMedications = (filters: Record<string, any> = {}) => {
+export const useMedications = (filters: Record<string, unknown> = {}) => {
   return useQuery({
     queryKey: queryKeys.medications.list(filters),
     queryFn: () => medicationService.getMedications(filters),
@@ -58,7 +58,7 @@ export const useCreateMedication = () => {
         duration: 5000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       addNotification({
         type: 'error',
         title: 'Addition Failed',
@@ -101,7 +101,7 @@ export const useUpdateMedication = () => {
         duration: 5000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       addNotification({
         type: 'error',
         title: 'Update Failed',
@@ -130,7 +130,7 @@ export const useUpdateMedicationStatus = () => {
       // Optimistically update to new value
       queryClient.setQueryData(
         queryKeys.medications.detail(medicationId),
-        (old: any) => old ? { ...old, status } : old
+        (old: unknown) => old ? { ...old, status } : old
       );
 
       return { previousMedication };
@@ -151,7 +151,7 @@ export const useUpdateMedicationStatus = () => {
         duration: 5000,
       });
     },
-    onSuccess: (data: any, variables) => {
+    onSuccess: (data: unknown, variables) => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.medications.lists() });
 
@@ -178,7 +178,7 @@ export const useDeleteMedication = () => {
 
   return useMutation({
     mutationFn: (medicationId: string) => medicationService.deleteMedication(medicationId),
-    onSuccess: (data: any, medicationId: string) => {
+    onSuccess: (data: unknown, medicationId: string) => {
       // Remove from cache
       queryClient.removeQueries({ queryKey: queryKeys.medications.detail(medicationId) });
 
@@ -195,7 +195,7 @@ export const useDeleteMedication = () => {
         duration: 5000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       addNotification({
         type: 'error',
         title: 'Deletion Failed',

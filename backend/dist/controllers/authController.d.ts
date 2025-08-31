@@ -14,5 +14,7 @@ interface AuthRequest extends Request {
 }
 export declare const getMe: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const updateProfile: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const registerWithWorkplace: (req: Request, res: Response) => Promise<void>;
+export declare const findWorkplaceByInviteCode: (req: Request, res: Response) => Promise<void>;
 export {};
 //# sourceMappingURL=authController.d.ts.map

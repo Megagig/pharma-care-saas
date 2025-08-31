@@ -30,6 +30,10 @@ import subAnalyticsRoutes from './routes/subscriptionManagement';
 import webhookRoutes from './routes/webhookRoutes';
 import featureFlagRoutes from './routes/featureFlagRoutes';
 import healthRoutes from './routes/healthRoutes';
+import mtrRoutes from './routes/mtrRoutes';
+import mtrNotificationRoutes from './routes/mtrNotificationRoutes';
+import patientMTRIntegrationRoutes from './routes/patientMTRIntegrationRoutes';
+import auditRoutes from './routes/auditRoutes';
 
 const app: Application = express();
 
@@ -46,11 +50,19 @@ app.use(
   })
 );
 
-// Rate limiting
+// Rate limiting - more lenient for development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Higher limit for development
   message: 'Too many requests from this IP, please try again later.',
+  skip: (req) => {
+    // Skip rate limiting for health checks and certain endpoints in development
+    if (process.env.NODE_ENV === 'development' &&
+      (req.path.includes('/health') || req.path.includes('/mtr/summary'))) {
+      return true;
+    }
+    return false;
+  }
 });
 app.use('/api/', limiter);
 
@@ -92,6 +104,7 @@ app.use('/api/patients', assessmentRoutes);
 app.use('/api/patients', dtpRoutes);
 app.use('/api/patients', carePlanRoutes);
 app.use('/api/patients', visitRoutes);
+app.use('/api/patients', patientMTRIntegrationRoutes);
 
 // Individual resource routes
 app.use('/api', allergyRoutes);
@@ -105,6 +118,9 @@ app.use('/api', visitRoutes);
 // Other routes
 app.use('/api/notes', noteRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/mtr', mtrRoutes);
+app.use('/api/mtr/notifications', mtrNotificationRoutes);
+app.use('/api/audit', auditRoutes);
 
 // RBAC and enhanced features
 app.use('/api/admin', adminRoutes);

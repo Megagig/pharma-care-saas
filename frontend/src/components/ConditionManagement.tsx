@@ -161,21 +161,23 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
     defaultValues: {
       name: '',
       snomedId: '',
-      onsetDate: null,
+      onsetDate: undefined,
       status: 'active',
       notes: '',
     },
   });
 
   // Filtered conditions
-  const filteredConditions = conditions.filter((condition: Condition) => {
-    const matchesSearch = condition.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === 'all' || condition.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredConditions = (conditions as Condition[]).filter(
+    (condition: Condition) => {
+      const matchesSearch = condition.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        statusFilter === 'all' || condition.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    }
+  );
 
   // Event handlers
   const handleOpenDialog = (condition?: Condition) => {
@@ -195,7 +197,7 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
       reset({
         name: '',
         snomedId: '',
-        onsetDate: null,
+        onsetDate: undefined,
         status: 'active',
         notes: '',
       });
@@ -214,7 +216,9 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
       const conditionData: CreateConditionData | UpdateConditionData = {
         name: formData.name.trim(),
         snomedId: formData.snomedId?.trim() || undefined,
-        onsetDate: formData.onsetDate ? formData.onsetDate.toISOString() : undefined,
+        onsetDate: formData.onsetDate
+          ? formData.onsetDate.toISOString()
+          : undefined,
         status: formData.status,
         notes: formData.notes?.trim() || undefined,
       };
@@ -469,103 +473,105 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredConditions.map((condition: Condition) => {
-                  const statusConfig = getStatusConfig(condition.status);
-                  return (
-                    <TableRow key={condition._id} hover>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {condition.name}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        {condition.snomedId ? (
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Typography
-                              variant="body2"
-                              sx={{ fontFamily: 'monospace', mr: 1 }}
-                            >
-                              {condition.snomedId}
-                            </Typography>
-                            <Tooltip title="SNOMED CT standardized medical terminology">
-                              <InfoIcon
-                                sx={{ fontSize: 14, color: 'info.main' }}
-                              />
-                            </Tooltip>
-                          </Box>
-                        ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            —
+                {(filteredConditions as Condition[]).map(
+                  (condition: Condition) => {
+                    const statusConfig = getStatusConfig(condition.status);
+                    return (
+                      <TableRow key={condition._id} hover>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {condition.name}
                           </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={statusConfig.label}
-                          size="small"
-                          color={statusConfig.color}
-                          variant="outlined"
-                          icon={statusConfig.icon}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {formatDate(condition.onsetDate)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            maxWidth: 200,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {condition.notes || '—'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          justifyContent="flex-end"
-                        >
-                          <Tooltip title="Edit Condition">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenDialog(condition)}
-                              disabled={
-                                createConditionMutation.isPending ||
-                                updateConditionMutation.isPending ||
-                                deleteConditionMutation.isPending
-                              }
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete Condition">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() =>
-                                handleDeleteCondition(condition._id)
-                              }
-                              disabled={
-                                createConditionMutation.isPending ||
-                                updateConditionMutation.isPending ||
-                                deleteConditionMutation.isPending
-                              }
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                        </TableCell>
+                        <TableCell>
+                          {condition.snomedId ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Typography
+                                variant="body2"
+                                sx={{ fontFamily: 'monospace', mr: 1 }}
+                              >
+                                {condition.snomedId}
+                              </Typography>
+                              <Tooltip title="SNOMED CT standardized medical terminology">
+                                <InfoIcon
+                                  sx={{ fontSize: 14, color: 'info.main' }}
+                                />
+                              </Tooltip>
+                            </Box>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              —
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={statusConfig.label}
+                            size="small"
+                            color={statusConfig.color}
+                            variant="outlined"
+                            icon={statusConfig.icon}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {formatDate(condition.onsetDate)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              maxWidth: 200,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {condition.notes || '—'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            justifyContent="flex-end"
+                          >
+                            <Tooltip title="Edit Condition">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleOpenDialog(condition)}
+                                disabled={
+                                  createConditionMutation.isPending ||
+                                  updateConditionMutation.isPending ||
+                                  deleteConditionMutation.isPending
+                                }
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete Condition">
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() =>
+                                  handleDeleteCondition(condition._id)
+                                }
+                                disabled={
+                                  createConditionMutation.isPending ||
+                                  updateConditionMutation.isPending ||
+                                  deleteConditionMutation.isPending
+                                }
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+                )}
               </TableBody>
             </Table>
           </TableContainer>
@@ -599,7 +605,7 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
           </DialogTitle>
 
           <DialogContent dividers>
-            <form onSubmit={handleSubmit(handleSaveCondition)}>
+            <Box component="form" onSubmit={handleSubmit(handleSaveCondition)}>
               <Stack spacing={3}>
                 {/* Condition Name */}
                 <Controller
@@ -643,22 +649,25 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                           fullWidth
                         />
                       )}
-                      renderOption={(props, option) => (
-                        <li {...props}>
-                          <Box>
-                            <Typography variant="body2">
-                              {option.name}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ fontFamily: 'monospace' }}
-                            >
-                              SNOMED: {option.snomedId}
-                            </Typography>
-                          </Box>
-                        </li>
-                      )}
+                      renderOption={(props, option) => {
+                        const { key, ...otherProps } = props;
+                        return (
+                          <li key={key} {...otherProps}>
+                            <Box>
+                              <Typography variant="body2">
+                                {option.name}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontFamily: 'monospace' }}
+                              >
+                                SNOMED: {option.snomedId}
+                              </Typography>
+                            </Box>
+                          </li>
+                        );
+                      }}
                     />
                   )}
                 />
@@ -815,7 +824,7 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                   </Alert>
                 )}
               </Stack>
-            </form>
+            </Box>
           </DialogContent>
 
           <DialogActions sx={{ p: 3 }}>

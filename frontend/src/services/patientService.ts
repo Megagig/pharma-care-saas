@@ -159,9 +159,9 @@ class PatientService {
   /**
    * Search patients with query string
    */
-  async searchPatients(query: string): Promise<any> {
+  async searchPatients(query: string): Promise<unknown> {
     try {
-      const result = await this.makeRequest<any>(
+      const result = await this.makeRequest<unknown>(
         `/patients/search?q=${encodeURIComponent(query)}`
       );
       console.log('Search result:', result);
@@ -285,9 +285,8 @@ class PatientService {
       // Add defensive URL encoding for patientId
       const encodedPatientId = encodeURIComponent(patientId);
       const queryString = searchParams.toString();
-      const url = `/patients/${encodedPatientId}/conditions${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/patients/${encodedPatientId}/conditions${queryString ? `?${queryString}` : ''
+        }`;
 
       console.log('Fetching conditions with URL:', url);
       return await this.makeRequest<PaginatedResponse<Condition>>(url);

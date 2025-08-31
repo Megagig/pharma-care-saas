@@ -8,6 +8,8 @@ const authController_1 = require("../controllers/authController");
 const auth_1 = require("../middlewares/auth");
 const router = express_1.default.Router();
 router.post('/register', authController_1.register);
+router.post('/register-with-workplace', authController_1.registerWithWorkplace);
+router.get('/workplace/invite/:inviteCode', authController_1.findWorkplaceByInviteCode);
 router.post('/login', authController_1.login);
 router.post('/verify-email', authController_1.verifyEmail);
 router.post('/forgot-password', authController_1.forgotPassword);

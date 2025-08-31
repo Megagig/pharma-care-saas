@@ -117,9 +117,9 @@ const labsSchema = new mongoose_1.Schema({
     },
 }, { _id: false });
 const clinicalAssessmentSchema = new mongoose_1.Schema({
-    pharmacyId: {
+    workplaceId: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Pharmacy',
+        ref: 'Workplace',
         required: true,
         index: true,
     },
@@ -155,10 +155,16 @@ const clinicalAssessmentSchema = new mongoose_1.Schema({
     toObject: { virtuals: true },
 });
 (0, tenancyGuard_1.addAuditFields)(clinicalAssessmentSchema);
-clinicalAssessmentSchema.plugin(tenancyGuard_1.tenancyGuardPlugin);
-clinicalAssessmentSchema.index({ pharmacyId: 1, patientId: 1, recordedAt: -1 });
-clinicalAssessmentSchema.index({ pharmacyId: 1, visitId: 1 });
-clinicalAssessmentSchema.index({ pharmacyId: 1, isDeleted: 1 });
+clinicalAssessmentSchema.plugin(tenancyGuard_1.tenancyGuardPlugin, {
+    pharmacyIdField: 'workplaceId',
+});
+clinicalAssessmentSchema.index({
+    workplaceId: 1,
+    patientId: 1,
+    recordedAt: -1,
+});
+clinicalAssessmentSchema.index({ workplaceId: 1, visitId: 1 });
+clinicalAssessmentSchema.index({ workplaceId: 1, isDeleted: 1 });
 clinicalAssessmentSchema.index({ recordedAt: -1 });
 clinicalAssessmentSchema.index({ createdAt: -1 });
 clinicalAssessmentSchema.virtual('patient', {
@@ -211,11 +217,11 @@ clinicalAssessmentSchema.pre('save', function () {
         this.labs.hba1c = Math.round(this.labs.hba1c * 10) / 10;
     }
 });
-clinicalAssessmentSchema.statics.findByPatient = function (patientId, limit, pharmacyId) {
+clinicalAssessmentSchema.statics.findByPatient = function (patientId, limit, workplaceId) {
     const query = { patientId };
     let baseQuery;
-    if (pharmacyId) {
-        baseQuery = this.find(query).setOptions({ pharmacyId });
+    if (workplaceId) {
+        baseQuery = this.find(query).setOptions({ workplaceId });
     }
     else {
         baseQuery = this.find(query);
@@ -226,19 +232,21 @@ clinicalAssessmentSchema.statics.findByPatient = function (patientId, limit, pha
     }
     return baseQuery;
 };
-clinicalAssessmentSchema.statics.findLatestByPatient = function (patientId, pharmacyId) {
+clinicalAssessmentSchema.statics.findLatestByPatient = function (patientId, workplaceId) {
     const query = { patientId };
-    if (pharmacyId) {
+    if (workplaceId) {
         return this.findOne(query)
-            .setOptions({ pharmacyId })
+            .setOptions({ workplaceId })
             .sort({ recordedAt: -1 });
     }
     return this.findOne(query).sort({ recordedAt: -1 });
 };
-clinicalAssessmentSchema.statics.findByVisit = function (visitId, pharmacyId) {
+clinicalAssessmentSchema.statics.findByVisit = function (visitId, workplaceId) {
     const query = { visitId };
-    if (pharmacyId) {
-        return this.find(query).setOptions({ pharmacyId }).sort({ recordedAt: -1 });
+    if (workplaceId) {
+        return this.find(query)
+            .setOptions({ workplaceId })
+            .sort({ recordedAt: -1 });
     }
     return this.find(query).sort({ recordedAt: -1 });
 };

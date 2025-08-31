@@ -9,29 +9,29 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   role:
-    | 'pharmacist'
-    | 'pharmacy_team'
-    | 'pharmacy_outlet'
-    | 'intern_pharmacist'
-    | 'super_admin';
+  | 'pharmacist'
+  | 'pharmacy_team'
+  | 'pharmacy_outlet'
+  | 'intern_pharmacist'
+  | 'super_admin';
   status:
-    | 'pending'
-    | 'active'
-    | 'suspended'
-    | 'license_pending'
-    | 'license_rejected';
+  | 'pending'
+  | 'active'
+  | 'suspended'
+  | 'license_pending'
+  | 'license_rejected';
   emailVerified: boolean;
   verificationToken?: string;
   verificationCode?: string;
   resetToken?: string;
   workplaceId?: mongoose.Types.ObjectId; // Changed from pharmacyId
   workplaceRole?:
-    | 'Owner'
-    | 'Staff'
-    | 'Pharmacist'
-    | 'Cashier'
-    | 'Technician'
-    | 'Assistant'; // Role within workplace
+  | 'Owner'
+  | 'Staff'
+  | 'Pharmacist'
+  | 'Cashier'
+  | 'Technician'
+  | 'Assistant'; // Role within workplace
   currentPlanId: mongoose.Types.ObjectId;
   planOverride?: Record<string, any>;
   currentSubscriptionId?: mongoose.Types.ObjectId;
@@ -58,16 +58,27 @@ export interface IUser extends Document {
 
   // Subscription and access
   subscriptionTier:
-    | 'free_trial'
-    | 'basic'
-    | 'pro'
-    | 'pharmily'
-    | 'network'
-    | 'enterprise';
+  | 'free_trial'
+  | 'basic'
+  | 'pro'
+  | 'pharmily'
+  | 'network'
+  | 'enterprise';
   trialStartDate?: Date;
   trialEndDate?: Date;
   features: string[]; // Enabled features for this user
   stripeCustomerId?: string; // Stripe customer ID for payment processing
+
+  // Notification preferences
+  notificationPreferences?: {
+    email: boolean;
+    sms: boolean;
+    push: boolean;
+    followUpReminders: boolean;
+    criticalAlerts: boolean;
+    dailyDigest: boolean;
+    weeklyReport: boolean;
+  };
 
   createdAt: Date;
   updatedAt: Date;
@@ -249,6 +260,36 @@ const userSchema = new Schema(
       type: String,
       sparse: true,
       index: true,
+    },
+    notificationPreferences: {
+      email: {
+        type: Boolean,
+        default: true,
+      },
+      sms: {
+        type: Boolean,
+        default: false,
+      },
+      push: {
+        type: Boolean,
+        default: true,
+      },
+      followUpReminders: {
+        type: Boolean,
+        default: true,
+      },
+      criticalAlerts: {
+        type: Boolean,
+        default: true,
+      },
+      dailyDigest: {
+        type: Boolean,
+        default: false,
+      },
+      weeklyReport: {
+        type: Boolean,
+        default: false,
+      },
     },
   },
   { timestamps: true }

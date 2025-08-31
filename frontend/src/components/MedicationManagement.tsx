@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { extractResults } from '../utils/apiHelpers';
+// import { extractResults } from '../utils/apiHelpers';
 import {
   Box,
   Button,

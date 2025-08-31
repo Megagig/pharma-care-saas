@@ -125,8 +125,8 @@ const asyncHandler = (fn) => {
     };
 };
 exports.asyncHandler = asyncHandler;
-const checkTenantAccess = (resourcePharmacyId, userPharmacyId, isAdmin = false) => {
-    if (!isAdmin && resourcePharmacyId !== userPharmacyId) {
+const checkTenantAccess = (resourceWorkplaceId, userWorkplaceId, isAdmin = false) => {
+    if (!isAdmin && resourceWorkplaceId !== userWorkplaceId) {
         throw (0, exports.createTenantViolationError)();
     }
 };
@@ -180,7 +180,7 @@ exports.respondWithPaginatedResults = respondWithPaginatedResults;
 const getRequestContext = (req) => ({
     userId: req.user?._id,
     userRole: req.user?.role,
-    pharmacyId: req.user?.pharmacyId?.toString() || '',
+    workplaceId: req.user?.workplaceId?.toString() || '',
     isAdmin: req.isAdmin || false,
     canManage: req.canManage || false,
     timestamp: new Date().toISOString(),
@@ -192,7 +192,7 @@ const createAuditLog = (action, resourceType, resourceId, context, changes) => (
     resourceId,
     userId: context.userId,
     userRole: context.userRole,
-    pharmacyId: context.pharmacyId,
+    workplaceId: context.workplaceId,
     changes,
     timestamp: context.timestamp,
 });

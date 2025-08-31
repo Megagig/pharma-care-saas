@@ -36,9 +36,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const tenancyGuard_1 = require("../utils/tenancyGuard");
 const allergySchema = new mongoose_1.Schema({
-    pharmacyId: {
+    workplaceId: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Pharmacy',
+        ref: 'Workplace',
         required: true,
         index: true,
     },
@@ -74,13 +74,13 @@ const allergySchema = new mongoose_1.Schema({
     toObject: { virtuals: true },
 });
 (0, tenancyGuard_1.addAuditFields)(allergySchema);
-allergySchema.plugin(tenancyGuard_1.tenancyGuardPlugin);
-allergySchema.index({ pharmacyId: 1, patientId: 1 });
-allergySchema.index({ pharmacyId: 1, substance: 1 });
-allergySchema.index({ pharmacyId: 1, isDeleted: 1 });
+allergySchema.plugin(tenancyGuard_1.tenancyGuardPlugin, { pharmacyIdField: 'workplaceId' });
+allergySchema.index({ workplaceId: 1, patientId: 1 });
+allergySchema.index({ workplaceId: 1, substance: 1 });
+allergySchema.index({ workplaceId: 1, isDeleted: 1 });
 allergySchema.index({ severity: 1 });
 allergySchema.index({ createdAt: -1 });
-allergySchema.index({ pharmacyId: 1, patientId: 1, substance: 1 }, { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } });
+allergySchema.index({ workplaceId: 1, patientId: 1, substance: 1 }, { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } });
 allergySchema.virtual('patient', {
     ref: 'Patient',
     localField: 'patientId',
@@ -95,19 +95,19 @@ allergySchema.pre('save', function () {
         this.substance = this.substance.trim();
     }
 });
-allergySchema.statics.findByPatient = function (patientId, pharmacyId) {
+allergySchema.statics.findByPatient = function (patientId, workplaceId) {
     const query = { patientId };
-    if (pharmacyId) {
-        return this.find(query).setOptions({ pharmacyId });
+    if (workplaceId) {
+        return this.find(query).setOptions({ workplaceId });
     }
     return this.find(query);
 };
-allergySchema.statics.findBySubstance = function (substance, pharmacyId) {
+allergySchema.statics.findBySubstance = function (substance, workplaceId) {
     const query = {
         substance: new RegExp(substance, 'i'),
     };
-    if (pharmacyId) {
-        return this.find(query).setOptions({ pharmacyId });
+    if (workplaceId) {
+        return this.find(query).setOptions({ workplaceId });
     }
     return this.find(query);
 };
