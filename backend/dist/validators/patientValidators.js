@@ -197,8 +197,7 @@ exports.createConditionSchema = zod_1.z.object({
     onsetDate: zod_1.z
         .string()
         .datetime()
-        .optional()
-        .transform((val) => (val ? new Date(val) : undefined)),
+        .optional(),
     status: zod_1.z.enum(['active', 'resolved', 'remission']).default('active'),
     notes: zod_1.z.string().max(500).trim().optional(),
 });

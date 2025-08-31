@@ -111,9 +111,21 @@ const userSchema = new mongoose_1.Schema({
         type: String,
         index: { expires: '1h' },
     },
-    pharmacyId: {
+    workplaceId: {
         type: mongoose_1.default.Schema.Types.ObjectId,
-        ref: 'Pharmacy',
+        ref: 'Workplace',
+        index: true,
+    },
+    workplaceRole: {
+        type: String,
+        enum: [
+            'Owner',
+            'Staff',
+            'Pharmacist',
+            'Cashier',
+            'Technician',
+            'Assistant',
+        ],
         index: true,
     },
     currentPlanId: {

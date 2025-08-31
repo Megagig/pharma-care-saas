@@ -36,6 +36,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CakeIcon from '@mui/icons-material/Cake';
 
 import { usePatient } from '../queries/usePatients';
+import { PatientMTRWidget } from './PatientMTRWidget';
 import type { Patient } from '../types/patientManagement';
 
 interface PatientDashboardProps {
@@ -334,6 +335,11 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
             </CardContent>
           </Card>
         </Box>
+      </Box>
+
+      {/* MTR Integration Widget */}
+      <Box sx={{ mb: 4 }}>
+        <PatientMTRWidget patientId={patientId!} />
       </Box>
 
       {/* Patient Details and Recent Activity */}

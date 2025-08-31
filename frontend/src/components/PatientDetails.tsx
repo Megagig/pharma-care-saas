@@ -15,7 +15,6 @@ import {
   Alert,
   Skeleton,
   Tooltip,
-  Paper,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
@@ -34,7 +33,7 @@ import { useRBAC } from '../hooks/useRBAC';
 import { RBACGuard } from '../hooks/useRBAC';
 
 import { usePatient } from '../queries/usePatients';
-import { usePatientOverview } from '../queries/usePatientResources';
+// import { usePatientOverview } from '../queries/usePatientResources';
 import AllergyManagement from './AllergyManagement';
 import ConditionManagement from './ConditionManagement';
 import MedicationManagement from './MedicationManagement';
@@ -89,8 +88,6 @@ const PatientDetails = () => {
     isError: patientError,
     error,
   } = usePatient(patientId || '');
-
-  
 
   const patient = patientResponse?.data?.patient;
 
@@ -323,8 +320,6 @@ const PatientDetails = () => {
           </Box>
         </CardContent>
       </Card>
-
-      
 
       {/* Tabs */}
       <Card>

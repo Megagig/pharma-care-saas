@@ -11,7 +11,7 @@ export interface IPatientVitals {
 }
 export interface IPatient extends Document {
     _id: mongoose.Types.ObjectId;
-    pharmacyId: mongoose.Types.ObjectId;
+    workplaceId: mongoose.Types.ObjectId;
     mrn: string;
     firstName: string;
     lastName: string;

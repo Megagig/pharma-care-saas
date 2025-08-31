@@ -25,6 +25,6 @@ async function testAuth() {
 }
 
 // Export for use in browser console
-(window as any).testAuth = testAuth;
+(window as Window & { testAuth?: typeof testAuth }).testAuth = testAuth;
 
 export { testAuth };

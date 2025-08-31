@@ -101,9 +101,9 @@ const soapSchema = new mongoose_1.Schema({
     },
 }, { _id: false });
 const visitSchema = new mongoose_1.Schema({
-    pharmacyId: {
+    workplaceId: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Pharmacy',
+        ref: 'Workplace',
         required: true,
         index: true,
     },
@@ -156,10 +156,10 @@ const visitSchema = new mongoose_1.Schema({
     toObject: { virtuals: true },
 });
 (0, tenancyGuard_1.addAuditFields)(visitSchema);
-visitSchema.plugin(tenancyGuard_1.tenancyGuardPlugin);
-visitSchema.index({ pharmacyId: 1, patientId: 1, date: -1 });
-visitSchema.index({ pharmacyId: 1, date: -1 });
-visitSchema.index({ pharmacyId: 1, isDeleted: 1 });
+visitSchema.plugin(tenancyGuard_1.tenancyGuardPlugin, { pharmacyIdField: 'workplaceId' });
+visitSchema.index({ workplaceId: 1, patientId: 1, date: -1 });
+visitSchema.index({ workplaceId: 1, date: -1 });
+visitSchema.index({ workplaceId: 1, isDeleted: 1 });
 visitSchema.index({ createdAt: -1 });
 visitSchema.virtual('patient', {
     ref: 'Patient',
@@ -241,11 +241,11 @@ visitSchema.pre('save', function () {
         });
     }
 });
-visitSchema.statics.findByPatient = function (patientId, limit, pharmacyId) {
+visitSchema.statics.findByPatient = function (patientId, limit, workplaceId) {
     const query = { patientId };
     let baseQuery;
-    if (pharmacyId) {
-        baseQuery = this.find(query).setOptions({ pharmacyId });
+    if (workplaceId) {
+        baseQuery = this.find(query).setOptions({ workplaceId });
     }
     else {
         baseQuery = this.find(query);
@@ -256,19 +256,19 @@ visitSchema.statics.findByPatient = function (patientId, limit, pharmacyId) {
     }
     return baseQuery;
 };
-visitSchema.statics.findByDateRange = function (startDate, endDate, pharmacyId) {
+visitSchema.statics.findByDateRange = function (startDate, endDate, workplaceId) {
     const query = {
         date: {
             $gte: startDate,
             $lte: endDate,
         },
     };
-    if (pharmacyId) {
-        return this.find(query).setOptions({ pharmacyId }).sort({ date: -1 });
+    if (workplaceId) {
+        return this.find(query).setOptions({ workplaceId }).sort({ date: -1 });
     }
     return this.find(query).sort({ date: -1 });
 };
-visitSchema.statics.findRecent = function (days = 7, pharmacyId) {
+visitSchema.statics.findRecent = function (days = 7, workplaceId) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     const query = {
@@ -277,12 +277,12 @@ visitSchema.statics.findRecent = function (days = 7, pharmacyId) {
             $lte: new Date(),
         },
     };
-    if (pharmacyId) {
-        return this.find(query).setOptions({ pharmacyId }).sort({ date: -1 });
+    if (workplaceId) {
+        return this.find(query).setOptions({ workplaceId }).sort({ date: -1 });
     }
     return this.find(query).sort({ date: -1 });
 };
-visitSchema.statics.searchByContent = function (searchTerm, pharmacyId) {
+visitSchema.statics.searchByContent = function (searchTerm, workplaceId) {
     const regex = new RegExp(searchTerm, 'i');
     const query = {
         $or: [
@@ -292,8 +292,8 @@ visitSchema.statics.searchByContent = function (searchTerm, pharmacyId) {
             { 'soap.plan': regex },
         ],
     };
-    if (pharmacyId) {
-        return this.find(query).setOptions({ pharmacyId }).sort({ date: -1 });
+    if (workplaceId) {
+        return this.find(query).setOptions({ workplaceId }).sort({ date: -1 });
     }
     return this.find(query).sort({ date: -1 });
 };

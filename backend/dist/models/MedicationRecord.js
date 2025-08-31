@@ -36,9 +36,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const tenancyGuard_1 = require("../utils/tenancyGuard");
 const medicationRecordSchema = new mongoose_1.Schema({
-    pharmacyId: {
+    workplaceId: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Pharmacy',
+        ref: 'Workplace',
         required: true,
         index: true,
     },
@@ -157,10 +157,12 @@ const medicationRecordSchema = new mongoose_1.Schema({
     toObject: { virtuals: true },
 });
 (0, tenancyGuard_1.addAuditFields)(medicationRecordSchema);
-medicationRecordSchema.plugin(tenancyGuard_1.tenancyGuardPlugin);
-medicationRecordSchema.index({ pharmacyId: 1, patientId: 1, phase: 1 });
-medicationRecordSchema.index({ pharmacyId: 1, medicationName: 1 });
-medicationRecordSchema.index({ pharmacyId: 1, isDeleted: 1 });
+medicationRecordSchema.plugin(tenancyGuard_1.tenancyGuardPlugin, {
+    pharmacyIdField: 'workplaceId',
+});
+medicationRecordSchema.index({ workplaceId: 1, patientId: 1, phase: 1 });
+medicationRecordSchema.index({ workplaceId: 1, medicationName: 1 });
+medicationRecordSchema.index({ workplaceId: 1, isDeleted: 1 });
 medicationRecordSchema.index({ phase: 1, startDate: -1 });
 medicationRecordSchema.index({ adherence: 1 });
 medicationRecordSchema.index({ createdAt: -1 });
@@ -204,29 +206,29 @@ medicationRecordSchema.pre('save', function () {
         this.startDate = new Date();
     }
 });
-medicationRecordSchema.statics.findByPatient = function (patientId, phase, pharmacyId) {
+medicationRecordSchema.statics.findByPatient = function (patientId, phase, workplaceId) {
     const query = { patientId };
     if (phase) {
         query.phase = phase;
     }
-    const baseQuery = pharmacyId
-        ? this.find(query).setOptions({ pharmacyId })
+    const baseQuery = workplaceId
+        ? this.find(query).setOptions({ workplaceId })
         : this.find(query);
     return baseQuery.sort({ phase: 1, startDate: -1 });
 };
-medicationRecordSchema.statics.findCurrentMedications = function (pharmacyId) {
+medicationRecordSchema.statics.findCurrentMedications = function (workplaceId) {
     const query = { phase: 'current' };
-    const baseQuery = pharmacyId
-        ? this.find(query).setOptions({ pharmacyId })
+    const baseQuery = workplaceId
+        ? this.find(query).setOptions({ workplaceId })
         : this.find(query);
     return baseQuery.sort({ startDate: -1 });
 };
-medicationRecordSchema.statics.searchByName = function (searchTerm, pharmacyId) {
+medicationRecordSchema.statics.searchByName = function (searchTerm, workplaceId) {
     const query = {
         medicationName: new RegExp(searchTerm, 'i'),
     };
-    const baseQuery = pharmacyId
-        ? this.find(query).setOptions({ pharmacyId })
+    const baseQuery = workplaceId
+        ? this.find(query).setOptions({ workplaceId })
         : this.find(query);
     return baseQuery.sort({ medicationName: 1 });
 };

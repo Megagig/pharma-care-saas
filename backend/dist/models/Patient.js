@@ -36,9 +36,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const tenancyGuard_1 = require("../utils/tenancyGuard");
 const patientSchema = new mongoose_1.Schema({
-    pharmacyId: {
+    workplaceId: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Pharmacy',
+        ref: 'Workplace',
         required: true,
         index: true,
     },
@@ -188,11 +188,11 @@ const patientSchema = new mongoose_1.Schema({
 });
 (0, tenancyGuard_1.addAuditFields)(patientSchema);
 patientSchema.plugin(tenancyGuard_1.tenancyGuardPlugin);
-patientSchema.index({ pharmacyId: 1, mrn: 1 }, { unique: true });
-patientSchema.index({ pharmacyId: 1, lastName: 1, firstName: 1 });
-patientSchema.index({ pharmacyId: 1, isDeleted: 1 });
-patientSchema.index({ pharmacyId: 1, phone: 1 }, { sparse: true });
-patientSchema.index({ pharmacyId: 1, email: 1 }, { sparse: true });
+patientSchema.index({ workplaceId: 1, mrn: 1 }, { unique: true });
+patientSchema.index({ workplaceId: 1, lastName: 1, firstName: 1 });
+patientSchema.index({ workplaceId: 1, isDeleted: 1 });
+patientSchema.index({ workplaceId: 1, phone: 1 }, { sparse: true });
+patientSchema.index({ workplaceId: 1, email: 1 }, { sparse: true });
 patientSchema.index({ hasActiveDTP: 1 });
 patientSchema.index({ createdAt: -1 });
 patientSchema.virtual('computedAge').get(function () {
@@ -242,8 +242,8 @@ patientSchema.pre('save', function () {
         this.age = this.getAge();
     }
 });
-patientSchema.statics.generateNextMRN = async function (pharmacyId, pharmacyCode) {
-    const lastPatient = await this.findOne({ pharmacyId }, {}, { sort: { createdAt: -1 }, bypassTenancyGuard: true });
+patientSchema.statics.generateNextMRN = async function (workplaceId, workplaceCode) {
+    const lastPatient = await this.findOne({ workplaceId }, {}, { sort: { createdAt: -1 }, bypassTenancyGuard: true });
     let sequence = 1;
     if (lastPatient?.mrn) {
         const match = lastPatient.mrn.match(/-(\d+)$/);
@@ -251,7 +251,7 @@ patientSchema.statics.generateNextMRN = async function (pharmacyId, pharmacyCode
             sequence = parseInt(match[1]) + 1;
         }
     }
-    return `PHM-${pharmacyCode}-${sequence.toString().padStart(5, '0')}`;
+    return `${workplaceCode}-${sequence.toString().padStart(4, '0')}`;
 };
 exports.default = mongoose_1.default.model('Patient', patientSchema);
 //# sourceMappingURL=Patient.js.map

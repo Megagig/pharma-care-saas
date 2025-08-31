@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -44,71 +44,88 @@ const Dashboard = () => {
   // TODO: Add manual refresh functionality or fetch data when needed
 
   // Dynamic stats based on real data from Zustand stores - memoized to prevent re-renders
-  const stats = useMemo(() => [
-    {
-      title: 'Total Patients',
-      value: dashboardData.totalPatients.toString(),
-      change: '+12%', // You can calculate this based on historical data
-      changeType: 'increase',
-      icon: PeopleIcon,
-      color: 'primary',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      progress: Math.min((dashboardData.totalPatients / 200) * 100, 100), // Assuming 200 is max
-    },
-    {
-      title: 'Clinical Notes',
-      value: dashboardData.totalNotes.toString(),
-      change: '+18%',
-      changeType: 'increase',
-      icon: DescriptionIcon,
-      color: 'success',
-      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      progress: Math.min((dashboardData.totalNotes / 1000) * 100, 100), // Assuming 1000 is max
-    },
-    {
-      title: 'Active Medications',
-      value: dashboardData.activeMedications.toString(),
-      change: '+7%',
-      changeType: 'increase',
-      icon: MedicationIcon,
-      color: 'secondary',
-      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      progress: Math.min((dashboardData.activeMedications / 1500) * 100, 100), // Assuming 1500 is max
-    },
-    {
-      title: 'Adherence Rate',
-      value: '84.2%', // This could be calculated from medication data
-      change: '+2.1%',
-      changeType: 'increase',
-      icon: TrendingUpIcon,
-      color: 'warning',
-      gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-      progress: 84,
-    },
-  ], [dashboardData]);
+  const stats = useMemo(
+    () => [
+      {
+        title: 'Total Patients',
+        value: dashboardData.totalPatients.toString(),
+        change: '+12%', // You can calculate this based on historical data
+        changeType: 'increase',
+        icon: PeopleIcon,
+        color: 'primary',
+        gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        progress: Math.min((dashboardData.totalPatients / 200) * 100, 100), // Assuming 200 is max
+      },
+      {
+        title: 'Clinical Notes',
+        value: dashboardData.totalNotes.toString(),
+        change: '+18%',
+        changeType: 'increase',
+        icon: DescriptionIcon,
+        color: 'success',
+        gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        progress: Math.min((dashboardData.totalNotes / 1000) * 100, 100), // Assuming 1000 is max
+      },
+      {
+        title: 'Active Medications',
+        value: dashboardData.activeMedications.toString(),
+        change: '+7%',
+        changeType: 'increase',
+        icon: MedicationIcon,
+        color: 'secondary',
+        gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        progress: Math.min((dashboardData.activeMedications / 1500) * 100, 100), // Assuming 1500 is max
+      },
+      {
+        title: 'Adherence Rate',
+        value: '84.2%', // This could be calculated from medication data
+        change: '+2.1%',
+        changeType: 'increase',
+        icon: TrendingUpIcon,
+        color: 'warning',
+        gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+        progress: 84,
+      },
+    ],
+    [dashboardData]
+  );
 
   // Use real recent patients data from Zustand store - memoized to prevent re-renders
   const recentPatients = useMemo(() => {
     // Safety check for undefined patients
-    if (!dashboardData.recentPatients || dashboardData.recentPatients.length === 0) {
+    if (
+      !dashboardData.recentPatients ||
+      dashboardData.recentPatients.length === 0
+    ) {
       return [];
     }
-    
+
     return dashboardData.recentPatients
-      .map(patient => {
+      .map((patient) => {
         // Safety checks for patient properties
         if (!patient) return null;
-        
+
         return {
-          name: `${patient.firstName || 'Unknown'} ${patient.lastName || 'Patient'}`,
-          age: patient.dateOfBirth ? new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear() : 'N/A',
+          name: `${patient.firstName || 'Unknown'} ${
+            patient.lastName || 'Patient'
+          }`,
+          age: patient.dateOfBirth
+            ? new Date().getFullYear() -
+              new Date(patient.dateOfBirth).getFullYear()
+            : 'N/A',
           condition: patient.medicalHistory || 'General Care',
-          lastVisit: patient.updatedAt ? new Date(patient.updatedAt).toLocaleDateString() : 'N/A',
-          avatar: (patient.firstName && patient.firstName.charAt(0).toUpperCase()) || 'P',
+          lastVisit: patient.updatedAt
+            ? new Date(patient.updatedAt).toLocaleDateString()
+            : 'N/A',
+          avatar:
+            (patient.firstName && patient.firstName.charAt(0).toUpperCase()) ||
+            'P',
           status: 'active',
         };
       })
-      .filter((patient): patient is NonNullable<typeof patient> => patient !== null); // Type-safe filter
+      .filter(
+        (patient): patient is NonNullable<typeof patient> => patient !== null
+      ); // Type-safe filter
   }, [dashboardData.recentPatients]);
 
   // Convert notifications from Zustand store to alerts format - memoized to prevent re-renders
@@ -116,17 +133,19 @@ const Dashboard = () => {
     if (!notifications || notifications.length === 0) {
       return [];
     }
-    
+
     return notifications
       .slice(0, 3)
-      .map(notification => {
+      .map((notification) => {
         if (!notification) return null;
-        
+
         return {
           type: notification.type || 'info',
           title: notification.title || 'Notification',
           message: notification.message || '',
-          time: notification.timestamp ? new Date(notification.timestamp).toLocaleString() : 'N/A',
+          time: notification.timestamp
+            ? new Date(notification.timestamp).toLocaleString()
+            : 'N/A',
         };
       })
       .filter((alert): alert is NonNullable<typeof alert> => alert !== null); // Type-safe filter

@@ -46,7 +46,6 @@ import type {
   NigerianState,
   BloodGroup,
   Genotype,
-  PaginatedResponse,
 } from '../types/patientManagement';
 
 // Nigerian States for filtering
@@ -465,6 +464,7 @@ const Patients = () => {
                 <TableCell sx={{ fontWeight: 600 }}>Contact</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Location</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Medical Info</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>MTR Status</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Vitals</TableCell>
                 <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>
                   Actions
@@ -477,7 +477,7 @@ const Patients = () => {
                 Array.from({ length: searchParams.limit || 10 }).map(
                   (_, index) => (
                     <TableRow key={index}>
-                      {Array.from({ length: 8 }).map((_, cellIndex) => (
+                      {Array.from({ length: 9 }).map((_, cellIndex) => (
                         <TableCell key={cellIndex}>
                           <Skeleton variant="text" height={40} />
                         </TableCell>
@@ -488,7 +488,7 @@ const Patients = () => {
               ) : patients.length === 0 ? (
                 // Empty state
                 <TableRow>
-                  <TableCell colSpan={8} sx={{ textAlign: 'center', py: 6 }}>
+                  <TableCell colSpan={9} sx={{ textAlign: 'center', py: 6 }}>
                     <Stack spacing={2} alignItems="center">
                       <LocalHospitalIcon
                         sx={{ fontSize: 48, color: 'text.secondary' }}
@@ -617,6 +617,16 @@ const Patients = () => {
                           />
                         )}
                       </Box>
+                    </TableCell>
+
+                    <TableCell>
+                      {/* Temporarily disabled to prevent excessive API calls */}
+                      <Chip
+                        label="MTR Available"
+                        size="small"
+                        variant="outlined"
+                        color="default"
+                      />
                     </TableCell>
 
                     <TableCell>

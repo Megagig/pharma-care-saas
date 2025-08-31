@@ -3,14 +3,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProfile = exports.getMe = exports.logoutAll = exports.checkCookies = exports.clearCookies = exports.logout = exports.refreshToken = exports.resetPassword = exports.forgotPassword = exports.verifyEmail = exports.login = exports.register = void 0;
+exports.findWorkplaceByInviteCode = exports.registerWithWorkplace = exports.updateProfile = exports.getMe = exports.logoutAll = exports.checkCookies = exports.clearCookies = exports.logout = exports.refreshToken = exports.resetPassword = exports.forgotPassword = exports.verifyEmail = exports.login = exports.register = void 0;
 const User_1 = __importDefault(require("../models/User"));
 const Session_1 = __importDefault(require("../models/Session"));
 const SubscriptionPlan_1 = __importDefault(require("../models/SubscriptionPlan"));
 const Subscription_1 = __importDefault(require("../models/Subscription"));
+const WorkplaceService_1 = __importDefault(require("../services/WorkplaceService"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const email_1 = require("../utils/email");
 const crypto_1 = __importDefault(require("crypto"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const generateAccessToken = (userId) => {
     return jsonwebtoken_1.default.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
 };
@@ -187,7 +189,7 @@ const login = async (req, res) => {
                 status: user.status,
                 emailVerified: user.emailVerified,
                 currentPlan: user.currentPlanId,
-                pharmacyId: user.pharmacyId,
+                workplaceId: user.workplaceId,
             },
         });
     }
@@ -444,11 +446,26 @@ const getMe = async (req, res) => {
     try {
         const user = await User_1.default.findById(req.user._id)
             .populate('currentPlanId')
-            .populate('pharmacyId')
+            .populate('workplaceId')
+            .populate('currentSubscriptionId')
             .select('-passwordHash');
         if (!user) {
             res.status(404).json({ message: 'User not found' });
             return;
+        }
+        let userSubscription = user.currentSubscriptionId;
+        let subscriptionData = null;
+        if (!userSubscription) {
+            subscriptionData = await Subscription_1.default.findOne({
+                userId: user._id,
+                status: { $in: ['active', 'trial', 'grace_period'] },
+            }).populate('planId');
+        }
+        else if (typeof userSubscription === 'object' && userSubscription._id) {
+            subscriptionData = userSubscription;
+        }
+        else {
+            subscriptionData = await Subscription_1.default.findById(userSubscription).populate('planId');
         }
         res.json({
             success: true,
@@ -462,7 +479,11 @@ const getMe = async (req, res) => {
                 status: user.status,
                 emailVerified: user.emailVerified,
                 currentPlan: user.currentPlanId,
-                pharmacy: user.pharmacyId,
+                workplace: user.workplaceId,
+                workplaceRole: user.workplaceRole,
+                subscriptionTier: user.subscriptionTier,
+                subscription: subscriptionData,
+                hasSubscription: !!subscriptionData,
                 lastLoginAt: user.lastLoginAt,
             },
         });
@@ -509,4 +530,306 @@ const updateProfile = async (req, res) => {
     }
 };
 exports.updateProfile = updateProfile;
+const registerWithWorkplace = async (req, res) => {
+    const session = await mongoose_1.default.startSession();
+    try {
+        await session.withTransaction(async () => {
+            const { firstName, lastName, email, password, phone, role = 'pharmacist', licenseNumber, workplaceFlow, workplace, inviteCode, workplaceId, workplaceRole, } = req.body;
+            if (!firstName || !lastName || !email || !password || !workplaceFlow) {
+                res.status(400).json({
+                    message: 'Missing required fields: firstName, lastName, email, password, and workplaceFlow are required',
+                });
+                return;
+            }
+            if (!['create', 'join', 'skip'].includes(workplaceFlow)) {
+                res.status(400).json({
+                    message: 'workplaceFlow must be one of: create, join, skip',
+                });
+                return;
+            }
+            const existingUser = await User_1.default.findOne({ email });
+            if (existingUser) {
+                res
+                    .status(400)
+                    .json({ message: 'User already exists with this email' });
+                return;
+            }
+            const freeTrialPlan = await SubscriptionPlan_1.default.findOne({
+                name: 'Free Trial',
+                billingInterval: 'monthly',
+            });
+            if (!freeTrialPlan) {
+                res.status(500).json({
+                    message: 'Default subscription plan not found. Please run seed script.',
+                });
+                return;
+            }
+            const userArray = await User_1.default.create([
+                {
+                    firstName,
+                    lastName,
+                    email,
+                    phone,
+                    passwordHash: password,
+                    role,
+                    licenseNumber,
+                    currentPlanId: freeTrialPlan._id,
+                    subscriptionTier: 'free_trial',
+                    status: 'pending',
+                },
+            ], { session });
+            const createdUser = userArray[0];
+            if (!createdUser) {
+                throw new Error('Failed to create user');
+            }
+            let workplaceData = null;
+            let subscription = null;
+            if (workplaceFlow === 'create') {
+                if (!workplace ||
+                    !workplace.name ||
+                    !workplace.type ||
+                    !workplace.licenseNumber ||
+                    !workplace.email) {
+                    res.status(400).json({
+                        message: 'Workplace name, type, licenseNumber, and email are required for creating a workplace',
+                    });
+                    return;
+                }
+                if (!createdUser) {
+                    throw new Error('Failed to create user');
+                }
+                workplaceData = await WorkplaceService_1.default.createWorkplace({
+                    name: workplace.name,
+                    type: workplace.type,
+                    licenseNumber: workplace.licenseNumber,
+                    email: workplace.email,
+                    address: workplace.address,
+                    state: workplace.state,
+                    lga: workplace.lga,
+                    ownerId: createdUser._id,
+                });
+                const trialEndDate = new Date();
+                trialEndDate.setDate(trialEndDate.getDate() + 14);
+                const subscriptionArray = await Subscription_1.default.create([
+                    {
+                        userId: createdUser._id,
+                        planId: freeTrialPlan._id,
+                        tier: 'free_trial',
+                        status: 'trial',
+                        startDate: new Date(),
+                        endDate: trialEndDate,
+                        priceAtPurchase: 0,
+                        autoRenew: false,
+                    },
+                ], { session });
+                subscription = subscriptionArray[0];
+                if (!subscription) {
+                    throw new Error('Failed to create subscription');
+                }
+                await User_1.default.findByIdAndUpdate(createdUser._id, {
+                    workplaceId: workplaceData._id,
+                    workplaceRole: 'Owner',
+                    currentSubscriptionId: subscription._id,
+                }, { session });
+            }
+            else if (workplaceFlow === 'join') {
+                if (!inviteCode && !workplaceId) {
+                    res.status(400).json({
+                        message: 'Either inviteCode or workplaceId is required for joining a workplace',
+                    });
+                    return;
+                }
+                workplaceData = await WorkplaceService_1.default.joinWorkplace({
+                    userId: createdUser._id,
+                    inviteCode,
+                    workplaceId: workplaceId
+                        ? new mongoose_1.default.Types.ObjectId(workplaceId)
+                        : undefined,
+                    workplaceRole: workplaceRole || 'Staff',
+                });
+                const owner = await User_1.default.findById(workplaceData.ownerId).populate('currentSubscriptionId');
+                if (owner?.currentSubscriptionId) {
+                    await User_1.default.findByIdAndUpdate(createdUser._id, {
+                        currentSubscriptionId: owner.currentSubscriptionId,
+                        subscriptionTier: owner.subscriptionTier,
+                    }, { session });
+                }
+            }
+            else if (workplaceFlow === 'skip') {
+                const trialEndDate = new Date();
+                trialEndDate.setDate(trialEndDate.getDate() + 14);
+                const subscriptionArray = await Subscription_1.default.create([
+                    {
+                        userId: createdUser._id,
+                        planId: freeTrialPlan._id,
+                        tier: 'free_trial',
+                        status: 'trial',
+                        startDate: new Date(),
+                        endDate: trialEndDate,
+                        priceAtPurchase: 0,
+                        autoRenew: false,
+                    },
+                ], { session });
+                subscription = subscriptionArray[0];
+                if (!subscription) {
+                    throw new Error('Failed to create subscription');
+                }
+                await User_1.default.findByIdAndUpdate(createdUser._id, {
+                    currentSubscriptionId: subscription._id,
+                }, { session });
+            }
+            const verificationToken = createdUser.generateVerificationToken();
+            const verificationCode = createdUser.generateVerificationCode();
+            await createdUser.save({ session });
+            const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+            let emailSubject = 'Welcome to PharmaCare - Verify Your Email';
+            let emailContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2563eb; margin-bottom: 10px;">Welcome to PharmaCare!</h1>
+            <p style="color: #6b7280; font-size: 16px;">Hi ${firstName}, please verify your email address</p>
+          </div>`;
+            if (workplaceFlow === 'create') {
+                emailContent += `
+          <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="color: #0369a1; margin-bottom: 10px;">🎉 Your workplace has been created!</h3>
+            <p style="color: #374151; margin-bottom: 10px;"><strong>Workplace:</strong> ${workplaceData?.name}</p>
+            <p style="color: #374151; margin-bottom: 10px;"><strong>Invite Code:</strong> <span style="background: #dbeafe; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${workplaceData?.inviteCode}</span></p>
+            <p style="color: #6b7280; font-size: 14px;">Share this invite code with your team members so they can join your workplace.</p>
+            <p style="color: #059669; font-size: 14px;"><strong>✨ You've got a 14-day free trial to explore all features!</strong></p>
+          </div>`;
+            }
+            else if (workplaceFlow === 'join') {
+                emailContent += `
+          <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="color: #059669; margin-bottom: 10px;">🤝 You've joined a workplace!</h3>
+            <p style="color: #374151; margin-bottom: 10px;"><strong>Workplace:</strong> ${workplaceData?.name}</p>
+            <p style="color: #374151; margin-bottom: 10px;"><strong>Your Role:</strong> ${workplaceRole || 'Staff'}</p>
+            <p style="color: #6b7280; font-size: 14px;">You now have access to your workplace's features and subscription plan.</p>
+          </div>`;
+            }
+            else {
+                emailContent += `
+          <div style="background: #fefce8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="color: #ca8a04; margin-bottom: 10px;">👤 Independent Account Created</h3>
+            <p style="color: #374151; margin-bottom: 10px;">You can access general features like Knowledge Hub, CPD, and Forum.</p>
+            <p style="color: #6b7280; font-size: 14px;">To access workplace features like Patient Management, create or join a workplace anytime from your dashboard.</p>
+          </div>`;
+            }
+            emailContent += `
+          <div style="background: #f8fafc; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
+            <h2 style="color: #1f2937; margin-bottom: 20px; text-align: center;">Choose your verification method:</h2>
+            
+            <div style="margin-bottom: 30px;">
+              <h3 style="color: #374151; margin-bottom: 15px;">Option 1: Click the verification link</h3>
+              <div style="text-align: center;">
+                <a href="${verificationUrl}" style="background: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">Verify Email Address</a>
+              </div>
+            </div>
+            
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 30px;">
+              <h3 style="color: #374151; margin-bottom: 15px;">Option 2: Enter this 6-digit code</h3>
+              <div style="text-align: center; background: white; padding: 20px; border-radius: 8px; border: 2px dashed #d1d5db;">
+                <div style="font-size: 32px; font-weight: bold; color: #2563eb; letter-spacing: 8px; font-family: 'Courier New', monospace;">${verificationCode}</div>
+                <p style="color: #6b7280; margin-top: 10px; font-size: 14px;">Enter this code on the verification page</p>
+              </div>
+            </div>
+          </div>
+          
+          <div style="text-align: center; color: #6b7280; font-size: 14px;">
+            <p>This verification will expire in 24 hours.</p>
+            <p>If you didn't create this account, please ignore this email.</p>
+          </div>
+        </div>
+      `;
+            await (0, email_1.sendEmail)({
+                to: email,
+                subject: emailSubject,
+                html: emailContent,
+            });
+            res.status(201).json({
+                success: true,
+                message: 'Registration successful! Please check your email to verify your account.',
+                data: {
+                    user: {
+                        id: createdUser._id,
+                        firstName: createdUser.firstName,
+                        lastName: createdUser.lastName,
+                        email: createdUser.email,
+                        role: createdUser.role,
+                        status: createdUser.status,
+                        emailVerified: createdUser.emailVerified,
+                        workplaceId: createdUser.workplaceId,
+                        workplaceRole: createdUser.workplaceRole,
+                    },
+                    workplace: workplaceData
+                        ? {
+                            id: workplaceData._id,
+                            name: workplaceData.name,
+                            type: workplaceData.type,
+                            inviteCode: workplaceData.inviteCode,
+                        }
+                        : null,
+                    subscription: subscription
+                        ? {
+                            id: subscription._id,
+                            tier: subscription.tier,
+                            status: subscription.status,
+                            endDate: subscription.endDate,
+                        }
+                        : null,
+                    workplaceFlow,
+                },
+            });
+        });
+    }
+    catch (error) {
+        console.error('Registration error:', error);
+        res.status(400).json({ message: error.message });
+    }
+    finally {
+        session.endSession();
+    }
+};
+exports.registerWithWorkplace = registerWithWorkplace;
+const findWorkplaceByInviteCode = async (req, res) => {
+    try {
+        const { inviteCode } = req.params;
+        if (!inviteCode || typeof inviteCode !== 'string') {
+            res.status(400).json({
+                success: false,
+                message: 'Invite code is required',
+            });
+            return;
+        }
+        const workplace = await WorkplaceService_1.default.findByInviteCode(inviteCode);
+        if (!workplace) {
+            res.status(404).json({
+                success: false,
+                message: 'Invalid invite code',
+            });
+            return;
+        }
+        res.json({
+            success: true,
+            data: {
+                id: workplace._id,
+                name: workplace.name,
+                type: workplace.type,
+                address: workplace.address,
+                state: workplace.state,
+                inviteCode: workplace.inviteCode,
+                owner: workplace.ownerId,
+                teamSize: workplace.teamMembers.length,
+            },
+        });
+    }
+    catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+exports.findWorkplaceByInviteCode = findWorkplaceByInviteCode;
 //# sourceMappingURL=authController.js.map

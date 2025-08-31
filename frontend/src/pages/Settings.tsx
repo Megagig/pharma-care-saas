@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
@@ -21,11 +21,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormControlLabel,
-  Checkbox,
   Avatar,
   IconButton,
-  Tooltip,
   List,
   ListItem,
   ListItemText,
@@ -49,7 +46,6 @@ import {
   Palette as PaletteIcon,
   Language as LanguageIcon,
   Storage as StorageIcon,
-  Api as ApiIcon,
   Shield as ShieldIcon,
   Key as KeyIcon,
   Edit as EditIcon,
@@ -60,7 +56,6 @@ import {
   Download as DownloadIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
-  Lock as LockIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
   LocationOn as LocationIcon,
@@ -114,7 +109,7 @@ const Settings: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { user } = useAuth();
-  const { hasRole } = useRBAC();
+
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -173,7 +168,11 @@ const Settings: React.FC = () => {
   const settingsTabs = [
     { id: 'profile', label: 'Profile', icon: <PersonIcon /> },
     { id: 'preferences', label: 'Preferences', icon: <PaletteIcon /> },
-    { id: 'notifications', label: 'Notifications', icon: <NotificationsIcon /> },
+    {
+      id: 'notifications',
+      label: 'Notifications',
+      icon: <NotificationsIcon />,
+    },
     { id: 'security', label: 'Security & Privacy', icon: <SecurityIcon /> },
     { id: 'data', label: 'Data & Storage', icon: <StorageIcon /> },
   ];
@@ -186,7 +185,7 @@ const Settings: React.FC = () => {
     setLoading(true);
     try {
       // Mock API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       setEditMode(false);
       // Show success message
     } catch (error) {
@@ -201,11 +200,11 @@ const Settings: React.FC = () => {
       // Show error message
       return;
     }
-    
+
     setLoading(true);
     try {
       // Mock API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       setShowPasswordDialog(false);
       setPasswordForm({
         currentPassword: '',
@@ -233,7 +232,8 @@ const Settings: React.FC = () => {
                 src={settings.profile.avatar}
                 sx={{ width: 120, height: 120, fontSize: '2rem' }}
               >
-                {settings.profile.firstName[0]}{settings.profile.lastName[0]}
+                {settings.profile.firstName[0]}
+                {settings.profile.lastName[0]}
               </Avatar>
               {editMode && (
                 <IconButton
@@ -243,7 +243,7 @@ const Settings: React.FC = () => {
                     right: 0,
                     bgcolor: 'primary.main',
                     color: 'white',
-                    '&:hover': { bgcolor: 'primary.dark' }
+                    '&:hover': { bgcolor: 'primary.dark' },
                   }}
                   size="small"
                 >
@@ -308,13 +308,20 @@ const Settings: React.FC = () => {
                   fullWidth
                   label="First Name"
                   value={settings.profile.firstName}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    profile: { ...settings.profile, firstName: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      profile: {
+                        ...settings.profile,
+                        firstName: e.target.value,
+                      },
+                    })
+                  }
                   disabled={!editMode}
                   InputProps={{
-                    startAdornment: <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    startAdornment: (
+                      <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    ),
                   }}
                 />
               </Grid>
@@ -323,10 +330,15 @@ const Settings: React.FC = () => {
                   fullWidth
                   label="Last Name"
                   value={settings.profile.lastName}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    profile: { ...settings.profile, lastName: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      profile: {
+                        ...settings.profile,
+                        lastName: e.target.value,
+                      },
+                    })
+                  }
                   disabled={!editMode}
                 />
               </Grid>
@@ -337,7 +349,9 @@ const Settings: React.FC = () => {
                   value={settings.profile.email}
                   disabled
                   InputProps={{
-                    startAdornment: <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    startAdornment: (
+                      <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    ),
                   }}
                 />
               </Grid>
@@ -346,13 +360,17 @@ const Settings: React.FC = () => {
                   fullWidth
                   label="Phone Number"
                   value={settings.profile.phone}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    profile: { ...settings.profile, phone: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      profile: { ...settings.profile, phone: e.target.value },
+                    })
+                  }
                   disabled={!editMode}
                   InputProps={{
-                    startAdornment: <PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    startAdornment: (
+                      <PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    ),
                   }}
                 />
               </Grid>
@@ -361,13 +379,20 @@ const Settings: React.FC = () => {
                   fullWidth
                   label="Location"
                   value={settings.profile.location}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    profile: { ...settings.profile, location: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      profile: {
+                        ...settings.profile,
+                        location: e.target.value,
+                      },
+                    })
+                  }
                   disabled={!editMode}
                   InputProps={{
-                    startAdornment: <LocationIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    startAdornment: (
+                      <LocationIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    ),
                   }}
                 />
               </Grid>
@@ -376,13 +401,20 @@ const Settings: React.FC = () => {
                   fullWidth
                   label="Organization"
                   value={settings.profile.organization}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    profile: { ...settings.profile, organization: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      profile: {
+                        ...settings.profile,
+                        organization: e.target.value,
+                      },
+                    })
+                  }
                   disabled={!editMode}
                   InputProps={{
-                    startAdornment: <BusinessIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    startAdornment: (
+                      <BusinessIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    ),
                   }}
                 />
               </Grid>
@@ -394,10 +426,12 @@ const Settings: React.FC = () => {
                   label="Bio"
                   placeholder="Tell us about yourself..."
                   value={settings.profile.bio}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    profile: { ...settings.profile, bio: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      profile: { ...settings.profile, bio: e.target.value },
+                    })
+                  }
                   disabled={!editMode}
                 />
               </Grid>
@@ -412,10 +446,7 @@ const Settings: React.FC = () => {
     <Grid container spacing={3}>
       <Grid item xs={12} md={6}>
         <Card>
-          <CardHeader
-            title="Appearance"
-            avatar={<PaletteIcon />}
-          />
+          <CardHeader title="Appearance" avatar={<PaletteIcon />} />
           <Divider />
           <CardContent>
             <Grid container spacing={3}>
@@ -425,10 +456,15 @@ const Settings: React.FC = () => {
                   <Select
                     value={settings.preferences.theme}
                     label="Theme"
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      preferences: { ...settings.preferences, theme: e.target.value as any }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        preferences: {
+                          ...settings.preferences,
+                          theme: e.target.value as 'light' | 'dark' | 'auto',
+                        },
+                      })
+                    }
                   >
                     <MenuItem value="light">Light</MenuItem>
                     <MenuItem value="dark">Dark</MenuItem>
@@ -442,10 +478,15 @@ const Settings: React.FC = () => {
                   <Select
                     value={settings.preferences.language}
                     label="Language"
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      preferences: { ...settings.preferences, language: e.target.value }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        preferences: {
+                          ...settings.preferences,
+                          language: e.target.value,
+                        },
+                      })
+                    }
                   >
                     <MenuItem value="en">English</MenuItem>
                     <MenuItem value="fr">Français</MenuItem>
@@ -463,10 +504,7 @@ const Settings: React.FC = () => {
 
       <Grid item xs={12} md={6}>
         <Card>
-          <CardHeader
-            title="Regional Settings"
-            avatar={<LanguageIcon />}
-          />
+          <CardHeader title="Regional Settings" avatar={<LanguageIcon />} />
           <Divider />
           <CardContent>
             <Grid container spacing={3}>
@@ -476,10 +514,15 @@ const Settings: React.FC = () => {
                   <Select
                     value={settings.preferences.timezone}
                     label="Timezone"
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      preferences: { ...settings.preferences, timezone: e.target.value }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        preferences: {
+                          ...settings.preferences,
+                          timezone: e.target.value,
+                        },
+                      })
+                    }
                   >
                     <MenuItem value="Africa/Lagos">Lagos (WAT)</MenuItem>
                     <MenuItem value="Africa/Abuja">Abuja (WAT)</MenuItem>
@@ -495,10 +538,15 @@ const Settings: React.FC = () => {
                   <Select
                     value={settings.preferences.dateFormat}
                     label="Date Format"
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      preferences: { ...settings.preferences, dateFormat: e.target.value }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        preferences: {
+                          ...settings.preferences,
+                          dateFormat: e.target.value,
+                        },
+                      })
+                    }
                   >
                     <MenuItem value="DD/MM/YYYY">DD/MM/YYYY</MenuItem>
                     <MenuItem value="MM/DD/YYYY">MM/DD/YYYY</MenuItem>
@@ -512,10 +560,15 @@ const Settings: React.FC = () => {
                   <Select
                     value={settings.preferences.currency}
                     label="Currency"
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      preferences: { ...settings.preferences, currency: e.target.value }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        preferences: {
+                          ...settings.preferences,
+                          currency: e.target.value,
+                        },
+                      })
+                    }
                   >
                     <MenuItem value="NGN">Nigerian Naira (₦)</MenuItem>
                     <MenuItem value="USD">US Dollar ($)</MenuItem>
@@ -554,14 +607,19 @@ const Settings: React.FC = () => {
                   <Switch
                     edge="end"
                     checked={settings.notifications.email}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      notifications: { ...settings.notifications, email: e.target.checked }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        notifications: {
+                          ...settings.notifications,
+                          email: e.target.checked,
+                        },
+                      })
+                    }
                   />
                 </ListItemSecondaryAction>
               </ListItem>
-              
+
               <ListItem>
                 <ListItemIcon>
                   <NotificationsIcon />
@@ -574,10 +632,15 @@ const Settings: React.FC = () => {
                   <Switch
                     edge="end"
                     checked={settings.notifications.push}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      notifications: { ...settings.notifications, push: e.target.checked }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        notifications: {
+                          ...settings.notifications,
+                          push: e.target.checked,
+                        },
+                      })
+                    }
                   />
                 </ListItemSecondaryAction>
               </ListItem>
@@ -594,10 +657,15 @@ const Settings: React.FC = () => {
                   <Switch
                     edge="end"
                     checked={settings.notifications.sms}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      notifications: { ...settings.notifications, sms: e.target.checked }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        notifications: {
+                          ...settings.notifications,
+                          sms: e.target.checked,
+                        },
+                      })
+                    }
                   />
                 </ListItemSecondaryAction>
               </ListItem>
@@ -614,10 +682,15 @@ const Settings: React.FC = () => {
                   <Switch
                     edge="end"
                     checked={settings.notifications.security}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      notifications: { ...settings.notifications, security: e.target.checked }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        notifications: {
+                          ...settings.notifications,
+                          security: e.target.checked,
+                        },
+                      })
+                    }
                   />
                 </ListItemSecondaryAction>
               </ListItem>
@@ -634,10 +707,15 @@ const Settings: React.FC = () => {
                   <Switch
                     edge="end"
                     checked={settings.notifications.updates}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      notifications: { ...settings.notifications, updates: e.target.checked }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        notifications: {
+                          ...settings.notifications,
+                          updates: e.target.checked,
+                        },
+                      })
+                    }
                   />
                 </ListItemSecondaryAction>
               </ListItem>
@@ -656,10 +734,15 @@ const Settings: React.FC = () => {
                   <Switch
                     edge="end"
                     checked={settings.notifications.marketing}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      notifications: { ...settings.notifications, marketing: e.target.checked }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        notifications: {
+                          ...settings.notifications,
+                          marketing: e.target.checked,
+                        },
+                      })
+                    }
                   />
                 </ListItemSecondaryAction>
               </ListItem>
@@ -674,10 +757,7 @@ const Settings: React.FC = () => {
     <Grid container spacing={3}>
       <Grid item xs={12} md={6}>
         <Card>
-          <CardHeader
-            title="Security Settings"
-            avatar={<SecurityIcon />}
-          />
+          <CardHeader title="Security Settings" avatar={<SecurityIcon />} />
           <Divider />
           <CardContent>
             <List>
@@ -693,10 +773,15 @@ const Settings: React.FC = () => {
                   <Switch
                     edge="end"
                     checked={settings.security.twoFactorEnabled}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      security: { ...settings.security, twoFactorEnabled: e.target.checked }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        security: {
+                          ...settings.security,
+                          twoFactorEnabled: e.target.checked,
+                        },
+                      })
+                    }
                   />
                 </ListItemSecondaryAction>
               </ListItem>
@@ -713,10 +798,15 @@ const Settings: React.FC = () => {
                   <Switch
                     edge="end"
                     checked={settings.security.loginNotifications}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      security: { ...settings.security, loginNotifications: e.target.checked }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        security: {
+                          ...settings.security,
+                          loginNotifications: e.target.checked,
+                        },
+                      })
+                    }
                   />
                 </ListItemSecondaryAction>
               </ListItem>
@@ -732,10 +822,15 @@ const Settings: React.FC = () => {
                 fullWidth
                 size="small"
                 value={settings.security.sessionTimeout}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  security: { ...settings.security, sessionTimeout: Number(e.target.value) }
-                })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    security: {
+                      ...settings.security,
+                      sessionTimeout: Number(e.target.value),
+                    },
+                  })
+                }
               >
                 <MenuItem value={15}>15 minutes</MenuItem>
                 <MenuItem value={30}>30 minutes</MenuItem>
@@ -759,10 +854,7 @@ const Settings: React.FC = () => {
 
       <Grid item xs={12} md={6}>
         <Card>
-          <CardHeader
-            title="Privacy Settings"
-            avatar={<ShieldIcon />}
-          />
+          <CardHeader title="Privacy Settings" avatar={<ShieldIcon />} />
           <Divider />
           <CardContent>
             <Box sx={{ mb: 3 }}>
@@ -773,10 +865,18 @@ const Settings: React.FC = () => {
                 fullWidth
                 size="small"
                 value={settings.privacy.profileVisibility}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  privacy: { ...settings.privacy, profileVisibility: e.target.value as any }
-                })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    privacy: {
+                      ...settings.privacy,
+                      profileVisibility: e.target.value as
+                        | 'public'
+                        | 'private'
+                        | 'team',
+                    },
+                  })
+                }
               >
                 <MenuItem value="public">Public</MenuItem>
                 <MenuItem value="organization">Organization Only</MenuItem>
@@ -794,10 +894,15 @@ const Settings: React.FC = () => {
                   <Switch
                     edge="end"
                     checked={settings.privacy.dataSharing}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      privacy: { ...settings.privacy, dataSharing: e.target.checked }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        privacy: {
+                          ...settings.privacy,
+                          dataSharing: e.target.checked,
+                        },
+                      })
+                    }
                   />
                 </ListItemSecondaryAction>
               </ListItem>
@@ -811,10 +916,15 @@ const Settings: React.FC = () => {
                   <Switch
                     edge="end"
                     checked={settings.privacy.analytics}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      privacy: { ...settings.privacy, analytics: e.target.checked }
-                    })}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        privacy: {
+                          ...settings.privacy,
+                          analytics: e.target.checked,
+                        },
+                      })
+                    }
                   />
                 </ListItemSecondaryAction>
               </ListItem>
@@ -829,20 +939,23 @@ const Settings: React.FC = () => {
     <Grid container spacing={3}>
       <Grid item xs={12}>
         <Card>
-          <CardHeader
-            title="Data Management"
-            avatar={<StorageIcon />}
-          />
+          <CardHeader title="Data Management" avatar={<StorageIcon />} />
           <Divider />
           <CardContent>
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <Box sx={{ textAlign: 'center', p: 3 }}>
-                  <StorageIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+                  <StorageIcon
+                    sx={{ fontSize: 48, color: 'primary.main', mb: 2 }}
+                  />
                   <Typography variant="h6" gutterBottom>
                     Export Your Data
                   </Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{ mb: 3 }}
+                  >
                     Download a copy of all your data in a portable format
                   </Typography>
                   <Button
@@ -857,11 +970,17 @@ const Settings: React.FC = () => {
 
               <Grid item xs={12} md={6}>
                 <Box sx={{ textAlign: 'center', p: 3 }}>
-                  <DeleteIcon sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
+                  <DeleteIcon
+                    sx={{ fontSize: 48, color: 'error.main', mb: 2 }}
+                  />
                   <Typography variant="h6" gutterBottom>
                     Delete Account
                   </Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{ mb: 3 }}
+                  >
                     Permanently delete your account and all associated data
                   </Typography>
                   <Button
@@ -880,39 +999,55 @@ const Settings: React.FC = () => {
 
       <Grid item xs={12}>
         <Card>
-          <CardHeader
-            title="Storage Usage"
-            avatar={<StorageIcon />}
-          />
+          <CardHeader title="Storage Usage" avatar={<StorageIcon />} />
           <Divider />
           <CardContent>
             <Box sx={{ mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Box
+                sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+              >
                 <Typography variant="body2">Documents & Files</Typography>
                 <Typography variant="body2">2.4 GB / 5 GB</Typography>
               </Box>
-              <LinearProgress variant="determinate" value={48} sx={{ height: 8, borderRadius: 4 }} />
+              <LinearProgress
+                variant="determinate"
+                value={48}
+                sx={{ height: 8, borderRadius: 4 }}
+              />
             </Box>
 
             <Box sx={{ mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Box
+                sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+              >
                 <Typography variant="body2">Patient Records</Typography>
                 <Typography variant="body2">850 MB / 2 GB</Typography>
               </Box>
-              <LinearProgress variant="determinate" value={42.5} sx={{ height: 8, borderRadius: 4 }} />
+              <LinearProgress
+                variant="determinate"
+                value={42.5}
+                sx={{ height: 8, borderRadius: 4 }}
+              />
             </Box>
 
             <Box sx={{ mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Box
+                sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+              >
                 <Typography variant="body2">Images & Media</Typography>
                 <Typography variant="body2">1.2 GB / 3 GB</Typography>
               </Box>
-              <LinearProgress variant="determinate" value={40} sx={{ height: 8, borderRadius: 4 }} />
+              <LinearProgress
+                variant="determinate"
+                value={40}
+                sx={{ height: 8, borderRadius: 4 }}
+              />
             </Box>
 
             <Alert severity="info">
               <Typography variant="body2">
-                You're using 4.45 GB of 10 GB total storage. Upgrade to get more space.
+                You're using 4.45 GB of 10 GB total storage. Upgrade to get more
+                space.
               </Typography>
             </Alert>
           </CardContent>
@@ -931,14 +1066,16 @@ const Settings: React.FC = () => {
           </Link>
           <Typography color="textPrimary">Settings</Typography>
         </Breadcrumbs>
-        
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 2
-        }}>
+
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
           <Box>
             <Typography variant="h3" component="h1" gutterBottom>
               <SettingsIcon sx={{ mr: 1, fontSize: 'inherit' }} />
@@ -956,10 +1093,10 @@ const Settings: React.FC = () => {
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant={isMobile ? "scrollable" : "fullWidth"}
+          variant={isMobile ? 'scrollable' : 'fullWidth'}
           scrollButtons="auto"
         >
-          {settingsTabs.map((tab, index) => (
+          {settingsTabs.map((tab) => (
             <Tab
               key={tab.id}
               icon={tab.icon}
@@ -1001,19 +1138,31 @@ const Settings: React.FC = () => {
                 label="Current Password"
                 type={passwordForm.showCurrentPassword ? 'text' : 'password'}
                 value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                onChange={(e) =>
+                  setPasswordForm({
+                    ...passwordForm,
+                    currentPassword: e.target.value,
+                  })
+                }
                 InputProps={{
                   endAdornment: (
                     <IconButton
-                      onClick={() => setPasswordForm({ 
-                        ...passwordForm, 
-                        showCurrentPassword: !passwordForm.showCurrentPassword 
-                      })}
+                      onClick={() =>
+                        setPasswordForm({
+                          ...passwordForm,
+                          showCurrentPassword:
+                            !passwordForm.showCurrentPassword,
+                        })
+                      }
                       edge="end"
                     >
-                      {passwordForm.showCurrentPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                      {passwordForm.showCurrentPassword ? (
+                        <VisibilityOffIcon />
+                      ) : (
+                        <VisibilityIcon />
+                      )}
                     </IconButton>
-                  )
+                  ),
                 }}
               />
             </Grid>
@@ -1023,19 +1172,30 @@ const Settings: React.FC = () => {
                 label="New Password"
                 type={passwordForm.showNewPassword ? 'text' : 'password'}
                 value={passwordForm.newPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                onChange={(e) =>
+                  setPasswordForm({
+                    ...passwordForm,
+                    newPassword: e.target.value,
+                  })
+                }
                 InputProps={{
                   endAdornment: (
                     <IconButton
-                      onClick={() => setPasswordForm({ 
-                        ...passwordForm, 
-                        showNewPassword: !passwordForm.showNewPassword 
-                      })}
+                      onClick={() =>
+                        setPasswordForm({
+                          ...passwordForm,
+                          showNewPassword: !passwordForm.showNewPassword,
+                        })
+                      }
                       edge="end"
                     >
-                      {passwordForm.showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                      {passwordForm.showNewPassword ? (
+                        <VisibilityOffIcon />
+                      ) : (
+                        <VisibilityIcon />
+                      )}
                     </IconButton>
-                  )
+                  ),
                 }}
               />
             </Grid>
@@ -1045,19 +1205,31 @@ const Settings: React.FC = () => {
                 label="Confirm New Password"
                 type={passwordForm.showConfirmPassword ? 'text' : 'password'}
                 value={passwordForm.confirmPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                onChange={(e) =>
+                  setPasswordForm({
+                    ...passwordForm,
+                    confirmPassword: e.target.value,
+                  })
+                }
                 InputProps={{
                   endAdornment: (
                     <IconButton
-                      onClick={() => setPasswordForm({ 
-                        ...passwordForm, 
-                        showConfirmPassword: !passwordForm.showConfirmPassword 
-                      })}
+                      onClick={() =>
+                        setPasswordForm({
+                          ...passwordForm,
+                          showConfirmPassword:
+                            !passwordForm.showConfirmPassword,
+                        })
+                      }
                       edge="end"
                     >
-                      {passwordForm.showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                      {passwordForm.showConfirmPassword ? (
+                        <VisibilityOffIcon />
+                      ) : (
+                        <VisibilityIcon />
+                      )}
                     </IconButton>
-                  )
+                  ),
                 }}
               />
             </Grid>
@@ -1068,7 +1240,12 @@ const Settings: React.FC = () => {
           <Button
             variant="contained"
             onClick={handlePasswordChange}
-            disabled={loading || !passwordForm.currentPassword || !passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword}
+            disabled={
+              loading ||
+              !passwordForm.currentPassword ||
+              !passwordForm.newPassword ||
+              passwordForm.newPassword !== passwordForm.confirmPassword
+            }
           >
             Change Password
           </Button>
@@ -1085,7 +1262,8 @@ const Settings: React.FC = () => {
         <DialogTitle>Request Data Export</DialogTitle>
         <DialogContent>
           <Alert severity="info" sx={{ mb: 2 }}>
-            We'll prepare your data export and send you a download link via email. This process may take up to 24 hours.
+            We'll prepare your data export and send you a download link via
+            email. This process may take up to 24 hours.
           </Alert>
           <Typography variant="body2" color="textSecondary">
             Your export will include:

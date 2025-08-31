@@ -386,7 +386,7 @@ export const createDTP = asyncHandler(
     await dtp.save();
 
     // Update patient's hasActiveDTP flag
-    if (dtp.status === 'unresolved') {
+    if (dtp.status === 'identified') {
       patient!.hasActiveDTP = true;
       await patient!.save();
     }

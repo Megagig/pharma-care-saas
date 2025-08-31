@@ -15,7 +15,7 @@ export interface ISOAPNotes {
 }
 export interface IVisit extends Document {
     _id: mongoose.Types.ObjectId;
-    pharmacyId: mongoose.Types.ObjectId;
+    workplaceId: mongoose.Types.ObjectId;
     patientId: mongoose.Types.ObjectId;
     date: Date;
     soap: ISOAPNotes;

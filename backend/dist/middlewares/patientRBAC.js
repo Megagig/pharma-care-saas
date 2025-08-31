@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkPatientPlanLimits = exports.checkPharmacyAccess = exports.requireVitalsAccess = exports.requireClinicalAssessmentAccess = exports.requirePatientManage = exports.requirePatientDelete = exports.requirePatientUpdate = exports.requirePatientCreate = exports.requirePatientRead = exports.requirePatientPermission = exports.hasPatientManagementPermission = void 0;
+exports.checkPatientPlanLimits = exports.checkPharmacyAccess = exports.checkWorkplaceAccess = exports.requireVitalsAccess = exports.requireClinicalAssessmentAccess = exports.requirePatientManage = exports.requirePatientDelete = exports.requirePatientUpdate = exports.requirePatientCreate = exports.requirePatientRead = exports.requirePatientPermission = exports.hasPatientManagementPermission = void 0;
 const PATIENT_MANAGEMENT_PERMISSIONS = {
     owner: ['create', 'read', 'update', 'delete', 'manage'],
     pharmacist: ['create', 'read', 'update', 'delete', 'manage'],
@@ -40,6 +40,7 @@ const mapToPatientManagementRole = (systemRole) => {
 const requirePatientPermission = (action, resource) => {
     return (req, res, next) => {
         if (!req.user) {
+            console.log('RBAC - No user in request');
             res.status(401).json({
                 message: 'Authentication required',
                 code: 'AUTH_REQUIRED',
@@ -48,6 +49,14 @@ const requirePatientPermission = (action, resource) => {
         }
         const userRole = req.user.role;
         const hasPermission = (0, exports.hasPatientManagementPermission)(userRole, action, resource);
+        console.log('RBAC check:', {
+            userRole,
+            action,
+            resource,
+            hasPermission,
+            mappedRole: mapToPatientManagementRole(userRole),
+            userId: req.user._id,
+        });
         if (!hasPermission) {
             res.status(403).json({
                 message: 'Insufficient permissions for this action',
@@ -72,25 +81,42 @@ exports.requirePatientDelete = (0, exports.requirePatientPermission)('delete');
 exports.requirePatientManage = (0, exports.requirePatientPermission)('manage');
 exports.requireClinicalAssessmentAccess = (0, exports.requirePatientPermission)('create', 'clinical-assessments');
 exports.requireVitalsAccess = (0, exports.requirePatientPermission)('create', 'vitals');
-const checkPharmacyAccess = async (req, res, next) => {
-    if (req.isAdmin) {
+const checkWorkplaceAccess = async (req, res, next) => {
+    if (req.isAdmin || req.user?.role === 'super_admin') {
+        console.log('Super admin access granted');
         next();
         return;
     }
-    if (!req.user?.pharmacyId && !req.user?.currentPlanId) {
-        res.status(403).json({
-            message: 'No pharmacy association found',
-            code: 'NO_PHARMACY_ACCESS',
-            requiresAction: 'pharmacy_setup',
+    if (process.env.NODE_ENV === 'development') {
+        console.log('checkWorkplaceAccess debug:', {
+            userId: req.user?._id,
+            workplaceId: req.user?.workplaceId,
+            currentPlanId: req.user?.currentPlanId,
+            role: req.user?.role,
+            status: req.user?.status,
+            isAdmin: req.isAdmin,
         });
+    }
+    if (!req.user?.workplaceId && !req.user?.currentPlanId) {
+        res.status(403).json({
+            message: 'No workplace association found',
+            code: 'NO_WORKPLACE_ACCESS',
+            requiresAction: 'workplace_setup',
+        });
+        return;
+    }
+    if (!req.user?.workplaceId && req.user?.currentPlanId) {
+        console.log('Allowing access with plan but no workplace:', req.user?.currentPlanId);
+        next();
         return;
     }
     next();
 };
-exports.checkPharmacyAccess = checkPharmacyAccess;
+exports.checkWorkplaceAccess = checkWorkplaceAccess;
+exports.checkPharmacyAccess = exports.checkWorkplaceAccess;
 const checkPatientPlanLimits = async (req, res, next) => {
     try {
-        if (req.isAdmin) {
+        if (req.isAdmin || req.user?.role === 'super_admin') {
             next();
             return;
         }
@@ -109,7 +135,7 @@ const checkPatientPlanLimits = async (req, res, next) => {
             if (maxPatients > 0) {
                 const Patient = require('../models/Patient').default;
                 const currentCount = await Patient.countDocuments({
-                    pharmacyId: req.user?.pharmacyId,
+                    workplaceId: req.user?.workplaceId,
                     isDeleted: false,
                 });
                 if (currentCount >= maxPatients) {

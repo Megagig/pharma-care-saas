@@ -39,6 +39,7 @@ import SaasSettings from './pages/SaasSettings';
 import FeatureFlagsPage from './pages/FeatureFlags';
 import Settings from './pages/Settings';
 import Help from './pages/Help';
+import MTRHelp from './pages/MTRHelp';
 
 // Pharmacy Module Components
 import MedicationTherapyReview from './pages/MedicationTherapyReview';
@@ -247,6 +248,56 @@ function App(): JSX.Element {
                         }
                       />
                       <Route
+                        path="/pharmacy/medication-therapy/new"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <MedicationTherapyReview />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/pharmacy/medication-therapy/patient/:patientId"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <MedicationTherapyReview />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/pharmacy/medication-therapy/:reviewId"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <MedicationTherapyReview />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/pharmacy/medication-therapy/:reviewId/step/:stepId"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <MedicationTherapyReview />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/pharmacy/medication-therapy/:reviewId/summary"
+                        element={
+                          <ProtectedRoute requiresActiveSubscription>
+                            <AppLayout>
+                              <MedicationTherapyReview />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
                         path="/pharmacy/clinical-interventions"
                         element={
                           <ProtectedRoute requiresActiveSubscription>
@@ -428,6 +479,17 @@ function App(): JSX.Element {
                           <ProtectedRoute>
                             <AppLayout>
                               <Help />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* MTR Help & Documentation */}
+                      <Route
+                        path="/help/mtr"
+                        element={
+                          <ProtectedRoute requiredFeature="medication_therapy_review">
+                            <AppLayout>
+                              <MTRHelp />
                             </AppLayout>
                           </ProtectedRoute>
                         }

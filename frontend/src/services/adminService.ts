@@ -177,7 +177,7 @@ export const adminService = {
     return response.data;
   },
 
-  async updateSystemSettings(settings: Record<string, any>) {
+  async updateSystemSettings(settings: Record<string, unknown>) {
     const response = await apiClient.put('/admin/settings', settings);
     return response.data;
   },
@@ -253,7 +253,7 @@ export const adminService = {
     return response.data;
   },
 
-  async exportUsers(format: 'csv' | 'xlsx' = 'csv', filters?: Record<string, any>) {
+  async exportUsers(format: 'csv' | 'xlsx' = 'csv', filters?: Record<string, unknown>) {
     const response = await apiClient.post('/admin/users/export', {
       format,
       filters
