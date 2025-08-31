@@ -41,7 +41,6 @@ import {
   Timeline as MonitoringIcon,
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
 import { useRBAC } from '../hooks/useRBAC';
 
 const SaasSettings: React.FC = () => {

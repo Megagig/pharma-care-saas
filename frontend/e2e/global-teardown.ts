@@ -4,7 +4,6 @@ async function globalTeardown() {
     console.log('🧹 Starting E2E test cleanup...');
 
     const browser = await chromium.launch();
-    const _page = await browser.newPage();
 
     try {
         // Clean up test data if needed

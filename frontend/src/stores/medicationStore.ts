@@ -71,11 +71,13 @@ interface MedicationStore {
 
 // Mock medication service (you'll need to implement the actual service)
 const medicationService = {
-  async getMedications(_filters: MedicationFilters) {
+  async getMedications(filters: MedicationFilters) {
     // This should be implemented to call your actual API
+    console.log('Fetching medications with filters:', filters);
     return { success: true, data: [], pagination: { page: 1, limit: 10, total: 0, pages: 0 } };
   },
-  async getMedicationsByPatient(_patientId: string) {
+  async getMedicationsByPatient(patientId: string) {
+    console.log('Fetching medications for patient:', patientId);
     return { success: true, data: [] };
   },
   async createMedication(data: MedicationFormData) {
@@ -98,13 +100,16 @@ const medicationService = {
     };
     return { success: true, data: fullMedication };
   },
-  async deleteMedication(_id: string) {
+  async deleteMedication(id: string) {
+    console.log('Deleting medication:', id);
     return { success: true };
   },
-  async getMedicationById(_id: string) {
+  async getMedicationById(id: string) {
+    console.log('Fetching medication by id:', id);
     return { success: true, data: null };
   },
-  async updateMedicationStatus(_id: string, status: string) {
+  async updateMedicationStatus(id: string, status: string) {
+    console.log('Updating medication status:', id, status);
     return { success: true, data: { status } };
   },
 };
@@ -318,7 +323,8 @@ export const useMedicationStore = create<MedicationStore>()(
         }
       },
 
-      discontinueMedication: async (id, _reason) => {
+      discontinueMedication: async (id, reason) => {
+        console.log('Discontinuing medication:', id, 'Reason:', reason);
         const { updateMedicationStatus } = get();
         return await updateMedicationStatus(id, 'discontinued');
       },
@@ -410,7 +416,7 @@ export const useMedicationStore = create<MedicationStore>()(
             // Update all successfully updated medications in state
             set((state) => ({
               medications: state.medications.map(m =>
-                ids.includes(m._id) ? { ...m, status: status as any } : m
+                ids.includes(m._id) ? { ...m, status: status as 'active' | 'inactive' | 'discontinued' } : m
               ),
             }));
             return true;

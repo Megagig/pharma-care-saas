@@ -1,10 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  useParams,
-  useNavigate,
-  useSearchParams,
-  Link as RouterLink,
-} from 'react-router-dom';
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -15,8 +10,6 @@ import {
   Alert,
   Skeleton,
   Chip,
-  useTheme,
-  useMediaQuery,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -32,14 +25,12 @@ import MTRSummary from '../components/MTRSummary';
 import { useMTRStore } from '../stores/mtrStore';
 
 const MedicationTherapyReview: React.FC = () => {
-  const theme = useTheme();
   const navigate = useNavigate();
   const { reviewId, patientId } = useParams<{
     reviewId?: string;
     patientId?: string;
   }>();
   const isSummaryRoute = window.location.pathname.includes('/summary');
-  const [searchParams] = useSearchParams();
 
   // Store
   const {

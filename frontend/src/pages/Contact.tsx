@@ -40,9 +40,12 @@ const Contact: React.FC = () => {
     formState: { errors, isSubmitting },
   } = useForm<ContactForm>();
 
-  const onSubmit = async (_data: ContactForm) => {
+  const onSubmit = async (data: ContactForm) => {
     // Simulate form submission
     await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Log form data for debugging (remove in production)
+    console.log('Contact form submitted:', data);
 
     toast.success("Message sent successfully! We'll get back to you soon.");
     reset();
