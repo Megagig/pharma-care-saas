@@ -150,7 +150,7 @@ export const useToggleNotePrivacy = () => {
         duration: 5000,
       });
     },
-    onSuccess: (data: unknown, noteId: string) => {
+    onSuccess: (data: unknown) => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.clinicalNotes.lists() });
 

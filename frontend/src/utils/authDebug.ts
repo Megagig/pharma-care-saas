@@ -59,14 +59,14 @@ export const testAPIConnection = async (): Promise<boolean> => {
 // Function to test login (replaces manual token setting)
 export const testLogin = async (email: string, password: string): Promise<boolean> => {
   try {
-    const _response = await axios.post('http://localhost:5000/api/auth/login', {
+    const response = await axios.post('http://localhost:5000/api/auth/login', {
       email,
       password
     }, {
       withCredentials: true
     });
 
-    console.log('Test login successful');
+    console.log('Test login successful:', response.status);
     return true;
   } catch (error) {
     console.error('Test login failed:', error);

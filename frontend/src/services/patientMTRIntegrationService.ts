@@ -10,7 +10,6 @@ import type {
     MedicationTherapyReview,
     MTRMedicationEntry,
     DrugTherapyProblem as MTRDTP,
-    MTRSearchParams,
 } from '../types/mtr';
 
 // ===============================
@@ -43,8 +42,8 @@ export interface MTRMedicationSync {
     syncStatus: 'synced' | 'needs_update' | 'conflicts';
     conflicts?: {
         field: string;
-        patientValue: any;
-        mtrValue: any;
+        patientValue: unknown;
+        mtrValue: unknown;
         medication: string;
     }[];
 }
@@ -67,7 +66,7 @@ export const patientMTRIntegrationService = {
             }>(`/patients/${patientId}/mtr/summary`);
 
             return response.data.data.summary;
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to get patient MTR summary:', error);
 
             // If it's a 404, 403, or 429 error, don't try fallback - just return empty summary

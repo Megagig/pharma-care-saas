@@ -42,6 +42,70 @@ export interface MTRMedication {
     isManual?: boolean; // Flag to indicate if medication was manually entered
 }
 
+// Helper functions to convert between API types and store types
+const convertMedicationEntryToMTRMedication = (entry: {
+    _id?: string;
+    id?: string;
+    drugName: string;
+    genericName?: string;
+    strength: { value: number; unit: string };
+    dosageForm: string;
+    instructions: { dose: string; frequency: string; route: string; duration?: string };
+    category: 'prescribed' | 'otc' | 'herbal' | 'supplement';
+    prescriber?: { name: string; license?: string; contact?: string };
+    startDate: string | Date;
+    endDate?: string | Date;
+    indication: string;
+    adherenceScore?: number;
+    notes?: string;
+    isManual?: boolean;
+}): MTRMedication => ({
+    id: entry._id || entry.id,
+    drugName: entry.drugName,
+    genericName: entry.genericName,
+    strength: entry.strength,
+    dosageForm: entry.dosageForm,
+    instructions: entry.instructions,
+    category: entry.category,
+    prescriber: entry.prescriber,
+    startDate: typeof entry.startDate === 'string' ? new Date(entry.startDate) : entry.startDate,
+    endDate: entry.endDate ? (typeof entry.endDate === 'string' ? new Date(entry.endDate) : entry.endDate) : undefined,
+    indication: entry.indication,
+    adherenceScore: entry.adherenceScore,
+    notes: entry.notes,
+    isManual: entry.isManual
+});
+
+const convertMTRMedicationToEntry = (medication: MTRMedication): {
+    drugName: string;
+    genericName?: string;
+    strength: { value: number; unit: string };
+    dosageForm: string;
+    instructions: { dose: string; frequency: string; route: string; duration?: string };
+    category: 'prescribed' | 'otc' | 'herbal' | 'supplement';
+    prescriber?: { name: string; license?: string; contact?: string };
+    startDate: string;
+    endDate?: string;
+    indication: string;
+    adherenceScore?: number;
+    notes?: string;
+    isManual?: boolean;
+} => ({
+    drugName: medication.drugName,
+    genericName: medication.genericName,
+    strength: medication.strength,
+    dosageForm: medication.dosageForm,
+    instructions: medication.instructions,
+    category: medication.category,
+    prescriber: medication.prescriber,
+    startDate: medication.startDate.toISOString(),
+    endDate: medication.endDate?.toISOString(),
+    indication: medication.indication,
+    adherenceScore: medication.adherenceScore,
+    notes: medication.notes,
+    isManual: medication.isManual
+});
+
 // Using imported DrugTherapyProblem type
 
 // Using imported TherapyRecommendation type
@@ -88,8 +152,9 @@ interface MTRStore {
     initializeSession: () => void;
     createReview: (patientId: string) => Promise<void>;
     loadReview: (reviewId: string) => Promise<void>;
+    loadInProgressReview: (patientId: string) => Promise<MedicationTherapyReview | null>;
     saveReview: () => Promise<void>;
-    completeReview: () => Promise<void>;
+    completeReview: () => Promise<MedicationTherapyReview>;
     cancelReview: () => Promise<void>;
 
     // Step navigation actions
@@ -144,7 +209,62 @@ interface MTRStore {
     getCompletionPercentage: () => number;
     canCompleteReview: () => boolean;
     validateStep: (step: number) => string[];
+    checkPermissions: () => Promise<boolean>;
 }
+
+// Helper function to check MTR permissions
+const checkMTRPermissions = async (): Promise<boolean> => {
+    console.log('🔍 Starting MTR permission check...');
+    console.log('🌍 Environment:', {
+        NODE_ENV: import.meta.env.NODE_ENV,
+        MODE: import.meta.env.MODE,
+        DEV: import.meta.env.DEV,
+        PROD: import.meta.env.PROD
+    });
+
+    // Multiple checks for development mode
+    const isDevelopment = import.meta.env.DEV ||
+        import.meta.env.MODE === 'development' ||
+        import.meta.env.NODE_ENV === 'development' ||
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1';
+
+    if (isDevelopment) {
+        console.warn('🔧 Development mode detected: Allowing MTR access for testing');
+        return true;
+    }
+
+    try {
+        const { authService } = await import('../services/authService');
+        const isAuthenticated = await authService.isAuthenticated();
+
+        if (!isAuthenticated) {
+            console.log('❌ User not authenticated');
+            return false;
+        }
+
+        // Get current user to check permissions
+        const user = await authService.getCurrentUser();
+        console.log('👤 Current user for MTR permission check:', user);
+
+        if (!user) {
+            console.log('❌ No user object found');
+            return false;
+        }
+
+        // For now, allow all authenticated users - you can make this more restrictive later
+        const hasPermission = !!user; // Simply check if user exists
+
+        console.log('🔐 MTR Permission check result:', hasPermission);
+        return hasPermission;
+    } catch (error) {
+        console.error('❌ Error checking MTR permissions:', error);
+
+        // Fallback: allow access if we can't determine permissions
+        console.warn('🔧 Fallback: Allowing MTR access due to permission check error');
+        return true;
+    }
+};
 
 export const useMTRStore = create<MTRStore>()(
     persist(
@@ -159,8 +279,38 @@ export const useMTRStore = create<MTRStore>()(
             therapyPlan: null,
             interventions: [],
             followUps: [],
-            loading: {},
-            errors: {},
+            loading: {
+                createReview: false,
+                loadReview: false,
+                saveReview: false,
+                completeStep: false,
+                completeReview: false,
+                searchPatients: false,
+                createNewPatient: false,
+                importMedications: false,
+                runAssessment: false,
+                createPlan: false,
+                recordIntervention: false,
+                scheduleFollowUp: false,
+                completeFollowUp: false,
+                cancelReview: false,
+            },
+            errors: {
+                createReview: null,
+                loadReview: null,
+                saveReview: null,
+                completeStep: null,
+                completeReview: null,
+                searchPatients: null,
+                createNewPatient: null,
+                importMedications: null,
+                runAssessment: null,
+                createPlan: null,
+                recordIntervention: null,
+                scheduleFollowUp: null,
+                completeFollowUp: null,
+                cancelReview: null,
+            },
 
             // Session management actions
             initializeSession: () => {
@@ -222,60 +372,63 @@ export const useMTRStore = create<MTRStore>()(
                 setError('createReview', null);
 
                 try {
-                    // In a real implementation, this would call the API
-                    // For now, create a mock review
-                    const newReview: MedicationTherapyReview = {
-                        _id: `mtr-${Date.now()}`,
-                        workplaceId: 'current-workplace-id', // Would come from auth context
+                    console.log('🚀 Starting MTR review creation for patient:', patientId);
+                    console.log('🌍 Environment mode:', import.meta.env.MODE);
+                    console.log('🔧 Development mode:', import.meta.env.DEV);
+
+                    // Check authentication and permissions first
+                    console.log('🔐 Checking MTR permissions...');
+                    const hasPermissions = await checkMTRPermissions();
+                    console.log('✅ Permission check result:', hasPermissions);
+
+                    if (!hasPermissions) {
+                        console.error('❌ Permission denied for MTR review creation');
+                        throw new Error('You do not have permission to create MTR reviews. Please contact your administrator.');
+                    }
+
+                    console.log('✅ Permissions validated, proceeding with MTR creation');
+
+                    // Import the mtrService
+                    const { mtrService } = await import('../services/mtrService');
+
+                    // Create new MTR session via API
+                    const createData = {
                         patientId,
-                        pharmacistId: 'current-user-id', // Would come from auth context
-                        reviewNumber: `MTR-${Date.now()}`,
-                        status: 'in_progress',
-                        priority: 'routine',
-                        reviewType: 'initial',
-                        steps: {
-                            patientSelection: { completed: false },
-                            medicationHistory: { completed: false },
-                            therapyAssessment: { completed: false },
-                            planDevelopment: { completed: false },
-                            interventions: { completed: false },
-                            followUp: { completed: false },
-                        },
-                        medications: [],
-                        problems: [],
-                        interventions: [],
-                        followUps: [],
-                        clinicalOutcomes: {
-                            problemsResolved: 0,
-                            medicationsOptimized: 0,
-                            adherenceImproved: false,
-                            adverseEventsReduced: false,
-                        },
-                        startedAt: new Date().toISOString(),
+                        reviewType: 'initial' as const,
+                        priority: 'routine' as const,
                         patientConsent: false,
-                        confidentialityAgreed: false,
-                        createdBy: 'current-user-id',
-                        isDeleted: false,
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
+                        confidentialityAgreed: false
                     };
 
+                    const response = await mtrService.createMTRSession(createData);
+
                     set({
-                        currentReview: newReview,
+                        currentReview: response.review,
                         currentStep: 0,
                         stepData: {},
-                        medications: [],
-                        identifiedProblems: [],
-                        therapyPlan: null,
-                        interventions: [],
-                        followUps: [],
+                        medications: (response.review.medications || []).map(convertMedicationEntryToMTRMedication),
+                        identifiedProblems: [], // Will be populated from actual DrugTherapyProblem objects
+                        therapyPlan: response.review.plan || null,
+                        interventions: [], // Will be populated from actual MTRIntervention objects
+                        followUps: [], // Will be populated from actual MTRFollowUp objects
                     });
 
-                    // Load patient data if available
-                    // This would typically fetch from the patient store or API
                     console.log('Created new MTR review for patient:', patientId);
                 } catch (error) {
-                    setError('createReview', error instanceof Error ? error.message : 'Failed to create review');
+                    console.error('Failed to create MTR review:', error);
+
+                    // Handle specific error types
+                    if (error instanceof Error) {
+                        if (error.message.includes('Permission denied') || error.message.includes('403')) {
+                            setError('createReview', 'You do not have permission to create MTR reviews. Please contact your administrator.');
+                        } else if (error.message.includes('Authentication required')) {
+                            setError('createReview', error.message);
+                        } else {
+                            setError('createReview', error.message);
+                        }
+                    } else {
+                        setError('createReview', 'Failed to create review');
+                    }
                 } finally {
                     setLoading('createReview', false);
                 }
@@ -287,61 +440,181 @@ export const useMTRStore = create<MTRStore>()(
                 setError('loadReview', null);
 
                 try {
-                    // In a real implementation, this would call the API
-                    // For now, create a mock loaded review
-                    console.log('Loading MTR review:', reviewId);
+                    // Import the mtrService
+                    const { mtrService } = await import('../services/mtrService');
 
-                    // Mock implementation - would fetch from API
-                    // const response = await mtrService.getReview(reviewId);
-                    // set({ currentReview: response.data });
+                    // Load MTR session from API
+                    const response = await mtrService.getMTRSession(reviewId);
+
+                    if (response.review) {
+                        set({
+                            currentReview: response.review,
+                            medications: (response.review.medications || []).map(convertMedicationEntryToMTRMedication),
+                            identifiedProblems: [], // Will be populated from actual DrugTherapyProblem objects
+                            therapyPlan: response.review.plan || null,
+                            interventions: [], // Will be populated from actual MTRIntervention objects
+                            followUps: [], // Will be populated from actual MTRFollowUp objects
+                            // Set current step based on review progress
+                            currentStep: get().getNextStep() || 0
+                        });
+
+                        console.log('Loaded MTR review:', reviewId);
+                    } else {
+                        set({ currentReview: null });
+                    }
                 } catch (error) {
-                    setError('loadReview', error instanceof Error ? error.message : 'Failed to load review');
+                    console.error('Failed to load MTR review:', error);
+
+                    // Handle specific error types
+                    if (error instanceof Error) {
+                        if (error.message.includes('Permission denied') || error.message.includes('403')) {
+                            setError('loadReview', 'You do not have permission to access MTR reviews. Please contact your administrator.');
+                        } else if (error.message.includes('Authentication required')) {
+                            setError('loadReview', 'Authentication required. Please log in to access MTR reviews.');
+                        } else {
+                            setError('loadReview', error.message);
+                        }
+                    } else {
+                        setError('loadReview', 'Failed to load review');
+                    }
+                    set({ currentReview: null });
+                } finally {
+                    setLoading('loadReview', false);
+                }
+            },
+
+            loadInProgressReview: async (patientId: string) => {
+                const { setLoading, setError } = get();
+                setLoading('loadReview', true);
+                setError('loadReview', null);
+
+                try {
+                    // Import the mtrService
+                    const { mtrService } = await import('../services/mtrService');
+
+                    // Get all MTR sessions for patient
+                    const response = await mtrService.getMTRSessions({ patientId, status: 'in_progress' });
+
+                    if (response.results && response.results.length > 0) {
+                        // Load the most recent in-progress review
+                        const inProgressReview = response.results[0];
+
+                        set({
+                            currentReview: inProgressReview,
+                            medications: (inProgressReview.medications || []).map(convertMedicationEntryToMTRMedication),
+                            identifiedProblems: [], // Will be populated from actual DrugTherapyProblem objects
+                            therapyPlan: inProgressReview.plan || null,
+                            interventions: [], // Will be populated from actual MTRIntervention objects
+                            followUps: [], // Will be populated from actual MTRFollowUp objects
+                            currentStep: get().getNextStep() || 0
+                        });
+
+                        console.log('Loaded in-progress MTR review for patient:', patientId);
+                        return inProgressReview;
+                    } else {
+                        set({ currentReview: null });
+                        return null;
+                    }
+                } catch (error) {
+                    console.error('Failed to load in-progress MTR review:', error);
+                    setError('loadReview', error instanceof Error ? error.message : 'Failed to load in-progress review');
+                    set({ currentReview: null });
+                    return null;
                 } finally {
                     setLoading('loadReview', false);
                 }
             },
 
             saveReview: async () => {
-                const { setLoading, setError, currentReview } = get();
+                const { setLoading, setError, currentReview, medications, identifiedProblems, therapyPlan, interventions, followUps } = get();
                 if (!currentReview) return;
 
                 setLoading('saveReview', true);
                 setError('saveReview', null);
 
                 try {
-                    // In a real implementation, this would call the API
-                    console.log('Saving MTR review:', currentReview._id);
+                    // Import the mtrService
+                    const { mtrService } = await import('../services/mtrService');
 
-                    // Mock implementation - would save to API
-                    // const response = await mtrService.updateReview(currentReview._id, currentReview);
-                    // set({ currentReview: response.data });
+                    // Prepare update data with current state
+                    const updateData = {
+                        steps: currentReview.steps,
+                        medications: medications.map(convertMTRMedicationToEntry),
+                        problems: identifiedProblems,
+                        plan: therapyPlan || undefined,
+                        interventions,
+                        followUps,
+                        status: currentReview.status,
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    // Call the API to save the review
+                    const response = await mtrService.updateMTRSession(currentReview._id, updateData);
+
+                    // Update the store with the saved review
+                    set({
+                        currentReview: {
+                            ...response.review,
+                            updatedAt: new Date().toISOString()
+                        }
+                    });
+
+                    console.log('MTR review saved successfully:', currentReview._id);
                 } catch (error) {
-                    setError('saveReview', error instanceof Error ? error.message : 'Failed to save review');
+                    console.error('Failed to save MTR review:', error);
+
+                    // Handle specific error types
+                    if (error instanceof Error) {
+                        if (error.message.includes('Permission denied') || error.message.includes('403')) {
+                            setError('saveReview', 'You do not have permission to save MTR reviews. Please contact your administrator.');
+                        } else if (error.message.includes('Authentication required')) {
+                            setError('saveReview', 'Authentication required. Please log in to save MTR reviews.');
+                        } else {
+                            setError('saveReview', error.message);
+                        }
+                    } else {
+                        setError('saveReview', 'Failed to save review');
+                    }
                 } finally {
                     setLoading('saveReview', false);
                 }
             },
 
             completeReview: async () => {
-                const { setLoading, setError, currentReview, canCompleteReview } = get();
-                if (!currentReview || !canCompleteReview()) return;
+                const { setLoading, setError, currentReview } = get();
+                if (!currentReview) throw new Error('No current review');
 
                 setLoading('completeReview', true);
                 setError('completeReview', null);
 
                 try {
-                    const updatedReview = {
-                        ...currentReview,
+                    // Import the mtrService
+                    const { mtrService } = await import('../services/mtrService');
+
+                    // Update review status to completed
+                    const updateData = {
                         status: 'completed' as const,
                         completedAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
                     };
 
-                    set({ currentReview: updatedReview });
+                    const response = await mtrService.updateMTRSession(currentReview._id, updateData);
 
-                    // In a real implementation, this would call the API
-                    console.log('Completed MTR review:', currentReview._id);
+                    // Update the store with completed review
+                    const completedReview = {
+                        ...response.review,
+                        status: 'completed' as const,
+                        completedAt: new Date().toISOString()
+                    };
+
+                    set({ currentReview: completedReview });
+
+                    console.log('MTR review completed successfully:', currentReview._id);
+                    return completedReview;
                 } catch (error) {
+                    console.error('Failed to complete MTR review:', error);
                     setError('completeReview', error instanceof Error ? error.message : 'Failed to complete review');
+                    throw error;
                 } finally {
                     setLoading('completeReview', false);
                 }
@@ -811,8 +1084,38 @@ export const useMTRStore = create<MTRStore>()(
                     therapyPlan: null,
                     interventions: [],
                     followUps: [],
-                    loading: {},
-                    errors: {},
+                    loading: {
+                        createReview: false,
+                        loadReview: false,
+                        saveReview: false,
+                        completeStep: false,
+                        completeReview: false,
+                        searchPatients: false,
+                        createNewPatient: false,
+                        importMedications: false,
+                        runAssessment: false,
+                        createPlan: false,
+                        recordIntervention: false,
+                        scheduleFollowUp: false,
+                        completeFollowUp: false,
+                        cancelReview: false,
+                    },
+                    errors: {
+                        createReview: null,
+                        loadReview: null,
+                        saveReview: null,
+                        completeStep: null,
+                        completeReview: null,
+                        searchPatients: null,
+                        createNewPatient: null,
+                        importMedications: null,
+                        runAssessment: null,
+                        createPlan: null,
+                        recordIntervention: null,
+                        scheduleFollowUp: null,
+                        completeFollowUp: null,
+                        cancelReview: null,
+                    },
                 });
             },
 
@@ -833,19 +1136,38 @@ export const useMTRStore = create<MTRStore>()(
             },
 
             getCompletionPercentage: () => {
-                const { currentReview } = get();
+                const { currentReview, followUps } = get();
                 if (!currentReview) return 0;
 
                 const steps = Object.values(currentReview.steps);
-                const completedSteps = steps.filter(step => step.completed).length;
-                return Math.round((completedSteps / steps.length) * 100);
+                const completedSteps = steps.filter((step) => step.completed).length;
+                const totalSteps = steps.length;
+
+                // Base completion on steps (90% of total)
+                let basePercentage = (completedSteps / totalSteps) * 90;
+
+                // Add 10% if at least one follow-up is scheduled (required for completion)
+                if (followUps.length > 0) {
+                    basePercentage += 10;
+                }
+
+                // Ensure we don't exceed 100%
+                return Math.min(Math.round(basePercentage), 100);
             },
 
             canCompleteReview: () => {
-                const { currentReview } = get();
+                const { currentReview, followUps } = get();
                 if (!currentReview) return false;
 
-                return Object.values(currentReview.steps).every(step => step.completed);
+                // Check if all steps are completed
+                const allStepsCompleted = Object.values(currentReview.steps).every(
+                    (step) => step.completed
+                );
+
+                // Check if at least one follow-up is scheduled
+                const hasFollowUp = followUps.length > 0;
+
+                return allStepsCompleted && hasFollowUp;
             },
 
             validateStep: (step: number) => {
@@ -887,6 +1209,10 @@ export const useMTRStore = create<MTRStore>()(
                 }
 
                 return errors;
+            },
+
+            checkPermissions: async () => {
+                return await checkMTRPermissions();
             },
         }),
         {

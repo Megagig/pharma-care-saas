@@ -182,6 +182,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     cancelReview,
     createReview,
     loadReview,
+    loadInProgressReview,
     getCompletionPercentage,
     canCompleteReview,
     getCurrentStepName,
@@ -191,6 +192,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     setMedications,
     addProblem,
     createPlan,
+    checkPermissions,
   } = useMTRStore();
 
   // Auto-save functionality
@@ -231,18 +233,55 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     };
   }, []);
 
+  // Check permissions first
+  useEffect(() => {
+    const checkUserPermissions = async () => {
+      const hasPermissions = await checkPermissions();
+      if (!hasPermissions) {
+        setSnackbarMessage(
+          'You do not have permission to access MTR reviews. Please contact your administrator.'
+        );
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        return;
+      }
+    };
+
+    checkUserPermissions();
+  }, [checkPermissions]);
+
   // Initialize MTR session
   useEffect(() => {
     const initializeSession = async () => {
+      // Check permissions first
+      const hasPermissions = await checkPermissions();
+      if (!hasPermissions) {
+        return; // Don't proceed if no permissions
+      }
+
       if (reviewId) {
         await loadReview(reviewId);
       } else if (patientId) {
-        await createReview(patientId);
+        // First, check if there's an in-progress review for this patient
+        const inProgressReview = await loadInProgressReview(patientId);
+
+        if (!inProgressReview) {
+          // No in-progress review found, create new one
+          await createReview(patientId);
+        }
+        // If in-progress review found, it's already loaded by loadInProgressReview
       }
     };
 
     initializeSession();
-  }, [reviewId, patientId, loadReview, createReview]);
+  }, [
+    reviewId,
+    patientId,
+    loadReview,
+    createReview,
+    loadInProgressReview,
+    checkPermissions,
+  ]);
 
   // Update URL when step changes (one-way sync only)
   useEffect(() => {
@@ -266,6 +305,22 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       setSearchParams(newSearchParams, { replace: true });
     }
   }, [currentStep, currentReview, searchParams, setSearchParams]); // Only depend on currentStep, not searchParams
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (!currentReview || currentReview.status === 'completed') return;
+
+    const autoSaveInterval = setInterval(async () => {
+      try {
+        await saveReview();
+        console.log('Auto-save completed');
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+      }
+    }, 30000); // Auto-save every 30 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [currentReview, saveReview]);
 
   // Session state persistence
   useEffect(() => {
@@ -1018,7 +1073,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                 size={isMobile ? 'large' : 'medium'}
                 sx={{ minWidth: isMobile ? 120 : 'auto' }}
               >
-                Save
+                {loading.saveReview ? 'Saving...' : 'Save'}
               </Button>
             </Box>
 
@@ -1062,7 +1117,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                   size={isMobile ? 'large' : 'medium'}
                   sx={{ minWidth: isMobile ? 140 : 'auto' }}
                 >
-                  Complete Review
+                  {loading.completeReview ? 'Completing...' : 'Complete Review'}
                 </Button>
               )}
             </Box>

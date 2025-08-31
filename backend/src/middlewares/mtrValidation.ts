@@ -330,7 +330,8 @@ export const validateMTRAccess = (req: AuthenticatedRequest, res: Response, next
         }
 
         // Verify pharmacist credentials (Requirement 8.1)
-        if (!user.role || !['pharmacist', 'senior_pharmacist', 'pharmacy_manager', 'admin'].includes(user.role)) {
+        // Updated to match the actual role hierarchy from auth middleware
+        if (!user.role || !['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'super_admin'].includes(user.role)) {
             // Log insufficient permissions (Requirement 7.1, 8.4)
             logger.warn('Insufficient permissions for MTR access', {
                 userId: user.id,
@@ -344,7 +345,8 @@ export const validateMTRAccess = (req: AuthenticatedRequest, res: Response, next
         }
 
         // Check license status if available
-        if (user.licenseStatus && user.licenseStatus !== 'active') {
+        // Accept both 'active' and 'approved' license statuses
+        if (user.licenseStatus && !['active', 'approved'].includes(user.licenseStatus)) {
             // Log inactive license access attempt (Requirement 7.1, 8.4)
             logger.warn('MTR access attempt with inactive license', {
                 userId: user.id,
@@ -353,7 +355,7 @@ export const validateMTRAccess = (req: AuthenticatedRequest, res: Response, next
                 timestamp: new Date().toISOString()
             });
 
-            throw new MTRAuthorizationError('Active pharmacist license required for MTR operations');
+            throw new MTRAuthorizationError('Active or approved pharmacist license required for MTR operations');
         }
 
         // Log successful access for audit trail (Requirement 7.1)

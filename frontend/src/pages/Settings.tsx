@@ -63,7 +63,6 @@ import {
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useRBAC } from '../hooks/useRBAC';
 
 interface UserSettings {
   profile: {

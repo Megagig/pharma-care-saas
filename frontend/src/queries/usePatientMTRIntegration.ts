@@ -3,14 +3,7 @@ import { patientMTRIntegrationService } from '../services/patientMTRIntegrationS
 import { queryKeys } from '../lib/queryClient';
 import { useUIStore } from '../stores';
 import type {
-    PatientMTRSummary,
-    MTRPatientData,
-    MTRMedicationSync,
-} from '../services/patientMTRIntegrationService';
-import type {
     MTRMedicationEntry,
-    MedicationRecord,
-    DrugTherapyProblem as PatientDTP,
 } from '../types/patientManagement';
 
 // Error type for API calls
@@ -32,7 +25,7 @@ export const usePatientMTRSummary = (patientId: string, enabled: boolean = true)
         enabled: !!patientId && enabled,
         staleTime: 5 * 60 * 1000, // 5 minutes
         cacheTime: 10 * 60 * 1000, // 10 minutes
-        retry: (failureCount, error: any) => {
+        retry: (failureCount, error: ApiError) => {
             // Don't retry on 404 or 403 errors
             if (error?.response?.status === 404 || error?.response?.status === 403) {
                 return false;
@@ -69,7 +62,7 @@ export const usePatientDashboardMTRData = (patientId: string, enabled: boolean =
         enabled: !!patientId && enabled,
         staleTime: 5 * 60 * 1000, // 5 minutes
         cacheTime: 10 * 60 * 1000, // 10 minutes
-        retry: (failureCount, error: any) => {
+        retry: (failureCount, error: ApiError) => {
             // Don't retry on 404 or 403 errors
             if (error?.response?.status === 404 || error?.response?.status === 403) {
                 return false;
@@ -387,7 +380,7 @@ export const useUpdatePatientMTRStatus = () => {
             patientMTRIntegrationService.updatePatientMTRStatus(patientId, status),
         onSuccess: (data, variables) => {
             // Update patient in cache
-            queryClient.setQueryData(['patients', variables.patientId], (old: any) => ({
+            queryClient.setQueryData(['patients', variables.patientId], (old: Record<string, unknown>) => ({
                 ...old,
                 data: {
                     ...old?.data,

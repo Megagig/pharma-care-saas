@@ -499,7 +499,14 @@ const FeatureFlagsPage: React.FC = () => {
                           label={getCategoryInfo(flag.metadata.category).label}
                           size="small"
                           color={
-                            getCategoryInfo(flag.metadata.category).color as any
+                            getCategoryInfo(flag.metadata.category).color as
+                              | 'default'
+                              | 'primary'
+                              | 'secondary'
+                              | 'error'
+                              | 'info'
+                              | 'success'
+                              | 'warning'
                           }
                           variant="outlined"
                         />
@@ -509,7 +516,14 @@ const FeatureFlagsPage: React.FC = () => {
                           label={flag.metadata.priority.toUpperCase()}
                           size="small"
                           color={
-                            getPriorityColor(flag.metadata.priority) as any
+                            getPriorityColor(flag.metadata.priority) as
+                              | 'default'
+                              | 'primary'
+                              | 'secondary'
+                              | 'error'
+                              | 'info'
+                              | 'success'
+                              | 'warning'
                           }
                           variant="filled"
                         />
@@ -675,7 +689,11 @@ const FeatureFlagsPage: React.FC = () => {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      priority: e.target.value as any,
+                      priority: e.target.value as
+                        | 'low'
+                        | 'medium'
+                        | 'high'
+                        | 'critical',
                     })
                   }
                 >
