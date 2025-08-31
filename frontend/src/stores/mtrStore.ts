@@ -39,6 +39,7 @@ export interface MTRMedication {
     indication: string;
     adherenceScore?: number;
     notes?: string;
+    isManual?: boolean; // Flag to indicate if medication was manually entered
 }
 
 // Using imported DrugTherapyProblem type
