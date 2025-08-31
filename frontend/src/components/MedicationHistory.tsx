@@ -253,6 +253,8 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
   const [drugSearchQuery, setDrugSearchQuery] = useState('');
   const [drugSuggestions, setDrugSuggestions] = useState<typeof MOCK_DRUGS>([]);
   const [duplicateWarnings, setDuplicateWarnings] = useState<string[]>([]);
+  const [isManualEntry, setIsManualEntry] = useState(false);
+  const [showManualEntryButton, setShowManualEntryButton] = useState(false);
   const [expandedMedications, setExpandedMedications] = useState<Set<string>>(
     new Set()
   );
@@ -332,8 +334,13 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
               drug.genericName.toLowerCase().includes(searchQuery.toLowerCase())
           );
           setDrugSuggestions(filtered);
+          // Show manual entry button if no results found and user has typed something
+          setShowManualEntryButton(
+            filtered.length === 0 && searchQuery.length >= 2
+          );
         } else {
           setDrugSuggestions([]);
+          setShowManualEntryButton(false);
         }
       }, 300),
     [memoizedDrugs]
@@ -415,6 +422,9 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
       setMedicationValue('category', category);
     }
     setEditingMedication(null);
+    setIsManualEntry(false);
+    setShowManualEntryButton(false);
+    setDrugSearchQuery('');
     setShowMedicationModal(true);
   };
 
@@ -439,6 +449,11 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
     setMedicationValue('indication', medication.indication);
     setMedicationValue('adherenceScore', medication.adherenceScore);
     setMedicationValue('notes', medication.notes || '');
+
+    // Set manual entry mode if medication was manually entered
+    setIsManualEntry(medication.isManual || false);
+    setDrugSearchQuery(medication.drugName);
+    setShowManualEntryButton(false);
 
     setShowMedicationModal(true);
   };
@@ -467,6 +482,7 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
           endDate: data.endDate,
           adherenceScore: data.adherenceScore,
           notes: data.notes,
+          isManual: isManualEntry, // Flag to indicate manual entry
           instructions: {
             dose: data.instructions.dose,
             frequency: data.instructions.frequency,
@@ -501,6 +517,9 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
         setShowMedicationModal(false);
         resetMedicationForm();
         setEditingMedication(null);
+        setIsManualEntry(false);
+        setShowManualEntryButton(false);
+        setDrugSearchQuery('');
       } catch (error) {
         setError(
           'saveMedication',
@@ -574,6 +593,24 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
     setMedicationValue('drugName', drug.name);
     setMedicationValue('genericName', drug.genericName);
     setDrugSearchQuery(drug.name);
+    setIsManualEntry(false);
+    setShowManualEntryButton(false);
+  };
+
+  const handleManualEntry = () => {
+    setIsManualEntry(true);
+    setShowManualEntryButton(false);
+    setDrugSuggestions([]);
+    // Clear the search query and set the drug name to what user typed
+    setMedicationValue('drugName', drugSearchQuery);
+    setMedicationValue('genericName', ''); // Clear generic name for manual entry
+  };
+
+  const handleBackToSearch = () => {
+    setIsManualEntry(false);
+    setDrugSearchQuery('');
+    setMedicationValue('drugName', '');
+    setMedicationValue('genericName', '');
   };
 
   const toggleMedicationExpansion = (medicationId: string) => {
@@ -890,6 +927,26 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                               >
                                 {medication.drugName}
                               </Typography>
+
+                              {/* Entry Method Badge */}
+                              <Chip
+                                label={
+                                  medication.isManual ? 'Manual' : 'Database'
+                                }
+                                size="small"
+                                color={
+                                  medication.isManual ? 'secondary' : 'success'
+                                }
+                                variant="outlined"
+                                icon={
+                                  medication.isManual ? (
+                                    <EditIcon />
+                                  ) : (
+                                    <CheckCircleIcon />
+                                  )
+                                }
+                              />
+
                               {medication.genericName &&
                                 medication.genericName !==
                                   medication.drugName && (
@@ -1135,70 +1192,165 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
 
                 <FixedGrid container spacing={2}>
                   <FixedGrid item xs={12}>
+                    {/* Entry Mode Toggle */}
+                    <Box
+                      sx={{
+                        mb: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                      }}
+                    >
+                      <Chip
+                        label={
+                          isManualEntry ? 'Manual Entry' : 'Database Search'
+                        }
+                        color={isManualEntry ? 'secondary' : 'primary'}
+                        size="small"
+                        icon={isManualEntry ? <EditIcon /> : <SearchIcon />}
+                      />
+                      {isManualEntry && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={handleBackToSearch}
+                          startIcon={<SearchIcon />}
+                        >
+                          Back to Search
+                        </Button>
+                      )}
+                    </Box>
+
+                    {/* Drug Name Field - Search or Manual */}
                     <Controller
                       name="drugName"
                       control={medicationControl}
                       rules={{ required: 'Drug name is required' }}
                       render={({ field }) => (
-                        <Autocomplete
-                          options={drugSuggestions}
-                          getOptionLabel={(option) =>
-                            typeof option === 'string' ? option : option.name
-                          }
-                          value={
-                            drugSuggestions.find(
-                              (drug) => drug.name === field.value
-                            ) || null
-                          }
-                          renderOption={(props, option) => {
-                            const { key, ...otherProps } = props;
-                            return (
-                              <Box component="li" key={key} {...otherProps}>
-                                <Box>
-                                  <Typography
-                                    variant="body2"
-                                    sx={{ fontWeight: 500 }}
+                        <>
+                          {!isManualEntry ? (
+                            // Search Mode
+                            <Box>
+                              <Autocomplete
+                                options={drugSuggestions}
+                                getOptionLabel={(option) =>
+                                  typeof option === 'string'
+                                    ? option
+                                    : option.name
+                                }
+                                value={
+                                  drugSuggestions.find(
+                                    (drug) => drug.name === field.value
+                                  ) || null
+                                }
+                                renderOption={(props, option) => {
+                                  const { key, ...otherProps } = props;
+                                  return (
+                                    <Box
+                                      component="li"
+                                      key={key}
+                                      {...otherProps}
+                                    >
+                                      <Box>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ fontWeight: 500 }}
+                                        >
+                                          {option.name}
+                                        </Typography>
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                        >
+                                          Generic: {option.genericName}
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                  );
+                                }}
+                                onInputChange={(_event, newInputValue) => {
+                                  setDrugSearchQuery(newInputValue);
+                                  field.onChange(newInputValue);
+                                }}
+                                onChange={(_event, newValue) => {
+                                  if (
+                                    newValue &&
+                                    typeof newValue !== 'string'
+                                  ) {
+                                    handleDrugSelect(newValue);
+                                  }
+                                }}
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    label="Drug Name *"
+                                    placeholder="Search for medication..."
+                                    error={!!medicationErrors.drugName}
+                                    helperText={
+                                      medicationErrors.drugName?.message ||
+                                      'Start typing to search our drug database'
+                                    }
+                                    required
+                                    InputProps={{
+                                      ...params.InputProps,
+                                      startAdornment: (
+                                        <SearchIcon
+                                          sx={{
+                                            mr: 1,
+                                            color: 'text.secondary',
+                                          }}
+                                        />
+                                      ),
+                                    }}
+                                  />
+                                )}
+                              />
+
+                              {/* Manual Entry Button */}
+                              {showManualEntryButton && (
+                                <Box sx={{ mt: 2 }}>
+                                  <Alert
+                                    severity="info"
+                                    action={
+                                      <Button
+                                        color="inherit"
+                                        size="small"
+                                        onClick={handleManualEntry}
+                                        startIcon={<AddIcon />}
+                                      >
+                                        Add Manually
+                                      </Button>
+                                    }
                                   >
-                                    {option.name}
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
-                                    Generic: {option.genericName}
-                                  </Typography>
+                                    Drug not found in database? You can add it
+                                    manually.
+                                  </Alert>
                                 </Box>
-                              </Box>
-                            );
-                          }}
-                          onInputChange={(_event, newInputValue) => {
-                            setDrugSearchQuery(newInputValue);
-                            field.onChange(newInputValue);
-                          }}
-                          onChange={(_event, newValue) => {
-                            if (newValue && typeof newValue !== 'string') {
-                              handleDrugSelect(newValue);
-                            }
-                          }}
-                          renderInput={(params) => (
+                              )}
+                            </Box>
+                          ) : (
+                            // Manual Entry Mode
                             <TextField
-                              {...params}
-                              label="Drug Name"
-                              placeholder="Search for medication..."
+                              {...field}
+                              fullWidth
+                              label="Drug Name *"
+                              placeholder="Enter drug name manually..."
                               error={!!medicationErrors.drugName}
-                              helperText={medicationErrors.drugName?.message}
+                              helperText={
+                                medicationErrors.drugName?.message ||
+                                'Manually entered - not from database'
+                              }
                               required
                               InputProps={{
-                                ...params.InputProps,
                                 startAdornment: (
-                                  <SearchIcon
+                                  <EditIcon
                                     sx={{ mr: 1, color: 'text.secondary' }}
                                   />
                                 ),
                               }}
                             />
                           )}
-                        />
+                        </>
                       )}
                     />
                   </FixedGrid>
@@ -1207,12 +1359,34 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                     <Controller
                       name="genericName"
                       control={medicationControl}
+                      rules={
+                        isManualEntry
+                          ? {
+                              required:
+                                'Generic name is recommended for manual entries',
+                            }
+                          : {}
+                      }
                       render={({ field }) => (
                         <TextField
                           {...field}
                           fullWidth
-                          label="Generic Name"
-                          helperText="Generic or active ingredient name"
+                          label={
+                            isManualEntry ? 'Generic Name *' : 'Generic Name'
+                          }
+                          placeholder={
+                            isManualEntry
+                              ? 'Enter generic/active ingredient name'
+                              : 'Generic or active ingredient name'
+                          }
+                          helperText={
+                            medicationErrors.genericName?.message ||
+                            (isManualEntry
+                              ? 'Required for manual entries - helps with drug interaction checking'
+                              : 'Generic or active ingredient name')
+                          }
+                          error={!!medicationErrors.genericName}
+                          required={isManualEntry}
                         />
                       )}
                     />
@@ -1313,8 +1487,8 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                           fullWidth
                           error={!!medicationErrors.dosageForm}
                         >
-                          <InputLabel>Dosage Form</InputLabel>
-                          <Select {...field} label="Dosage Form">
+                          <InputLabel>Dosage Form *</InputLabel>
+                          <Select {...field} label="Dosage Form *">
                             {DOSAGE_FORMS.map((form) => (
                               <MenuItem key={form} value={form}>
                                 {form}
@@ -1324,6 +1498,12 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                           {medicationErrors.dosageForm && (
                             <FormHelperText>
                               {medicationErrors.dosageForm.message}
+                            </FormHelperText>
+                          )}
+                          {isManualEntry && !medicationErrors.dosageForm && (
+                            <FormHelperText>
+                              Required for manual entries - select the physical
+                              form of the medication
                             </FormHelperText>
                           )}
                         </FormControl>

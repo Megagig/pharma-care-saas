@@ -43,6 +43,7 @@ export interface IMedication extends Document {
     lastReported?: Date;
     score?: number;
   };
+  isManual?: boolean; // Flag to indicate if medication was manually entered (not from database)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -109,6 +110,10 @@ const medicationSchema = new Schema({
   adherence: {
     lastReported: Date,
     score: Number // 0-100
+  },
+  isManual: {
+    type: Boolean,
+    default: false // Default to false (database entry)
   }
 }, { timestamps: true });
 

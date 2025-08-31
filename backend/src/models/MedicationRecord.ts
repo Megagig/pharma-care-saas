@@ -16,6 +16,7 @@ export interface IMedicationRecord extends Document {
   endDate?: Date;
   adherence?: 'good' | 'poor' | 'unknown';
   notes?: string;
+  isManual?: boolean; // Flag to indicate if medication was manually entered
   createdBy: mongoose.Types.ObjectId;
   updatedBy?: mongoose.Types.ObjectId;
   isDeleted: boolean;
@@ -147,6 +148,10 @@ const medicationRecordSchema = new Schema(
       type: String,
       trim: true,
       maxlength: [500, 'Notes cannot exceed 500 characters'],
+    },
+    isManual: {
+      type: Boolean,
+      default: false, // Default to false (database entry)
     },
   },
   {
