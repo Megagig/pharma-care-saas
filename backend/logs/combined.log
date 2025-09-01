@@ -758,3 +758,224 @@
 {"level":"warn","message":"Permission not found for action: any.action","service":"pharma-care-api","timestamp":"2025-09-01 11:58:14"}
 {"level":"info","message":"Permission matrix loaded with 7 actions","service":"pharma-care-api","timestamp":"2025-09-01 12:02:14"}
 {"level":"warn","message":"Permission not found for action: unknown.action","service":"pharma-care-api","timestamp":"2025-09-01 12:02:14"}
+{"level":"info","message":"Permission matrix loaded with 7 actions","service":"pharma-care-api","timestamp":"2025-09-01 12:05:13"}
+{"level":"warn","message":"Permission not found for action: unknown.action","service":"pharma-care-api","timestamp":"2025-09-01 12:05:13"}
+{"level":"info","message":"Loading plan configuration from file","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Successfully loaded 6 plans and 27 features","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Configuration validation passed","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Starting plan seeding process...","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Found 6 plans in configuration","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Free Trial (free_trial)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Basic (basic)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Pro (pro)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Pharmily (pharmily)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Network (network)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Enterprise (enterprise)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Plan seeding completed successfully","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Starting plan seeding process...","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Found 6 plans in configuration","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Free Trial (free_trial)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Basic (basic)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Pro (pro)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Pharmily (pharmily)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Network (network)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Enterprise (enterprise)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Plan seeding completed successfully","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Starting plan seeding process...","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Found 6 plans in configuration","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Free Trial (free_trial)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Basic (basic)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Pro (pro)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Pharmily (pharmily)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Network (network)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Enterprise (enterprise)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Plan seeding completed successfully","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Starting plan seeding process...","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Found 6 plans in configuration","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Free Trial (free_trial)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Basic (basic)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Pro (pro)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Pharmily (pharmily)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Network (network)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Upserted plan: Enterprise (enterprise)","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Plan seeding completed successfully","service":"pharma-care-api","timestamp":"2025-09-01 12:05:15"}
+{"level":"info","message":"Permission matrix loaded with 66 actions","service":"pharma-care-api","timestamp":"2025-09-01 12:05:21"}
+{"action":"INVITATION_CREATED","auditId":"68b57df12aea30b936024fcf","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b57df12aea30b936024fca","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:05:21","userId":"68b57def2aea30b936024ebe"}
+{"action":"INVITATION_CREATED","auditId":"68b57df62aea30b936025041","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b57df62aea30b93602503e","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:05:26","userId":"68b57df32aea30b93602502c"}
+{"action":"INVITATION_CREATED","auditId":"68b57df82aea30b936025082","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b57df82aea30b93602507f","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:05:28","userId":"68b57df62aea30b936025067"}
+{"level":"warn","message":"Permission not found for action: invitation.view","service":"pharma-care-api","timestamp":"2025-09-01 12:05:34"}
+{"action":"PERMISSION_DENIED","auditId":"68b57dfe2aea30b936025109","category":"authorization","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","riskScore":10,"service":"system-audit","severity":"medium","suspicious":true,"timestamp":"2025-09-01 12:05:34","userId":"68b57dfd2aea30b9360250f7"}
+{"action":"PERMISSION_DENIED","auditId":"68b57e002aea30b936025132","category":"authorization","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","riskScore":10,"service":"system-audit","severity":"medium","suspicious":true,"timestamp":"2025-09-01 12:05:36","userId":"68b57dff2aea30b93602512c"}
+{"action":"INVITATION_CREATED","auditId":"68b57e032aea30b936025168","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b57e032aea30b936025165","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:05:39","userId":"68b57e002aea30b936025150"}
+{"level":"info","message":"Permission matrix loaded with 7 actions","service":"pharma-care-api","timestamp":"2025-09-01 12:08:36"}
+{"level":"warn","message":"Permission not found for action: unknown.action","service":"pharma-care-api","timestamp":"2025-09-01 12:08:36"}
+{"level":"info","message":"Loading plan configuration from file","service":"pharma-care-api","timestamp":"2025-09-01 12:08:36"}
+{"level":"info","message":"Successfully loaded 6 plans and 27 features","service":"pharma-care-api","timestamp":"2025-09-01 12:08:36"}
+{"level":"info","message":"Configuration validation passed","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Starting plan seeding process...","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Found 6 plans in configuration","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Free Trial (free_trial)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Basic (basic)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Pro (pro)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Pharmily (pharmily)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Network (network)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Enterprise (enterprise)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Plan seeding completed successfully","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Starting plan seeding process...","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Found 6 plans in configuration","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Free Trial (free_trial)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Basic (basic)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Pro (pro)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Pharmily (pharmily)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Network (network)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Enterprise (enterprise)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Plan seeding completed successfully","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Starting plan seeding process...","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Found 6 plans in configuration","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Free Trial (free_trial)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Basic (basic)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Pro (pro)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Pharmily (pharmily)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Network (network)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Enterprise (enterprise)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Plan seeding completed successfully","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Starting plan seeding process...","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Found 6 plans in configuration","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Free Trial (free_trial)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Basic (basic)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Pro (pro)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Pharmily (pharmily)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Network (network)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Upserted plan: Enterprise (enterprise)","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Plan seeding completed successfully","service":"pharma-care-api","timestamp":"2025-09-01 12:08:37"}
+{"level":"info","message":"Permission matrix loaded with 66 actions","service":"pharma-care-api","timestamp":"2025-09-01 12:08:44"}
+{"action":"INVITATION_CREATED","auditId":"68b57ebc6dd43ebeac8b80da","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b57ebc6dd43ebeac8b80d4","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:08:44","userId":"68b57eba6dd43ebeac8b7fc7"}
+{"action":"INVITATION_CREATED","auditId":"68b57ebf6dd43ebeac8b814a","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b57ebf6dd43ebeac8b8147","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:08:47","userId":"68b57ebe6dd43ebeac8b8135"}
+{"action":"INVITATION_CREATED","auditId":"68b57ec16dd43ebeac8b818b","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b57ec16dd43ebeac8b8188","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:08:49","userId":"68b57ebf6dd43ebeac8b8170"}
+{"level":"warn","message":"Permission not found for action: invitation.view","service":"pharma-care-api","timestamp":"2025-09-01 12:08:52"}
+{"action":"PERMISSION_DENIED","auditId":"68b57ec46dd43ebeac8b8212","category":"authorization","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","riskScore":10,"service":"system-audit","severity":"medium","suspicious":true,"timestamp":"2025-09-01 12:08:52","userId":"68b57ec46dd43ebeac8b8200"}
+{"action":"PERMISSION_DENIED","auditId":"68b57ec86dd43ebeac8b823b","category":"authorization","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","riskScore":10,"service":"system-audit","severity":"medium","suspicious":true,"timestamp":"2025-09-01 12:08:56","userId":"68b57ec56dd43ebeac8b8235"}
+{"action":"INVITATION_CREATED","auditId":"68b57ec96dd43ebeac8b8271","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b57ec96dd43ebeac8b826e","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:08:57","userId":"68b57ec86dd43ebeac8b8259"}
+{"level":"info","message":"Permission matrix loaded with 66 actions","service":"pharma-care-api","timestamp":"2025-09-01 12:16:15"}
+{"action":"INVITATION_CREATED","auditId":"68b5807f2ab7eb54fab9c347","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b5807f2ab7eb54fab9c342","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:16:15","userId":"68b5807e2ab7eb54fab9c22f"}
+{"action":"INVITATION_CREATED","auditId":"68b580812ab7eb54fab9c3b3","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b580812ab7eb54fab9c3b0","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:16:17","userId":"68b580812ab7eb54fab9c39e"}
+{"action":"INVITATION_CREATED","auditId":"68b580832ab7eb54fab9c3f4","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b580832ab7eb54fab9c3f1","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:16:19","userId":"68b580812ab7eb54fab9c3d9"}
+{"level":"warn","message":"Permission not found for action: invitation.view","service":"pharma-care-api","timestamp":"2025-09-01 12:16:21"}
+{"action":"PERMISSION_DENIED","auditId":"68b580852ab7eb54fab9c47b","category":"authorization","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","riskScore":10,"service":"system-audit","severity":"medium","suspicious":true,"timestamp":"2025-09-01 12:16:21","userId":"68b580842ab7eb54fab9c469"}
+{"action":"PERMISSION_DENIED","auditId":"68b580862ab7eb54fab9c4a4","category":"authorization","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","riskScore":10,"service":"system-audit","severity":"medium","suspicious":true,"timestamp":"2025-09-01 12:16:22","userId":"68b580852ab7eb54fab9c49e"}
+{"action":"INVITATION_CREATED","auditId":"68b580872ab7eb54fab9c4da","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b580872ab7eb54fab9c4d7","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:16:23","userId":"68b580862ab7eb54fab9c4c2"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:21:34"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:21:34"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:21:34"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 12:21:34"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 12:21:34"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 12:21:34"}
+{"level":"info","message":"Permission matrix loaded with 67 actions","service":"pharma-care-api","timestamp":"2025-09-01 12:23:34"}
+{"level":"info","message":"Permission matrix loaded with 67 actions","service":"pharma-care-api","timestamp":"2025-09-01 12:24:31"}
+{"action":"INVITATION_CREATED","auditId":"68b5826fe1c3c6a65db4d8b8","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b5826fe1c3c6a65db4d8b4","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:24:31","userId":"68b5826de1c3c6a65db4d79f"}
+{"action":"INVITATION_CREATED","auditId":"68b58271e1c3c6a65db4d924","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b58271e1c3c6a65db4d921","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 12:24:33","userId":"68b58270e1c3c6a65db4d90e"}
+{"action":"PERMISSION_DENIED","auditId":"68b58277e1c3c6a65db4da18","category":"authorization","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","riskScore":10,"service":"system-audit","severity":"medium","suspicious":true,"timestamp":"2025-09-01 12:24:39","userId":"68b58276e1c3c6a65db4da12"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:25:42"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:25:42"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:25:42"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 12:25:42"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 12:25:42"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 12:25:42"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:56:00"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:56:00"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:56:00"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 12:56:00"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 12:56:00"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 12:56:00"}
+{"level":"info","message":"Permission matrix loaded with 67 actions","service":"pharma-care-api","timestamp":"2025-09-01 12:56:27"}
+{"action":"PERMISSION_DENIED","auditId":"68b589ebbbda788d874c886e","category":"authorization","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","riskScore":10,"service":"system-audit","severity":"medium","suspicious":true,"timestamp":"2025-09-01 12:56:27","userId":"68b589eabbda788d874c882d"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:58:14"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:58:14"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:58:14"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 12:58:14"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 12:58:14"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 12:58:14"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:59:25"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:59:25"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 12:59:25"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 12:59:25"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 12:59:25"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 12:59:25"}
+{"level":"info","message":"Permission matrix loaded with 67 actions","service":"pharma-care-api","timestamp":"2025-09-01 13:00:39"}
+{"action":"INVITATION_CREATED","auditId":"68b58ae7d56a35edf50b613a","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b58ae7d56a35edf50b6135","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 13:00:39","userId":"68b58ae5d56a35edf50b6022"}
+{"action":"INVITATION_CREATED","auditId":"68b58ae9d56a35edf50b61a8","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b58ae9d56a35edf50b61a5","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 13:00:41","userId":"68b58ae8d56a35edf50b6192"}
+{"action":"PERMISSION_DENIED","auditId":"68b58aeed56a35edf50b629c","category":"authorization","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","riskScore":10,"service":"system-audit","severity":"medium","suspicious":true,"timestamp":"2025-09-01 13:00:46","userId":"68b58aedd56a35edf50b6296"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 13:03:35"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 13:03:35"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 13:03:35"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 13:03:35"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 13:03:35"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 13:03:35"}
+{"level":"info","message":"Permission matrix loaded with 67 actions","service":"pharma-care-api","timestamp":"2025-09-01 13:08:01"}
+{"level":"info","message":"Permission matrix loaded with 67 actions","service":"pharma-care-api","timestamp":"2025-09-01 13:20:18"}
+{"action":"INVITATION_CREATED","auditId":"68b58f8276fd8747dc534abe","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b58f8276fd8747dc534ab5","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 13:20:18","userId":"68b58f8176fd8747dc5349cf"}
+{"action":"INVITATION_CREATED","auditId":"68b58f8476fd8747dc534b32","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b58f8476fd8747dc534b2f","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 13:20:20","userId":"68b58f8376fd8747dc534b1c"}
+{"action":"PERMISSION_DENIED","auditId":"68b58f8776fd8747dc534c26","category":"authorization","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","riskScore":10,"service":"system-audit","severity":"medium","suspicious":true,"timestamp":"2025-09-01 13:20:23","userId":"68b58f8776fd8747dc534c20"}
+{"level":"info","message":"Permission matrix loaded with 7 actions","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"warn","message":"Permission not found for action: unknown.action","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"info","message":"Loading plan configuration from file","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"info","message":"Successfully loaded 6 plans and 27 features","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"info","message":"Configuration validation passed","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"info","message":"Starting plan seeding process...","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"info","message":"Found 6 plans in configuration","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"info","message":"Upserted plan: Free Trial (free_trial)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"info","message":"Upserted plan: Basic (basic)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"info","message":"Upserted plan: Pro (pro)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"info","message":"Upserted plan: Pharmily (pharmily)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"info","message":"Upserted plan: Network (network)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"info","message":"Upserted plan: Enterprise (enterprise)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"info","message":"Plan seeding completed successfully","service":"pharma-care-api","timestamp":"2025-09-01 13:20:24"}
+{"level":"info","message":"Starting plan seeding process...","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Found 6 plans in configuration","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Free Trial (free_trial)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Basic (basic)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Pro (pro)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Pharmily (pharmily)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Network (network)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Enterprise (enterprise)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Plan seeding completed successfully","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Starting plan seeding process...","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Found 6 plans in configuration","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Free Trial (free_trial)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Basic (basic)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Pro (pro)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Pharmily (pharmily)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Network (network)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Enterprise (enterprise)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Plan seeding completed successfully","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Starting plan seeding process...","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Found 6 plans in configuration","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Free Trial (free_trial)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Basic (basic)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Pro (pro)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Pharmily (pharmily)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Network (network)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Upserted plan: Enterprise (enterprise)","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Plan seeding completed successfully","service":"pharma-care-api","timestamp":"2025-09-01 13:20:25"}
+{"level":"info","message":"Permission matrix loaded with 7 actions","service":"pharma-care-api","timestamp":"2025-09-01 13:22:01"}
+{"level":"warn","message":"Permission not found for action: unknown.action","service":"pharma-care-api","timestamp":"2025-09-01 13:22:01"}
+{"level":"info","message":"Permission matrix loaded with 67 actions","service":"pharma-care-api","timestamp":"2025-09-01 13:22:03"}
+{"action":"INVITATION_CREATED","auditId":"68b58feb43875af17bc71615","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b58feb43875af17bc71610","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 13:22:03","userId":"68b58feb43875af17bc714fe"}
+{"action":"INVITATION_CREATED","auditId":"68b58fed43875af17bc71683","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b58fed43875af17bc71680","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 13:22:05","userId":"68b58fec43875af17bc7166d"}
+{"action":"PERMISSION_DENIED","auditId":"68b58ff043875af17bc71777","category":"authorization","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","riskScore":10,"service":"system-audit","severity":"medium","suspicious":true,"timestamp":"2025-09-01 13:22:08","userId":"68b58ff043875af17bc71771"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 13:24:09"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 13:24:09"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 13:24:09"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 13:24:09"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 13:24:09"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 13:24:09"}
+{"level":"info","message":"Permission matrix loaded with 67 actions","service":"pharma-care-api","timestamp":"2025-09-01 13:24:25"}
+{"action":"INVITATION_CREATED","auditId":"68b5907930f12cdfcabd8ad1","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b5907930f12cdfcabd8acc","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 13:24:25","userId":"68b5907830f12cdfcabd89bc"}
+{"action":"INVITATION_CREATED","auditId":"68b5907b30f12cdfcabd8b43","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b5907b30f12cdfcabd8b40","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 13:24:27","userId":"68b5907a30f12cdfcabd8b2d"}
+{"action":"PERMISSION_DENIED","auditId":"68b5907e30f12cdfcabd8c37","category":"authorization","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","riskScore":10,"service":"system-audit","severity":"medium","suspicious":true,"timestamp":"2025-09-01 13:24:30","userId":"68b5907e30f12cdfcabd8c31"}
+{"level":"info","message":"Permission matrix loaded with 7 actions","service":"pharma-care-api","timestamp":"2025-09-01 13:25:34"}
+{"level":"warn","message":"Permission not found for action: unknown.action","service":"pharma-care-api","timestamp":"2025-09-01 13:25:35"}
+{"level":"info","message":"Permission matrix loaded with 67 actions","service":"pharma-care-api","timestamp":"2025-09-01 13:25:38"}
+{"action":"INVITATION_CREATED","auditId":"68b590c2ce6ea59089bf19cd","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b590c2ce6ea59089bf19c6","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 13:25:38","userId":"68b590c1ce6ea59089bf18db"}
+{"action":"INVITATION_CREATED","auditId":"68b590c4ce6ea59089bf1a3b","category":"invitation","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","resourceId":"68b590c4ce6ea59089bf1a38","resourceType":"Invitation","riskScore":4,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-01 13:25:40","userId":"68b590c3ce6ea59089bf1a25"}
+{"action":"PERMISSION_DENIED","auditId":"68b590c7ce6ea59089bf1b2f","category":"authorization","ipAddress":"::ffff:127.0.0.1","level":"info","message":"System Audit Log","riskScore":10,"service":"system-audit","severity":"medium","suspicious":true,"timestamp":"2025-09-01 13:25:43","userId":"68b590c7ce6ea59089bf1b29"}
