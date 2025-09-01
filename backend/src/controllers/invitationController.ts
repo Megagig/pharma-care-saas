@@ -659,8 +659,173 @@ export const validateInvitation = async (
         });
     }
 };
-/**
 
+/**
+ * Accept an invitation with new user registration (public endpoint)
+ * POST /api/invitations/accept
+ */
+export const acceptInvitationPublic = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const { code, userData } = req.body;
+
+        // Validate required fields
+        if (!code || !userData) {
+            res.status(400).json({
+                success: false,
+                error: 'Invitation code and user data are required',
+            });
+            return;
+        }
+
+        const { firstName, lastName, password, licenseNumber } = userData;
+
+        if (!firstName || !lastName || !password) {
+            res.status(400).json({
+                success: false,
+                error: 'First name, last name, and password are required',
+            });
+            return;
+        }
+
+        // Validate code format
+        if (code.length !== 8) {
+            res.status(400).json({
+                success: false,
+                error: 'Invalid invitation code format',
+            });
+            return;
+        }
+
+        // Find invitation by code
+        const invitation = await Invitation.findOne({ code: code.toUpperCase() })
+            .populate('workspaceId')
+            .populate('invitedBy', 'firstName lastName email');
+
+        if (!invitation) {
+            res.status(404).json({
+                success: false,
+                error: 'Invitation not found',
+            });
+            return;
+        }
+
+        // Check if invitation can be used
+        const isExpired = invitation.expiresAt < new Date();
+        if (invitation.status !== 'active' || isExpired) {
+            const reason = isExpired ? 'expired' : invitation.status;
+            res.status(400).json({
+                success: false,
+                error: `Invitation has ${reason}`,
+            });
+            return;
+        }
+
+        const workspace = invitation.workspaceId as any;
+        if (!workspace) {
+            res.status(404).json({
+                success: false,
+                error: 'Workspace not found',
+            });
+            return;
+        }
+
+        // Check if user already exists with this email
+        const existingUser = await User.findOne({ email: invitation.email });
+        if (existingUser) {
+            res.status(409).json({
+                success: false,
+                error: 'User with this email already exists',
+            });
+            return;
+        }
+
+        // Perform atomic updates (without transactions for test compatibility)
+        try {
+            // Create new user
+            const newUser = await User.create({
+                firstName,
+                lastName,
+                email: invitation.email,
+                passwordHash: password, // This will be hashed by the User model pre-save hook
+                role: 'pharmacist', // Default role
+                workplaceRole: invitation.role,
+                workplaceId: workspace._id,
+                status: 'active',
+                licenseNumber: licenseNumber || null,
+                currentPlanId: workspace.currentPlanId,
+            });
+
+            if (!newUser) {
+                throw new Error('Failed to create user');
+            }
+
+            // Add user to workspace team members
+            await Workplace.findByIdAndUpdate(
+                workspace._id,
+                {
+                    $addToSet: { teamMembers: newUser._id },
+                }
+            );
+
+            // Mark invitation as used
+            invitation.status = 'used';
+            invitation.usedAt = new Date();
+            invitation.usedBy = newUser._id;
+            await invitation.save();
+
+            // Send notification to inviter (don't block response)
+            const inviterData = invitation.invitedBy as any;
+            emailService.sendInvitationAcceptedNotification(
+                inviterData.email,
+                {
+                    inviterName: `${inviterData.firstName} ${inviterData.lastName}`,
+                    acceptedUserName: `${firstName} ${lastName}`,
+                    acceptedUserEmail: invitation.email,
+                    workspaceName: workspace.name,
+                    role: invitation.role,
+                }
+            ).catch((error: any) => {
+                console.error('Failed to send invitation accepted notification:', error);
+            });
+
+            res.json({
+                success: true,
+                message: 'Invitation accepted successfully',
+                user: {
+                    id: newUser._id,
+                    firstName: newUser.firstName,
+                    lastName: newUser.lastName,
+                    email: newUser.email,
+                    workplaceRole: newUser.workplaceRole,
+                    workplaceId: newUser.workplaceId,
+                    status: newUser.status,
+                },
+                workspace: {
+                    id: workspace._id,
+                    name: workspace.name,
+                    type: workspace.type,
+                },
+            });
+        } catch (error) {
+            console.error('Error accepting invitation:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Internal server error',
+            });
+        }
+    } catch (error) {
+        console.error('Error accepting invitation:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+        });
+    }
+};
+
+/**
  * Get invitation analytics for a workspace
  * GET /api/workspaces/:id/invitations/analytics
  */

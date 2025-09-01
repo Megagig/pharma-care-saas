@@ -41,6 +41,11 @@ class PermissionService {
         action: string
     ): Promise<PermissionResult> {
         try {
+            // Super admin bypass (except for system-level restrictions)
+            if (user.role === 'super_admin') {
+                return { allowed: true };
+            }
+
             const matrix = await this.loadPermissionMatrix();
             const permission = matrix[action];
 
@@ -50,11 +55,6 @@ class PermissionService {
                     allowed: false,
                     reason: 'Permission not defined',
                 };
-            }
-
-            // Super admin bypass (except for system-level restrictions)
-            if (user.role === 'super_admin') {
-                return { allowed: true };
             }
 
             // Check user status

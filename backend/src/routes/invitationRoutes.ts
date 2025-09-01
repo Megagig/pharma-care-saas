@@ -4,6 +4,7 @@ import {
     getWorkspaceInvitations,
     cancelInvitation,
     acceptInvitation,
+    acceptInvitationPublic,
     validateInvitation,
     getInvitationAnalytics,
     getInvitationStats,
@@ -23,9 +24,9 @@ const router = express.Router();
 router.post(
     '/workspaces/:id/invitations',
     invitationRateLimiters.createInvitation,
+    authWithWorkspace,
     invitationRateLimiters.createInvitationUser,
     abuseDetection.invitationSpam,
-    authWithWorkspace,
     requirePermission('invitation.create'),
     createInvitation
 );
@@ -52,6 +53,16 @@ router.delete(
     authWithWorkspace,
     requirePermission('invitation.delete'),
     cancelInvitation
+);
+
+/**
+ * @route   POST /api/invitations/accept
+ * @desc    Accept an invitation with new user registration
+ * @access  Public
+ */
+router.post(
+    '/invitations/accept',
+    acceptInvitationPublic
 );
 
 /**

@@ -120,6 +120,9 @@ app.use('/api/patients', carePlanRoutes);
 app.use('/api/patients', visitRoutes);
 app.use('/api/patients', patientMTRIntegrationRoutes);
 
+// Invitation routes (must come before individual resource routes to avoid auth conflicts)
+app.use('/api', invitationRoutes);
+
 // Individual resource routes
 app.use('/api', allergyRoutes);
 app.use('/api', conditionRoutes);
@@ -136,7 +139,6 @@ app.use('/api/mtr', mtrRoutes);
 app.use('/api/mtr/notifications', mtrNotificationRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/security', securityRoutes);
-app.use('/api', invitationRoutes);
 app.use('/api/usage', usageMonitoringRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/location-data', locationDataRoutes);
