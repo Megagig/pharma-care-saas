@@ -19,6 +19,8 @@ export interface ISubscription extends Document {
     startDate: Date;
     endDate: Date;
     trialEndDate?: Date;
+    trialEndsAt?: Date;
+    isTrial?: boolean;
     priceAtPurchase: number;
     billingInterval: 'monthly' | 'yearly';
     nextBillingDate?: Date;

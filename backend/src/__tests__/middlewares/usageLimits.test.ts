@@ -1,9 +1,10 @@
-import { Request, Response, NextFunction } from 'express';
-import { usageLimitsMiddleware } from '../../middlewares/usageLimits';
-import { Workplace } from '../../models/Workplace';
-import { SubscriptionPlan } from '../../models/SubscriptionPlan';
-import { Patient } from '../../models/Patient';
-import { User } from '../../models/User';
+import { Response, NextFunction } from 'express';
+import { AuthRequest } from '../../types/auth';
+import { enforcePlanLimit } from '../../middlewares/usageLimits';
+import WorkplaceModel, { IWorkplace } from '../../models/Workplace';
+import SubscriptionPlanModel, { ISubscriptionPlan } from '../../models/SubscriptionPlan';
+import PatientModel, { IPatient } from '../../models/Patient';
+import UserModel, { IUser } from '../../models/User';
 
 // Mock dependencies
 jest.mock('../../models/Workplace');
@@ -11,13 +12,13 @@ jest.mock('../../models/SubscriptionPlan');
 jest.mock('../../models/Patient');
 jest.mock('../../models/User');
 
-const mockWorkplace = Workplace as jest.Mocked<typeof Workplace>;
-const mockSubscriptionPlan = SubscriptionPlan as jest.Mocked<typeof SubscriptionPlan>;
-const mockPatient = Patient as jest.Mocked<typeof Patient>;
-const mockUser = User as jest.Mocked<typeof User>;
+const mockWorkplace = WorkplaceModel as jest.Mocked<typeof WorkplaceModel>;
+const mockSubscriptionPlan = SubscriptionPlanModel as jest.Mocked<typeof SubscriptionPlanModel>;
+const mockPatient = PatientModel as jest.Mocked<typeof PatientModel>;
+const mockUser = UserModel as jest.Mocked<typeof UserModel>;
 
 describe('usageLimitsMiddleware', () => {
-    let mockRequest: Partial<Request>;
+    let mockRequest: Partial<AuthRequest>;
     let mockResponse: Partial<Response>;
     let mockNext: NextFunction;
 

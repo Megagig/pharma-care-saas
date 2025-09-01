@@ -1,8 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
-import { rbacMiddleware } from '../../middlewares/rbac';
-import { PermissionService } from '../../services/PermissionService';
-import { Workplace } from '../../models/Workplace';
-import { SubscriptionPlan } from '../../models/SubscriptionPlan';
+import { Response, NextFunction } from 'express';
+import { AuthRequest } from '../../types/auth';
+import rbacMiddleware from '../../middlewares/rbac';
+import PermissionService from '../../services/PermissionService';
+import WorkplaceModel, { IWorkplace } from '../../models/Workplace';
+import SubscriptionPlanModel, { ISubscriptionPlan } from '../../models/SubscriptionPlan';
 
 // Mock dependencies
 jest.mock('../../services/PermissionService');
@@ -10,11 +11,11 @@ jest.mock('../../models/Workplace');
 jest.mock('../../models/SubscriptionPlan');
 
 const mockPermissionService = PermissionService as jest.Mocked<typeof PermissionService>;
-const mockWorkplace = Workplace as jest.Mocked<typeof Workplace>;
-const mockSubscriptionPlan = SubscriptionPlan as jest.Mocked<typeof SubscriptionPlan>;
+const mockWorkplace = WorkplaceModel as jest.Mocked<typeof WorkplaceModel>;
+const mockSubscriptionPlan = SubscriptionPlanModel as jest.Mocked<typeof SubscriptionPlanModel>;
 
 describe('rbacMiddleware', () => {
-    let mockRequest: Partial<Request>;
+    let mockRequest: Partial<AuthRequest>;
     let mockResponse: Partial<Response>;
     let mockNext: NextFunction;
     let mockPermissionServiceInstance: jest.Mocked<PermissionService>;

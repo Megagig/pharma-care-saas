@@ -1,10 +1,10 @@
 import { execSync } from 'child_process';
-import { User } from '../../models/User';
-import { Workplace } from '../../models/Workplace';
-import { Subscription } from '../../models/Subscription';
-import { SubscriptionPlan } from '../../models/SubscriptionPlan';
-import { Invitation } from '../../models/Invitation';
-import { Patient } from '../../models/Patient';
+import User, { IUser } from '../../models/User';
+import Workplace, { IWorkplace } from '../../models/Workplace';
+import Subscription, { ISubscription } from '../../models/Subscription';
+import SubscriptionPlan, { ISubscriptionPlan } from '../../models/SubscriptionPlan';
+import Invitation, { IInvitation } from '../../models/Invitation';
+import Patient, { IPatient } from '../../models/Patient';
 import mongoose from 'mongoose';
 
 describe('Migration Workflow Integration Tests', () => {

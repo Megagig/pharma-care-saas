@@ -8,6 +8,7 @@ import MTRFollowUp from '../../models/MTRFollowUp';
 import Patient from '../../models/Patient';
 import User from '../../models/User';
 import Workplace from '../../models/Workplace';
+import SubscriptionPlan from '../../models/SubscriptionPlan';
 
 // Create a test app with all middleware
 const createTestApp = () => {
@@ -36,22 +37,55 @@ describe('MTR Integration Tests', () => {
     beforeEach(async () => {
         app = createTestApp();
 
+        // Create test subscription plan
+        const subscriptionPlan = await SubscriptionPlan.create({
+            name: 'Basic Plan',
+            tier: 'basic',
+            priceNGN: 15000,
+            billingInterval: 'monthly',
+            description: 'Basic plan for testing',
+            features: {
+                patientLimit: 100,
+                reminderSmsMonthlyLimit: 50,
+                reportsExport: true,
+                careNoteExport: true,
+                adrModule: false,
+                multiUserSupport: true,
+                teamSize: 5,
+                apiAccess: false,
+                auditLogs: false,
+                dataBackup: true,
+                clinicalNotesLimit: null,
+                prioritySupport: false,
+                emailReminders: true,
+                smsReminders: true,
+                advancedReports: false,
+                drugTherapyManagement: true,
+                teamManagement: true,
+                dedicatedSupport: false,
+                adrReporting: false,
+                drugInteractionChecker: true,
+                doseCalculator: true,
+                multiLocationDashboard: false,
+                sharedPatientRecords: false,
+                groupAnalytics: false,
+                cdss: false
+            }
+        });
+
         // Create test workplace
         workplace = await Workplace.create({
             name: 'Test Pharmacy',
-            type: 'pharmacy',
-            address: {
-                street: '123 Test St',
-                city: 'Test City',
-                state: 'TS',
-                zipCode: '12345',
-                country: 'Test Country'
-            },
-            contactInfo: {
-                phone: '+2348012345678',
-                email: 'test@pharmacy.com'
-            },
-            createdBy: testUtils.createObjectId()
+            type: 'Community',
+            licenseNumber: 'LIC123456',
+            email: 'test@pharmacy.com',
+            address: '123 Test St, Test City, Lagos 12345',
+            state: 'Lagos',
+            ownerId: testUtils.createObjectId(),
+            verificationStatus: 'verified',
+            documents: [],
+            inviteCode: 'TEST123',
+            teamMembers: []
         });
 
         // Create test user
@@ -60,10 +94,10 @@ describe('MTR Integration Tests', () => {
             firstName: 'Test',
             lastName: 'Pharmacist',
             email: 'pharmacist@test.com',
-            password: 'hashedpassword',
+            passwordHash: 'hashedpassword',
             role: 'pharmacist',
-            isActive: true,
-            createdBy: testUtils.createObjectId()
+            currentPlanId: subscriptionPlan._id,
+            status: 'active'
         });
 
         // Create test patient

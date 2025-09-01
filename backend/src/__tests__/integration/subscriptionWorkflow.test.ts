@@ -1,9 +1,9 @@
 import request from 'supertest';
 import app from '../../app';
-import { User } from '../../models/User';
-import { Workplace } from '../../models/Workplace';
-import { Subscription } from '../../models/Subscription';
-import { SubscriptionPlan } from '../../models/SubscriptionPlan';
+import UserModel, { IUser } from '../../models/User';
+import WorkplaceModel, { IWorkplace } from '../../models/Workplace';
+import SubscriptionModel, { ISubscription } from '../../models/Subscription';
+import SubscriptionPlanModel, { ISubscriptionPlan } from '../../models/SubscriptionPlan';
 import { emailService } from '../../utils/emailService';
 import jwt from 'jsonwebtoken';
 
@@ -22,7 +22,7 @@ describe('Subscription Workflow Integration Tests', () => {
 
     beforeEach(async () => {
         // Create subscription plans
-        basicPlan = await SubscriptionPlan.create({
+        basicPlan = await SubscriptionPlanModel.create({
             name: 'Basic Plan',
             code: 'basic',
             tier: 'basic',
@@ -41,10 +41,10 @@ describe('Subscription Workflow Integration Tests', () => {
             isActive: true
         });
 
-        premiumPlan = await SubscriptionPlan.create({
+        premiumPlan = await SubscriptionPlanModel.create({
             name: 'Premium Plan',
             code: 'premium',
-            tier: 'premium',
+            tier: 'pro',
             tierRank: 2,
             priceNGN: 35000,
             billingInterval: 'monthly',
@@ -61,7 +61,7 @@ describe('Subscription Workflow Integration Tests', () => {
             popularPlan: true
         });
 
-        enterprisePlan = await SubscriptionPlan.create({
+        enterprisePlan = await SubscriptionPlanModel.create({
             name: 'Enterprise Plan',
             code: 'enterprise',
             tier: 'enterprise',
@@ -81,7 +81,7 @@ describe('Subscription Workflow Integration Tests', () => {
         });
 
         // Create current subscription
-        currentSubscription = await Subscription.create({
+        currentSubscription = await SubscriptionModel.create({
             planId: basicPlan._id,
             status: 'active',
             startDate: new Date(),
@@ -94,7 +94,7 @@ describe('Subscription Workflow Integration Tests', () => {
         });
 
         // Create workspace
-        workspace = await Workplace.create({
+        workspace = await WorkplaceModel.create({
             name: 'Test Pharmacy',
             type: 'pharmacy',
             address: '123 Test Street',
@@ -104,14 +104,15 @@ describe('Subscription Workflow Integration Tests', () => {
         });
 
         // Create owner user
-        ownerUser = await User.create({
+        ownerUser = await UserModel.create({
             firstName: 'John',
             lastName: 'Doe',
             email: 'owner@testpharmacy.com',
-            password: 'securePassword123',
+            passwordHash: 'securePassword123',
             role: 'pharmacist',
             workplaceRole: 'Owner',
             workplaceId: workspace._id,
+            currentPlanId: basicPlan._id,
             status: 'active',
             licenseNumber: 'PCN123456'
         });
@@ -132,7 +133,10 @@ describe('Subscription Workflow Integration Tests', () => {
         );
 
         // Mock email service
-        mockEmailService.sendSubscriptionChangeEmail.mockResolvedValue(true);
+        mockEmailService.sendSubscriptionStatusChange.mockResolvedValue({
+            success: true,
+            messageId: 'test-message-id'
+        });
     });
 
     describe('Subscription Upgrade Workflow', () => {
@@ -177,22 +181,22 @@ describe('Subscription Workflow Integration Tests', () => {
             expect(upgradeResponse.body.prorationAmount).toBeDefined();
 
             // Step 4: Verify old subscription was cancelled
-            const oldSubscription = await Subscription.findById(currentSubscription._id);
+            const oldSubscription = await SubscriptionModel.findById(currentSubscription._id);
             expect(oldSubscription!.status).toBe('cancelled');
             expect(oldSubscription!.cancelledAt).toBeTruthy();
 
             // Step 5: Verify new subscription was created
-            const newSubscription = await Subscription.findById(upgradeResponse.body.subscription._id);
+            const newSubscription = await SubscriptionModel.findById(upgradeResponse.body.subscription._id);
             expect(newSubscription!.planId.toString()).toBe(premiumPlan._id.toString());
             expect(newSubscription!.status).toBe('active');
             expect(newSubscription!.amount).toBe(premiumPlan.priceNGN);
 
             // Step 6: Verify workspace subscription reference updated
-            const updatedWorkspace = await Workplace.findById(workspace._id);
+            const updatedWorkspace = await WorkplaceModel.findById(workspace._id);
             expect(updatedWorkspace!.subscriptionId.toString()).toBe(newSubscription!._id.toString());
 
             // Step 7: Verify upgrade notification email sent
-            expect(mockEmailService.sendSubscriptionChangeEmail).toHaveBeenCalledWith(
+            expect(mockEmailService.sendSubscriptionStatusChange).toHaveBeenCalledWith(
                 ownerUser.email,
                 expect.objectContaining({
                     workspaceName: workspace.name,
@@ -278,7 +282,7 @@ describe('Subscription Workflow Integration Tests', () => {
             });
 
             // Verify current subscription still active until end of period
-            const currentSub = await Subscription.findById(currentSubscription._id);
+            const currentSub = await SubscriptionModel.findById(currentSubscription._id);
             expect(currentSub!.status).toBe('active');
             expect(currentSub!.scheduledPlanChange).toMatchObject({
                 newPlanId: basicPlan._id,
@@ -287,7 +291,7 @@ describe('Subscription Workflow Integration Tests', () => {
             });
 
             // Verify downgrade notification email sent
-            expect(mockEmailService.sendSubscriptionChangeEmail).toHaveBeenCalledWith(
+            expect(mockEmailService.sendSubscriptionStatusChange).toHaveBeenCalledWith(
                 ownerUser.email,
                 expect.objectContaining({
                     workspaceName: workspace.name,
@@ -302,25 +306,27 @@ describe('Subscription Workflow Integration Tests', () => {
 
         it('should prevent immediate downgrade if usage exceeds new plan limits', async () => {
             // Add users to exceed basic plan limit
-            const user2 = await User.create({
+            const user2 = await UserModel.create({
                 firstName: 'User',
                 lastName: 'Two',
                 email: 'user2@testpharmacy.com',
-                password: 'password123',
+                passwordHash: 'password123',
                 role: 'pharmacist',
                 workplaceRole: 'Pharmacist',
                 workplaceId: workspace._id,
+                currentPlanId: basicPlan._id,
                 status: 'active'
             });
 
-            const user3 = await User.create({
+            const user3 = await UserModel.create({
                 firstName: 'User',
                 lastName: 'Three',
                 email: 'user3@testpharmacy.com',
-                password: 'password123',
+                passwordHash: 'password123',
                 role: 'pharmacist',
                 workplaceRole: 'Technician',
                 workplaceId: workspace._id,
+                currentPlanId: basicPlan._id,
                 status: 'active'
             });
 
@@ -347,14 +353,15 @@ describe('Subscription Workflow Integration Tests', () => {
 
         it('should allow scheduled downgrade even with usage violations', async () => {
             // Add users to exceed basic plan limit
-            const user2 = await User.create({
+            const user2 = await UserModel.create({
                 firstName: 'User',
                 lastName: 'Two',
                 email: 'user2@testpharmacy.com',
-                password: 'password123',
+                passwordHash: 'password123',
                 role: 'pharmacist',
                 workplaceRole: 'Pharmacist',
                 workplaceId: workspace._id,
+                currentPlanId: basicPlan._id,
                 status: 'active'
             });
 
@@ -382,10 +389,10 @@ describe('Subscription Workflow Integration Tests', () => {
     describe('Trial to Paid Conversion', () => {
         beforeEach(async () => {
             // Create trial plan
-            const trialPlan = await SubscriptionPlan.create({
+            const trialPlan = await SubscriptionPlanModel.create({
                 name: 'Trial Plan',
                 code: 'trial',
-                tier: 'trial',
+                tier: 'free_trial',
                 tierRank: 0,
                 priceNGN: 0,
                 billingInterval: 'monthly',
@@ -438,11 +445,11 @@ describe('Subscription Workflow Integration Tests', () => {
             expect(conversionResponse.body.subscription.trialEndsAt).toBeNull();
 
             // Verify trial subscription was cancelled
-            const oldSubscription = await Subscription.findById(currentSubscription._id);
+            const oldSubscription = await SubscriptionModel.findById(currentSubscription._id);
             expect(oldSubscription!.status).toBe('cancelled');
 
             // Verify new paid subscription
-            const newSubscription = await Subscription.findById(conversionResponse.body.subscription._id);
+            const newSubscription = await SubscriptionModel.findById(conversionResponse.body.subscription._id);
             expect(newSubscription!.isTrial).toBe(false);
             expect(newSubscription!.amount).toBe(premiumPlan.priceNGN);
             expect(newSubscription!.paymentMethod).toBe('card');
@@ -499,14 +506,14 @@ describe('Subscription Workflow Integration Tests', () => {
             expect(cancellationResponse.body.accessUntil).toBeTruthy();
 
             // Verify subscription marked for cancellation
-            const subscription = await Subscription.findById(currentSubscription._id);
+            const subscription = await SubscriptionModel.findById(currentSubscription._id);
             expect(subscription!.status).toBe('active'); // Still active until end of period
             expect(subscription!.cancelledAt).toBeTruthy();
             expect(subscription!.cancellationReason).toBe('switching_providers');
             expect(subscription!.willCancelAt).toBeTruthy();
 
             // Verify cancellation email sent
-            expect(mockEmailService.sendSubscriptionChangeEmail).toHaveBeenCalledWith(
+            expect(mockEmailService.sendSubscriptionStatusChange).toHaveBeenCalledWith(
                 ownerUser.email,
                 expect.objectContaining({
                     workspaceName: workspace.name,
@@ -532,7 +539,7 @@ describe('Subscription Workflow Integration Tests', () => {
             expect(cancellationResponse.body.success).toBe(true);
 
             // Verify subscription immediately cancelled
-            const subscription = await Subscription.findById(currentSubscription._id);
+            const subscription = await SubscriptionModel.findById(currentSubscription._id);
             expect(subscription!.status).toBe('cancelled');
             expect(subscription!.endDate.getTime()).toBeLessThanOrEqual(Date.now());
         });
@@ -556,13 +563,13 @@ describe('Subscription Workflow Integration Tests', () => {
             expect(paymentResponse.body.success).toBe(true);
 
             // Verify subscription status updated
-            const subscription = await Subscription.findById(currentSubscription._id);
+            const subscription = await SubscriptionModel.findById(currentSubscription._id);
             expect(subscription!.status).toBe('payment_failed');
             expect(subscription!.paymentFailures).toBe(1);
             expect(subscription!.nextRetryDate).toBeTruthy();
 
             // Verify payment failure email sent
-            expect(mockEmailService.sendPaymentFailureEmail).toHaveBeenCalledWith(
+            expect(mockEmailService.sendPaymentFailedNotification).toHaveBeenCalledWith(
                 ownerUser.email,
                 expect.objectContaining({
                     workspaceName: workspace.name,
@@ -592,12 +599,12 @@ describe('Subscription Workflow Integration Tests', () => {
                 .expect(200);
 
             // Verify subscription suspended
-            const subscription = await Subscription.findById(currentSubscription._id);
+            const subscription = await SubscriptionModel.findById(currentSubscription._id);
             expect(subscription!.status).toBe('suspended');
             expect(subscription!.suspendedAt).toBeTruthy();
 
             // Verify suspension email sent
-            expect(mockEmailService.sendSubscriptionSuspensionEmail).toHaveBeenCalledWith(
+            expect(mockEmailService.sendSubscriptionSuspended).toHaveBeenCalledWith(
                 ownerUser.email,
                 expect.objectContaining({
                     workspaceName: workspace.name,

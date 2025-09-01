@@ -32,7 +32,7 @@ describe('MTR Notification Controller', () => {
         testPatientId = new mongoose.Types.ObjectId().toString();
 
         // Mock authentication middleware
-        mockAuth.mockImplementation((req: any, res, next) => {
+        mockAuth.mockImplementation(async (req: any, res, next) => {
             req.user = {
                 _id: testUserId,
                 workplaceId: testWorkplaceId,
@@ -74,7 +74,7 @@ describe('MTR Notification Controller', () => {
 
             expect(response.status).toBe(400);
             expect(response.body.success).toBe(false);
-            expect(response.body.message).toBe('Invalid follow-up ID');
+            expect(response.body.error.message).toBe('Invalid follow-up ID');
         });
 
         it('should handle service errors', async () => {
@@ -88,7 +88,7 @@ describe('MTR Notification Controller', () => {
 
             expect(response.status).toBe(500);
             expect(response.body.success).toBe(false);
-            expect(response.body.message).toBe('Failed to schedule follow-up reminder');
+            expect(response.body.error.message).toBe('Failed to schedule follow-up reminder');
         });
     });
 
@@ -134,7 +134,7 @@ describe('MTR Notification Controller', () => {
 
             expect(response.status).toBe(400);
             expect(response.body.success).toBe(false);
-            expect(response.body.message).toBe('Invalid patient ID');
+            expect(response.body.error.message).toBe('Invalid patient ID');
         });
     });
 
@@ -161,7 +161,7 @@ describe('MTR Notification Controller', () => {
 
             expect(response.status).toBe(500);
             expect(response.body.success).toBe(false);
-            expect(response.body.message).toBe('Failed to check overdue follow-ups');
+            expect(response.body.error.message).toBe('Failed to check overdue follow-ups');
         });
     });
 
@@ -203,7 +203,7 @@ describe('MTR Notification Controller', () => {
 
         it('should return 401 if user not authenticated', async () => {
             // Mock unauthenticated request
-            mockAuth.mockImplementation((req: any, res, next) => {
+            mockAuth.mockImplementation(async (req: any, res, next) => {
                 req.user = undefined;
                 next();
             });
@@ -213,7 +213,7 @@ describe('MTR Notification Controller', () => {
 
             expect(response.status).toBe(401);
             expect(response.body.success).toBe(false);
-            expect(response.body.message).toBe('User not authenticated');
+            expect(response.body.error.message).toBe('User not authenticated');
         });
     });
 
@@ -241,7 +241,7 @@ describe('MTR Notification Controller', () => {
         });
 
         it('should return 401 if user not authenticated', async () => {
-            mockAuth.mockImplementation((req: any, res, next) => {
+            mockAuth.mockImplementation(async (req: any, res, next) => {
                 req.user = undefined;
                 next();
             });
@@ -252,7 +252,7 @@ describe('MTR Notification Controller', () => {
 
             expect(response.status).toBe(401);
             expect(response.body.success).toBe(false);
-            expect(response.body.message).toBe('User not authenticated');
+            expect(response.body.error.message).toBe('User not authenticated');
         });
     });
 
@@ -347,7 +347,7 @@ describe('MTR Notification Controller', () => {
 
             expect(response.status).toBe(400);
             expect(response.body.success).toBe(false);
-            expect(response.body.message).toBe('Invalid patient ID');
+            expect(response.body.error.message).toBe('Invalid patient ID');
         });
     });
 
@@ -383,7 +383,7 @@ describe('MTR Notification Controller', () => {
 
             expect(response.status).toBe(400);
             expect(response.body.success).toBe(false);
-            expect(response.body.message).toBe('Invalid follow-up ID');
+            expect(response.body.error.message).toBe('Invalid follow-up ID');
         });
     });
 

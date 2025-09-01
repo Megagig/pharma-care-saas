@@ -229,9 +229,9 @@ describe('MedicationTherapyReview Model', () => {
             const savedMtr = await mtr.save();
 
             expect(savedMtr.medications).toHaveLength(1);
-            expect(savedMtr.medications[0].drugName).toBe('Lisinopril');
-            expect(savedMtr.medications[0].strength.value).toBe(10);
-            expect(savedMtr.medications[0].category).toBe('prescribed');
+            expect(savedMtr.medications[0]!.drugName).toBe('Lisinopril');
+            expect(savedMtr.medications[0]!.strength.value).toBe(10);
+            expect(savedMtr.medications[0]!.category).toBe('prescribed');
         });
 
         it('should validate medication fields', async () => {

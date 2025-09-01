@@ -29,6 +29,8 @@ export interface ISubscription extends Document {
   startDate: Date;
   endDate: Date;
   trialEndDate?: Date;
+  trialEndsAt?: Date; // Alias for trialEndDate
+  isTrial?: boolean; // Computed property
 
   // Billing information
   priceAtPurchase: number;
@@ -298,6 +300,23 @@ subscriptionSchema.index({ trialEndDate: 1, status: 1 });
 subscriptionSchema.index({ nextBillingDate: 1, status: 1 });
 subscriptionSchema.index({ stripeSubscriptionId: 1 }, { sparse: true });
 subscriptionSchema.index({ tier: 1, status: 1 });
+
+// Virtual properties for backward compatibility
+subscriptionSchema.virtual('trialEndsAt').get(function () {
+  return this.trialEndDate;
+});
+
+subscriptionSchema.virtual('trialEndsAt').set(function (value) {
+  this.trialEndDate = value;
+});
+
+subscriptionSchema.virtual('isTrial').get(function () {
+  return this.status === 'trial' || (this.trialEndDate && new Date() <= this.trialEndDate);
+});
+
+// Ensure virtual fields are serialized
+subscriptionSchema.set('toJSON', { virtuals: true });
+subscriptionSchema.set('toObject', { virtuals: true });
 
 export default mongoose.model<ISubscription>(
   'Subscription',
