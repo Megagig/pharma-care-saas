@@ -213,12 +213,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check subscription requirement
   if (requiresActiveSubscription && !subscriptionStatus.isActive) {
-    return (
-      <AccessDenied
-        reason="subscription"
-        subscriptionStatus={subscriptionStatus}
-      />
-    );
+    // Allow access to subscription management pages even without active subscription
+    const isSubscriptionPage = location.pathname.includes('/subscription');
+
+    if (!isSubscriptionPage) {
+      return (
+        <AccessDenied
+          reason="subscription"
+          subscriptionStatus={subscriptionStatus}
+        />
+      );
+    }
   }
 
   // Check license requirement

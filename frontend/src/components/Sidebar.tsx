@@ -96,7 +96,7 @@ const Sidebar = () => {
       path: '/patients',
       icon: PeopleIcon,
       show: hasFeature('patient_management'),
-      badge: !subscriptionStatus.isActive ? 'Premium' : null,
+      badge: !subscriptionStatus?.isActive ? 'Premium' : null,
     },
     {
       name: 'Clinical Notes',
@@ -104,7 +104,7 @@ const Sidebar = () => {
       icon: DescriptionIcon,
       show: hasFeature('clinical_notes'),
       badge:
-        !subscriptionStatus.isActive ||
+        !subscriptionStatus?.isActive ||
         (requiresLicense() && getLicenseStatus() !== 'approved')
           ? 'License Required'
           : null,
@@ -114,14 +114,14 @@ const Sidebar = () => {
       path: '/medications',
       icon: MedicationIcon,
       show: hasFeature('medication_management'),
-      badge: !subscriptionStatus.isActive ? 'Premium' : null,
+      badge: !subscriptionStatus?.isActive ? 'Premium' : null,
     },
     {
       name: 'Reports',
       path: '/reports',
       icon: AssessmentIcon,
       show: hasFeature('basic_reports'),
-      badge: !subscriptionStatus.isActive ? 'Pro' : null,
+      badge: !subscriptionStatus?.isActive ? 'Pro' : null,
     },
     {
       name: 'Subscriptions',
@@ -715,7 +715,7 @@ const Sidebar = () => {
               sx={{
                 p: 2,
                 borderRadius: 2,
-                bgcolor: subscriptionStatus.isActive
+                bgcolor: subscriptionStatus?.isActive
                   ? 'success.light'
                   : 'warning.light',
                 textAlign: 'center',
@@ -727,9 +727,9 @@ const Sidebar = () => {
                 color="text.primary"
                 fontWeight={600}
               >
-                {subscriptionStatus.tier.toUpperCase()} PLAN
+                {subscriptionStatus?.tier?.toUpperCase() || 'FREE'} PLAN
               </Typography>
-              {!subscriptionStatus.isActive && (
+              {!subscriptionStatus?.isActive && (
                 <Typography
                   variant="caption"
                   display="block"
@@ -738,14 +738,15 @@ const Sidebar = () => {
                   Subscription Expired
                 </Typography>
               )}
-              {subscriptionStatus.isActive &&
+              {subscriptionStatus?.isActive &&
+                subscriptionStatus?.daysRemaining &&
                 subscriptionStatus.daysRemaining <= 7 && (
                   <Typography
                     variant="caption"
                     display="block"
                     color="warning.dark"
                   >
-                    {subscriptionStatus.daysRemaining} days left
+                    {subscriptionStatus?.daysRemaining} days left
                   </Typography>
                 )}
             </Box>

@@ -1497,3 +1497,79 @@
 {"action":"USER_LOGIN_SUCCESS","auditId":"68b5ccb9f1f0f9758b8afba7","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 17:41:29","userId":"68b5cb81f1f0f9758b8afadd"}
 {"action":"USER_LOGOUT","auditId":"68b5ccc5f1f0f9758b8afbba","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 17:41:41"}
 {"action":"USER_LOGIN_SUCCESS","auditId":"68b5cdc8f1f0f9758b8afbcf","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 17:46:00","userId":"68b5cd85f1f0f9758b8afbbd"}
+{"level":"info","message":"Starting usage alert check","service":"pharma-care-api","timestamp":"2025-09-01 18:00:00"}
+{"level":"info","message":"Starting usage alert check for all workspaces","service":"pharma-care-api","timestamp":"2025-09-01 18:00:00"}
+{"level":"info","message":"Starting stale stats check","service":"pharma-care-api","timestamp":"2025-09-01 18:00:00"}
+{"level":"info","message":"No workspaces with stale stats found","service":"pharma-care-api","timestamp":"2025-09-01 18:00:00"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b54b0d3b448a4546d6a858","service":"pharma-care-api","timestamp":"2025-09-01 18:00:12"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b54db1cfd812c804c80aa9","service":"pharma-care-api","timestamp":"2025-09-01 18:00:13"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b5820ad73f6a654cfc3d4a","service":"pharma-care-api","timestamp":"2025-09-01 18:00:13"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b599483de419871c5444db","service":"pharma-care-api","timestamp":"2025-09-01 18:00:14"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b599843de419871c5444e5","service":"pharma-care-api","timestamp":"2025-09-01 18:00:14"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b5a25bd5080d27fcb48dbb","service":"pharma-care-api","timestamp":"2025-09-01 18:00:14"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b5bdb52ea8593c9468e709","service":"pharma-care-api","timestamp":"2025-09-01 18:00:15"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b5be182ea8593c9468e713","service":"pharma-care-api","timestamp":"2025-09-01 18:00:15"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b5cb82f1f0f9758b8afadf","service":"pharma-care-api","timestamp":"2025-09-01 18:00:15"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b5cd85f1f0f9758b8afbbf","service":"pharma-care-api","timestamp":"2025-09-01 18:00:16"}
+{"level":"info","message":"Usage alert check completed: 0 alerts found, 0 notifications sent","service":"pharma-care-api","timestamp":"2025-09-01 18:00:16"}
+{"level":"info","message":"Usage alert check completed successfully","service":"pharma-care-api","timestamp":"2025-09-01 18:00:16"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:18:03"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:18:03"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:18:03"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 18:18:03"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 18:18:03"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 18:18:03"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:22:53"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:22:53"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:22:53"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 18:22:53"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 18:22:53"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 18:22:53"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:24:38"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:24:38"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:24:38"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 18:24:38"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 18:24:38"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 18:24:38"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:29:41"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:29:42"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:29:42"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 18:29:42"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 18:29:42"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 18:29:42"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:40:21"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:40:21"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 18:40:21"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 18:40:21"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 18:40:21"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 18:40:21"}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68b5df104bba6b1349ebf707","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 18:59:44","userId":"68b5cd85f1f0f9758b8afbbd"}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68b5dfbb4bba6b1349ebf78e","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 19:02:35","userId":"68b5cd85f1f0f9758b8afbbd"}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68b5dfe84bba6b1349ebf7c8","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 19:03:20","userId":"68b5cb81f1f0f9758b8afadd"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 19:04:12"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 19:04:12"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 19:04:12"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 19:04:12"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 19:04:12"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 19:04:12"}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68b5e080c05b1459bc964d52","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 19:05:52","userId":"68b5cb81f1f0f9758b8afadd"}
+{"action":"USER_LOGOUT","auditId":"68b5e0a3c05b1459bc964e6d","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 19:06:27"}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68b5e0acc05b1459bc964e73","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 19:06:36","userId":"68b5cd85f1f0f9758b8afbbd"}
+{"level":"info","message":"Loading plan configuration from file","service":"pharma-care-api","timestamp":"2025-09-01 19:14:55"}
+{"level":"info","message":"Successfully loaded 6 plans and 27 features","service":"pharma-care-api","timestamp":"2025-09-01 19:14:55"}
+{"action":"USER_LOGOUT","auditId":"68b5e3ecc05b1459bc964f0b","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 19:20:28"}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68b5e441c05b1459bc964f11","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 19:21:53","userId":"68b5cd85f1f0f9758b8afbbd"}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68b5e9d7c05b1459bc964fcd","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 19:45:43","userId":"68b5cd85f1f0f9758b8afbbd"}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68b5edecc05b1459bc9650ca","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 20:03:08","userId":"68b5cd85f1f0f9758b8afbbd"}
+{"alertsRemoved":0,"level":"info","message":"Security monitoring cleanup completed","service":"security-monitoring","threatsRemoved":0,"timestamp":"2025-09-01 20:04:07"}
+{"level":"info","message":"Loading plan configuration from file","service":"pharma-care-api","timestamp":"2025-09-01 20:08:20"}
+{"level":"info","message":"Successfully loaded 6 plans and 27 features","service":"pharma-care-api","timestamp":"2025-09-01 20:08:20"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 20:16:52"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 20:16:52"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-01 20:16:52"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-01 20:16:52"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-01 20:16:52"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-01 20:16:52"}
+{"level":"info","message":"Loading plan configuration from file","service":"pharma-care-api","timestamp":"2025-09-01 20:17:29"}
+{"level":"info","message":"Successfully loaded 6 plans and 27 features","service":"pharma-care-api","timestamp":"2025-09-01 20:17:29"}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68b5f1c218bfc49f5049e1ff","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-01 20:19:30","userId":"68b5cd85f1f0f9758b8afbbd"}
