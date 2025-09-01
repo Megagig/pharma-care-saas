@@ -4,6 +4,7 @@ import { IUser } from '../../models/User';
 import { IWorkplace } from '../../models/Workplace';
 import { ISubscriptionPlan } from '../../models/SubscriptionPlan';
 import { WorkspaceContext } from '../../types/auth';
+import mongoose from 'mongoose';
 
 // Mock the permission matrix
 jest.mock('../../config/permissionMatrix', () => ({
@@ -34,14 +35,29 @@ jest.mock('../../config/permissionMatrix', () => ({
         'admin.access': {
             systemRoles: ['super_admin'],
         },
-    }
+    },
+    ROLE_HIERARCHY: {
+        super_admin: ['super_admin', 'pharmacy_outlet', 'pharmacy_team', 'pharmacist', 'intern_pharmacist'],
+        pharmacy_outlet: ['pharmacy_outlet', 'pharmacy_team', 'pharmacist'],
+        pharmacy_team: ['pharmacy_team', 'pharmacist'],
+        pharmacist: ['pharmacist'],
+        intern_pharmacist: ['intern_pharmacist'],
+    },
+    WORKPLACE_ROLE_HIERARCHY: {
+        Owner: ['Owner', 'Pharmacist', 'Staff', 'Technician', 'Cashier', 'Assistant'],
+        Pharmacist: ['Pharmacist', 'Technician', 'Assistant'],
+        Staff: ['Staff', 'Technician', 'Assistant'],
+        Technician: ['Technician', 'Assistant'],
+        Cashier: ['Cashier', 'Assistant'],
+        Assistant: ['Assistant'],
+    },
 }));
 
 describe('PermissionService', () => {
     let permissionService: PermissionService;
 
     const mockUser: Partial<IUser> = {
-        _id: testUtils.createObjectId(),
+        _id: new mongoose.Types.ObjectId(),
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
@@ -51,25 +67,43 @@ describe('PermissionService', () => {
     };
 
     const mockWorkspace: Partial<IWorkplace> = {
-        _id: testUtils.createObjectId(),
+        _id: new mongoose.Types.ObjectId(),
         name: 'Test Pharmacy',
         type: 'Community',
-        ownerId: testUtils.createObjectId(),
+        ownerId: new mongoose.Types.ObjectId(),
         teamMembers: [mockUser._id as any]
     };
 
     const mockPlan: Partial<ISubscriptionPlan> = {
-        _id: testUtils.createObjectId(),
-        name: 'Premium Plan',
-        code: 'premium',
+        _id: new mongoose.Types.ObjectId(),
+        name: 'Pro Plan',
         tier: 'pro',
-        features: ['patient_management', 'team_management', 'advanced_reports'],
-        limits: {
-            patients: 500,
-            users: 5,
-            locations: 3,
-            storage: 5000,
-            apiCalls: 5000
+        features: {
+            patientLimit: 500,
+            reminderSmsMonthlyLimit: 100,
+            reportsExport: true,
+            careNoteExport: true,
+            adrModule: true,
+            multiUserSupport: true,
+            teamSize: 5,
+            apiAccess: true,
+            auditLogs: true,
+            dataBackup: true,
+            clinicalNotesLimit: null,
+            prioritySupport: true,
+            emailReminders: true,
+            smsReminders: true,
+            advancedReports: true,
+            drugTherapyManagement: true,
+            teamManagement: true,
+            dedicatedSupport: false,
+            adrReporting: true,
+            drugInteractionChecker: true,
+            doseCalculator: true,
+            multiLocationDashboard: false,
+            sharedPatientRecords: false,
+            groupAnalytics: false,
+            cdss: true
         }
     };
 
@@ -78,6 +112,13 @@ describe('PermissionService', () => {
         plan: mockPlan as ISubscriptionPlan,
         subscription: null,
         permissions: ['patient_management', 'team_management', 'advanced_reports'],
+        limits: {
+            patients: 500,
+            users: 5,
+            locations: 3,
+            storage: 5000,
+            apiCalls: 5000
+        },
         isSubscriptionActive: true,
         isTrialExpired: false
     };

@@ -39,7 +39,6 @@ const invitationSchema = new Schema(
         },
         code: {
             type: String,
-            required: true,
             unique: true,
             length: 8,
             uppercase: true,
@@ -69,7 +68,6 @@ const invitationSchema = new Schema(
         },
         expiresAt: {
             type: Date,
-            required: true,
             index: true,
         },
         usedAt: {

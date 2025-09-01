@@ -5,6 +5,7 @@ import User from '../../models/User';
 import Workplace from '../../models/Workplace';
 import Invitation from '../../models/Invitation';
 import SubscriptionPlan from '../../models/SubscriptionPlan';
+import Subscription from '../../models/Subscription';
 import { emailService } from '../../utils/emailService';
 import jwt from 'jsonwebtoken';
 
@@ -21,25 +22,40 @@ describe('Invitation Workflow Integration Tests', () => {
     beforeEach(async () => {
         // Create subscription plan
         subscriptionPlan = await SubscriptionPlan.create({
-            name: 'Premium Plan',
-            code: 'premium',
-            tier: 'premium',
-            tierRank: 2,
+            name: 'Pro Plan',
             priceNGN: 35000,
             billingInterval: 'monthly',
-            features: ['team_management', 'patient_management', 'advanced_reports'],
-            limits: {
-                patients: 500,
-                users: 5,
-                locations: 3,
-                storage: 5000,
-                apiCalls: 5000
+            tier: 'pro',
+            popularPlan: true,
+            features: {
+                patientLimit: 500,
+                reminderSmsMonthlyLimit: 100,
+                reportsExport: true,
+                careNoteExport: true,
+                adrModule: true,
+                multiUserSupport: true,
+                teamSize: 5,
+                apiAccess: true,
+                auditLogs: true,
+                dataBackup: true,
+                clinicalNotesLimit: null,
+                prioritySupport: true,
+                emailReminders: true,
+                smsReminders: true,
+                advancedReports: true,
+                drugTherapyManagement: true,
+                teamManagement: true,
+                dedicatedSupport: false,
+                adrReporting: true,
+                drugInteractionChecker: true,
+                doseCalculator: true,
+                multiLocationDashboard: false,
+                sharedPatientRecords: false,
+                groupAnalytics: false,
+                cdss: true
             },
-            description: 'Premium plan for growing pharmacies',
-            isActive: true,
-            isTrial: false,
-            isCustom: false,
-            popularPlan: true
+            description: 'Pro plan for growing pharmacies',
+            isActive: true
         });
 
         // Create workspace
@@ -51,6 +67,8 @@ describe('Invitation Workflow Integration Tests', () => {
             address: '123 Test Street',
             phone: '+234-800-123-4567',
             currentSubscriptionId: subscriptionPlan._id,
+            currentPlanId: subscriptionPlan._id,
+            subscriptionStatus: 'active',
             teamMembers: [],
             ownerId: new mongoose.Types.ObjectId() // Temporary, will be updated after user creation
         });
@@ -60,17 +78,36 @@ describe('Invitation Workflow Integration Tests', () => {
             firstName: 'John',
             lastName: 'Doe',
             email: 'owner@testpharmacy.com',
-            password: 'securePassword123',
+            passwordHash: 'securePassword123',
             role: 'pharmacist',
             workplaceRole: 'Owner',
             workplaceId: workspace._id,
             status: 'active',
-            licenseNumber: 'PCN123456'
+            licenseNumber: 'PCN123456',
+            currentPlanId: subscriptionPlan._id
         });
 
-        // Update workspace with owner
+        // Create subscription
+        const subscription = await Subscription.create({
+            planId: subscriptionPlan._id,
+            workspaceId: workspace._id,
+            tier: 'pro',
+            status: 'active',
+            startDate: new Date(),
+            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            billingInterval: 'monthly',
+            amount: subscriptionPlan.priceNGN,
+            priceAtPurchase: subscriptionPlan.priceNGN,
+            currency: 'NGN',
+            paymentMethod: 'card',
+            autoRenew: true,
+            isTrial: false
+        });
+
+        // Update workspace with owner and subscription
         workspace.ownerId = ownerUser._id;
         workspace.teamMembers = [ownerUser._id];
+        workspace.currentSubscriptionId = subscription._id;
         await workspace.save();
 
         // Generate auth token
@@ -96,21 +133,20 @@ describe('Invitation Workflow Integration Tests', () => {
 
             // Step 1: Create invitation
             const createResponse = await request(app)
-                .post('/api/invitations')
+                .post(`/api/workspaces/${workspace._id}/invitations`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send(invitationData)
                 .expect(201);
 
             expect(createResponse.body.success).toBe(true);
-            expect(createResponse.body.invitation).toMatchObject({
+            expect(createResponse.body.data).toMatchObject({
                 email: invitationData.email,
                 role: invitationData.role,
-                status: 'pending',
-                workspaceId: workspace._id.toString()
+                status: 'active'
             });
 
-            const invitationId = createResponse.body.invitation._id;
-            const invitationCode = createResponse.body.invitation.code;
+            const invitationId = createResponse.body.data.invitationId;
+            const invitationCode = createResponse.body.data.code;
 
             // Verify email was sent
             expect(mockEmailService.sendInvitationEmail).toHaveBeenCalledWith(
@@ -124,7 +160,7 @@ describe('Invitation Workflow Integration Tests', () => {
             // Step 2: Verify invitation exists in database
             const dbInvitation = await Invitation.findById(invitationId);
             expect(dbInvitation).toBeTruthy();
-            expect(dbInvitation!.status).toBe('pending');
+            expect(dbInvitation!.status).toBe('active');
             expect(dbInvitation!.expiresAt.getTime()).toBeGreaterThan(Date.now());
 
             // Step 3: Accept invitation
@@ -164,7 +200,7 @@ describe('Invitation Workflow Integration Tests', () => {
             expect(newUser?.workplaceId?.toString()).toBe(workspace._id.toString());
 
             const updatedWorkspace = await Workplace.findById(workspace._id);
-            expect(updatedWorkspace!.teamMembers).toContain(newUser!._id);
+            expect(updatedWorkspace!.teamMembers.map(id => id.toString())).toContain(newUser!._id.toString());
             expect(updatedWorkspace!.teamMembers).toHaveLength(2);
 
             // Step 6: Verify acceptance notification email was sent
@@ -172,9 +208,10 @@ describe('Invitation Workflow Integration Tests', () => {
                 ownerUser.email,
                 expect.objectContaining({
                     workspaceName: workspace.name,
-                    newUserName: `${acceptanceData.userData.firstName} ${acceptanceData.userData.lastName}`,
-                    newUserEmail: invitationData.email,
-                    role: invitationData.role
+                    acceptedUserName: `${acceptanceData.userData.firstName} ${acceptanceData.userData.lastName}`,
+                    acceptedUserEmail: invitationData.email,
+                    role: invitationData.role,
+                    inviterName: `${ownerUser.firstName} ${ownerUser.lastName}`
                 })
             );
         });
@@ -226,14 +263,14 @@ describe('Invitation Workflow Integration Tests', () => {
 
             // Create first invitation
             await request(app)
-                .post('/api/invitations')
+                .post(`/api/workspaces/${workspace._id}/invitations`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send(invitationData)
                 .expect(201);
 
             // Try to create duplicate invitation
             const duplicateResponse = await request(app)
-                .post('/api/invitations')
+                .post(`/api/workspaces/${workspace._id}/invitations`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send(invitationData)
                 .expect(400);
@@ -246,10 +283,39 @@ describe('Invitation Workflow Integration Tests', () => {
             // Create a plan with user limit of 2 (owner + 1 more)
             const limitedPlan = await SubscriptionPlan.create({
                 name: 'Basic Plan',
-                code: 'basic',
+                priceNGN: 15000,
+                billingInterval: 'monthly',
                 tier: 'basic',
-                features: ['team_management'],
-                limits: { users: 2, patients: 100, locations: 1, storage: 1000, apiCalls: 1000 }
+                popularPlan: false,
+                features: {
+                    patientLimit: 100,
+                    reminderSmsMonthlyLimit: 50,
+                    reportsExport: false,
+                    careNoteExport: false,
+                    adrModule: false,
+                    multiUserSupport: true,
+                    teamSize: 2,
+                    apiAccess: false,
+                    auditLogs: false,
+                    dataBackup: false,
+                    clinicalNotesLimit: 100,
+                    prioritySupport: false,
+                    emailReminders: true,
+                    smsReminders: false,
+                    advancedReports: false,
+                    drugTherapyManagement: false,
+                    teamManagement: true,
+                    dedicatedSupport: false,
+                    adrReporting: false,
+                    drugInteractionChecker: false,
+                    doseCalculator: false,
+                    multiLocationDashboard: false,
+                    sharedPatientRecords: false,
+                    groupAnalytics: false,
+                    cdss: false
+                },
+                description: 'Basic plan for small pharmacies',
+                isActive: true
             });
 
             // Update workspace to use limited plan
@@ -261,11 +327,13 @@ describe('Invitation Workflow Integration Tests', () => {
                 firstName: 'Existing',
                 lastName: 'User',
                 email: 'existing@example.com',
-                password: 'password123',
+                passwordHash: 'password123',
                 role: 'pharmacist',
                 workplaceRole: 'Pharmacist',
                 workplaceId: workspace._id,
-                status: 'active'
+                status: 'active',
+                licenseNumber: 'PCN789012',
+                currentPlanId: subscriptionPlan._id
             });
 
             workspace.teamMembers.push(existingUser._id);
@@ -278,7 +346,7 @@ describe('Invitation Workflow Integration Tests', () => {
             };
 
             const response = await request(app)
-                .post('/api/invitations')
+                .post(`/api/workspaces/${workspace._id}/invitations`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send(invitationData)
                 .expect(403);
@@ -297,21 +365,22 @@ describe('Invitation Workflow Integration Tests', () => {
                 role: 'Pharmacist',
                 workspaceId: workspace._id,
                 invitedBy: ownerUser._id,
-                token: 'pending-token',
-                status: 'pending',
+                code: 'PENDING1',
+                status: 'active',
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-                createdAt: new Date()
+                metadata: {
+                    inviterName: `${ownerUser.firstName} ${ownerUser.lastName}`,
+                    workspaceName: workspace.name
+                }
             });
         });
 
-        it('should resend invitation successfully', async () => {
+        it('should validate invitation successfully', async () => {
             const response = await request(app)
-                .post(`/api/invitations/${pendingInvitation._id}/resend`)
-                .set('Authorization', `Bearer ${authToken}`)
+                .get(`/api/invitations/${pendingInvitation.code}/validate`)
                 .expect(200);
 
-            expect(response.body.success).toBe(true);
-            expect(mockEmailService.sendInvitationEmail).toHaveBeenCalledTimes(1);
+            expect(response.body.valid).toBe(true);
         });
 
         it('should revoke invitation successfully', async () => {
@@ -334,10 +403,13 @@ describe('Invitation Workflow Integration Tests', () => {
                 role: 'Technician',
                 workspaceId: workspace._id,
                 invitedBy: ownerUser._id,
-                token: 'token1',
-                status: 'pending',
+                code: 'TOKEN001',
+                status: 'active',
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-                createdAt: new Date()
+                metadata: {
+                    inviterName: `${ownerUser.firstName} ${ownerUser.lastName}`,
+                    workspaceName: workspace.name
+                }
             });
 
             await Invitation.create({
@@ -345,15 +417,18 @@ describe('Invitation Workflow Integration Tests', () => {
                 role: 'Pharmacist',
                 workspaceId: workspace._id,
                 invitedBy: ownerUser._id,
-                token: 'token2',
+                code: 'TOKEN002',
                 status: 'used',
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-                createdAt: new Date(),
-                usedAt: new Date()
+                usedAt: new Date(),
+                metadata: {
+                    inviterName: `${ownerUser.firstName} ${ownerUser.lastName}`,
+                    workspaceName: workspace.name
+                }
             });
 
             const response = await request(app)
-                .get('/api/invitations')
+                .get(`/api/workspaces/${workspace._id}/invitations`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .query({ page: 1, limit: 10 })
                 .expect(200);
@@ -372,11 +447,13 @@ describe('Invitation Workflow Integration Tests', () => {
                 firstName: 'Regular',
                 lastName: 'Pharmacist',
                 email: 'pharmacist@testpharmacy.com',
-                password: 'password123',
+                passwordHash: 'password123',
                 role: 'pharmacist',
                 workplaceRole: 'Pharmacist', // Not Owner
                 workplaceId: workspace._id,
-                status: 'active'
+                status: 'active',
+                licenseNumber: 'PCN654321',
+                currentPlanId: subscriptionPlan._id
             });
 
             const pharmacistToken = jwt.sign(
@@ -391,7 +468,7 @@ describe('Invitation Workflow Integration Tests', () => {
             };
 
             const response = await request(app)
-                .post('/api/invitations')
+                .post(`/api/workspaces/${workspace._id}/invitations`)
                 .set('Authorization', `Bearer ${pharmacistToken}`)
                 .send(invitationData)
                 .expect(403);
@@ -403,10 +480,39 @@ describe('Invitation Workflow Integration Tests', () => {
             // Create a plan without team_management feature
             const basicPlan = await SubscriptionPlan.create({
                 name: 'Basic Plan',
-                code: 'basic',
+                priceNGN: 15000,
+                billingInterval: 'monthly',
                 tier: 'basic',
-                features: ['patient_management'], // Missing team_management
-                limits: { users: 5, patients: 100, locations: 1, storage: 1000, apiCalls: 1000 }
+                popularPlan: false,
+                features: {
+                    patientLimit: 100,
+                    reminderSmsMonthlyLimit: 50,
+                    reportsExport: false,
+                    careNoteExport: false,
+                    adrModule: false,
+                    multiUserSupport: false,
+                    teamSize: 1,
+                    apiAccess: false,
+                    auditLogs: false,
+                    dataBackup: false,
+                    clinicalNotesLimit: 100,
+                    prioritySupport: false,
+                    emailReminders: true,
+                    smsReminders: false,
+                    advancedReports: false,
+                    drugTherapyManagement: false,
+                    teamManagement: false, // Missing team_management
+                    dedicatedSupport: false,
+                    adrReporting: false,
+                    drugInteractionChecker: false,
+                    doseCalculator: false,
+                    multiLocationDashboard: false,
+                    sharedPatientRecords: false,
+                    groupAnalytics: false,
+                    cdss: false
+                },
+                description: 'Basic plan for individual pharmacists',
+                isActive: true
             });
 
             workspace.currentSubscriptionId = basicPlan._id;
@@ -418,7 +524,7 @@ describe('Invitation Workflow Integration Tests', () => {
             };
 
             const response = await request(app)
-                .post('/api/invitations')
+                .post(`/api/workspaces/${workspace._id}/invitations`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send(invitationData)
                 .expect(402);
