@@ -103,11 +103,15 @@ export const auth = async (
       return;
     }
 
-    // Get user's subscription
-    const subscription = await Subscription.findOne({
-      userId: user._id,
-      status: { $in: ['active', 'trial', 'grace_period'] },
-    }).populate('planId');
+    // Get user's subscription through their workspace
+    let subscription = null;
+    if (user.workplaceId) {
+      subscription = await Subscription.findOne({
+        workspaceId: user.workplaceId,
+        status: { $in: ['active', 'trial', 'grace_period'] },
+      }).populate('planId');
+    }
+    // Users without workplaces don't have subscriptions (they access basic features only)
 
     // Set subscription information regardless of validity
     // This allows the request to proceed even if subscription is expired
@@ -176,11 +180,15 @@ export const authOptionalSubscription = async (
       return;
     }
 
-    // Get user's subscription (optional - don't block if none)
-    const subscription = await Subscription.findOne({
-      userId: user._id,
-      status: { $in: ['active', 'trial', 'grace_period'] },
-    }).populate('planId');
+    // Get user's subscription through their workspace (optional - don't block if none)
+    let subscription = null;
+    if (user.workplaceId) {
+      subscription = await Subscription.findOne({
+        workspaceId: user.workplaceId,
+        status: { $in: ['active', 'trial', 'grace_period'] },
+      }).populate('planId');
+    }
+    // Users without workplaces don't have subscriptions (they access basic features only)
 
     req.user = user;
     req.subscription = subscription || undefined; // May be undefined

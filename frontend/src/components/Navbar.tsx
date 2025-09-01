@@ -125,6 +125,13 @@ const Navbar: React.FC = () => {
           <MenuItem component={Link} to="/profile" onClick={handleMenuClose}>
             Profile
           </MenuItem>
+          <MenuItem
+            component={Link}
+            to="/subscription-management"
+            onClick={handleMenuClose}
+          >
+            Subscription
+          </MenuItem>
           {user.role === 'super_admin' && (
             <MenuItem component={Link} to="/admin" onClick={handleMenuClose}>
               Admin Dashboard
