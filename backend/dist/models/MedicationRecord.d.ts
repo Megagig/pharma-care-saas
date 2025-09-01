@@ -14,6 +14,7 @@ export interface IMedicationRecord extends Document {
     endDate?: Date;
     adherence?: 'good' | 'poor' | 'unknown';
     notes?: string;
+    isManual?: boolean;
     createdBy: mongoose.Types.ObjectId;
     updatedBy?: mongoose.Types.ObjectId;
     isDeleted: boolean;

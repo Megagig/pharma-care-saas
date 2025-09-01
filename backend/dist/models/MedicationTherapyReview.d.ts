@@ -119,6 +119,8 @@ export interface IMedicationTherapyReview extends Document {
     isDeleted: boolean;
     createdAt: Date;
     updatedAt: Date;
+    durationDays: number;
+    isOverdue: boolean;
     getCompletionPercentage(): number;
     getNextStep(): string | null;
     canComplete(): boolean;

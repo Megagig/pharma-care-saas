@@ -164,11 +164,11 @@ export class SubscriptionController {
         body: req.body,
         user: req.user
           ? {
-              id: req.user._id,
-              email: req.user.email,
-              role: req.user.role,
-              hasSubscription: !!req.user.currentSubscriptionId,
-            }
+            id: req.user._id,
+            email: req.user.email,
+            role: req.user.role,
+            hasSubscription: !!req.user.currentSubscriptionId,
+          }
           : 'No user',
       });
 
@@ -216,11 +216,11 @@ export class SubscriptionController {
         'Existing subscription check result:',
         existingSubscription
           ? {
-              id: existingSubscription._id,
-              status: existingSubscription.status,
-              planId: existingSubscription.planId,
-              endDate: existingSubscription.endDate,
-            }
+            id: existingSubscription._id,
+            status: existingSubscription.status,
+            planId: existingSubscription.planId,
+            endDate: existingSubscription.endDate,
+          }
           : 'No active subscription'
       );
 
@@ -566,7 +566,7 @@ export class SubscriptionController {
       const gracePeriodEnd = new Date();
       gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
 
-      subscription.status = 'grace_period';
+      subscription.status = 'past_due';
       subscription.gracePeriodEnd = gracePeriodEnd;
       subscription.autoRenew = false;
 
@@ -651,7 +651,7 @@ export class SubscriptionController {
       const currentPlan = currentSubscription.planId as any;
       const daysRemaining = Math.ceil(
         (currentSubscription.endDate.getTime() - Date.now()) /
-          (1000 * 60 * 60 * 24)
+        (1000 * 60 * 60 * 24)
       );
       const totalDaysInPeriod = billingInterval === 'yearly' ? 365 : 30;
       const proratedDiscount =

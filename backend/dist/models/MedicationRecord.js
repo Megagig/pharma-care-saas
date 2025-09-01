@@ -151,6 +151,10 @@ const medicationRecordSchema = new mongoose_1.Schema({
         trim: true,
         maxlength: [500, 'Notes cannot exceed 500 characters'],
     },
+    isManual: {
+        type: Boolean,
+        default: false,
+    },
 }, {
     timestamps: true,
     toJSON: { virtuals: true },

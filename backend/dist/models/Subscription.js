@@ -35,9 +35,9 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const subscriptionSchema = new mongoose_1.Schema({
-    userId: {
+    workspaceId: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Workplace',
         required: true,
         index: true,
     },
@@ -49,12 +49,11 @@ const subscriptionSchema = new mongoose_1.Schema({
     status: {
         type: String,
         enum: [
-            'active',
-            'inactive',
-            'cancelled',
-            'expired',
             'trial',
-            'grace_period',
+            'active',
+            'past_due',
+            'expired',
+            'canceled',
             'suspended',
         ],
         default: 'trial',
@@ -74,10 +73,23 @@ const subscriptionSchema = new mongoose_1.Schema({
         type: Date,
         required: true,
     },
+    trialEndDate: {
+        type: Date,
+        index: true,
+    },
     priceAtPurchase: {
         type: Number,
         required: true,
         min: 0,
+    },
+    billingInterval: {
+        type: String,
+        enum: ['monthly', 'yearly'],
+        default: 'monthly',
+    },
+    nextBillingDate: {
+        type: Date,
+        index: true,
     },
     paymentHistory: [
         {
@@ -89,7 +101,6 @@ const subscriptionSchema = new mongoose_1.Schema({
         type: Boolean,
         default: true,
     },
-    trialEnd: Date,
     gracePeriodEnd: Date,
     stripeSubscriptionId: {
         type: String,
@@ -143,6 +154,28 @@ const subscriptionSchema = new mongoose_1.Schema({
             index: true,
         },
     ],
+    limits: {
+        patients: {
+            type: Number,
+            default: null,
+        },
+        users: {
+            type: Number,
+            default: null,
+        },
+        locations: {
+            type: Number,
+            default: null,
+        },
+        storage: {
+            type: Number,
+            default: null,
+        },
+        apiCalls: {
+            type: Number,
+            default: null,
+        },
+    },
     usageMetrics: [
         {
             feature: {
@@ -187,7 +220,7 @@ subscriptionSchema.pre('save', function (next) {
     if (this.isModified('endDate') || this.isNew) {
         if (now > this.endDate) {
             if (this.gracePeriodEnd && now <= this.gracePeriodEnd) {
-                this.status = 'grace_period';
+                this.status = 'past_due';
             }
             else {
                 this.status = 'expired';
@@ -196,8 +229,11 @@ subscriptionSchema.pre('save', function (next) {
     }
     next();
 });
-subscriptionSchema.index({ userId: 1, status: 1 });
+subscriptionSchema.index({ workspaceId: 1, status: 1 });
+subscriptionSchema.index({ workspaceId: 1 }, { unique: true });
 subscriptionSchema.index({ endDate: 1, status: 1 });
+subscriptionSchema.index({ trialEndDate: 1, status: 1 });
+subscriptionSchema.index({ nextBillingDate: 1, status: 1 });
 subscriptionSchema.index({ stripeSubscriptionId: 1 }, { sparse: true });
 subscriptionSchema.index({ tier: 1, status: 1 });
 exports.default = mongoose_1.default.model('Subscription', subscriptionSchema);

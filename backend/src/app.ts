@@ -27,6 +27,7 @@ import adminRoutes from './routes/admin';
 import licenseRoutes from './routes/license';
 import subscriptionManagementRoutes from './routes/subscription';
 import subAnalyticsRoutes from './routes/subscriptionManagement';
+import workspaceSubscriptionRoutes from './routes/subscriptionManagementRoutes';
 import webhookRoutes from './routes/webhookRoutes';
 import featureFlagRoutes from './routes/featureFlagRoutes';
 import healthRoutes from './routes/healthRoutes';
@@ -34,6 +35,14 @@ import mtrRoutes from './routes/mtrRoutes';
 import mtrNotificationRoutes from './routes/mtrNotificationRoutes';
 import patientMTRIntegrationRoutes from './routes/patientMTRIntegrationRoutes';
 import auditRoutes from './routes/auditRoutes';
+import securityRoutes from './routes/securityRoutes';
+import invitationRoutes from './routes/invitationRoutes';
+import usageMonitoringRoutes from './routes/usageMonitoringRoutes';
+import locationRoutes from './routes/locationRoutes';
+import locationDataRoutes from './routes/locationDataRoutes';
+import legacyApiRoutes from './routes/legacyApiRoutes';
+import migrationDashboardRoutes from './routes/migrationDashboardRoutes';
+import emailWebhookRoutes from './routes/emailWebhookRoutes';
 
 const app: Application = express();
 
@@ -49,6 +58,11 @@ app.use(
     credentials: true,
   })
 );
+
+// Security monitoring middleware
+import { blockSuspiciousIPs, detectAnomalies } from './middlewares/securityMonitoring';
+app.use(blockSuspiciousIPs);
+app.use(detectAnomalies);
 
 // Rate limiting - more lenient for development
 const limiter = rateLimit({
@@ -121,12 +135,27 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/mtr', mtrRoutes);
 app.use('/api/mtr/notifications', mtrNotificationRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/security', securityRoutes);
+app.use('/api', invitationRoutes);
+app.use('/api/usage', usageMonitoringRoutes);
+app.use('/api/locations', locationRoutes);
+app.use('/api/location-data', locationDataRoutes);
+
+// Legacy API compatibility routes
+app.use('/api/legacy', legacyApiRoutes);
+
+// Migration dashboard routes (Super Admin only)
+app.use('/api/migration', migrationDashboardRoutes);
+
+// Email delivery and webhook routes
+app.use('/api/email', emailWebhookRoutes);
 
 // RBAC and enhanced features
 app.use('/api/admin', adminRoutes);
 app.use('/api/license', licenseRoutes);
 app.use('/api/subscription-management', subAnalyticsRoutes); // Using correct subscriptionManagement routes
 app.use('/api/subscription', subscriptionManagementRoutes); // Old routes at /api/subscription
+app.use('/api/workspace-subscription', workspaceSubscriptionRoutes); // New workspace subscription routes
 app.use('/api/feature-flags', featureFlagRoutes);
 
 // Webhooks - no rate limiting and body parsing is raw for signature verification

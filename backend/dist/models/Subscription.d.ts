@@ -1,15 +1,29 @@
 import mongoose, { Document } from 'mongoose';
+export interface UsageMetric {
+    feature: string;
+    count: number;
+    lastUpdated: Date;
+}
+export interface PlanLimits {
+    patients: number | null;
+    users: number | null;
+    locations: number | null;
+    storage: number | null;
+    apiCalls: number | null;
+}
 export interface ISubscription extends Document {
-    userId: mongoose.Types.ObjectId;
+    workspaceId: mongoose.Types.ObjectId;
     planId: mongoose.Types.ObjectId;
-    status: 'active' | 'inactive' | 'cancelled' | 'expired' | 'trial' | 'grace_period' | 'suspended';
+    status: 'trial' | 'active' | 'past_due' | 'expired' | 'canceled' | 'suspended';
     tier: 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
     startDate: Date;
     endDate: Date;
+    trialEndDate?: Date;
     priceAtPurchase: number;
+    billingInterval: 'monthly' | 'yearly';
+    nextBillingDate?: Date;
     paymentHistory: mongoose.Types.ObjectId[];
     autoRenew: boolean;
-    trialEnd?: Date;
     gracePeriodEnd?: Date;
     stripeSubscriptionId?: string;
     stripeCustomerId?: string;
@@ -26,11 +40,8 @@ export interface ISubscription extends Document {
     }[];
     features: string[];
     customFeatures: string[];
-    usageMetrics: {
-        feature: string;
-        count: number;
-        lastUpdated: Date;
-    }[];
+    limits: PlanLimits;
+    usageMetrics: UsageMetric[];
     scheduledDowngrade?: {
         planId: mongoose.Types.ObjectId;
         effectiveDate: Date;

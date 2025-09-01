@@ -202,6 +202,36 @@ const userSchema = new mongoose_1.Schema({
         sparse: true,
         index: true,
     },
+    notificationPreferences: {
+        email: {
+            type: Boolean,
+            default: true,
+        },
+        sms: {
+            type: Boolean,
+            default: false,
+        },
+        push: {
+            type: Boolean,
+            default: true,
+        },
+        followUpReminders: {
+            type: Boolean,
+            default: true,
+        },
+        criticalAlerts: {
+            type: Boolean,
+            default: true,
+        },
+        dailyDigest: {
+            type: Boolean,
+            default: false,
+        },
+        weeklyReport: {
+            type: Boolean,
+            default: false,
+        },
+    },
 }, { timestamps: true });
 userSchema.pre('save', async function (next) {
     if (!this.isModified('passwordHash'))

@@ -29,6 +29,14 @@ export interface IDrugTherapyProblem extends Document {
     isDeleted: boolean;
     createdAt: Date;
     updatedAt: Date;
+    priority: string;
+    typeDisplay: string;
+    resolutionDurationDays: number | null;
+    resolve(action: string, outcome: string, resolvedBy?: mongoose.Types.ObjectId): void;
+    reopen(reopenedBy: mongoose.Types.ObjectId): void;
+    isHighSeverity(): boolean;
+    isCritical(): boolean;
+    isOverdue(): boolean;
 }
 declare const _default: mongoose.Model<IDrugTherapyProblem, {}, {}, {}, mongoose.Document<unknown, {}, IDrugTherapyProblem> & IDrugTherapyProblem & Required<{
     _id: mongoose.Types.ObjectId;

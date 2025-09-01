@@ -80,7 +80,7 @@ describe('MTR Controller', () => {
             lastName: 'Doe',
             mrn: 'MRN123456',
             dob: new Date('1980-01-01'),
-            phone: '555-0123',
+            phone: '+2348012345678',
             createdBy: pharmacistId
         });
         patientId = patient._id;

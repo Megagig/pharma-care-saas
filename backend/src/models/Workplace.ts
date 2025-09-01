@@ -1,14 +1,35 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+export interface LocationInfo {
+  id: string;
+  name: string;
+  address: string;
+  isPrimary: boolean;
+  metadata?: Record<string, any>;
+}
+
+export interface WorkspaceStats {
+  patientsCount: number;
+  usersCount: number;
+  storageUsed?: number; // in MB
+  apiCallsThisMonth?: number;
+  lastUpdated: Date;
+}
+
+export interface WorkspaceSettings {
+  maxPendingInvites: number;
+  allowSharedPatients: boolean;
+}
+
 export interface IWorkplace extends Document {
   name: string;
   type:
-    | 'Community'
-    | 'Hospital'
-    | 'Academia'
-    | 'Industry'
-    | 'Regulatory Body'
-    | 'Other';
+  | 'Community'
+  | 'Hospital'
+  | 'Academia'
+  | 'Industry'
+  | 'Regulatory Body'
+  | 'Other';
   licenseNumber: string;
   email: string;
   address?: string;
@@ -24,6 +45,23 @@ export interface IWorkplace extends Document {
   logoUrl?: string;
   inviteCode: string; // Unique code for staff to join
   teamMembers: mongoose.Types.ObjectId[]; // Array of user IDs who are part of this workplace
+
+  // New subscription fields
+  currentSubscriptionId?: mongoose.Types.ObjectId;
+  currentPlanId?: mongoose.Types.ObjectId;
+  subscriptionStatus: 'trial' | 'active' | 'past_due' | 'expired' | 'canceled';
+  trialStartDate?: Date;
+  trialEndDate?: Date;
+
+  // Usage statistics
+  stats: WorkspaceStats;
+
+  // Multi-location support
+  locations: LocationInfo[];
+
+  // Configuration
+  settings: WorkspaceSettings;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -154,6 +192,92 @@ const workplaceSchema = new Schema(
         ref: 'User',
       },
     ],
+
+    // New subscription fields
+    currentSubscriptionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Subscription',
+      index: true,
+    },
+    currentPlanId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SubscriptionPlan',
+      index: true,
+    },
+    subscriptionStatus: {
+      type: String,
+      enum: ['trial', 'active', 'past_due', 'expired', 'canceled'],
+      default: 'trial',
+      index: true,
+    },
+    trialStartDate: {
+      type: Date,
+      index: true,
+    },
+    trialEndDate: {
+      type: Date,
+      index: true,
+    },
+
+    // Usage statistics
+    stats: {
+      patientsCount: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+      usersCount: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+      lastUpdated: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+
+    // Multi-location support
+    locations: [
+      {
+        id: {
+          type: String,
+          required: true,
+        },
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        address: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        isPrimary: {
+          type: Boolean,
+          default: false,
+        },
+        metadata: {
+          type: mongoose.Schema.Types.Mixed,
+          default: {},
+        },
+      },
+    ],
+
+    // Configuration
+    settings: {
+      maxPendingInvites: {
+        type: Number,
+        default: 20,
+        min: 1,
+        max: 100,
+      },
+      allowSharedPatients: {
+        type: Boolean,
+        default: false,
+      },
+    },
   },
   { timestamps: true }
 );
@@ -191,6 +315,45 @@ workplaceSchema.pre('save', async function (next) {
       this.inviteCode = 'WRK' + Date.now().toString().slice(-6);
     }
   }
+
+  // Initialize trial period for new workspaces
+  if (this.isNew && !this.trialStartDate) {
+    const now = new Date();
+    this.trialStartDate = now;
+    this.trialEndDate = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 days
+    this.subscriptionStatus = 'trial';
+  }
+
+  // Initialize stats if not present
+  if (this.isNew && !this.stats) {
+    this.stats = {
+      patientsCount: 0,
+      usersCount: 1, // Owner is the first user
+      lastUpdated: new Date(),
+    };
+  }
+
+  // Initialize settings if not present
+  if (this.isNew && !this.settings) {
+    this.settings = {
+      maxPendingInvites: 20,
+      allowSharedPatients: false,
+    };
+  }
+
+  // Initialize locations with primary location if not present
+  if (this.isNew && (!this.locations || this.locations.length === 0)) {
+    this.locations = [
+      {
+        id: 'primary',
+        name: this.name,
+        address: this.address || 'Main Location',
+        isPrimary: true,
+        metadata: {},
+      },
+    ];
+  }
+
   next();
 });
 
@@ -198,5 +361,9 @@ workplaceSchema.pre('save', async function (next) {
 workplaceSchema.index({ ownerId: 1 });
 workplaceSchema.index({ inviteCode: 1 }, { unique: true });
 workplaceSchema.index({ name: 'text', type: 'text' });
+workplaceSchema.index({ currentSubscriptionId: 1 });
+workplaceSchema.index({ subscriptionStatus: 1 });
+workplaceSchema.index({ trialEndDate: 1 });
+workplaceSchema.index({ 'stats.lastUpdated': 1 });
 
 export default mongoose.model<IWorkplace>('Workplace', workplaceSchema);

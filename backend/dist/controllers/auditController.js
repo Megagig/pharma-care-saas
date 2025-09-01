@@ -3,315 +3,414 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAuditActions = exports.getPatientAccessLog = exports.getUserActivity = exports.exportAuditData = exports.getSuspiciousActivities = exports.getHighRiskActivities = exports.getComplianceReport = exports.getAuditSummary = exports.getAuditLogs = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
-const auditService_1 = __importDefault(require("../services/auditService"));
-const MTRAuditLog_1 = __importDefault(require("../models/MTRAuditLog"));
-const responseHelpers_1 = require("../utils/responseHelpers");
-const isAdminOrSupervisor = (role) => {
-    return role === 'super_admin' || role === 'admin' || role === 'supervisor';
-};
-const isAdmin = (role) => {
-    return role === 'super_admin' || role === 'admin';
-};
-exports.getAuditLogs = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const context = (0, responseHelpers_1.getRequestContext)(req);
-    const { page = 1, limit = 50, userId, action, resourceType, complianceCategory, riskLevel, patientId, reviewId, startDate, endDate, ipAddress, sort = '-timestamp', } = req.query;
-    if (!isAdminOrSupervisor(context.userRole)) {
-        return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', 'Insufficient permissions to view audit logs', 403);
+exports.auditController = exports.AuditController = void 0;
+const auditLogging_1 = require("../middlewares/auditLogging");
+const logger_1 = __importDefault(require("../utils/logger"));
+class AuditController {
+    async getAuditLogs(req, res) {
+        try {
+            const { userId, workspaceId, category, severity, startDate, endDate, suspicious, page = 1, limit = 50, } = req.query;
+            if (req.user?.role !== 'super_admin' && workspaceId !== req.workspace?._id?.toString()) {
+                res.status(403).json({
+                    success: false,
+                    code: 'INSUFFICIENT_PERMISSIONS',
+                    message: 'You do not have permission to view audit logs',
+                });
+                return;
+            }
+            const filters = {};
+            if (userId)
+                filters.userId = userId;
+            if (workspaceId)
+                filters.workspaceId = workspaceId;
+            if (category)
+                filters.category = category;
+            if (severity)
+                filters.severity = severity;
+            if (startDate)
+                filters.startDate = new Date(startDate);
+            if (endDate)
+                filters.endDate = new Date(endDate);
+            if (suspicious !== undefined)
+                filters.suspicious = suspicious === 'true';
+            const pageNum = parseInt(page, 10);
+            const limitNum = Math.min(parseInt(limit, 10), 1000);
+            const skip = (pageNum - 1) * limitNum;
+            const allLogs = (0, auditLogging_1.getAuditLogs)(filters);
+            const total = allLogs.length;
+            const logs = allLogs.slice(skip, skip + limitNum);
+            res.json({
+                success: true,
+                data: {
+                    logs,
+                    pagination: {
+                        page: pageNum,
+                        limit: limitNum,
+                        total,
+                        pages: Math.ceil(total / limitNum),
+                    },
+                },
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error fetching audit logs', {
+                error: error?.message || 'Unknown error',
+                userId: req.user?._id,
+                service: 'audit-controller',
+            });
+            res.status(500).json({
+                success: false,
+                code: 'INTERNAL_ERROR',
+                message: 'Failed to fetch audit logs',
+            });
+        }
     }
-    const parsedPage = Math.max(1, parseInt(page) || 1);
-    const parsedLimit = Math.min(1000, Math.max(1, parseInt(limit) || 50));
-    const filters = {};
-    if (userId)
-        filters.userId = new mongoose_1.default.Types.ObjectId(userId);
-    if (action)
-        filters.action = action;
-    if (resourceType)
-        filters.resourceType = resourceType;
-    if (complianceCategory)
-        filters.complianceCategory = complianceCategory;
-    if (riskLevel)
-        filters.riskLevel = riskLevel;
-    if (patientId)
-        filters.patientId = new mongoose_1.default.Types.ObjectId(patientId);
-    if (reviewId)
-        filters.reviewId = new mongoose_1.default.Types.ObjectId(reviewId);
-    if (ipAddress)
-        filters.ipAddress = ipAddress;
-    if (startDate)
-        filters.startDate = new Date(startDate);
-    if (endDate)
-        filters.endDate = new Date(endDate);
-    const { logs, total } = await auditService_1.default.getAuditLogs(new mongoose_1.default.Types.ObjectId(context.workplaceId), filters, {
-        page: parsedPage,
-        limit: parsedLimit,
-        sort,
-    });
-    (0, responseHelpers_1.respondWithPaginatedResults)(res, logs, total, parsedPage, parsedLimit, `Found ${total} audit log entries`);
-});
-exports.getAuditSummary = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const context = (0, responseHelpers_1.getRequestContext)(req);
-    const { startDate, endDate } = req.query;
-    if (!isAdminOrSupervisor(context.userRole)) {
-        return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', 'Insufficient permissions to view audit summary', 403);
+    async getAuditSummary(req, res) {
+        try {
+            const { workspaceId, days = 7 } = req.query;
+            if (req.user?.role !== 'super_admin' && workspaceId !== req.workspace?._id?.toString()) {
+                res.status(403).json({
+                    success: false,
+                    code: 'INSUFFICIENT_PERMISSIONS',
+                    message: 'You do not have permission to view audit summary',
+                });
+                return;
+            }
+            const daysNum = parseInt(days, 10);
+            const startDate = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000);
+            const filters = {
+                startDate,
+            };
+            if (workspaceId) {
+                filters.workspaceId = workspaceId;
+            }
+            const logs = (0, auditLogging_1.getAuditLogs)(filters);
+            const summary = {
+                totalLogs: logs.length,
+                timeRange: {
+                    days: daysNum,
+                    startDate,
+                    endDate: new Date(),
+                },
+                byCategory: {},
+                bySeverity: {},
+                byAction: {},
+                uniqueUsers: new Set(),
+                uniqueIPs: new Set(),
+                suspiciousActivities: 0,
+                highRiskActivities: 0,
+                errorCount: 0,
+                topUsers: {},
+                topIPs: {},
+                recentHighRisk: [],
+            };
+            logs.forEach(log => {
+                summary.byCategory[log.category] = (summary.byCategory[log.category] || 0) + 1;
+                summary.bySeverity[log.severity] = (summary.bySeverity[log.severity] || 0) + 1;
+                summary.byAction[log.action] = (summary.byAction[log.action] || 0) + 1;
+                if (log.userId)
+                    summary.uniqueUsers.add(log.userId.toString());
+                summary.uniqueIPs.add(log.ipAddress);
+                if (log.suspicious)
+                    summary.suspiciousActivities++;
+                if (log.severity === 'high' || log.severity === 'critical') {
+                    summary.highRiskActivities++;
+                    if (summary.recentHighRisk.length < 10) {
+                        summary.recentHighRisk.push({
+                            timestamp: log.timestamp,
+                            action: log.action,
+                            category: log.category,
+                            severity: log.severity,
+                            userId: log.userId,
+                            userEmail: log.userEmail,
+                            ipAddress: log.ipAddress,
+                            details: log.details,
+                        });
+                    }
+                }
+                if (log.errorMessage || (log.statusCode && log.statusCode >= 400)) {
+                    summary.errorCount++;
+                }
+                if (log.userId) {
+                    const userKey = log.userEmail || log.userId.toString();
+                    summary.topUsers[userKey] = (summary.topUsers[userKey] || 0) + 1;
+                }
+                summary.topIPs[log.ipAddress] = (summary.topIPs[log.ipAddress] || 0) + 1;
+            });
+            const finalSummary = {
+                ...summary,
+                uniqueUsers: summary.uniqueUsers.size,
+                uniqueIPs: summary.uniqueIPs.size,
+                topUsers: Object.entries(summary.topUsers)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 10)
+                    .map(([user, count]) => ({ user, count })),
+                topIPs: Object.entries(summary.topIPs)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 10)
+                    .map(([ip, count]) => ({ ip, count })),
+                errorRate: summary.totalLogs > 0 ? (summary.errorCount / summary.totalLogs * 100).toFixed(2) : '0',
+                riskScore: this.calculateOverallRiskScore(logs),
+                complianceScore: this.calculateComplianceScore(summary),
+            };
+            res.json({
+                success: true,
+                data: finalSummary,
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error generating audit summary', {
+                error: error?.message || 'Unknown error',
+                userId: req.user?._id,
+                service: 'audit-controller',
+            });
+            res.status(500).json({
+                success: false,
+                code: 'INTERNAL_ERROR',
+                message: 'Failed to generate audit summary',
+            });
+        }
     }
-    let dateRange;
-    if (startDate && endDate) {
-        dateRange = {
-            start: new Date(startDate),
-            end: new Date(endDate),
+    async getSecurityAlerts(req, res) {
+        try {
+            const { workspaceId, days = 1 } = req.query;
+            if (req.user?.role !== 'super_admin' && workspaceId !== req.workspace?._id?.toString()) {
+                res.status(403).json({
+                    success: false,
+                    code: 'INSUFFICIENT_PERMISSIONS',
+                    message: 'You do not have permission to view security alerts',
+                });
+                return;
+            }
+            const daysNum = parseInt(days, 10);
+            const startDate = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000);
+            const filters = {
+                startDate,
+                suspicious: true,
+            };
+            if (workspaceId) {
+                filters.workspaceId = workspaceId;
+            }
+            const suspiciousLogs = (0, auditLogging_1.getAuditLogs)(filters);
+            const highSeverityFilters = {
+                ...filters,
+                suspicious: undefined,
+                severity: 'high',
+            };
+            const highSeverityLogs = (0, auditLogging_1.getAuditLogs)(highSeverityFilters);
+            const criticalSeverityFilters = {
+                ...filters,
+                suspicious: undefined,
+                severity: 'critical',
+            };
+            const criticalSeverityLogs = (0, auditLogging_1.getAuditLogs)(criticalSeverityFilters);
+            const allAlerts = [...suspiciousLogs, ...highSeverityLogs, ...criticalSeverityLogs];
+            const uniqueAlerts = allAlerts.filter((alert, index, self) => index === self.findIndex(a => a._id?.toString() === alert._id?.toString()));
+            uniqueAlerts.sort((a, b) => {
+                const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+                const severityDiff = severityOrder[b.severity] - severityOrder[a.severity];
+                if (severityDiff !== 0)
+                    return severityDiff;
+                return b.timestamp.getTime() - a.timestamp.getTime();
+            });
+            const patterns = this.analyzeSecurityPatterns(uniqueAlerts);
+            res.json({
+                success: true,
+                data: {
+                    alerts: uniqueAlerts.slice(0, 100),
+                    summary: {
+                        total: uniqueAlerts.length,
+                        critical: criticalSeverityLogs.length,
+                        high: highSeverityLogs.length,
+                        suspicious: suspiciousLogs.length,
+                        timeRange: {
+                            days: daysNum,
+                            startDate,
+                            endDate: new Date(),
+                        },
+                    },
+                    patterns,
+                },
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error fetching security alerts', {
+                error: error?.message || 'Unknown error',
+                userId: req.user?._id,
+                service: 'audit-controller',
+            });
+            res.status(500).json({
+                success: false,
+                code: 'INTERNAL_ERROR',
+                message: 'Failed to fetch security alerts',
+            });
+        }
+    }
+    async exportAuditLogs(req, res) {
+        try {
+            const { workspaceId, format = 'json', startDate, endDate, category, severity, } = req.query;
+            if (req.user?.role !== 'super_admin' && workspaceId !== req.workspace?._id?.toString()) {
+                res.status(403).json({
+                    success: false,
+                    code: 'INSUFFICIENT_PERMISSIONS',
+                    message: 'You do not have permission to export audit logs',
+                });
+                return;
+            }
+            const filters = {};
+            if (workspaceId)
+                filters.workspaceId = workspaceId;
+            if (category)
+                filters.category = category;
+            if (severity)
+                filters.severity = severity;
+            if (startDate)
+                filters.startDate = new Date(startDate);
+            if (endDate)
+                filters.endDate = new Date(endDate);
+            const logs = (0, auditLogging_1.getAuditLogs)(filters);
+            const dateStr = new Date().toISOString().split('T')[0];
+            const filename = `audit_logs_${dateStr}.${format}`;
+            switch (format) {
+                case 'json':
+                    res.setHeader('Content-Type', 'application/json');
+                    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+                    res.json({
+                        exportInfo: {
+                            generatedAt: new Date(),
+                            totalRecords: logs.length,
+                            filters,
+                            exportedBy: req.user?.email,
+                        },
+                        logs,
+                    });
+                    break;
+                case 'csv':
+                    const csvData = this.convertToCSV(logs);
+                    res.setHeader('Content-Type', 'text/csv');
+                    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+                    res.send(csvData);
+                    break;
+                default:
+                    res.status(400).json({
+                        success: false,
+                        code: 'INVALID_FORMAT',
+                        message: 'Supported formats: json, csv',
+                    });
+            }
+        }
+        catch (error) {
+            logger_1.default.error('Error exporting audit logs', {
+                error: error?.message || 'Unknown error',
+                userId: req.user?._id,
+                service: 'audit-controller',
+            });
+            res.status(500).json({
+                success: false,
+                code: 'INTERNAL_ERROR',
+                message: 'Failed to export audit logs',
+            });
+        }
+    }
+    calculateOverallRiskScore(logs) {
+        if (logs.length === 0)
+            return 0;
+        const totalRiskScore = logs.reduce((sum, log) => sum + (log.riskScore || 0), 0);
+        return Math.round((totalRiskScore / logs.length) * 10) / 10;
+    }
+    calculateComplianceScore(summary) {
+        let score = 100;
+        const errorRate = parseFloat(summary.errorRate || '0');
+        if (errorRate > 10)
+            score -= 20;
+        else if (errorRate > 5)
+            score -= 10;
+        else if (errorRate > 2)
+            score -= 5;
+        const suspiciousRate = summary.totalLogs > 0 ? (summary.suspiciousActivities / summary.totalLogs) * 100 : 0;
+        if (suspiciousRate > 5)
+            score -= 15;
+        else if (suspiciousRate > 2)
+            score -= 10;
+        else if (suspiciousRate > 1)
+            score -= 5;
+        const highRiskRate = summary.totalLogs > 0 ? (summary.highRiskActivities / summary.totalLogs) * 100 : 0;
+        if (highRiskRate > 10)
+            score -= 15;
+        else if (highRiskRate > 5)
+            score -= 10;
+        else if (highRiskRate > 2)
+            score -= 5;
+        return Math.max(0, Math.min(100, score));
+    }
+    analyzeSecurityPatterns(alerts) {
+        const patterns = {
+            repeatedFailures: {},
+            suspiciousIPs: {},
+            unusualActivity: [],
+            recommendations: [],
         };
-    }
-    const summary = await auditService_1.default.getAuditSummary(new mongoose_1.default.Types.ObjectId(context.workplaceId), dateRange);
-    (0, responseHelpers_1.sendSuccess)(res, summary, 'Audit summary retrieved successfully');
-});
-exports.getComplianceReport = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const context = (0, responseHelpers_1.getRequestContext)(req);
-    const { startDate, endDate } = req.query;
-    if (!isAdmin(context.userRole)) {
-        return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', 'Only administrators can access compliance reports', 403);
-    }
-    if (!startDate || !endDate) {
-        return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Start date and end date are required for compliance report', 400);
-    }
-    const dateRange = {
-        start: new Date(startDate),
-        end: new Date(endDate),
-    };
-    const daysDiff = Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
-    if (daysDiff > 365) {
-        return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Date range cannot exceed 365 days', 400);
-    }
-    const report = await auditService_1.default.getComplianceReport(new mongoose_1.default.Types.ObjectId(context.workplaceId), dateRange);
-    await auditService_1.default.logActivity(auditService_1.default.createAuditContext(req), {
-        action: 'ACCESS_COMPLIANCE_REPORT',
-        resourceType: 'User',
-        resourceId: context.userId,
-        details: {
-            dateRange,
-            reportType: 'compliance',
-        },
-        complianceCategory: 'system_security',
-        riskLevel: 'medium',
-    });
-    (0, responseHelpers_1.sendSuccess)(res, report, 'Compliance report generated successfully');
-});
-exports.getHighRiskActivities = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const context = (0, responseHelpers_1.getRequestContext)(req);
-    const { hours = 24 } = req.query;
-    if (!isAdminOrSupervisor(context.userRole)) {
-        return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', 'Insufficient permissions to view high-risk activities', 403);
-    }
-    const parsedHours = Math.min(168, Math.max(1, parseInt(hours) || 24));
-    const activities = await MTRAuditLog_1.default.find({
-        workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
-        riskLevel: { $in: ['high', 'critical'] },
-        timestamp: { $gte: new Date(Date.now() - parsedHours * 60 * 60 * 1000) },
-    })
-        .populate('userId', 'firstName lastName email')
-        .populate('patientId', 'firstName lastName mrn')
-        .sort({ timestamp: -1 });
-    (0, responseHelpers_1.sendSuccess)(res, { activities, timeframe: `${parsedHours} hours` }, `Found ${activities.length} high-risk activities`);
-});
-exports.getSuspiciousActivities = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const context = (0, responseHelpers_1.getRequestContext)(req);
-    const { hours = 24 } = req.query;
-    if (!isAdmin(context.userRole)) {
-        return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', 'Only administrators can view suspicious activities', 403);
-    }
-    const parsedHours = Math.min(168, Math.max(1, parseInt(hours) || 24));
-    const activities = await MTRAuditLog_1.default.aggregate([
-        {
-            $match: {
-                workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
-                timestamp: { $gte: new Date(Date.now() - parsedHours * 60 * 60 * 1000) },
-            },
-        },
-        {
-            $group: {
-                _id: {
-                    userId: '$userId',
-                    ipAddress: '$ipAddress',
-                },
-                actionCount: { $sum: 1 },
-                uniqueActions: { $addToSet: '$action' },
-                errorCount: {
-                    $sum: { $cond: [{ $ne: ['$errorMessage', null] }, 1, 0] },
-                },
-                firstActivity: { $min: '$timestamp' },
-                lastActivity: { $max: '$timestamp' },
-            },
-        },
-        {
-            $match: {
-                $or: [
-                    { actionCount: { $gt: 100 } },
-                    { errorCount: { $gt: 10 } },
-                ],
-            },
-        },
-        {
-            $lookup: {
-                from: 'users',
-                localField: '_id.userId',
-                foreignField: '_id',
-                as: 'user',
-            },
-        },
-        {
-            $project: {
-                userId: '$_id.userId',
-                ipAddress: '$_id.ipAddress',
-                actionCount: 1,
-                uniqueActionCount: { $size: '$uniqueActions' },
-                errorCount: 1,
-                errorRate: {
-                    $multiply: [{ $divide: ['$errorCount', '$actionCount'] }, 100],
-                },
-                firstActivity: 1,
-                lastActivity: 1,
-                user: { $arrayElemAt: ['$user', 0] },
-            },
-        },
-        { $sort: { actionCount: -1 } },
-    ]);
-    (0, responseHelpers_1.sendSuccess)(res, { activities, timeframe: `${parsedHours} hours` }, `Found ${activities.length} suspicious activity patterns`);
-});
-exports.exportAuditData = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const context = (0, responseHelpers_1.getRequestContext)(req);
-    const { format = 'json', startDate, endDate, filters = {}, includeDetails = false, includeSensitiveData = false, } = req.body;
-    if (!isAdmin(context.userRole)) {
-        return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', 'Only administrators can export audit data', 403);
-    }
-    if (!['json', 'csv', 'pdf'].includes(format)) {
-        return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Invalid export format. Supported formats: json, csv, pdf', 400);
-    }
-    const exportOptions = {
-        format,
-        includeDetails,
-        includeSensitiveData,
-        filters: {},
-    };
-    if (startDate && endDate) {
-        exportOptions.dateRange = {
-            start: new Date(startDate),
-            end: new Date(endDate),
-        };
-    }
-    if (filters.userId) {
-        exportOptions.filters.userId = new mongoose_1.default.Types.ObjectId(filters.userId);
-    }
-    if (filters.action)
-        exportOptions.filters.action = filters.action;
-    if (filters.resourceType)
-        exportOptions.filters.resourceType = filters.resourceType;
-    if (filters.complianceCategory)
-        exportOptions.filters.complianceCategory = filters.complianceCategory;
-    if (filters.riskLevel)
-        exportOptions.filters.riskLevel = filters.riskLevel;
-    if (filters.patientId) {
-        exportOptions.filters.patientId = new mongoose_1.default.Types.ObjectId(filters.patientId);
-    }
-    if (filters.reviewId) {
-        exportOptions.filters.reviewId = new mongoose_1.default.Types.ObjectId(filters.reviewId);
-    }
-    try {
-        const exportResult = await auditService_1.default.exportAuditData(new mongoose_1.default.Types.ObjectId(context.workplaceId), exportOptions);
-        await auditService_1.default.logActivity(auditService_1.default.createAuditContext(req), {
-            action: 'EXPORT_AUDIT_DATA',
-            resourceType: 'User',
-            resourceId: context.userId,
-            details: {
-                format,
-                dateRange: exportOptions.dateRange,
-                filters: exportOptions.filters,
-                includeDetails,
-                includeSensitiveData,
-                filename: exportResult.filename,
-            },
-            complianceCategory: 'data_access',
-            riskLevel: 'high',
+        alerts.forEach(alert => {
+            if (alert.errorMessage && alert.userEmail) {
+                patterns.repeatedFailures[alert.userEmail] = (patterns.repeatedFailures[alert.userEmail] || 0) + 1;
+            }
+            if (alert.suspicious) {
+                patterns.suspiciousIPs[alert.ipAddress] = (patterns.suspiciousIPs[alert.ipAddress] || 0) + 1;
+            }
         });
-        res.setHeader('Content-Type', exportResult.contentType);
-        res.setHeader('Content-Disposition', `attachment; filename="${exportResult.filename}"`);
-        if (format === 'pdf') {
-            (0, responseHelpers_1.sendSuccess)(res, exportResult.data, 'Audit data prepared for PDF export');
+        const highFailureUsers = Object.entries(patterns.repeatedFailures)
+            .filter(([, count]) => count > 5)
+            .map(([user]) => user);
+        if (highFailureUsers.length > 0) {
+            patterns.recommendations.push(`Review accounts with repeated failures: ${highFailureUsers.join(', ')}`);
         }
-        else {
-            res.send(exportResult.data);
+        const suspiciousIPList = Object.entries(patterns.suspiciousIPs)
+            .filter(([, count]) => count > 10)
+            .map(([ip]) => ip);
+        if (suspiciousIPList.length > 0) {
+            patterns.recommendations.push(`Consider blocking suspicious IPs: ${suspiciousIPList.join(', ')}`);
         }
+        if (alerts.length > 50) {
+            patterns.recommendations.push('High volume of security alerts detected. Review security policies.');
+        }
+        return patterns;
     }
-    catch (error) {
-        (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', `Failed to export audit data: ${error?.message || 'Unknown error'}`, 500);
+    convertToCSV(logs) {
+        if (logs.length === 0)
+            return '';
+        const headers = [
+            'timestamp',
+            'action',
+            'category',
+            'severity',
+            'userEmail',
+            'userRole',
+            'ipAddress',
+            'requestMethod',
+            'requestUrl',
+            'resourceType',
+            'statusCode',
+            'errorMessage',
+            'suspicious',
+            'riskScore',
+        ];
+        const csvRows = [headers.join(',')];
+        logs.forEach(log => {
+            const row = headers.map(header => {
+                let value = log[header];
+                if (value === null || value === undefined)
+                    return '';
+                if (typeof value === 'object')
+                    return JSON.stringify(value);
+                if (typeof value === 'string' && value.includes(','))
+                    return `"${value.replace(/"/g, '""')}"`;
+                return String(value);
+            });
+            csvRows.push(row.join(','));
+        });
+        return csvRows.join('\n');
     }
-});
-exports.getUserActivity = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const context = (0, responseHelpers_1.getRequestContext)(req);
-    const { userId } = req.params;
-    const { page = 1, limit = 50, startDate, endDate } = req.query;
-    if (!isAdminOrSupervisor(context.userRole) &&
-        context.userId.toString() !== userId) {
-        return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', 'Insufficient permissions to view user activity', 403);
-    }
-    const parsedPage = Math.max(1, parseInt(page) || 1);
-    const parsedLimit = Math.min(500, Math.max(1, parseInt(limit) || 50));
-    const filters = {
-        userId: new mongoose_1.default.Types.ObjectId(userId),
-    };
-    if (startDate)
-        filters.startDate = new Date(startDate);
-    if (endDate)
-        filters.endDate = new Date(endDate);
-    const { logs, total } = await auditService_1.default.getAuditLogs(new mongoose_1.default.Types.ObjectId(context.workplaceId), filters, {
-        page: parsedPage,
-        limit: parsedLimit,
-        sort: '-timestamp',
-    });
-    (0, responseHelpers_1.respondWithPaginatedResults)(res, logs, total, parsedPage, parsedLimit, `Found ${total} activity records for user`);
-});
-exports.getPatientAccessLog = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const context = (0, responseHelpers_1.getRequestContext)(req);
-    const { patientId } = req.params;
-    const { page = 1, limit = 50, startDate, endDate } = req.query;
-    if (!isAdminOrSupervisor(context.userRole)) {
-        return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', 'Insufficient permissions to view patient access logs', 403);
-    }
-    const parsedPage = Math.max(1, parseInt(page) || 1);
-    const parsedLimit = Math.min(500, Math.max(1, parseInt(limit) || 50));
-    const filters = {
-        patientId: new mongoose_1.default.Types.ObjectId(patientId),
-    };
-    if (startDate)
-        filters.startDate = new Date(startDate);
-    if (endDate)
-        filters.endDate = new Date(endDate);
-    const { logs, total } = await auditService_1.default.getAuditLogs(new mongoose_1.default.Types.ObjectId(context.workplaceId), filters, {
-        page: parsedPage,
-        limit: parsedLimit,
-        sort: '-timestamp',
-    });
-    (0, responseHelpers_1.respondWithPaginatedResults)(res, logs, total, parsedPage, parsedLimit, `Found ${total} access records for patient`);
-});
-exports.getAuditActions = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const context = (0, responseHelpers_1.getRequestContext)(req);
-    if (!isAdminOrSupervisor(context.userRole)) {
-        return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', 'Insufficient permissions to view audit actions', 403);
-    }
-    const actions = await MTRAuditLog_1.default.distinct('action', {
-        workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
-    });
-    const resourceTypes = await MTRAuditLog_1.default.distinct('resourceType', {
-        workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
-    });
-    const complianceCategories = await MTRAuditLog_1.default.distinct('complianceCategory', {
-        workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
-    });
-    (0, responseHelpers_1.sendSuccess)(res, {
-        actions: actions.sort(),
-        resourceTypes: resourceTypes.sort(),
-        complianceCategories: complianceCategories.sort(),
-        riskLevels: ['low', 'medium', 'high', 'critical'],
-    }, 'Audit filter options retrieved successfully');
-});
+}
+exports.AuditController = AuditController;
+exports.auditController = new AuditController();
 //# sourceMappingURL=auditController.js.map

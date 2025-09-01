@@ -107,6 +107,11 @@ const visitSchema = new mongoose_1.Schema({
         required: true,
         index: true,
     },
+    locationId: {
+        type: String,
+        index: true,
+        sparse: true,
+    },
     patientId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Patient',
@@ -160,6 +165,7 @@ visitSchema.plugin(tenancyGuard_1.tenancyGuardPlugin, { pharmacyIdField: 'workpl
 visitSchema.index({ workplaceId: 1, patientId: 1, date: -1 });
 visitSchema.index({ workplaceId: 1, date: -1 });
 visitSchema.index({ workplaceId: 1, isDeleted: 1 });
+visitSchema.index({ workplaceId: 1, locationId: 1 }, { sparse: true });
 visitSchema.index({ createdAt: -1 });
 visitSchema.virtual('patient', {
     ref: 'Patient',

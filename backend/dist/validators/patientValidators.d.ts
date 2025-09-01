@@ -81,9 +81,9 @@ export declare const createPatientSchema: z.ZodObject<{
         startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
         endDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
         adherence: z.ZodOptional<z.ZodEnum<{
+            unknown: "unknown";
             good: "good";
             poor: "poor";
-            unknown: "unknown";
         }>>;
         notes: z.ZodOptional<z.ZodString>;
     }, z.core.$strip>>>;
@@ -202,9 +202,9 @@ export declare const updatePatientSchema: z.ZodObject<{
         startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
         endDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
         adherence: z.ZodOptional<z.ZodEnum<{
+            unknown: "unknown";
             good: "good";
             poor: "poor";
-            unknown: "unknown";
         }>>;
         notes: z.ZodOptional<z.ZodString>;
     }, z.core.$strip>>>>;
@@ -327,9 +327,9 @@ export declare const createMedicationSchema: z.ZodObject<{
     startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
     endDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
     adherence: z.ZodDefault<z.ZodEnum<{
+        unknown: "unknown";
         good: "good";
         poor: "poor";
-        unknown: "unknown";
     }>>;
     notes: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
@@ -347,9 +347,9 @@ export declare const updateMedicationSchema: z.ZodObject<{
     startDate: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>>;
     endDate: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>>;
     adherence: z.ZodOptional<z.ZodDefault<z.ZodEnum<{
+        unknown: "unknown";
         good: "good";
         poor: "poor";
-        unknown: "unknown";
     }>>>;
     notes: z.ZodOptional<z.ZodOptional<z.ZodString>>;
 }, z.core.$strip>;

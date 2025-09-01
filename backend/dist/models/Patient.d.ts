@@ -12,6 +12,7 @@ export interface IPatientVitals {
 export interface IPatient extends Document {
     _id: mongoose.Types.ObjectId;
     workplaceId: mongoose.Types.ObjectId;
+    locationId?: string;
     mrn: string;
     firstName: string;
     lastName: string;
@@ -29,6 +30,33 @@ export interface IPatient extends Document {
     genotype?: 'AA' | 'AS' | 'SS' | 'AC' | 'SC' | 'CC';
     weightKg?: number;
     latestVitals?: IPatientVitals;
+    metadata?: {
+        sharedAccess?: {
+            patientId: mongoose.Types.ObjectId;
+            sharedWithLocations: string[];
+            sharedBy: mongoose.Types.ObjectId;
+            sharedAt: Date;
+            accessLevel: 'read' | 'write' | 'full';
+            expiresAt?: Date;
+        };
+        transferWorkflow?: {
+            transferId: string;
+            patientId: mongoose.Types.ObjectId;
+            fromLocationId: string;
+            toLocationId: string;
+            transferredBy: mongoose.Types.ObjectId;
+            transferReason?: string;
+            status: 'pending' | 'approved' | 'completed';
+            createdAt: Date;
+            completedAt?: Date;
+            completedBy?: mongoose.Types.ObjectId;
+            steps: Array<{
+                step: string;
+                completedAt: Date;
+                completedBy: mongoose.Types.ObjectId;
+            }>;
+        };
+    };
     hasActiveDTP?: boolean;
     isDeleted: boolean;
     createdBy: mongoose.Types.ObjectId;

@@ -231,7 +231,7 @@ mtrFollowUpSchema.virtual('daysSinceScheduled').get(function () {
     const diffTime = Math.abs(Date.now() - this.scheduledDate.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
-mtrFollowUpSchema.virtual('isOverdue').get(function () {
+mtrFollowUpSchema.virtual('overdueStatus').get(function () {
     if (['completed', 'cancelled'].includes(this.status))
         return false;
     return this.scheduledDate < new Date();

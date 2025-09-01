@@ -37,6 +37,15 @@ export interface IUser extends Document {
     trialEndDate?: Date;
     features: string[];
     stripeCustomerId?: string;
+    notificationPreferences?: {
+        email: boolean;
+        sms: boolean;
+        push: boolean;
+        followUpReminders: boolean;
+        criticalAlerts: boolean;
+        dailyDigest: boolean;
+        weeklyReport: boolean;
+    };
     createdAt: Date;
     updatedAt: Date;
     comparePassword(password: string): Promise<boolean>;

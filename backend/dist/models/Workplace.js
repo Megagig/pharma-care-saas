@@ -158,6 +158,84 @@ const workplaceSchema = new mongoose_1.Schema({
             ref: 'User',
         },
     ],
+    currentSubscriptionId: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'Subscription',
+        index: true,
+    },
+    currentPlanId: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'SubscriptionPlan',
+        index: true,
+    },
+    subscriptionStatus: {
+        type: String,
+        enum: ['trial', 'active', 'past_due', 'expired', 'canceled'],
+        default: 'trial',
+        index: true,
+    },
+    trialStartDate: {
+        type: Date,
+        index: true,
+    },
+    trialEndDate: {
+        type: Date,
+        index: true,
+    },
+    stats: {
+        patientsCount: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        usersCount: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        lastUpdated: {
+            type: Date,
+            default: Date.now,
+        },
+    },
+    locations: [
+        {
+            id: {
+                type: String,
+                required: true,
+            },
+            name: {
+                type: String,
+                required: true,
+                trim: true,
+            },
+            address: {
+                type: String,
+                required: true,
+                trim: true,
+            },
+            isPrimary: {
+                type: Boolean,
+                default: false,
+            },
+            metadata: {
+                type: mongoose_1.default.Schema.Types.Mixed,
+                default: {},
+            },
+        },
+    ],
+    settings: {
+        maxPendingInvites: {
+            type: Number,
+            default: 20,
+            min: 1,
+            max: 100,
+        },
+        allowSharedPatients: {
+            type: Boolean,
+            default: false,
+        },
+    },
 }, { timestamps: true });
 workplaceSchema.pre('save', async function (next) {
     if (this.isNew && !this.inviteCode) {
@@ -183,10 +261,44 @@ workplaceSchema.pre('save', async function (next) {
             this.inviteCode = 'WRK' + Date.now().toString().slice(-6);
         }
     }
+    if (this.isNew && !this.trialStartDate) {
+        const now = new Date();
+        this.trialStartDate = now;
+        this.trialEndDate = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+        this.subscriptionStatus = 'trial';
+    }
+    if (this.isNew && !this.stats) {
+        this.stats = {
+            patientsCount: 0,
+            usersCount: 1,
+            lastUpdated: new Date(),
+        };
+    }
+    if (this.isNew && !this.settings) {
+        this.settings = {
+            maxPendingInvites: 20,
+            allowSharedPatients: false,
+        };
+    }
+    if (this.isNew && (!this.locations || this.locations.length === 0)) {
+        this.locations = [
+            {
+                id: 'primary',
+                name: this.name,
+                address: this.address || 'Main Location',
+                isPrimary: true,
+                metadata: {},
+            },
+        ];
+    }
     next();
 });
 workplaceSchema.index({ ownerId: 1 });
 workplaceSchema.index({ inviteCode: 1 }, { unique: true });
 workplaceSchema.index({ name: 'text', type: 'text' });
+workplaceSchema.index({ currentSubscriptionId: 1 });
+workplaceSchema.index({ subscriptionStatus: 1 });
+workplaceSchema.index({ trialEndDate: 1 });
+workplaceSchema.index({ 'stats.lastUpdated': 1 });
 exports.default = mongoose_1.default.model('Workplace', workplaceSchema);
 //# sourceMappingURL=Workplace.js.map

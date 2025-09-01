@@ -1,7 +1,7 @@
 import request from 'supertest';
 import mongoose from 'mongoose';
 import app from '../../app';
-import { setupTestDatabase, cleanupTestDatabase, createTestUser, createTestPatient } from '../setup';
+import '../setup';
 import MedicationTherapyReview from '../../models/MedicationTherapyReview';
 import DrugTherapyProblem from '../../models/DrugTherapyProblem';
 import MTRIntervention from '../../models/MTRIntervention';
@@ -377,7 +377,7 @@ describe('MTR Complete Integration Tests', () => {
 
             expect(mtr).toBeDefined();
             expect(problem).toBeDefined();
-            expect(problem?.reviewId.toString()).toBe(testMTRId);
+            expect(problem?.reviewId?.toString()).toBe(testMTRId);
             expect(problem?.patientId.toString()).toBe(patientId.toString());
             expect(problem?.workplaceId.toString()).toBe(workplaceId.toString());
 
