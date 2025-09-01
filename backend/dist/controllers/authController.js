@@ -13,6 +13,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const email_1 = require("../utils/email");
 const crypto_1 = __importDefault(require("crypto"));
 const mongoose_1 = __importDefault(require("mongoose"));
+const auditLogging_1 = require("../middlewares/auditLogging");
 const generateAccessToken = (userId) => {
     return jsonwebtoken_1.default.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
 };
@@ -134,6 +135,7 @@ const login = async (req, res) => {
             .select('+passwordHash')
             .populate('currentPlanId');
         if (!user || !(await user.comparePassword(password))) {
+            await auditLogging_1.auditOperations.login(req, user || { email }, false);
             res.status(401).json({ message: 'Invalid credentials' });
             return;
         }
@@ -178,6 +180,7 @@ const login = async (req, res) => {
             sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
             maxAge: 30 * 24 * 60 * 60 * 1000,
         });
+        await auditLogging_1.auditOperations.login(req, user, true);
         res.json({
             success: true,
             user: {
@@ -359,12 +362,20 @@ exports.refreshToken = refreshToken;
 const logout = async (req, res) => {
     try {
         const { refreshToken } = req.cookies;
+        let user = null;
         if (refreshToken) {
             const hashedToken = crypto_1.default
                 .createHash('sha256')
                 .update(refreshToken)
                 .digest('hex');
+            const session = await Session_1.default.findOne({ refreshToken: hashedToken }).populate('userId');
+            if (session) {
+                user = session.userId;
+            }
             await Session_1.default.updateOne({ refreshToken: hashedToken }, { isActive: false });
+        }
+        if (user) {
+            await auditLogging_1.auditOperations.logout(req);
         }
         res.clearCookie('refreshToken');
         res.clearCookie('accessToken');

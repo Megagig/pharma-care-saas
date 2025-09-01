@@ -5,6 +5,7 @@ import SubscriptionPlan from '../models/SubscriptionPlan';
 import Subscription, { ISubscription } from '../models/Subscription';
 import FeatureFlag from '../models/FeatureFlag';
 
+// Export AuthRequest interface for backward compatibility
 export interface AuthRequest extends Request {
   user?: IUser & {
     currentUsage?: number;
@@ -96,8 +97,8 @@ export const auth = async (
           user.status === 'license_pending'
             ? 'license_verification'
             : user.status === 'pending'
-            ? 'email_verification'
-            : 'account_activation',
+              ? 'email_verification'
+              : 'account_activation',
       });
       return;
     }

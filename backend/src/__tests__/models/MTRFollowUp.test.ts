@@ -181,7 +181,7 @@ describe('MTRFollowUp Model', () => {
             expect(followUp.reminderStatus).toBe('pending');
 
             // Mark reminder as sent
-            followUp.reminders[0].sent = true;
+            followUp.reminders[0]!.sent = true;
             expect(followUp.reminderStatus).toBe('all_sent');
 
             // Add another unsent reminder
@@ -262,9 +262,9 @@ describe('MTRFollowUp Model', () => {
             followUp.scheduleReminder('email', reminderDate);
 
             expect(followUp.reminders).toHaveLength(1);
-            expect(followUp.reminders[0].type).toBe('email');
-            expect(followUp.reminders[0].scheduledFor).toEqual(reminderDate);
-            expect(followUp.reminders[0].sent).toBe(false);
+            expect(followUp.reminders[0]!.type).toBe('email');
+            expect(followUp.reminders[0]!.scheduledFor).toEqual(reminderDate);
+            expect(followUp.reminders[0]!.sent).toBe(false);
         });
 
         it('should reschedule follow-up', () => {

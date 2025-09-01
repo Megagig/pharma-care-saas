@@ -23,6 +23,7 @@ export interface IPatientVitals {
 export interface IPatient extends Document {
   _id: mongoose.Types.ObjectId;
   workplaceId: mongoose.Types.ObjectId; // ref Workplace, indexed (changed from pharmacyId)
+  locationId?: string; // Location ID within the workplace for multi-location support
   mrn: string; // generated patient code, unique per workplace
 
   // Demography
@@ -45,6 +46,35 @@ export interface IPatient extends Document {
   // Clinical snapshots (latest vitals cached for list speed)
   latestVitals?: IPatientVitals;
 
+  // Multi-location and sharing metadata
+  metadata?: {
+    sharedAccess?: {
+      patientId: mongoose.Types.ObjectId;
+      sharedWithLocations: string[];
+      sharedBy: mongoose.Types.ObjectId;
+      sharedAt: Date;
+      accessLevel: 'read' | 'write' | 'full';
+      expiresAt?: Date;
+    };
+    transferWorkflow?: {
+      transferId: string;
+      patientId: mongoose.Types.ObjectId;
+      fromLocationId: string;
+      toLocationId: string;
+      transferredBy: mongoose.Types.ObjectId;
+      transferReason?: string;
+      status: 'pending' | 'approved' | 'completed';
+      createdAt: Date;
+      completedAt?: Date;
+      completedBy?: mongoose.Types.ObjectId;
+      steps: Array<{
+        step: string;
+        completedAt: Date;
+        completedBy: mongoose.Types.ObjectId;
+      }>;
+    };
+  };
+
   // Flags
   hasActiveDTP?: boolean;
   isDeleted: boolean;
@@ -66,6 +96,11 @@ const patientSchema = new Schema(
       ref: 'Workplace',
       required: true,
       index: true,
+    },
+    locationId: {
+      type: String,
+      index: true,
+      sparse: true, // Allow null values and don't index them
     },
     mrn: {
       type: String,
@@ -208,6 +243,63 @@ const patientSchema = new Schema(
       recordedAt: Date,
     },
 
+    // Multi-location and sharing metadata
+    metadata: {
+      sharedAccess: {
+        patientId: {
+          type: Schema.Types.ObjectId,
+          ref: 'Patient',
+        },
+        sharedWithLocations: [{
+          type: String,
+        }],
+        sharedBy: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        sharedAt: Date,
+        accessLevel: {
+          type: String,
+          enum: ['read', 'write', 'full'],
+          default: 'read',
+        },
+        expiresAt: Date,
+      },
+      transferWorkflow: {
+        transferId: String,
+        patientId: {
+          type: Schema.Types.ObjectId,
+          ref: 'Patient',
+        },
+        fromLocationId: String,
+        toLocationId: String,
+        transferredBy: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        transferReason: String,
+        status: {
+          type: String,
+          enum: ['pending', 'approved', 'completed'],
+          default: 'pending',
+        },
+        createdAt: Date,
+        completedAt: Date,
+        completedBy: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        steps: [{
+          step: String,
+          completedAt: Date,
+          completedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+          },
+        }],
+      },
+    },
+
     // Flags
     hasActiveDTP: {
       type: Boolean,
@@ -233,6 +325,8 @@ patientSchema.index({ workplaceId: 1, lastName: 1, firstName: 1 });
 patientSchema.index({ workplaceId: 1, isDeleted: 1 });
 patientSchema.index({ workplaceId: 1, phone: 1 }, { sparse: true });
 patientSchema.index({ workplaceId: 1, email: 1 }, { sparse: true });
+patientSchema.index({ workplaceId: 1, locationId: 1 }, { sparse: true });
+patientSchema.index({ workplaceId: 1, 'metadata.sharedAccess.sharedWithLocations': 1 }, { sparse: true });
 patientSchema.index({ hasActiveDTP: 1 });
 patientSchema.index({ createdAt: -1 });
 

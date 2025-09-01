@@ -40,6 +40,9 @@ export interface IMTRFollowUp extends Document {
     isDeleted: boolean;
     createdAt: Date;
     updatedAt: Date;
+    daysUntilFollowUp: number | null;
+    daysSinceScheduled: number;
+    reminderStatus: string;
     isOverdue(): boolean;
     canReschedule(): boolean;
     markCompleted(outcome: IFollowUpOutcome): void;

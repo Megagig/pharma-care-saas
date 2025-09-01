@@ -42,6 +42,7 @@ export interface IMedication extends Document {
         lastReported?: Date;
         score?: number;
     };
+    isManual?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

@@ -27,6 +27,9 @@ export interface IMTRIntervention extends Document {
     isDeleted: boolean;
     createdAt: Date;
     updatedAt: Date;
+    daysSinceIntervention: number;
+    followUpStatus: string;
+    isEffective: boolean;
     isOverdue(): boolean;
     markCompleted(outcome: string, details?: string): void;
     requiresFollowUp(): boolean;

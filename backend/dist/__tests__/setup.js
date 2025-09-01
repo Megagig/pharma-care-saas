@@ -45,7 +45,7 @@ global.testUtils = {
         lastName: 'Doe',
         mrn: 'MRN123456',
         dob: new Date('1980-01-01'),
-        phone: '555-0123'
+        phone: '+2348012345678'
     })
 };
 expect.extend({

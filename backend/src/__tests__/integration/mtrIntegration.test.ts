@@ -48,7 +48,7 @@ describe('MTR Integration Tests', () => {
                 country: 'Test Country'
             },
             contactInfo: {
-                phone: '555-0123',
+                phone: '+2348012345678',
                 email: 'test@pharmacy.com'
             },
             createdBy: testUtils.createObjectId()
@@ -73,7 +73,7 @@ describe('MTR Integration Tests', () => {
             lastName: 'Doe',
             mrn: 'MRN123456',
             dob: new Date('1980-01-01'),
-            phone: '555-0123',
+            phone: '+2348012345678',
             createdBy: user._id
         });
 
@@ -136,7 +136,7 @@ describe('MTR Integration Tests', () => {
 
             // Update MTR with medications
             const mtr = await MedicationTherapyReview.findById(mtrId);
-            mtr!.medications = medications;
+            mtr!.medications = medications as any;
             await mtr!.save();
 
             // Complete medication history step

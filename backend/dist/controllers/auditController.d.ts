@@ -1,11 +1,14 @@
 import { Response } from 'express';
-export declare const getAuditLogs: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
-export declare const getAuditSummary: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
-export declare const getComplianceReport: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
-export declare const getHighRiskActivities: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
-export declare const getSuspiciousActivities: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
-export declare const exportAuditData: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
-export declare const getUserActivity: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
-export declare const getPatientAccessLog: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
-export declare const getAuditActions: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+import { AuthRequest } from '../types/auth';
+export declare class AuditController {
+    getAuditLogs(req: AuthRequest, res: Response): Promise<void>;
+    getAuditSummary(req: AuthRequest, res: Response): Promise<void>;
+    getSecurityAlerts(req: AuthRequest, res: Response): Promise<void>;
+    exportAuditLogs(req: AuthRequest, res: Response): Promise<void>;
+    private calculateOverallRiskScore;
+    private calculateComplianceScore;
+    private analyzeSecurityPatterns;
+    private convertToCSV;
+}
+export declare const auditController: AuditController;
 //# sourceMappingURL=auditController.d.ts.map

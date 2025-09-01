@@ -255,7 +255,7 @@ const validateMTRAccess = (req, res, next) => {
             });
             throw new mtrErrors_1.MTRAuthorizationError('Authentication required for MTR access');
         }
-        if (!user.role || !['pharmacist', 'senior_pharmacist', 'pharmacy_manager', 'admin'].includes(user.role)) {
+        if (!user.role || !['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'super_admin'].includes(user.role)) {
             logger_1.default.warn('Insufficient permissions for MTR access', {
                 userId: user.id,
                 userRole: user.role,
@@ -265,14 +265,14 @@ const validateMTRAccess = (req, res, next) => {
             });
             throw new mtrErrors_1.MTRAuthorizationError('Pharmacist credentials required for MTR operations');
         }
-        if (user.licenseStatus && user.licenseStatus !== 'active') {
+        if (user.licenseStatus && !['active', 'approved'].includes(user.licenseStatus)) {
             logger_1.default.warn('MTR access attempt with inactive license', {
                 userId: user.id,
                 licenseStatus: user.licenseStatus,
                 endpoint: req.originalUrl,
                 timestamp: new Date().toISOString()
             });
-            throw new mtrErrors_1.MTRAuthorizationError('Active pharmacist license required for MTR operations');
+            throw new mtrErrors_1.MTRAuthorizationError('Active or approved pharmacist license required for MTR operations');
         }
         logger_1.default.info('MTR access granted', {
             userId: user.id,

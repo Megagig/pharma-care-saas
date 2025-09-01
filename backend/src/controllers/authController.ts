@@ -9,6 +9,7 @@ import { sendEmail } from '../utils/email';
 import crypto from 'crypto';
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
+import { auditOperations } from '../middlewares/auditLogging';
 
 const generateAccessToken = (userId: string): string => {
   return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: '15m' });
@@ -163,6 +164,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       .select('+passwordHash')
       .populate('currentPlanId');
     if (!user || !(await user.comparePassword(password))) {
+      // Log failed login attempt
+      await auditOperations.login(req, user || { email }, false);
       res.status(401).json({ message: 'Invalid credentials' });
       return;
     }
@@ -221,6 +224,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
+
+    // Log successful login
+    await auditOperations.login(req, user, true);
 
     res.json({
       success: true,
@@ -455,6 +461,7 @@ export const refreshToken = async (
 export const logout = async (req: Request, res: Response): Promise<void> => {
   try {
     const { refreshToken } = req.cookies;
+    let user = null;
 
     if (refreshToken) {
       // Hash the refresh token to match what's stored in the database
@@ -463,11 +470,22 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
         .update(refreshToken)
         .digest('hex');
 
+      // Find the session to get user info for audit logging
+      const session = await Session.findOne({ refreshToken: hashedToken }).populate('userId');
+      if (session) {
+        user = session.userId;
+      }
+
       // Deactivate the session
       await Session.updateOne(
         { refreshToken: hashedToken },
         { isActive: false }
       );
+    }
+
+    // Log logout for audit (if we have user info)
+    if (user) {
+      await auditOperations.logout(req as any);
     }
 
     // Clear all possible cookie names
@@ -521,10 +539,10 @@ export const checkCookies = async (
       debug:
         process.env.NODE_ENV === 'development'
           ? {
-              cookies: Object.keys(req.cookies),
-              userAgent: req.get('User-Agent'),
-              origin: req.get('Origin'),
-            }
+            cookies: Object.keys(req.cookies),
+            userAgent: req.get('User-Agent'),
+            origin: req.get('Origin'),
+          }
           : undefined,
     });
   } catch (error: any) {
@@ -949,12 +967,10 @@ export const registerWithWorkplace = async (
         emailContent += `
           <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
             <h3 style="color: #059669; margin-bottom: 10px;">🤝 You've joined a workplace!</h3>
-            <p style="color: #374151; margin-bottom: 10px;"><strong>Workplace:</strong> ${
-              workplaceData?.name
-            }</p>
-            <p style="color: #374151; margin-bottom: 10px;"><strong>Your Role:</strong> ${
-              workplaceRole || 'Staff'
-            }</p>
+            <p style="color: #374151; margin-bottom: 10px;"><strong>Workplace:</strong> ${workplaceData?.name
+          }</p>
+            <p style="color: #374151; margin-bottom: 10px;"><strong>Your Role:</strong> ${workplaceRole || 'Staff'
+          }</p>
             <p style="color: #6b7280; font-size: 14px;">You now have access to your workplace's features and subscription plan.</p>
           </div>`;
       } else {
@@ -1017,19 +1033,19 @@ export const registerWithWorkplace = async (
           },
           workplace: workplaceData
             ? {
-                id: workplaceData._id,
-                name: workplaceData.name,
-                type: workplaceData.type,
-                inviteCode: workplaceData.inviteCode,
-              }
+              id: workplaceData._id,
+              name: workplaceData.name,
+              type: workplaceData.type,
+              inviteCode: workplaceData.inviteCode,
+            }
             : null,
           subscription: subscription
             ? {
-                id: subscription._id,
-                tier: subscription.tier,
-                status: subscription.status,
-                endDate: subscription.endDate,
-              }
+              id: subscription._id,
+              tier: subscription.tier,
+              status: subscription.status,
+              endDate: subscription.endDate,
+            }
             : null,
           workplaceFlow,
         },

@@ -42,6 +42,11 @@ const patientSchema = new mongoose_1.Schema({
         required: true,
         index: true,
     },
+    locationId: {
+        type: String,
+        index: true,
+        sparse: true,
+    },
     mrn: {
         type: String,
         required: true,
@@ -177,6 +182,61 @@ const patientSchema = new mongoose_1.Schema({
         },
         recordedAt: Date,
     },
+    metadata: {
+        sharedAccess: {
+            patientId: {
+                type: mongoose_1.Schema.Types.ObjectId,
+                ref: 'Patient',
+            },
+            sharedWithLocations: [{
+                    type: String,
+                }],
+            sharedBy: {
+                type: mongoose_1.Schema.Types.ObjectId,
+                ref: 'User',
+            },
+            sharedAt: Date,
+            accessLevel: {
+                type: String,
+                enum: ['read', 'write', 'full'],
+                default: 'read',
+            },
+            expiresAt: Date,
+        },
+        transferWorkflow: {
+            transferId: String,
+            patientId: {
+                type: mongoose_1.Schema.Types.ObjectId,
+                ref: 'Patient',
+            },
+            fromLocationId: String,
+            toLocationId: String,
+            transferredBy: {
+                type: mongoose_1.Schema.Types.ObjectId,
+                ref: 'User',
+            },
+            transferReason: String,
+            status: {
+                type: String,
+                enum: ['pending', 'approved', 'completed'],
+                default: 'pending',
+            },
+            createdAt: Date,
+            completedAt: Date,
+            completedBy: {
+                type: mongoose_1.Schema.Types.ObjectId,
+                ref: 'User',
+            },
+            steps: [{
+                    step: String,
+                    completedAt: Date,
+                    completedBy: {
+                        type: mongoose_1.Schema.Types.ObjectId,
+                        ref: 'User',
+                    },
+                }],
+        },
+    },
     hasActiveDTP: {
         type: Boolean,
         default: false,
@@ -193,6 +253,8 @@ patientSchema.index({ workplaceId: 1, lastName: 1, firstName: 1 });
 patientSchema.index({ workplaceId: 1, isDeleted: 1 });
 patientSchema.index({ workplaceId: 1, phone: 1 }, { sparse: true });
 patientSchema.index({ workplaceId: 1, email: 1 }, { sparse: true });
+patientSchema.index({ workplaceId: 1, locationId: 1 }, { sparse: true });
+patientSchema.index({ workplaceId: 1, 'metadata.sharedAccess.sharedWithLocations': 1 }, { sparse: true });
 patientSchema.index({ hasActiveDTP: 1 });
 patientSchema.index({ createdAt: -1 });
 patientSchema.virtual('computedAge').get(function () {

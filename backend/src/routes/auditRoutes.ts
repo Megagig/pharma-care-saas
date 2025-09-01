@@ -1,35 +1,88 @@
 import express from 'express';
-import { auth } from '../middlewares/auth';
-import {
-    getAuditLogs,
-    getAuditSummary,
-    getComplianceReport,
-    getHighRiskActivities,
-    getSuspiciousActivities,
-    exportAuditData,
-    getUserActivity,
-    getPatientAccessLog,
-    getAuditActions,
-} from '../controllers/auditController';
+import { auditController } from '../controllers/auditController';
+import { authWithWorkspace } from '../middlewares/authWithWorkspace';
+import { requirePermission } from '../middlewares/rbac';
+import { generalRateLimiters } from '../middlewares/rateLimiting';
+import { auditMiddleware } from '../middlewares/auditLogging';
 
 const router = express.Router();
 
-// Apply authentication middleware to all routes
-router.use(auth);
+/**
+ * @route   GET /api/audit/logs
+ * @desc    Get audit logs with filtering and pagination
+ * @access  Private (Super Admin or Workspace Owner only)
+ */
+router.get(
+    '/logs',
+    generalRateLimiters.api,
+    authWithWorkspace,
+    requirePermission('audit.view'),
+    auditMiddleware({
+        action: 'AUDIT_LOGS_VIEWED',
+        category: 'security',
+        severity: 'medium',
+        resourceType: 'AuditLog',
+    }),
+    auditController.getAuditLogs.bind(auditController)
+);
 
-// Audit log routes
-router.get('/logs', getAuditLogs);
-router.get('/summary', getAuditSummary);
-router.get('/compliance-report', getComplianceReport);
-router.get('/high-risk-activities', getHighRiskActivities);
-router.get('/suspicious-activities', getSuspiciousActivities);
-router.post('/export', exportAuditData);
+/**
+ * @route   GET /api/audit/summary
+ * @desc    Get audit statistics and summary
+ * @access  Private (Super Admin or Workspace Owner only)
+ */
+router.get(
+    '/summary',
+    generalRateLimiters.api,
+    authWithWorkspace,
+    requirePermission('audit.view'),
+    auditMiddleware({
+        action: 'AUDIT_SUMMARY_VIEWED',
+        category: 'security',
+        severity: 'low',
+        resourceType: 'AuditSummary',
+    }),
+    auditController.getAuditSummary.bind(auditController)
+);
 
-// User and patient specific audit trails
-router.get('/user-activity/:userId', getUserActivity);
-router.get('/patient-access/:patientId', getPatientAccessLog);
+/**
+ * @route   GET /api/audit/security-alerts
+ * @desc    Get security alerts and suspicious activities
+ * @access  Private (Super Admin or Workspace Owner only)
+ */
+router.get(
+    '/security-alerts',
+    generalRateLimiters.api,
+    authWithWorkspace,
+    requirePermission('audit.security'),
+    auditMiddleware({
+        action: 'SECURITY_ALERTS_VIEWED',
+        category: 'security',
+        severity: 'medium',
+        resourceType: 'SecurityAlert',
+    }),
+    auditController.getSecurityAlerts.bind(auditController)
+);
 
-// Utility routes
-router.get('/actions', getAuditActions);
+/**
+ * @route   GET /api/audit/export
+ * @desc    Export audit logs in various formats
+ * @access  Private (Super Admin or Workspace Owner only)
+ */
+router.get(
+    '/export',
+    generalRateLimiters.sensitive,
+    authWithWorkspace,
+    requirePermission('audit.export'),
+    auditMiddleware({
+        action: 'AUDIT_LOGS_EXPORTED',
+        category: 'security',
+        severity: 'high',
+        resourceType: 'AuditExport',
+        includeRequestBody: false,
+        includeResponseBody: false, // Don't log the actual export data
+    }),
+    auditController.exportAuditLogs.bind(auditController)
+);
 
 export default router;

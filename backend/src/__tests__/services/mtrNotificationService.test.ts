@@ -49,7 +49,7 @@ describe('MTRNotificationService', () => {
                     firstName: 'John',
                     lastName: 'Doe',
                     email: 'john.doe@test.com',
-                    phone: '+1234567890',
+                    phone: '+2348012345678',
                     notificationPreferences: {
                         followUpReminders: true,
                         email: true,
@@ -168,7 +168,7 @@ describe('MTRNotificationService', () => {
                     firstName: 'John',
                     lastName: 'Pharmacist',
                     email: 'john@pharmacy.com',
-                    phone: '+1234567890',
+                    phone: '+2348012345679',
                     notificationPreferences: {
                         criticalAlerts: true,
                         email: true,

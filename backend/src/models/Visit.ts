@@ -20,6 +20,7 @@ export interface ISOAPNotes {
 export interface IVisit extends Document {
   _id: mongoose.Types.ObjectId;
   workplaceId: mongoose.Types.ObjectId;
+  locationId?: string; // Location ID within the workplace for multi-location support
   patientId: mongoose.Types.ObjectId;
   date: Date;
   soap: ISOAPNotes;
@@ -112,6 +113,11 @@ const visitSchema = new Schema(
       required: true,
       index: true,
     },
+    locationId: {
+      type: String,
+      index: true,
+      sparse: true, // Allow null values and don't index them
+    },
     patientId: {
       type: Schema.Types.ObjectId,
       ref: 'Patient',
@@ -179,6 +185,7 @@ visitSchema.plugin(tenancyGuardPlugin, { pharmacyIdField: 'workplaceId' });
 visitSchema.index({ workplaceId: 1, patientId: 1, date: -1 });
 visitSchema.index({ workplaceId: 1, date: -1 });
 visitSchema.index({ workplaceId: 1, isDeleted: 1 });
+visitSchema.index({ workplaceId: 1, locationId: 1 }, { sparse: true });
 visitSchema.index({ createdAt: -1 });
 
 // Virtual to populate patient details
@@ -281,8 +288,7 @@ visitSchema.pre('save', function (this: IVisit) {
         const maxSize = maxSizes[attachment.kind] || maxSizes['other'];
         if (attachment.fileSize > maxSize) {
           throw new Error(
-            `Attachment ${index + 1} exceeds maximum size for ${
-              attachment.kind
+            `Attachment ${index + 1} exceeds maximum size for ${attachment.kind
             } files`
           );
         }
