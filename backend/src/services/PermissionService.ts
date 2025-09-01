@@ -63,6 +63,18 @@ class PermissionService {
                 return statusCheck;
             }
 
+            // Check system roles first (user-level permissions)
+            const systemRoleCheck = this.checkSystemRoles(user, permission);
+            if (!systemRoleCheck.allowed) {
+                return systemRoleCheck;
+            }
+
+            // Check workplace roles (workspace-level permissions)
+            const workplaceRoleCheck = this.checkWorkplaceRoles(user, permission);
+            if (!workplaceRoleCheck.allowed) {
+                return workplaceRoleCheck;
+            }
+
             // Check subscription requirements
             const subscriptionCheck = this.checkSubscriptionRequirements(
                 context,
@@ -82,18 +94,6 @@ class PermissionService {
             const tierCheck = this.checkPlanTiers(context, permission);
             if (!tierCheck.allowed) {
                 return tierCheck;
-            }
-
-            // Check system roles
-            const systemRoleCheck = this.checkSystemRoles(user, permission);
-            if (!systemRoleCheck.allowed) {
-                return systemRoleCheck;
-            }
-
-            // Check workplace roles
-            const workplaceRoleCheck = this.checkWorkplaceRoles(user, permission);
-            if (!workplaceRoleCheck.allowed) {
-                return workplaceRoleCheck;
             }
 
             return { allowed: true };

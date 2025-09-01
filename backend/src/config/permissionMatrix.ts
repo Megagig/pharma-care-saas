@@ -31,6 +31,11 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
         requiresActiveSubscription: false,
         allowTrialAccess: true,
     },
+    'invitation.view': {
+        workplaceRoles: ['Owner'],
+        requiresActiveSubscription: false,
+        allowTrialAccess: true,
+    },
 
     // ========================================
     // PATIENT MANAGEMENT

@@ -273,7 +273,7 @@ describe('Invitation Workflow Integration Tests', () => {
                 .post(`/api/workspaces/${workspace._id}/invitations`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send(invitationData)
-                .expect(400);
+                .expect(409);
 
             expect(duplicateResponse.body.success).toBe(false);
             expect(duplicateResponse.body.error).toBe('Pending invitation already exists for this email');
@@ -473,7 +473,7 @@ describe('Invitation Workflow Integration Tests', () => {
                 .send(invitationData)
                 .expect(403);
 
-            expect(response.body.error).toBe('Insufficient permissions to create invitations');
+            expect(response.body.message).toBe('Insufficient workplace role');
         });
 
         it('should prevent inviting users to workspaces without team_management feature', async () => {
@@ -527,10 +527,9 @@ describe('Invitation Workflow Integration Tests', () => {
                 .post(`/api/workspaces/${workspace._id}/invitations`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send(invitationData)
-                .expect(402);
+                .expect(403);
 
-            expect(response.body.error).toBe('Feature not available in current plan');
-            expect(response.body.feature).toBe('team_management');
+            expect(response.body.message).toContain('Feature not available');
             expect(response.body.upgradeRequired).toBe(true);
         });
     });

@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Invitation, { IInvitation } from '../models/Invitation';
 import Workplace from '../models/Workplace';
 import User from '../models/User';
+import SubscriptionPlan from '../models/SubscriptionPlan';
 import { AuthRequest } from '../types/auth';
 import { emailService } from '../utils/emailService';
 import { invitationCronService } from '../services/InvitationCronService';
@@ -142,12 +143,54 @@ export const createInvitation = async (
             res.status(409).json({
                 success: false,
                 message: 'An active invitation already exists for this email',
+                error: 'Pending invitation already exists for this email',
                 data: {
                     invitationId: existingInvitation._id,
                     expiresAt: existingInvitation.expiresAt,
                 },
             });
             return;
+        }
+
+        // Check if team management feature is available
+        if (workspace.currentSubscriptionId) {
+            const subscriptionPlan = await SubscriptionPlan.findById(workspace.currentSubscriptionId);
+            if (subscriptionPlan) {
+                // Check if teamManagement feature is available
+                if (!subscriptionPlan.features.teamManagement) {
+                    res.status(403).json({
+                        success: false,
+                        message: 'Feature not available in your current plan',
+                        error: 'Team management feature not available',
+                        upgradeRequired: true
+                    });
+                    return;
+                }
+
+                // Check team size limit
+                if (subscriptionPlan.features.teamSize) {
+                    const currentTeamSize = workspace.teamMembers.length;
+                    const pendingInvitationsCount = await Invitation.countDocuments({
+                        workspaceId: workspaceId,
+                        status: 'active'
+                    });
+
+                    // Total potential team size = current members + pending invitations + this new invitation
+                    const totalPotentialSize = currentTeamSize + pendingInvitationsCount + 1;
+
+                    if (totalPotentialSize > subscriptionPlan.features.teamSize) {
+                        res.status(403).json({
+                            success: false,
+                            message: 'User limit exceeded for current plan',
+                            error: 'User limit exceeded for current plan',
+                            currentTeamSize,
+                            maxTeamSize: subscriptionPlan.features.teamSize,
+                            upgradeRequired: true
+                        });
+                        return;
+                    }
+                }
+            }
         }
 
         // Create invitation
@@ -277,21 +320,17 @@ export const getWorkspaceInvitations = async (
 
         res.json({
             success: true,
-            data: {
-                invitations,
-                pagination: {
-                    page: pageNum,
-                    limit: limitNum,
-                    total,
-                    pages: Math.ceil(total / limitNum),
-                },
-                stats: {
-                    active: statusCounts.active || 0,
-                    expired: statusCounts.expired || 0,
-                    used: statusCounts.used || 0,
-                    canceled: statusCounts.canceled || 0,
-                    total: Object.values(statusCounts).reduce((sum: number, count: unknown) => sum + (count as number), 0),
-                },
+            invitations,
+            total,
+            page: pageNum,
+            totalPages: Math.ceil(total / limitNum),
+            limit: limitNum,
+            stats: {
+                active: statusCounts.active || 0,
+                expired: statusCounts.expired || 0,
+                used: statusCounts.used || 0,
+                canceled: statusCounts.canceled || 0,
+                total: Object.values(statusCounts).reduce((sum: number, count: unknown) => sum + (count as number), 0),
             },
         });
     } catch (error) {
@@ -629,6 +668,7 @@ export const validateInvitation = async (
 
         res.json({
             success: true,
+            valid: canBeUsed,
             data: {
                 invitation: {
                     id: invitation._id,
@@ -882,51 +922,70 @@ export const getInvitationAnalytics = async (
 };
 
 /**
- * Get invitation statistics
- * GET /api/invitations/stats
+ * Get invitation statistics for a workspace
+ * GET /api/workspaces/:id/invitations/stats
  */
 export const getInvitationStats = async (
     req: AuthRequest,
     res: Response
 ): Promise<void> => {
     try {
-        const { workspaceId } = req.query;
+        const { id: workspaceId } = req.params;
         const userId = req.user!._id;
 
-        // If workspaceId is provided, verify permissions
-        if (workspaceId) {
-            if (!mongoose.Types.ObjectId.isValid(workspaceId as string)) {
-                res.status(400).json({
-                    success: false,
-                    message: 'Invalid workspace ID',
-                });
-                return;
-            }
-
-            const workspace = await Workplace.findById(workspaceId);
-            if (!workspace) {
-                res.status(404).json({
-                    success: false,
-                    message: 'Workspace not found',
-                });
-                return;
-            }
-
-            // Check if user has permission to view stats
-            if (workspace.ownerId.toString() !== userId.toString()) {
-                res.status(403).json({
-                    success: false,
-                    message: 'Only workspace owners can view invitation statistics',
-                });
-                return;
-            }
+        // Validate workspace ID
+        if (!workspaceId || !mongoose.Types.ObjectId.isValid(workspaceId)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid workspace ID',
+            });
+            return;
         }
 
-        const stats = await invitationCronService.getInvitationStats(workspaceId as string);
+        // Find workspace and verify permissions
+        const workspace = await Workplace.findById(workspaceId);
+        if (!workspace) {
+            res.status(404).json({
+                success: false,
+                message: 'Workspace not found',
+            });
+            return;
+        }
+
+        // Check if user has permission to view stats (must be workspace owner)
+        if (workspace.ownerId.toString() !== userId.toString()) {
+            res.status(403).json({
+                success: false,
+                message: 'Only workspace owners can view invitation statistics',
+            });
+            return;
+        }
+
+        // Get invitation statistics
+        const stats = await Invitation.aggregate([
+            { $match: { workspaceId: new mongoose.Types.ObjectId(workspaceId) } },
+            {
+                $group: {
+                    _id: '$status',
+                    count: { $sum: 1 },
+                },
+            },
+        ]);
+
+        const statusCounts = stats.reduce((acc, stat) => {
+            acc[stat._id] = stat.count;
+            return acc;
+        }, {} as Record<string, number>);
 
         res.json({
             success: true,
-            data: stats,
+            data: {
+                active: statusCounts.active || 0,
+                expired: statusCounts.expired || 0,
+                used: statusCounts.used || 0,
+                canceled: statusCounts.canceled || 0,
+                total: Object.values(statusCounts).reduce((sum: number, count: unknown) => sum + (count as number), 0),
+            },
         });
     } catch (error) {
         console.error('Error fetching invitation stats:', error);
@@ -978,11 +1037,39 @@ export const checkInvitationLimits = async (
             return;
         }
 
-        const limits = await invitationCronService.validateInvitationLimits(workspaceId);
+        // Get current invitation counts
+        const pendingCount = await Invitation.countDocuments({
+            workspaceId: new mongoose.Types.ObjectId(workspaceId),
+            status: 'active'
+        });
+
+        // Get limits from workspace settings and subscription plan
+        const maxPendingInvites = workspace.settings?.maxPendingInvites || 20;
+        let teamSizeLimit = null;
+
+        if (workspace.currentSubscriptionId) {
+            const subscriptionPlan = await SubscriptionPlan.findById(workspace.currentSubscriptionId);
+            if (subscriptionPlan && subscriptionPlan.features.teamSize) {
+                teamSizeLimit = subscriptionPlan.features.teamSize;
+            }
+        }
+
+        const currentTeamSize = workspace.teamMembers.length;
 
         res.json({
             success: true,
-            data: limits,
+            data: {
+                pendingInvitations: {
+                    current: pendingCount,
+                    limit: maxPendingInvites,
+                    remaining: Math.max(0, maxPendingInvites - pendingCount),
+                },
+                teamSize: {
+                    current: currentTeamSize,
+                    limit: teamSizeLimit,
+                    remaining: teamSizeLimit ? Math.max(0, teamSizeLimit - currentTeamSize) : null,
+                },
+            },
         });
     } catch (error) {
         console.error('Error checking invitation limits:', error);
