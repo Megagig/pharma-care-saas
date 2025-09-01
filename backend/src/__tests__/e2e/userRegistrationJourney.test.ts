@@ -1,9 +1,9 @@
 import request from 'supertest';
 import app from '../../app';
-import { User } from '../../models/User';
-import { Workplace } from '../../models/Workplace';
-import { Subscription } from '../../models/Subscription';
-import { SubscriptionPlan } from '../../models/SubscriptionPlan';
+import User, { IUser } from '../../models/User';
+import Workplace, { IWorkplace } from '../../models/Workplace';
+import Subscription, { ISubscription } from '../../models/Subscription';
+import SubscriptionPlan, { ISubscriptionPlan } from '../../models/SubscriptionPlan';
 import { emailService } from '../../utils/emailService';
 
 // Mock email service
@@ -17,47 +17,80 @@ describe('User Registration Journey E2E Tests', () => {
     beforeEach(async () => {
         // Create subscription plans
         trialPlan = await SubscriptionPlan.create({
-            name: 'Trial Plan',
-            code: 'trial',
-            tier: 'trial',
-            tierRank: 0,
+            name: 'Free Trial',
+            tier: 'free_trial',
             priceNGN: 0,
             billingInterval: 'monthly',
-            features: ['patient_management', 'basic_reports'],
-            limits: {
-                patients: 10,
-                users: 1,
-                locations: 1,
-                storage: 100,
-                apiCalls: 100
-            },
+            trialDuration: 14,
             description: '14-day free trial',
             isActive: true,
-            isTrial: true
+            features: {
+                patientLimit: null,
+                reminderSmsMonthlyLimit: null,
+                reportsExport: true,
+                careNoteExport: true,
+                adrModule: true,
+                multiUserSupport: false,
+                teamSize: 1,
+                apiAccess: true,
+                auditLogs: true,
+                dataBackup: true,
+                clinicalNotesLimit: null,
+                prioritySupport: false,
+                emailReminders: true,
+                smsReminders: false,
+                advancedReports: true,
+                drugTherapyManagement: true,
+                teamManagement: false,
+                dedicatedSupport: false,
+                adrReporting: true,
+                drugInteractionChecker: true,
+                doseCalculator: true,
+                multiLocationDashboard: false,
+                sharedPatientRecords: false,
+                groupAnalytics: false,
+                cdss: true
+            }
         });
 
         basicPlan = await SubscriptionPlan.create({
             name: 'Basic Plan',
-            code: 'basic',
             tier: 'basic',
-            tierRank: 1,
             priceNGN: 15000,
             billingInterval: 'monthly',
-            features: ['patient_management', 'basic_reports', 'team_management'],
-            limits: {
-                patients: 100,
-                users: 3,
-                locations: 1,
-                storage: 1000,
-                apiCalls: 1000
-            },
             description: 'Basic plan for small pharmacies',
-            isActive: true
+            isActive: true,
+            features: {
+                patientLimit: 100,
+                reminderSmsMonthlyLimit: 50,
+                reportsExport: true,
+                careNoteExport: true,
+                adrModule: false,
+                multiUserSupport: true,
+                teamSize: 3,
+                apiAccess: false,
+                auditLogs: false,
+                dataBackup: true,
+                clinicalNotesLimit: null,
+                prioritySupport: false,
+                emailReminders: true,
+                smsReminders: true,
+                advancedReports: false,
+                drugTherapyManagement: true,
+                teamManagement: true,
+                dedicatedSupport: false,
+                adrReporting: false,
+                drugInteractionChecker: true,
+                doseCalculator: true,
+                multiLocationDashboard: false,
+                sharedPatientRecords: false,
+                groupAnalytics: false,
+                cdss: false
+            }
         });
 
         // Mock email service
-        mockEmailService.sendWelcomeEmail.mockResolvedValue(true);
-        mockEmailService.sendTrialStartedEmail.mockResolvedValue(true);
+        mockEmailService.sendTrialActivation.mockResolvedValue({ success: true, messageId: 'test-message-id' });
     });
 
     describe('New User Registration with Workspace Creation', () => {
@@ -68,17 +101,27 @@ describe('User Registration Journey E2E Tests', () => {
                 email: 'john.doe@newpharmacy.com',
                 password: 'SecurePassword123!',
                 licenseNumber: 'PCN123456',
-                workplaceName: 'Doe Family Pharmacy',
-                workplaceType: 'pharmacy',
-                workplaceAddress: '123 Main Street, Lagos, Nigeria',
-                workplacePhone: '+234-800-123-4567'
+                workplaceFlow: 'create',
+                workplace: {
+                    name: 'Doe Family Pharmacy',
+                    type: 'pharmacy',
+                    licenseNumber: 'PH123456',
+                    email: 'info@doepharmacy.com',
+                    address: '123 Main Street, Lagos, Nigeria',
+                    phone: '+234-800-123-4567'
+                }
             };
 
             // Step 1: User registration
             const registrationResponse = await request(app)
-                .post('/api/auth/register')
-                .send(registrationData)
-                .expect(201);
+                .post('/api/auth/register-with-workplace')
+                .send(registrationData);
+
+            if (registrationResponse.status !== 201) {
+                console.log('Registration failed:', registrationResponse.status, registrationResponse.body);
+            }
+
+            expect(registrationResponse.status).toBe(201);
 
             expect(registrationResponse.body.success).toBe(true);
             expect(registrationResponse.body.user).toMatchObject({
@@ -97,43 +140,42 @@ describe('User Registration Journey E2E Tests', () => {
             // Step 2: Verify workspace was created
             const workspace = await Workplace.findById(workspaceId);
             expect(workspace).toBeTruthy();
-            expect(workspace!.name).toBe(registrationData.workplaceName);
-            expect(workspace!.type).toBe(registrationData.workplaceType);
-            expect(workspace!.address).toBe(registrationData.workplaceAddress);
-            expect(workspace!.phone).toBe(registrationData.workplacePhone);
+            expect(workspace!.name).toBe(registrationData.workplace.name);
+            expect(workspace!.type).toBe(registrationData.workplace.type);
+            expect(workspace!.address).toBe(registrationData.workplace.address);
             expect(workspace!.ownerId.toString()).toBe(userId);
-            expect(workspace!.teamMembers.map(id => id.toString())).toContain(userId);
+            expect(workspace!.teamMembers.map((id: any) => id.toString())).toContain(userId);
 
             // Step 3: Verify trial subscription was created
-            expect(workspace!.subscriptionId).toBeTruthy();
-            const subscription = await Subscription.findById(workspace!.subscriptionId).populate('planId');
+            expect(workspace!.currentSubscriptionId).toBeTruthy();
+            const subscription = await Subscription.findById(workspace!.currentSubscriptionId).populate('planId');
             expect(subscription).toBeTruthy();
             expect(subscription!.status).toBe('active');
             expect(subscription!.isTrial).toBe(true);
-            expect(subscription!.trialEndsAt).toBeTruthy();
-            expect((subscription!.planId as any).code).toBe('trial');
+            expect(subscription!.trialEndDate).toBeTruthy();
+            expect((subscription!.planId as any).tier).toBe('trial');
 
             // Verify trial period is 14 days
             const trialDays = Math.ceil(
-                (subscription!.trialEndsAt!.getTime() - subscription!.startDate.getTime()) / (1000 * 60 * 60 * 24)
+                (subscription!.trialEndDate!.getTime() - subscription!.startDate.getTime()) / (1000 * 60 * 60 * 24)
             );
             expect(trialDays).toBe(14);
 
             // Step 4: Verify welcome emails were sent
-            expect(mockEmailService.sendWelcomeEmail).toHaveBeenCalledWith(
+            expect(mockEmailService.sendTrialActivation).toHaveBeenCalledWith(
                 registrationData.email,
                 expect.objectContaining({
                     firstName: registrationData.firstName,
-                    workspaceName: registrationData.workplaceName,
+                    workspaceName: registrationData.workplace.name,
                     trialEndsAt: expect.any(String),
                     dashboardUrl: expect.any(String)
                 })
             );
 
-            expect(mockEmailService.sendTrialStartedEmail).toHaveBeenCalledWith(
+            expect(mockEmailService.sendTrialActivation).toHaveBeenCalledWith(
                 registrationData.email,
                 expect.objectContaining({
-                    workspaceName: registrationData.workplaceName,
+                    workspaceName: registrationData.workplace.name,
                     trialDuration: 14,
                     trialEndsAt: expect.any(String),
                     planFeatures: expect.arrayContaining(['patient_management', 'basic_reports']),
@@ -148,8 +190,8 @@ describe('User Registration Journey E2E Tests', () => {
                 .expect(200);
 
             expect(dashboardResponse.body.workspace).toMatchObject({
-                name: registrationData.workplaceName,
-                type: registrationData.workplaceType
+                name: registrationData.workplace.name,
+                type: registrationData.workplace.type
             });
 
             expect(dashboardResponse.body.subscription).toMatchObject({
@@ -216,7 +258,7 @@ describe('User Registration Journey E2E Tests', () => {
 
             // Create first user
             await request(app)
-                .post('/api/auth/register')
+                .post('/api/auth/register-with-workplace')
                 .send(registrationData)
                 .expect(201);
 
@@ -228,7 +270,7 @@ describe('User Registration Journey E2E Tests', () => {
             };
 
             const duplicateResponse = await request(app)
-                .post('/api/auth/register')
+                .post('/api/auth/register-with-workplace')
                 .send(duplicateData)
                 .expect(400);
 
@@ -249,7 +291,7 @@ describe('User Registration Journey E2E Tests', () => {
             };
 
             const response = await request(app)
-                .post('/api/auth/register')
+                .post('/api/auth/register-with-workplace')
                 .send(incompleteData)
                 .expect(400);
 
@@ -277,7 +319,7 @@ describe('User Registration Journey E2E Tests', () => {
             };
 
             const response = await request(app)
-                .post('/api/auth/register')
+                .post('/api/auth/register-with-workplace')
                 .send(registrationData)
                 .expect(500);
 
@@ -311,7 +353,7 @@ describe('User Registration Journey E2E Tests', () => {
             };
 
             const response = await request(app)
-                .post('/api/auth/register')
+                .post('/api/auth/register-with-workplace')
                 .send(hospitalData)
                 .expect(201);
 
@@ -326,7 +368,7 @@ describe('User Registration Journey E2E Tests', () => {
             expect(workspace!.type).toBe('hospital');
 
             // Hospitals might get different default trial limits
-            const subscription = workspace!.subscriptionId as any;
+            const subscription = workspace!.currentSubscriptionId as any;
             expect(subscription.planId.code).toBe('trial');
             expect(subscription.isTrial).toBe(true);
         });
@@ -345,7 +387,7 @@ describe('User Registration Journey E2E Tests', () => {
             };
 
             const response = await request(app)
-                .post('/api/auth/register')
+                .post('/api/auth/register-with-workplace')
                 .send(clinicData)
                 .expect(201);
 
@@ -378,7 +420,7 @@ describe('User Registration Journey E2E Tests', () => {
             };
 
             const response = await request(app)
-                .post('/api/auth/register')
+                .post('/api/auth/register-with-workplace')
                 .send(registrationData)
                 .expect(201);
 

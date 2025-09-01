@@ -22,6 +22,7 @@ export interface IWorkplace extends Document {
     type: 'Community' | 'Hospital' | 'Academia' | 'Industry' | 'Regulatory Body' | 'Other';
     licenseNumber: string;
     email: string;
+    phone?: string;
     address?: string;
     state?: string;
     lga?: string;
@@ -36,6 +37,7 @@ export interface IWorkplace extends Document {
     inviteCode: string;
     teamMembers: mongoose.Types.ObjectId[];
     currentSubscriptionId?: mongoose.Types.ObjectId;
+    subscriptionId?: mongoose.Types.ObjectId;
     currentPlanId?: mongoose.Types.ObjectId;
     subscriptionStatus: 'trial' | 'active' | 'past_due' | 'expired' | 'canceled';
     trialStartDate?: Date;

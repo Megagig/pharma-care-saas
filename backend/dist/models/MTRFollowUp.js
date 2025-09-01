@@ -305,7 +305,7 @@ mtrFollowUpSchema.pre('save', function () {
     if (this.isModified('status') && this.status !== 'completed') {
         this.completedAt = undefined;
     }
-    if (this.status === 'completed' && !this.outcome) {
+    if (this.status === 'completed' && (!this.outcome || !this.outcome.status)) {
         throw new Error('Outcome is required when follow-up is completed');
     }
     if (this.isNew && this.status === 'scheduled' && this.reminders.length === 0) {

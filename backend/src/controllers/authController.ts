@@ -705,7 +705,8 @@ export const registerWithWorkplace = async (
   const session = await mongoose.startSession();
 
   try {
-    await session.withTransaction(async () => {
+    // Try to use transactions, but fall back to non-transactional for test environments
+    const executeRegistration = async () => {
       const {
         // User info
         firstName,
@@ -835,7 +836,7 @@ export const registerWithWorkplace = async (
         const subscriptionArray = await Subscription.create(
           [
             {
-              userId: createdUser._id,
+              workspaceId: workplaceData._id,
               planId: freeTrialPlan._id,
               tier: 'free_trial',
               status: 'trial',
@@ -884,58 +885,30 @@ export const registerWithWorkplace = async (
           workplaceRole: workplaceRole || 'Staff',
         });
 
-        // Find the workplace owner's subscription to inherit
-        const owner = await User.findById(workplaceData.ownerId).populate(
-          'currentSubscriptionId'
-        );
+        // Find the workplace's subscription to inherit
+        const workplaceSubscription = await Subscription.findOne({
+          workspaceId: workplaceData._id,
+          status: { $in: ['active', 'trial', 'grace_period'] }
+        });
 
-        if (owner?.currentSubscriptionId) {
-          // Update user to reference the same subscription as workplace owner
+        if (workplaceSubscription) {
+          // Update user to reference the workplace subscription
           await User.findByIdAndUpdate(
             createdUser!._id,
             {
-              currentSubscriptionId: owner.currentSubscriptionId,
-              subscriptionTier: owner.subscriptionTier,
+              currentSubscriptionId: workplaceSubscription._id,
+              subscriptionTier: workplaceSubscription.tier,
             },
             { session }
           );
         }
       } else if (workplaceFlow === 'skip') {
-        // Independent user - still gets free trial but no workplace
-        // Create trial subscription for independent user
-        const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + 14);
+        // Independent user - no workplace, no subscription
+        // They get access to basic features only (Knowledge Hub, CPD, Forum)
+        // No subscription needed for these features
 
-        const subscriptionArray = await Subscription.create(
-          [
-            {
-              userId: createdUser._id,
-              planId: freeTrialPlan._id,
-              tier: 'free_trial',
-              status: 'trial',
-              startDate: new Date(),
-              endDate: trialEndDate,
-              priceAtPurchase: 0,
-              autoRenew: false,
-            },
-          ],
-          { session }
-        );
-
-        subscription = subscriptionArray[0];
-
-        if (!subscription) {
-          throw new Error('Failed to create subscription');
-        }
-
-        // Update user with subscription
-        await User.findByIdAndUpdate(
-          createdUser!._id,
-          {
-            currentSubscriptionId: subscription!._id,
-          },
-          { session }
-        );
+        // User remains with workplaceId: null and no subscription
+        // They can create or join a workplace later from their dashboard
       }
 
       // Generate verification token and code
@@ -1050,7 +1023,20 @@ export const registerWithWorkplace = async (
           workplaceFlow,
         },
       });
-    });
+    };
+
+    // Try to use transactions, but fall back to non-transactional for test environments
+    try {
+      await session.withTransaction(executeRegistration);
+    } catch (transactionError: any) {
+      // If transaction fails (e.g., in test environment), try without transaction
+      if (transactionError.code === 20 || transactionError.codeName === 'IllegalOperation') {
+        console.warn('Transactions not supported, falling back to non-transactional execution');
+        await executeRegistration();
+      } else {
+        throw transactionError;
+      }
+    }
   } catch (error: any) {
     console.error('Registration error:', error);
     res.status(400).json({ message: error.message });

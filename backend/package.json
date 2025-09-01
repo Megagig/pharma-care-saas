@@ -16,8 +16,10 @@
     "drop-indexes": "ts-node scripts/dropOldIndexes.ts",
     "clean-db": "ts-node scripts/cleanDatabase.ts",
     "migrate:workspace": "ts-node src/scripts/migrateToWorkspaceSubscriptions.ts",
+    "migrate:workspace-subscriptions": "ts-node src/scripts/migrateToWorkspaceSubscriptions.ts",
     "migrate:enhanced": "ts-node src/scripts/enhancedMigration.ts",
-    "migrate:cli": "ts-node src/scripts/migrationCLI.ts"
+    "migrate:cli": "ts-node src/scripts/migrationCLI.ts",
+    "validate:migration-integrity": "ts-node src/scripts/validateMigrationIntegrity.ts"
   },
   "keywords": [
     "pharmacy",

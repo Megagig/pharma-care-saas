@@ -25,6 +25,11 @@ exports.PERMISSION_MATRIX = {
         requiresActiveSubscription: false,
         allowTrialAccess: true,
     },
+    'invitation.view': {
+        workplaceRoles: ['Owner'],
+        requiresActiveSubscription: false,
+        allowTrialAccess: true,
+    },
     'patient.create': {
         workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
         features: ['patientLimit'],

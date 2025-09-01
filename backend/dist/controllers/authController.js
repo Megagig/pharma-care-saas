@@ -544,7 +544,7 @@ exports.updateProfile = updateProfile;
 const registerWithWorkplace = async (req, res) => {
     const session = await mongoose_1.default.startSession();
     try {
-        await session.withTransaction(async () => {
+        const executeRegistration = async () => {
             const { firstName, lastName, email, password, phone, role = 'pharmacist', licenseNumber, workplaceFlow, workplace, inviteCode, workplaceId, workplaceRole, } = req.body;
             if (!firstName || !lastName || !email || !password || !workplaceFlow) {
                 res.status(400).json({
@@ -792,7 +792,19 @@ const registerWithWorkplace = async (req, res) => {
                     workplaceFlow,
                 },
             });
-        });
+        };
+        try {
+            await session.withTransaction(executeRegistration);
+        }
+        catch (transactionError) {
+            if (transactionError.code === 20 || transactionError.codeName === 'IllegalOperation') {
+                console.warn('Transactions not supported, falling back to non-transactional execution');
+                await executeRegistration();
+            }
+            else {
+                throw transactionError;
+            }
+        }
     }
     catch (error) {
         console.error('Registration error:', error);

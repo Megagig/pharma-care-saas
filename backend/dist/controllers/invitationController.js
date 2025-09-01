@@ -3,11 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkInvitationLimits = exports.getInvitationStats = exports.getInvitationAnalytics = exports.validateInvitation = exports.acceptInvitation = exports.cancelInvitation = exports.getWorkspaceInvitations = exports.createInvitation = void 0;
+exports.checkInvitationLimits = exports.getInvitationStats = exports.getInvitationAnalytics = exports.acceptInvitationPublic = exports.validateInvitation = exports.acceptInvitation = exports.cancelInvitation = exports.getWorkspaceInvitations = exports.createInvitation = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const Invitation_1 = __importDefault(require("../models/Invitation"));
 const Workplace_1 = __importDefault(require("../models/Workplace"));
 const User_1 = __importDefault(require("../models/User"));
+const SubscriptionPlan_1 = __importDefault(require("../models/SubscriptionPlan"));
 const emailService_1 = require("../utils/emailService");
 const InvitationCronService_1 = require("../services/InvitationCronService");
 const auditLogging_1 = require("../middlewares/auditLogging");
@@ -103,12 +104,46 @@ const createInvitation = async (req, res) => {
             res.status(409).json({
                 success: false,
                 message: 'An active invitation already exists for this email',
+                error: 'Pending invitation already exists for this email',
                 data: {
                     invitationId: existingInvitation._id,
                     expiresAt: existingInvitation.expiresAt,
                 },
             });
             return;
+        }
+        if (workspace.currentSubscriptionId) {
+            const subscriptionPlan = await SubscriptionPlan_1.default.findById(workspace.currentSubscriptionId);
+            if (subscriptionPlan) {
+                if (!subscriptionPlan.features.teamManagement) {
+                    res.status(403).json({
+                        success: false,
+                        message: 'Feature not available in your current plan',
+                        error: 'Team management feature not available',
+                        upgradeRequired: true
+                    });
+                    return;
+                }
+                if (subscriptionPlan.features.teamSize) {
+                    const currentTeamSize = workspace.teamMembers.length;
+                    const pendingInvitationsCount = await Invitation_1.default.countDocuments({
+                        workspaceId: workspaceId,
+                        status: 'active'
+                    });
+                    const totalPotentialSize = currentTeamSize + pendingInvitationsCount + 1;
+                    if (totalPotentialSize > subscriptionPlan.features.teamSize) {
+                        res.status(403).json({
+                            success: false,
+                            message: 'User limit exceeded for current plan',
+                            error: 'User limit exceeded for current plan',
+                            currentTeamSize,
+                            maxTeamSize: subscriptionPlan.features.teamSize,
+                            upgradeRequired: true
+                        });
+                        return;
+                    }
+                }
+            }
         }
         const invitation = new Invitation_1.default({
             email: email.toLowerCase(),
@@ -208,21 +243,17 @@ const getWorkspaceInvitations = async (req, res) => {
         }, {});
         res.json({
             success: true,
-            data: {
-                invitations,
-                pagination: {
-                    page: pageNum,
-                    limit: limitNum,
-                    total,
-                    pages: Math.ceil(total / limitNum),
-                },
-                stats: {
-                    active: statusCounts.active || 0,
-                    expired: statusCounts.expired || 0,
-                    used: statusCounts.used || 0,
-                    canceled: statusCounts.canceled || 0,
-                    total: Object.values(statusCounts).reduce((sum, count) => sum + count, 0),
-                },
+            invitations,
+            total,
+            page: pageNum,
+            totalPages: Math.ceil(total / limitNum),
+            limit: limitNum,
+            stats: {
+                active: statusCounts.active || 0,
+                expired: statusCounts.expired || 0,
+                used: statusCounts.used || 0,
+                canceled: statusCounts.canceled || 0,
+                total: Object.values(statusCounts).reduce((sum, count) => sum + count, 0),
             },
         });
     }
@@ -474,6 +505,7 @@ const validateInvitation = async (req, res) => {
         const inviterData = invitation.invitedBy;
         res.json({
             success: true,
+            valid: canBeUsed,
             data: {
                 invitation: {
                     id: invitation._id,
@@ -506,6 +538,135 @@ const validateInvitation = async (req, res) => {
     }
 };
 exports.validateInvitation = validateInvitation;
+const acceptInvitationPublic = async (req, res) => {
+    try {
+        const { code, userData } = req.body;
+        if (!code || !userData) {
+            res.status(400).json({
+                success: false,
+                error: 'Invitation code and user data are required',
+            });
+            return;
+        }
+        const { firstName, lastName, password, licenseNumber } = userData;
+        if (!firstName || !lastName || !password) {
+            res.status(400).json({
+                success: false,
+                error: 'First name, last name, and password are required',
+            });
+            return;
+        }
+        if (code.length !== 8) {
+            res.status(400).json({
+                success: false,
+                error: 'Invalid invitation code format',
+            });
+            return;
+        }
+        const invitation = await Invitation_1.default.findOne({ code: code.toUpperCase() })
+            .populate('workspaceId')
+            .populate('invitedBy', 'firstName lastName email');
+        if (!invitation) {
+            res.status(404).json({
+                success: false,
+                error: 'Invitation not found',
+            });
+            return;
+        }
+        const isExpired = invitation.expiresAt < new Date();
+        if (invitation.status !== 'active' || isExpired) {
+            const reason = isExpired ? 'expired' : invitation.status;
+            res.status(400).json({
+                success: false,
+                error: `Invitation has ${reason}`,
+            });
+            return;
+        }
+        const workspace = invitation.workspaceId;
+        if (!workspace) {
+            res.status(404).json({
+                success: false,
+                error: 'Workspace not found',
+            });
+            return;
+        }
+        const existingUser = await User_1.default.findOne({ email: invitation.email });
+        if (existingUser) {
+            res.status(409).json({
+                success: false,
+                error: 'User with this email already exists',
+            });
+            return;
+        }
+        try {
+            const newUser = await User_1.default.create({
+                firstName,
+                lastName,
+                email: invitation.email,
+                passwordHash: password,
+                role: 'pharmacist',
+                workplaceRole: invitation.role,
+                workplaceId: workspace._id,
+                status: 'active',
+                licenseNumber: licenseNumber || null,
+                currentPlanId: workspace.currentPlanId,
+            });
+            if (!newUser) {
+                throw new Error('Failed to create user');
+            }
+            await Workplace_1.default.findByIdAndUpdate(workspace._id, {
+                $addToSet: { teamMembers: newUser._id },
+            });
+            invitation.status = 'used';
+            invitation.usedAt = new Date();
+            invitation.usedBy = newUser._id;
+            await invitation.save();
+            const inviterData = invitation.invitedBy;
+            emailService_1.emailService.sendInvitationAcceptedNotification(inviterData.email, {
+                inviterName: `${inviterData.firstName} ${inviterData.lastName}`,
+                acceptedUserName: `${firstName} ${lastName}`,
+                acceptedUserEmail: invitation.email,
+                workspaceName: workspace.name,
+                role: invitation.role,
+            }).catch((error) => {
+                console.error('Failed to send invitation accepted notification:', error);
+            });
+            res.json({
+                success: true,
+                message: 'Invitation accepted successfully',
+                user: {
+                    id: newUser._id,
+                    firstName: newUser.firstName,
+                    lastName: newUser.lastName,
+                    email: newUser.email,
+                    workplaceRole: newUser.workplaceRole,
+                    workplaceId: newUser.workplaceId,
+                    status: newUser.status,
+                },
+                workspace: {
+                    id: workspace._id,
+                    name: workspace.name,
+                    type: workspace.type,
+                },
+            });
+        }
+        catch (error) {
+            console.error('Error accepting invitation:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Internal server error',
+            });
+        }
+    }
+    catch (error) {
+        console.error('Error accepting invitation:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+        });
+    }
+};
+exports.acceptInvitationPublic = acceptInvitationPublic;
 const getInvitationAnalytics = async (req, res) => {
     try {
         const { id: workspaceId } = req.params;
@@ -550,36 +711,52 @@ const getInvitationAnalytics = async (req, res) => {
 exports.getInvitationAnalytics = getInvitationAnalytics;
 const getInvitationStats = async (req, res) => {
     try {
-        const { workspaceId } = req.query;
+        const { id: workspaceId } = req.params;
         const userId = req.user._id;
-        if (workspaceId) {
-            if (!mongoose_1.default.Types.ObjectId.isValid(workspaceId)) {
-                res.status(400).json({
-                    success: false,
-                    message: 'Invalid workspace ID',
-                });
-                return;
-            }
-            const workspace = await Workplace_1.default.findById(workspaceId);
-            if (!workspace) {
-                res.status(404).json({
-                    success: false,
-                    message: 'Workspace not found',
-                });
-                return;
-            }
-            if (workspace.ownerId.toString() !== userId.toString()) {
-                res.status(403).json({
-                    success: false,
-                    message: 'Only workspace owners can view invitation statistics',
-                });
-                return;
-            }
+        if (!workspaceId || !mongoose_1.default.Types.ObjectId.isValid(workspaceId)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid workspace ID',
+            });
+            return;
         }
-        const stats = await InvitationCronService_1.invitationCronService.getInvitationStats(workspaceId);
+        const workspace = await Workplace_1.default.findById(workspaceId);
+        if (!workspace) {
+            res.status(404).json({
+                success: false,
+                message: 'Workspace not found',
+            });
+            return;
+        }
+        if (workspace.ownerId.toString() !== userId.toString()) {
+            res.status(403).json({
+                success: false,
+                message: 'Only workspace owners can view invitation statistics',
+            });
+            return;
+        }
+        const stats = await Invitation_1.default.aggregate([
+            { $match: { workspaceId: new mongoose_1.default.Types.ObjectId(workspaceId) } },
+            {
+                $group: {
+                    _id: '$status',
+                    count: { $sum: 1 },
+                },
+            },
+        ]);
+        const statusCounts = stats.reduce((acc, stat) => {
+            acc[stat._id] = stat.count;
+            return acc;
+        }, {});
         res.json({
             success: true,
-            data: stats,
+            data: {
+                active: statusCounts.active || 0,
+                expired: statusCounts.expired || 0,
+                used: statusCounts.used || 0,
+                canceled: statusCounts.canceled || 0,
+                total: Object.values(statusCounts).reduce((sum, count) => sum + count, 0),
+            },
         });
     }
     catch (error) {
@@ -618,10 +795,33 @@ const checkInvitationLimits = async (req, res) => {
             });
             return;
         }
-        const limits = await InvitationCronService_1.invitationCronService.validateInvitationLimits(workspaceId);
+        const pendingCount = await Invitation_1.default.countDocuments({
+            workspaceId: new mongoose_1.default.Types.ObjectId(workspaceId),
+            status: 'active'
+        });
+        const maxPendingInvites = workspace.settings?.maxPendingInvites || 20;
+        let teamSizeLimit = null;
+        if (workspace.currentSubscriptionId) {
+            const subscriptionPlan = await SubscriptionPlan_1.default.findById(workspace.currentSubscriptionId);
+            if (subscriptionPlan && subscriptionPlan.features.teamSize) {
+                teamSizeLimit = subscriptionPlan.features.teamSize;
+            }
+        }
+        const currentTeamSize = workspace.teamMembers.length;
         res.json({
             success: true,
-            data: limits,
+            data: {
+                pendingInvitations: {
+                    current: pendingCount,
+                    limit: maxPendingInvites,
+                    remaining: Math.max(0, maxPendingInvites - pendingCount),
+                },
+                teamSize: {
+                    current: currentTeamSize,
+                    limit: teamSizeLimit,
+                    remaining: teamSizeLimit ? Math.max(0, teamSizeLimit - currentTeamSize) : null,
+                },
+            },
         });
     }
     catch (error) {

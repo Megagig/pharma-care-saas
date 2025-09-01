@@ -236,5 +236,16 @@ subscriptionSchema.index({ trialEndDate: 1, status: 1 });
 subscriptionSchema.index({ nextBillingDate: 1, status: 1 });
 subscriptionSchema.index({ stripeSubscriptionId: 1 }, { sparse: true });
 subscriptionSchema.index({ tier: 1, status: 1 });
+subscriptionSchema.virtual('trialEndsAt').get(function () {
+    return this.trialEndDate;
+});
+subscriptionSchema.virtual('trialEndsAt').set(function (value) {
+    this.trialEndDate = value;
+});
+subscriptionSchema.virtual('isTrial').get(function () {
+    return this.status === 'trial' || (this.trialEndDate && new Date() <= this.trialEndDate);
+});
+subscriptionSchema.set('toJSON', { virtuals: true });
+subscriptionSchema.set('toObject', { virtuals: true });
 exports.default = mongoose_1.default.model('Subscription', subscriptionSchema);
 //# sourceMappingURL=Subscription.js.map

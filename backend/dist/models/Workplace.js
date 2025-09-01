@@ -107,6 +107,10 @@ const workplaceSchema = new mongoose_1.Schema({
             'Please enter a valid email',
         ],
     },
+    phone: {
+        type: String,
+        trim: true,
+    },
     address: {
         type: String,
         trim: true,
@@ -300,5 +304,13 @@ workplaceSchema.index({ currentSubscriptionId: 1 });
 workplaceSchema.index({ subscriptionStatus: 1 });
 workplaceSchema.index({ trialEndDate: 1 });
 workplaceSchema.index({ 'stats.lastUpdated': 1 });
+workplaceSchema.virtual('subscriptionId').get(function () {
+    return this.currentSubscriptionId;
+});
+workplaceSchema.virtual('subscriptionId').set(function (value) {
+    this.currentSubscriptionId = value;
+});
+workplaceSchema.set('toJSON', { virtuals: true });
+workplaceSchema.set('toObject', { virtuals: true });
 exports.default = mongoose_1.default.model('Workplace', workplaceSchema);
 //# sourceMappingURL=Workplace.js.map

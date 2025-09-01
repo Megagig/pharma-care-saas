@@ -19,6 +19,9 @@ class PermissionService {
     }
     async checkPermission(context, user, action) {
         try {
+            if (user.role === 'super_admin') {
+                return { allowed: true };
+            }
             const matrix = await this.loadPermissionMatrix();
             const permission = matrix[action];
             if (!permission) {
@@ -28,12 +31,17 @@ class PermissionService {
                     reason: 'Permission not defined',
                 };
             }
-            if (user.role === 'super_admin') {
-                return { allowed: true };
-            }
             const statusCheck = this.checkUserStatus(user);
             if (!statusCheck.allowed) {
                 return statusCheck;
+            }
+            const systemRoleCheck = this.checkSystemRoles(user, permission);
+            if (!systemRoleCheck.allowed) {
+                return systemRoleCheck;
+            }
+            const workplaceRoleCheck = this.checkWorkplaceRoles(user, permission);
+            if (!workplaceRoleCheck.allowed) {
+                return workplaceRoleCheck;
             }
             const subscriptionCheck = this.checkSubscriptionRequirements(context, permission);
             if (!subscriptionCheck.allowed) {
@@ -46,14 +54,6 @@ class PermissionService {
             const tierCheck = this.checkPlanTiers(context, permission);
             if (!tierCheck.allowed) {
                 return tierCheck;
-            }
-            const systemRoleCheck = this.checkSystemRoles(user, permission);
-            if (!systemRoleCheck.allowed) {
-                return systemRoleCheck;
-            }
-            const workplaceRoleCheck = this.checkWorkplaceRoles(user, permission);
-            if (!workplaceRoleCheck.allowed) {
-                return workplaceRoleCheck;
             }
             return { allowed: true };
         }

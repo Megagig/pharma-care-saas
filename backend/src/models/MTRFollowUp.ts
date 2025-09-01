@@ -404,7 +404,7 @@ mtrFollowUpSchema.pre('save', function (this: IMTRFollowUp) {
     }
 
     // Validate outcome is provided when status is completed
-    if (this.status === 'completed' && !this.outcome) {
+    if (this.status === 'completed' && (!this.outcome || !this.outcome.status)) {
         throw new Error('Outcome is required when follow-up is completed');
     }
 

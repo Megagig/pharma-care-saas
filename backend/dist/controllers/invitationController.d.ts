@@ -5,6 +5,7 @@ export declare const getWorkspaceInvitations: (req: AuthRequest, res: Response) 
 export declare const cancelInvitation: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const acceptInvitation: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const validateInvitation: (req: Request, res: Response) => Promise<void>;
+export declare const acceptInvitationPublic: (req: Request, res: Response) => Promise<void>;
 export declare const getInvitationAnalytics: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const getInvitationStats: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const checkInvitationLimits: (req: AuthRequest, res: Response) => Promise<void>;

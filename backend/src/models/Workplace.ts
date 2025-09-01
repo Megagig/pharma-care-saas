@@ -32,6 +32,7 @@ export interface IWorkplace extends Document {
   | 'Other';
   licenseNumber: string;
   email: string;
+  phone?: string;
   address?: string;
   state?: string;
   lga?: string;
@@ -48,6 +49,7 @@ export interface IWorkplace extends Document {
 
   // New subscription fields
   currentSubscriptionId?: mongoose.Types.ObjectId;
+  subscriptionId?: mongoose.Types.ObjectId; // Alias for currentSubscriptionId for backward compatibility
   currentPlanId?: mongoose.Types.ObjectId;
   subscriptionStatus: 'trial' | 'active' | 'past_due' | 'expired' | 'canceled';
   trialStartDate?: Date;
@@ -140,6 +142,10 @@ const workplaceSchema = new Schema(
         /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
         'Please enter a valid email',
       ],
+    },
+    phone: {
+      type: String,
+      trim: true,
     },
     address: {
       type: String,
@@ -365,5 +371,18 @@ workplaceSchema.index({ currentSubscriptionId: 1 });
 workplaceSchema.index({ subscriptionStatus: 1 });
 workplaceSchema.index({ trialEndDate: 1 });
 workplaceSchema.index({ 'stats.lastUpdated': 1 });
+
+// Virtual property for backward compatibility
+workplaceSchema.virtual('subscriptionId').get(function () {
+  return this.currentSubscriptionId;
+});
+
+workplaceSchema.virtual('subscriptionId').set(function (value) {
+  this.currentSubscriptionId = value;
+});
+
+// Ensure virtual fields are serialized
+workplaceSchema.set('toJSON', { virtuals: true });
+workplaceSchema.set('toObject', { virtuals: true });
 
 export default mongoose.model<IWorkplace>('Workplace', workplaceSchema);

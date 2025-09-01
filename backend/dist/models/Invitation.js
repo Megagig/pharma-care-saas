@@ -48,7 +48,6 @@ const invitationSchema = new mongoose_1.Schema({
     },
     code: {
         type: String,
-        required: true,
         unique: true,
         length: 8,
         uppercase: true,
@@ -78,7 +77,6 @@ const invitationSchema = new mongoose_1.Schema({
     },
     expiresAt: {
         type: Date,
-        required: true,
         index: true,
     },
     usedAt: {
