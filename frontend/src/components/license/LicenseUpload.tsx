@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import {
   Box,
   Card,
@@ -73,14 +74,12 @@ const LicenseUpload: React.FC = () => {
 
   const loadLicenseStatus = useCallback(async () => {
     try {
-      const response = await fetch('/api/license/status', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-        },
+      const response = await axios.get('/api/license/status', {
+        withCredentials: true,
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.status === 200) {
+        const data = response.data;
         setLicenseInfo(data.data);
 
         if (data.data.licenseNumber) {
@@ -111,17 +110,18 @@ const LicenseUpload: React.FC = () => {
   const validateLicenseNumber = useCallback(async () => {
     setValidatingNumber(true);
     try {
-      const response = await fetch('/api/license/validate-number', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+      const response = await axios.post(
+        '/api/license/validate-number',
+        {
+          licenseNumber,
         },
-        body: JSON.stringify({ licenseNumber }),
-      });
+        {
+          withCredentials: true,
+        }
+      );
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.status === 200) {
+        const data = response.data;
         setNumberValid(data.data.isAvailable);
 
         if (!data.data.isAvailable) {
@@ -208,15 +208,14 @@ const LicenseUpload: React.FC = () => {
       formData.append('licenseDocument', selectedFile);
       formData.append('licenseNumber', licenseNumber);
 
-      const response = await fetch('/api/license/upload', {
-        method: 'POST',
+      const response = await axios.post('/api/license/upload', formData, {
+        withCredentials: true,
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'multipart/form-data',
         },
-        body: formData,
       });
 
-      if (response.ok) {
+      if (response.status === 200) {
         addNotification({
           type: 'success',
           title: 'Upload Successful',
@@ -228,10 +227,9 @@ const LicenseUpload: React.FC = () => {
         loadLicenseStatus();
         setSelectedFile(null);
       } else {
-        const error = await response.json();
-        throw new Error(error.message || 'Upload failed');
+        throw new Error(response.data?.message || 'Upload failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       addNotification({
         type: 'error',
         title: 'Upload Failed',
@@ -246,14 +244,11 @@ const LicenseUpload: React.FC = () => {
 
   const handleDeleteDocument = async () => {
     try {
-      const response = await fetch('/api/license/document', {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-        },
+      const response = await axios.delete('/api/license/document', {
+        withCredentials: true,
       });
 
-      if (response.ok) {
+      if (response.status === 200) {
         addNotification({
           type: 'success',
           title: 'Document Deleted',

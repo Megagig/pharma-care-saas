@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Container,
   Card,
@@ -45,40 +46,43 @@ const SubscriptionSuccess: React.FC = () => {
 
       try {
         // First verify the payment with Paystack (this doesn't require auth)
-        const verifyResponse = await fetch(
+        const verifyResponse = await axios.get(
           `/api/subscriptions/verify-payment?reference=${paymentRef}`
         );
-        const verifyData = await verifyResponse.json();
 
-        if (!verifyData.success) {
-          setError(verifyData.message || 'Payment verification failed');
+        if (!verifyResponse.data.success) {
+          setError(
+            verifyResponse.data.message || 'Payment verification failed'
+          );
           setLoading(false);
           return;
         }
 
         // Then process the subscription activation (this requires auth)
-        const activateResponse = await fetch('/api/subscriptions/success', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
+        const activateResponse = await axios.post(
+          '/api/subscriptions/success',
+          {
             paymentReference: paymentRef,
-          }),
-        });
+          },
+          {
+            withCredentials: true,
+          }
+        );
 
-        const activateData = await activateResponse.json();
-
-        if (activateData.success) {
+        if (activateResponse.data.success) {
           setSuccess(true);
-          setSubscriptionData(activateData.data);
+          setSubscriptionData(activateResponse.data.data);
         } else {
-          setError(activateData.message || 'Failed to activate subscription');
+          setError(
+            activateResponse.data.message || 'Failed to activate subscription'
+          );
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error verifying payment:', error);
-        setError('An error occurred while processing your payment');
+        setError(
+          error.response?.data?.message ||
+            'Something went wrong. Please try again.'
+        );
       } finally {
         setLoading(false);
       }

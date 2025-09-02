@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Box,
   Card,
@@ -155,56 +156,58 @@ const AdminDashboard: React.FC = () => {
       ...filters,
     });
 
-    const response = await fetch(`/api/admin/users?${queryParams}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-      },
-    });
+    try {
+      const response = await axios.get(`/api/admin/users?${queryParams}`, {
+        withCredentials: true,
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      setUsers(data.data.users);
+      if (response.status === 200) {
+        setUsers(response.data.data.users);
+      }
+    } catch (error) {
+      console.error('Failed to load users:', error);
     }
   };
 
   const loadLicenses = async () => {
-    const response = await fetch('/api/admin/licenses/pending', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-      },
-    });
+    try {
+      const response = await axios.get('/api/admin/licenses/pending', {
+        withCredentials: true,
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      setLicenses(data.data.licenses);
+      if (response.status === 200) {
+        setLicenses(response.data.data.licenses);
+      }
+    } catch (error) {
+      console.error('Failed to load licenses:', error);
     }
   };
 
   const loadAnalytics = async () => {
-    const response = await fetch('/api/admin/analytics', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-      },
-    });
+    try {
+      const response = await axios.get('/api/admin/analytics', {
+        withCredentials: true,
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      setAnalytics(data.data);
+      if (response.status === 200) {
+        setAnalytics(response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to load analytics:', error);
     }
   };
 
   const handleUpdateUserRole = async (userId: string, role: string) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/role`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-        body: JSON.stringify({ role }),
-      });
+      const response = await axios.put(
+        `/api/admin/users/${userId}/role`,
+        { role },
+        {
+          withCredentials: true,
+        }
+      );
 
-      if (response.ok) {
+      if (response.status === 200) {
         addNotification({
           type: 'success',
           title: 'Success',
@@ -226,16 +229,17 @@ const AdminDashboard: React.FC = () => {
 
   const handleSuspendUser = async (userId: string) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/suspend`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+      const response = await axios.post(
+        `/api/admin/users/${userId}/suspend`,
+        {
+          reason: 'Administrative action',
         },
-        body: JSON.stringify({ reason: 'Administrative action' }),
-      });
+        {
+          withCredentials: true,
+        }
+      );
 
-      if (response.ok) {
+      if (response.status === 200) {
         addNotification({
           type: 'success',
           title: 'Success',
@@ -256,16 +260,17 @@ const AdminDashboard: React.FC = () => {
 
   const handleApproveLicense = async (userId: string) => {
     try {
-      const response = await fetch(`/api/admin/licenses/${userId}/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+      const response = await axios.post(
+        `/api/admin/licenses/${userId}/approve`,
+        {
+          notes: 'Approved by admin',
         },
-        body: JSON.stringify({ notes: 'Approved by admin' }),
-      });
+        {
+          withCredentials: true,
+        }
+      );
 
-      if (response.ok) {
+      if (response.status === 200) {
         addNotification({
           type: 'success',
           title: 'Success',
@@ -286,16 +291,17 @@ const AdminDashboard: React.FC = () => {
 
   const handleRejectLicense = async (userId: string, reason: string) => {
     try {
-      const response = await fetch(`/api/admin/licenses/${userId}/reject`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+      const response = await axios.post(
+        `/api/admin/licenses/${userId}/reject`,
+        {
+          reason,
         },
-        body: JSON.stringify({ reason }),
-      });
+        {
+          withCredentials: true,
+        }
+      );
 
-      if (response.ok) {
+      if (response.status === 200) {
         addNotification({
           type: 'success',
           title: 'Success',

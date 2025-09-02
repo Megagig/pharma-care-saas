@@ -1,3 +1,4 @@
+import axios from 'axios';
 import {
   Patient,
   Allergy,
@@ -48,29 +49,27 @@ class PatientService {
     url: string,
     options: RequestOptions = {}
   ): Promise<T> {
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers || {}),
-      },
-      credentials: 'include', // Include httpOnly cookies
-      ...options,
-    };
-
     try {
-      const response = await fetch(`${API_BASE_URL}${url}`, config);
-      const data = await response.json();
+      const response = await axios({
+        url: `${API_BASE_URL}${url}`,
+        method: options.method || 'GET',
+        data: options.body ? JSON.parse(options.body as string) : undefined,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options.headers || {}),
+        },
+        withCredentials: true, // Include httpOnly cookies
+      });
 
-      if (!response.ok) {
-        throw new Error(
-          data.error?.message || data.message || 'An error occurred'
-        );
-      }
-
-      return data as T;
-    } catch (error) {
+      return response.data as T;
+    } catch (error: any) {
       console.error('API Request failed:', error);
-      throw error;
+      throw new Error(
+        error.response?.data?.error?.message ||
+          error.response?.data?.message ||
+          error.message ||
+          'An error occurred'
+      );
     }
   }
 
@@ -285,8 +284,9 @@ class PatientService {
       // Add defensive URL encoding for patientId
       const encodedPatientId = encodeURIComponent(patientId);
       const queryString = searchParams.toString();
-      const url = `/patients/${encodedPatientId}/conditions${queryString ? `?${queryString}` : ''
-        }`;
+      const url = `/patients/${encodedPatientId}/conditions${
+        queryString ? `?${queryString}` : ''
+      }`;
 
       console.log('Fetching conditions with URL:', url);
       return await this.makeRequest<PaginatedResponse<Condition>>(url);
@@ -725,23 +725,24 @@ class PatientService {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_BASE_URL}/upload`, {
-      method: 'POST',
-      credentials: 'include',
-      body: formData,
-    });
+    try {
+      const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error?.message || 'File upload failed');
+      return {
+        url: response.data.url,
+        fileName: file.name,
+        fileSize: file.size,
+      };
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.error?.message || 'File upload failed'
+      );
     }
-
-    return {
-      url: data.url,
-      fileName: file.name,
-      fileSize: file.size,
-    };
   }
 }
 

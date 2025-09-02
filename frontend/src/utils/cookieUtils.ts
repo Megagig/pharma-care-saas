@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 /**
  * Utility functions for cookie operations
  * Note: HTTP-only cookies cannot be read directly by JavaScript,
@@ -10,11 +12,10 @@ const API_BASE_URL =
 export const hasAuthenticationCookies = async (): Promise<boolean> => {
   try {
     // Make a lightweight request to check if auth cookies exist
-    const response = await fetch(`${API_BASE_URL}/auth/check-cookies`, {
-      method: 'GET',
-      credentials: 'include',
+    const response = await axios.get(`${API_BASE_URL}/auth/check-cookies`, {
+      withCredentials: true,
     });
-    return response.ok;
+    return response.status === 200;
   } catch {
     return false;
   }

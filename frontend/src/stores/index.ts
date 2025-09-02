@@ -61,13 +61,8 @@ export {
 
 // Store reset function for clearing all stores (useful for logout)
 export const resetAllStores = () => {
-  // Clear localStorage for all persisted stores
-  localStorage.removeItem('ui-store');
-  localStorage.removeItem('patient-store');
-  localStorage.removeItem('medication-store');
-  localStorage.removeItem('clinical-note-store');
-  localStorage.removeItem('mtr-store');
-
+  // Note: Previously used localStorage, but now using httpOnly cookies
+  // Store data is managed server-side, so no local cleanup needed
   // You can also programmatically reset stores if needed
   // This would require implementing reset actions in each store
 };
@@ -82,19 +77,19 @@ export const clearAllErrors = () => {
 export const getStoreStatus = () => {
   return {
     ui: {
-      hasPersistedData: !!localStorage.getItem('ui-store'),
+      hasPersistedData: false, // localStorage removed for security
     },
     patient: {
-      hasPersistedData: !!localStorage.getItem('patient-store'),
+      hasPersistedData: false, // localStorage removed for security
     },
     medication: {
-      hasPersistedData: !!localStorage.getItem('medication-store'),
+      hasPersistedData: false, // localStorage removed for security
     },
     clinicalNote: {
-      hasPersistedData: !!localStorage.getItem('clinical-note-store'),
+      hasPersistedData: false, // localStorage removed for security
     },
     mtr: {
-      hasPersistedData: !!localStorage.getItem('mtr-store'),
+      hasPersistedData: false, // localStorage removed for security
     },
   };
 };

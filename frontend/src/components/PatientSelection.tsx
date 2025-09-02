@@ -274,13 +274,13 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
 
   // Load recent patients on mount
   useEffect(() => {
-    // In a real implementation, this would load from localStorage or API
+    // Note: Recent patients functionality disabled as we've moved away from localStorage
+    // In a production environment, this could be implemented server-side or using IndexedDB
     const loadRecentPatients = () => {
       try {
-        const stored = localStorage.getItem('mtr_recent_patients');
-        if (stored) {
-          setRecentPatients(JSON.parse(stored));
-        }
+        // localStorage removed for security - no client-side persistence
+        // Recent patients list will be empty on page reload
+        setRecentPatients([]);
       } catch (error) {
         console.error('Failed to load recent patients:', error);
       }
@@ -312,10 +312,8 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
         ...recentPatients.filter((p) => p._id !== patient._id),
       ].slice(0, 5);
       setRecentPatients(updatedRecent);
-      localStorage.setItem(
-        'mtr_recent_patients',
-        JSON.stringify(updatedRecent)
-      );
+      // Note: localStorage removed for security - recent patients will not persist between sessions
+      // In production, this could be implemented server-side for better security
 
       // First, select the patient
       onPatientSelect(patient);
