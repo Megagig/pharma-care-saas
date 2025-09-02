@@ -107,7 +107,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
 
       // Set fallback status on error - allow basic access for super admin
       setSubscriptionStatus({
-        hasWorkspace: !!user?.workplaceId,
+        hasWorkspace: !!user?.pharmacyId,
         hasSubscription: false,
         status: 'error',
         accessLevel:

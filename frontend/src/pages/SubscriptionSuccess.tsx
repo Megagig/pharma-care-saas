@@ -16,12 +16,10 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
-import {
-  CheckCircle as CheckIcon,
-  Error as ErrorIcon,
-  Home as HomeIcon,
-  Receipt as ReceiptIcon,
-} from '@mui/icons-material';
+import CheckIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import HomeIcon from '@mui/icons-material/Home';
+import ReceiptIcon from '@mui/icons-material/Receipt';
 
 const SubscriptionSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
