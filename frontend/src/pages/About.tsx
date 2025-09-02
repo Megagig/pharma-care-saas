@@ -5,11 +5,9 @@ import {
   Container,
   Typography,
   Button,
-  Card,
   AppBar,
   Toolbar,
   Paper,
-  Avatar,
   Chip,
 } from '@mui/material';
 import {
@@ -22,7 +20,6 @@ import {
   TrendingUp as GrowthIcon,
   Star as StarIcon,
   CheckCircle as CheckIcon,
-  ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
 import Footer from '../components/Footer';
 

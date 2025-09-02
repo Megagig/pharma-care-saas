@@ -23,8 +23,19 @@ const ROLE_HIERARCHY = {
 };
 const auth = async (req, res, next) => {
     try {
-        const token = req.cookies.accessToken || req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
+        const token = req.cookies.accessToken ||
+            req.cookies.token ||
+            req.header('Authorization')?.replace('Bearer ', '');
+        console.log('Auth middleware - checking token:', {
+            hasAccessToken: !!req.cookies.accessToken,
+            hasToken: !!req.cookies.token,
+            hasAuthHeader: !!req.header('Authorization'),
+            tokenExists: !!token,
+            url: req.url,
+            method: req.method,
+        });
         if (!token) {
+            console.log('Auth middleware - No token provided');
             res.status(401).json({ message: 'Access denied. No token provided.' });
             return;
         }
@@ -39,13 +50,18 @@ const auth = async (req, res, next) => {
             res.status(401).json({ message: 'Invalid token.' });
             return;
         }
-        if (!['active', 'license_pending'].includes(user.status)) {
+        const allowedStatuses = process.env.NODE_ENV === 'development'
+            ? ['active', 'license_pending', 'pending']
+            : ['active', 'license_pending'];
+        if (!allowedStatuses.includes(user.status)) {
             res.status(401).json({
                 message: 'Account is not active.',
                 status: user.status,
                 requiresAction: user.status === 'license_pending'
                     ? 'license_verification'
-                    : 'account_activation',
+                    : user.status === 'pending'
+                        ? 'email_verification'
+                        : 'account_activation',
             });
             return;
         }
@@ -70,7 +86,9 @@ const auth = async (req, res, next) => {
 exports.auth = auth;
 const authOptionalSubscription = async (req, res, next) => {
     try {
-        const token = req.cookies.accessToken || req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
+        const token = req.cookies.accessToken ||
+            req.cookies.token ||
+            req.header('Authorization')?.replace('Bearer ', '');
         if (!token) {
             res.status(401).json({ message: 'Access denied. No token provided.' });
             return;

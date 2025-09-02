@@ -1,7 +1,7 @@
 import mongoose, { Document } from 'mongoose';
 export interface IMedicationRecord extends Document {
     _id: mongoose.Types.ObjectId;
-    pharmacyId: mongoose.Types.ObjectId;
+    workplaceId: mongoose.Types.ObjectId;
     patientId: mongoose.Types.ObjectId;
     phase: 'past' | 'current';
     medicationName: string;
@@ -14,6 +14,7 @@ export interface IMedicationRecord extends Document {
     endDate?: Date;
     adherence?: 'good' | 'poor' | 'unknown';
     notes?: string;
+    isManual?: boolean;
     createdBy: mongoose.Types.ObjectId;
     updatedBy?: mongoose.Types.ObjectId;
     isDeleted: boolean;

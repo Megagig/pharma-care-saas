@@ -1,26 +1,48 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+export interface UsageMetric {
+  feature: string;
+  count: number;
+  lastUpdated: Date;
+}
+
+export interface PlanLimits {
+  patients: number | null;
+  users: number | null;
+  locations: number | null;
+  storage: number | null;
+  apiCalls: number | null;
+}
+
 export interface ISubscription extends Document {
-  userId: mongoose.Types.ObjectId;
+  // Changed from userId to workspaceId
+  workspaceId: mongoose.Types.ObjectId;
   planId: mongoose.Types.ObjectId;
   status:
-    | 'active'
-    | 'inactive'
-    | 'cancelled'
-    | 'expired'
-    | 'trial'
-    | 'grace_period'
-    | 'suspended';
+  | 'trial'
+  | 'active'
+  | 'past_due'
+  | 'expired'
+  | 'canceled'
+  | 'suspended';
   tier: 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
   startDate: Date;
   endDate: Date;
+  trialEndDate?: Date;
+  trialEndsAt?: Date; // Alias for trialEndDate
+  isTrial?: boolean; // Computed property
+
+  // Billing information
   priceAtPurchase: number;
+  billingInterval: 'monthly' | 'yearly';
+  nextBillingDate?: Date;
   paymentHistory: mongoose.Types.ObjectId[];
   autoRenew: boolean;
-  trialEnd?: Date;
   gracePeriodEnd?: Date;
   stripeSubscriptionId?: string;
   stripeCustomerId?: string;
+
+  // Webhook and renewal tracking
   webhookEvents: {
     eventId: string;
     eventType: string;
@@ -32,18 +54,20 @@ export interface ISubscription extends Document {
     successful: boolean;
     error?: string;
   }[];
+
+  // Feature and usage tracking
   features: string[]; // Cached features from plan
   customFeatures: string[]; // Additional features granted
-  usageMetrics: {
-    feature: string;
-    count: number;
-    lastUpdated: Date;
-  }[];
+  limits: PlanLimits; // Cached limits from plan
+  usageMetrics: UsageMetric[];
+
+  // Plan change management
   scheduledDowngrade?: {
     planId: mongoose.Types.ObjectId;
     effectiveDate: Date;
     scheduledAt: Date;
   };
+
   createdAt: Date;
   updatedAt: Date;
   isInGracePeriod(): boolean;
@@ -53,9 +77,10 @@ export interface ISubscription extends Document {
 
 const subscriptionSchema = new Schema(
   {
-    userId: {
+    // Changed from userId to workspaceId
+    workspaceId: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'Workplace',
       required: true,
       index: true,
     },
@@ -67,12 +92,11 @@ const subscriptionSchema = new Schema(
     status: {
       type: String,
       enum: [
-        'active',
-        'inactive',
-        'cancelled',
-        'expired',
         'trial',
-        'grace_period',
+        'active',
+        'past_due',
+        'expired',
+        'canceled',
         'suspended',
       ],
       default: 'trial',
@@ -92,10 +116,25 @@ const subscriptionSchema = new Schema(
       type: Date,
       required: true,
     },
+    trialEndDate: {
+      type: Date,
+      index: true,
+    },
+
+    // Billing information
     priceAtPurchase: {
       type: Number,
       required: true,
       min: 0,
+    },
+    billingInterval: {
+      type: String,
+      enum: ['monthly', 'yearly'],
+      default: 'monthly',
+    },
+    nextBillingDate: {
+      type: Date,
+      index: true,
     },
     paymentHistory: [
       {
@@ -107,7 +146,6 @@ const subscriptionSchema = new Schema(
       type: Boolean,
       default: true,
     },
-    trialEnd: Date,
     gracePeriodEnd: Date,
     stripeSubscriptionId: {
       type: String,
@@ -119,6 +157,8 @@ const subscriptionSchema = new Schema(
       sparse: true,
       index: true,
     },
+
+    // Webhook and renewal tracking
     webhookEvents: [
       {
         eventId: {
@@ -149,6 +189,8 @@ const subscriptionSchema = new Schema(
         error: String,
       },
     ],
+
+    // Feature and usage tracking
     features: [
       {
         type: String,
@@ -161,6 +203,28 @@ const subscriptionSchema = new Schema(
         index: true,
       },
     ],
+    limits: {
+      patients: {
+        type: Number,
+        default: null,
+      },
+      users: {
+        type: Number,
+        default: null,
+      },
+      locations: {
+        type: Number,
+        default: null,
+      },
+      storage: {
+        type: Number,
+        default: null,
+      },
+      apiCalls: {
+        type: Number,
+        default: null,
+      },
+    },
     usageMetrics: [
       {
         feature: {
@@ -177,6 +241,8 @@ const subscriptionSchema = new Schema(
         },
       },
     ],
+
+    // Plan change management
     scheduledDowngrade: {
       planId: {
         type: Schema.Types.ObjectId,
@@ -216,7 +282,7 @@ subscriptionSchema.pre('save', function (next) {
   if (this.isModified('endDate') || this.isNew) {
     if (now > this.endDate) {
       if (this.gracePeriodEnd && now <= this.gracePeriodEnd) {
-        this.status = 'grace_period';
+        this.status = 'past_due';
       } else {
         this.status = 'expired';
       }
@@ -227,10 +293,30 @@ subscriptionSchema.pre('save', function (next) {
 });
 
 // Indexes for efficient queries
-subscriptionSchema.index({ userId: 1, status: 1 });
+subscriptionSchema.index({ workspaceId: 1, status: 1 });
+subscriptionSchema.index({ workspaceId: 1 }, { unique: true }); // One subscription per workspace
 subscriptionSchema.index({ endDate: 1, status: 1 });
+subscriptionSchema.index({ trialEndDate: 1, status: 1 });
+subscriptionSchema.index({ nextBillingDate: 1, status: 1 });
 subscriptionSchema.index({ stripeSubscriptionId: 1 }, { sparse: true });
 subscriptionSchema.index({ tier: 1, status: 1 });
+
+// Virtual properties for backward compatibility
+subscriptionSchema.virtual('trialEndsAt').get(function () {
+  return this.trialEndDate;
+});
+
+subscriptionSchema.virtual('trialEndsAt').set(function (value) {
+  this.trialEndDate = value;
+});
+
+subscriptionSchema.virtual('isTrial').get(function () {
+  return this.status === 'trial' || (this.trialEndDate && new Date() <= this.trialEndDate);
+});
+
+// Ensure virtual fields are serialized
+subscriptionSchema.set('toJSON', { virtuals: true });
+subscriptionSchema.set('toObject', { virtuals: true });
 
 export default mongoose.model<ISubscription>(
   'Subscription',

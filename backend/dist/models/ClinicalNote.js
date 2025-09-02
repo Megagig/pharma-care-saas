@@ -45,6 +45,17 @@ const clinicalNoteSchema = new mongoose_1.Schema({
         ref: 'User',
         required: true
     },
+    workplaceId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Workplace',
+        required: true,
+        index: true,
+    },
+    locationId: {
+        type: String,
+        index: true,
+        sparse: true,
+    },
     type: {
         type: String,
         enum: ['consultation', 'medication_review', 'follow_up', 'adverse_event', 'other'],
@@ -95,5 +106,10 @@ const clinicalNoteSchema = new mongoose_1.Schema({
     },
     isConfidential: { type: Boolean, default: false }
 }, { timestamps: true });
+clinicalNoteSchema.index({ workplaceId: 1, patient: 1 });
+clinicalNoteSchema.index({ workplaceId: 1, pharmacist: 1 });
+clinicalNoteSchema.index({ workplaceId: 1, type: 1 });
+clinicalNoteSchema.index({ workplaceId: 1, locationId: 1 }, { sparse: true });
+clinicalNoteSchema.index({ createdAt: -1 });
 exports.default = mongoose_1.default.model('ClinicalNote', clinicalNoteSchema);
 //# sourceMappingURL=ClinicalNote.js.map

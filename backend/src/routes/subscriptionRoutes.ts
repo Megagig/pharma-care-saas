@@ -14,6 +14,15 @@ router.get(
   subscriptionController.getCurrentSubscription.bind(subscriptionController)
 );
 router.get(
+  '/status',
+  authOptionalSubscription, // Allow access even without active subscription
+  subscriptionController.getSubscriptionStatus.bind(subscriptionController)
+);
+router.get(
+  '/verify-payment',
+  subscriptionController.verifyPaymentByReference.bind(subscriptionController)
+);
+router.get(
   '/analytics',
   auth,
   subscriptionController.getSubscriptionAnalytics.bind(subscriptionController)

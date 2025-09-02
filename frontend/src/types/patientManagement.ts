@@ -241,14 +241,14 @@ export interface Visit extends AuditFields {
 }
 
 // API Response Interfaces
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;
   error?: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
   meta?: {
     total?: number;
@@ -260,6 +260,9 @@ export interface ApiResponse<T = any> {
   };
   timestamp: string;
 }
+
+// Helper type for handling union API responses
+export type ResourceResponse<T> = PaginatedResponse<T> | { results: T[] };
 
 export interface PaginatedResponse<T> extends ApiResponse<{ results: T[] }> {
   meta: {
@@ -391,7 +394,7 @@ export interface ValidationError {
 export interface ApiError {
   code: string;
   message: string;
-  details?: ValidationError[] | any;
+  details?: ValidationError[] | unknown;
   statusCode?: number;
 }
 

@@ -462,7 +462,7 @@ class SubscriptionController {
             }
             const gracePeriodEnd = new Date();
             gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
-            subscription.status = 'grace_period';
+            subscription.status = 'past_due';
             subscription.gracePeriodEnd = gracePeriodEnd;
             subscription.autoRenew = false;
             await subscription.save();

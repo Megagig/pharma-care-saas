@@ -66,7 +66,7 @@ export const testLogin = async (email: string, password: string): Promise<boolea
       withCredentials: true
     });
 
-    console.log('Test login successful');
+    console.log('Test login successful:', response.status);
     return true;
   } catch (error) {
     console.error('Test login failed:', error);

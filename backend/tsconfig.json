@@ -26,6 +26,7 @@
     "emitDecoratorMetadata": true,
     "moduleResolution": "node",
     "baseUrl": "./",
+    "types": ["jest", "node"],
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "paths": {
       "@/*": ["src/*"],
@@ -37,14 +38,6 @@
       "@/utils/*": ["src/utils/*"]
     }
   },
-  "include": [
-    "src/**/*",
-    "src/types/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ]
+  "include": ["src/**/*", "src/types/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

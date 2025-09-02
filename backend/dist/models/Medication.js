@@ -96,6 +96,10 @@ const medicationSchema = new mongoose_1.Schema({
     adherence: {
         lastReported: Date,
         score: Number
+    },
+    isManual: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 exports.default = mongoose_1.default.model('Medication', medicationSchema);

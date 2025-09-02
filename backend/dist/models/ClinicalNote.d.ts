@@ -2,6 +2,8 @@ import mongoose, { Document } from 'mongoose';
 export interface IClinicalNote extends Document {
     patient: mongoose.Types.ObjectId;
     pharmacist: mongoose.Types.ObjectId;
+    workplaceId: mongoose.Types.ObjectId;
+    locationId?: string;
     type: 'consultation' | 'medication_review' | 'follow_up' | 'adverse_event' | 'other';
     title: string;
     content: {

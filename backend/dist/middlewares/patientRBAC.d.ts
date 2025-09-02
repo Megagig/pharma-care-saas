@@ -16,6 +16,7 @@ export declare const requirePatientDelete: (req: PatientAuthRequest, res: Respon
 export declare const requirePatientManage: (req: PatientAuthRequest, res: Response, next: NextFunction) => void;
 export declare const requireClinicalAssessmentAccess: (req: PatientAuthRequest, res: Response, next: NextFunction) => void;
 export declare const requireVitalsAccess: (req: PatientAuthRequest, res: Response, next: NextFunction) => void;
+export declare const checkWorkplaceAccess: (req: PatientAuthRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const checkPharmacyAccess: (req: PatientAuthRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const checkPatientPlanLimits: (req: PatientAuthRequest, res: Response, next: NextFunction) => Promise<void>;
 declare global {

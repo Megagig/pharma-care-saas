@@ -40,13 +40,13 @@ export interface Subscription {
   userId: string;
   planId: string;
   status:
-    | 'active'
-    | 'inactive'
-    | 'cancelled'
-    | 'expired'
-    | 'trial'
-    | 'grace_period'
-    | 'suspended';
+  | 'active'
+  | 'inactive'
+  | 'cancelled'
+  | 'expired'
+  | 'trial'
+  | 'grace_period'
+  | 'suspended';
   tier: 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
   startDate: string;
   endDate: string;
@@ -109,11 +109,11 @@ export const subscriptionService = {
       });
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating checkout session:', {
-        message: error.message,
-        responseData: error.response?.data,
-        status: error.response?.status,
+        message: (error as Error).message,
+        responseData: (error as { response?: { data?: unknown; status?: number } }).response?.data,
+        status: (error as { response?: { data?: unknown; status?: number } }).response?.status,
       });
 
       return {
@@ -132,11 +132,11 @@ export const subscriptionService = {
         `/subscription/verify?reference=${paymentReference}`
       );
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error verifying payment:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to verify payment',
+        message: (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to verify payment',
       };
     }
   },

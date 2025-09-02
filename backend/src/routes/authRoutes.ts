@@ -1,6 +1,8 @@
 import express from 'express';
 import {
   register,
+  registerWithWorkplace,
+  findWorkplaceByInviteCode,
   login,
   verifyEmail,
   forgotPassword,
@@ -19,6 +21,8 @@ const router = express.Router();
 
 // Public routes
 router.post('/register', register);
+router.post('/register-with-workplace', registerWithWorkplace); // New multi-step registration
+router.get('/workplace/invite/:inviteCode', findWorkplaceByInviteCode); // Find workplace by invite code
 router.post('/login', login);
 router.post('/verify-email', verifyEmail);
 router.post('/forgot-password', forgotPassword);

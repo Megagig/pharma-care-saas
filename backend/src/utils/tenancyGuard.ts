@@ -186,4 +186,29 @@ export const DTP_TYPES = [
   'adverseReaction',
   'inappropriateAdherence',
   'needsAdditional',
+  'interaction',
+  'duplication',
+  'contraindication',
+  'monitoring',
+];
+
+export const DTP_CATEGORIES = [
+  'indication',
+  'effectiveness',
+  'safety',
+  'adherence',
+];
+
+export const DTP_SEVERITIES = [
+  'critical',
+  'major',
+  'moderate',
+  'minor',
+];
+
+export const EVIDENCE_LEVELS = [
+  'definite',
+  'probable',
+  'possible',
+  'unlikely',
 ];

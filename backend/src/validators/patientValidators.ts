@@ -249,8 +249,7 @@ export const createConditionSchema = z.object({
   onsetDate: z
     .string()
     .datetime()
-    .optional()
-    .transform((val) => (val ? new Date(val) : undefined)),
+    .optional(),
   status: z.enum(['active', 'resolved', 'remission']).default('active'),
   notes: z.string().max(500).trim().optional(),
 });

@@ -7,7 +7,7 @@ import {
 
 export interface IAllergy extends Document {
   _id: mongoose.Types.ObjectId;
-  pharmacyId: mongoose.Types.ObjectId;
+  workplaceId: mongoose.Types.ObjectId;
   patientId: mongoose.Types.ObjectId; // ref Patient, indexed
   substance: string; // drug/food/environment
   reaction?: string; // e.g., rash, anaphylaxis
@@ -22,9 +22,9 @@ export interface IAllergy extends Document {
 
 const allergySchema = new Schema(
   {
-    pharmacyId: {
+    workplaceId: {
       type: Schema.Types.ObjectId,
-      ref: 'Pharmacy',
+      ref: 'Workplace',
       required: true,
       index: true,
     },
@@ -66,18 +66,18 @@ const allergySchema = new Schema(
 addAuditFields(allergySchema);
 
 // Apply tenancy guard plugin
-allergySchema.plugin(tenancyGuardPlugin);
+allergySchema.plugin(tenancyGuardPlugin, { pharmacyIdField: 'workplaceId' });
 
 // Indexes for efficient querying
-allergySchema.index({ pharmacyId: 1, patientId: 1 });
-allergySchema.index({ pharmacyId: 1, substance: 1 });
-allergySchema.index({ pharmacyId: 1, isDeleted: 1 });
+allergySchema.index({ workplaceId: 1, patientId: 1 });
+allergySchema.index({ workplaceId: 1, substance: 1 });
+allergySchema.index({ workplaceId: 1, isDeleted: 1 });
 allergySchema.index({ severity: 1 });
 allergySchema.index({ createdAt: -1 });
 
 // Compound index to prevent duplicate allergies for the same patient
 allergySchema.index(
-  { pharmacyId: 1, patientId: 1, substance: 1 },
+  { workplaceId: 1, patientId: 1, substance: 1 },
   { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } }
 );
 
@@ -105,11 +105,11 @@ allergySchema.pre('save', function (this: IAllergy) {
 // Static method to find allergies for a patient
 allergySchema.statics.findByPatient = function (
   patientId: mongoose.Types.ObjectId,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query: any = { patientId };
-  if (pharmacyId) {
-    return this.find(query).setOptions({ pharmacyId });
+  if (workplaceId) {
+    return this.find(query).setOptions({ workplaceId });
   }
   return this.find(query);
 };
@@ -117,14 +117,14 @@ allergySchema.statics.findByPatient = function (
 // Static method to find by substance
 allergySchema.statics.findBySubstance = function (
   substance: string,
-  pharmacyId?: mongoose.Types.ObjectId
+  workplaceId?: mongoose.Types.ObjectId
 ) {
   const query = {
     substance: new RegExp(substance, 'i'), // Case-insensitive search
   };
 
-  if (pharmacyId) {
-    return this.find(query).setOptions({ pharmacyId });
+  if (workplaceId) {
+    return this.find(query).setOptions({ workplaceId });
   }
   return this.find(query);
 };

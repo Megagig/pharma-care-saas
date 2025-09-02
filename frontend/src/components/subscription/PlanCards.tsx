@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -10,7 +9,6 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  Chip,
   Grid,
 } from '@mui/material';
 import {
@@ -156,14 +154,12 @@ const PlanCards: React.FC<PlanCardsProps> = ({ plans }) => {
                 }}
                 onClick={plan.onSelectPlan}
               >
-                {plan.actionText || (plan.popular ? 'Start Free Trial' : 'Get Started')}
+                {plan.actionText ||
+                  (plan.popular ? 'Start Free Trial' : 'Get Started')}
               </Button>
 
               <Box sx={{ flexGrow: 1 }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 600, mb: 2 }}
-                >
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
                   What's included:
                 </Typography>
                 <List disablePadding>

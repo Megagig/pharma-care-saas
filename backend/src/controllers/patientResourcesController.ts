@@ -42,8 +42,8 @@ export const createCondition = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -61,7 +61,7 @@ export const createCondition = asyncHandler(
     const condition = new Condition({
       ...req.body,
       patientId,
-      pharmacyId: patient!.pharmacyId,
+      workplaceId: patient!.workplaceId,
       createdBy: context.userId,
     });
 
@@ -80,8 +80,8 @@ export const getConditions = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -108,8 +108,8 @@ export const updateCondition = asyncHandler(
     const condition = await Condition.findById(conditionId);
     ensureResourceExists(condition, 'Condition', conditionId);
     checkTenantAccess(
-      condition!.pharmacyId.toString(),
-      context.pharmacyId,
+      condition!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -128,8 +128,8 @@ export const deleteCondition = asyncHandler(
     const condition = await Condition.findById(conditionId);
     ensureResourceExists(condition, 'Condition', conditionId);
     checkTenantAccess(
-      condition!.pharmacyId.toString(),
-      context.pharmacyId,
+      condition!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -153,8 +153,8 @@ export const createMedication = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -167,7 +167,7 @@ export const createMedication = asyncHandler(
     const medication = new MedicationRecord({
       ...req.body,
       patientId,
-      pharmacyId: patient!.pharmacyId,
+      workplaceId: patient!.workplaceId,
       createdBy: context.userId,
     });
 
@@ -186,8 +186,8 @@ export const getMedications = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -214,8 +214,8 @@ export const updateMedication = asyncHandler(
     const medication = await MedicationRecord.findById(medId);
     ensureResourceExists(medication, 'Medication', medId);
     checkTenantAccess(
-      medication!.pharmacyId.toString(),
-      context.pharmacyId,
+      medication!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -241,8 +241,8 @@ export const deleteMedication = asyncHandler(
     const medication = await MedicationRecord.findById(medId);
     ensureResourceExists(medication, 'Medication', medId);
     checkTenantAccess(
-      medication!.pharmacyId.toString(),
-      context.pharmacyId,
+      medication!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -266,8 +266,8 @@ export const createAssessment = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -282,7 +282,7 @@ export const createAssessment = asyncHandler(
     const assessment = new ClinicalAssessment({
       ...req.body,
       patientId,
-      pharmacyId: patient!.pharmacyId,
+      workplaceId: patient!.workplaceId,
       createdBy: context.userId,
     });
 
@@ -315,8 +315,8 @@ export const getAssessments = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -340,8 +340,8 @@ export const updateAssessment = asyncHandler(
     const assessment = await ClinicalAssessment.findById(assessmentId);
     ensureResourceExists(assessment, 'Assessment', assessmentId);
     checkTenantAccess(
-      assessment!.pharmacyId.toString(),
-      context.pharmacyId,
+      assessment!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -371,22 +371,22 @@ export const createDTP = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
     const dtp = new DrugTherapyProblem({
       ...req.body,
       patientId,
-      pharmacyId: patient!.pharmacyId,
+      workplaceId: patient!.workplaceId,
       createdBy: context.userId,
     });
 
     await dtp.save();
 
     // Update patient's hasActiveDTP flag
-    if (dtp.status === 'unresolved') {
+    if (dtp.status === 'identified') {
       patient!.hasActiveDTP = true;
       await patient!.save();
     }
@@ -404,8 +404,8 @@ export const getDTPs = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -432,8 +432,8 @@ export const updateDTP = asyncHandler(
     const dtp = await DrugTherapyProblem.findById(dtpId);
     ensureResourceExists(dtp, 'DTP', dtpId);
     checkTenantAccess(
-      dtp!.pharmacyId.toString(),
-      context.pharmacyId,
+      dtp!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -470,8 +470,8 @@ export const createCarePlan = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -484,7 +484,7 @@ export const createCarePlan = asyncHandler(
     const carePlan = new CarePlan({
       ...req.body,
       patientId,
-      pharmacyId: patient!.pharmacyId,
+      workplaceId: patient!.workplaceId,
       createdBy: context.userId,
     });
 
@@ -503,8 +503,8 @@ export const getCarePlans = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -528,8 +528,8 @@ export const updateCarePlan = asyncHandler(
     const carePlan = await CarePlan.findById(carePlanId);
     ensureResourceExists(carePlan, 'CarePlan', carePlanId);
     checkTenantAccess(
-      carePlan!.pharmacyId.toString(),
-      context.pharmacyId,
+      carePlan!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -558,15 +558,15 @@ export const createVisit = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
     const visit = new Visit({
       ...req.body,
       patientId,
-      pharmacyId: patient!.pharmacyId,
+      workplaceId: patient!.workplaceId,
       createdBy: context.userId,
     });
 
@@ -585,8 +585,8 @@ export const getVisits = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -613,8 +613,8 @@ export const getVisit = asyncHandler(
     );
     ensureResourceExists(visit, 'Visit', visitId);
     checkTenantAccess(
-      visit!.pharmacyId.toString(),
-      context.pharmacyId,
+      visit!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -630,8 +630,8 @@ export const updateVisit = asyncHandler(
     const visit = await Visit.findById(visitId);
     ensureResourceExists(visit, 'Visit', visitId);
     checkTenantAccess(
-      visit!.pharmacyId.toString(),
-      context.pharmacyId,
+      visit!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -650,8 +650,8 @@ export const addVisitAttachment = asyncHandler(
     const visit = await Visit.findById(visitId);
     ensureResourceExists(visit, 'Visit', visitId);
     checkTenantAccess(
-      visit!.pharmacyId.toString(),
-      context.pharmacyId,
+      visit!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 

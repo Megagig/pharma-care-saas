@@ -111,9 +111,21 @@ const userSchema = new mongoose_1.Schema({
         type: String,
         index: { expires: '1h' },
     },
-    pharmacyId: {
+    workplaceId: {
         type: mongoose_1.default.Schema.Types.ObjectId,
-        ref: 'Pharmacy',
+        ref: 'Workplace',
+        index: true,
+    },
+    workplaceRole: {
+        type: String,
+        enum: [
+            'Owner',
+            'Staff',
+            'Pharmacist',
+            'Cashier',
+            'Technician',
+            'Assistant',
+        ],
         index: true,
     },
     currentPlanId: {
@@ -189,6 +201,36 @@ const userSchema = new mongoose_1.Schema({
         type: String,
         sparse: true,
         index: true,
+    },
+    notificationPreferences: {
+        email: {
+            type: Boolean,
+            default: true,
+        },
+        sms: {
+            type: Boolean,
+            default: false,
+        },
+        push: {
+            type: Boolean,
+            default: true,
+        },
+        followUpReminders: {
+            type: Boolean,
+            default: true,
+        },
+        criticalAlerts: {
+            type: Boolean,
+            default: true,
+        },
+        dailyDigest: {
+            type: Boolean,
+            default: false,
+        },
+        weeklyReport: {
+            type: Boolean,
+            default: false,
+        },
     },
 }, { timestamps: true });
 userSchema.pre('save', async function (next) {

@@ -36,9 +36,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const tenancyGuard_1 = require("../utils/tenancyGuard");
 const conditionSchema = new mongoose_1.Schema({
-    pharmacyId: {
+    workplaceId: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Pharmacy',
+        ref: 'Workplace',
         required: true,
         index: true,
     },
@@ -97,15 +97,15 @@ const conditionSchema = new mongoose_1.Schema({
     toObject: { virtuals: true },
 });
 (0, tenancyGuard_1.addAuditFields)(conditionSchema);
-conditionSchema.plugin(tenancyGuard_1.tenancyGuardPlugin);
-conditionSchema.index({ pharmacyId: 1, patientId: 1 });
-conditionSchema.index({ pharmacyId: 1, name: 1 });
-conditionSchema.index({ pharmacyId: 1, status: 1 });
-conditionSchema.index({ pharmacyId: 1, isDeleted: 1 });
+conditionSchema.plugin(tenancyGuard_1.tenancyGuardPlugin, { pharmacyIdField: 'workplaceId' });
+conditionSchema.index({ workplaceId: 1, patientId: 1 });
+conditionSchema.index({ workplaceId: 1, name: 1 });
+conditionSchema.index({ workplaceId: 1, status: 1 });
+conditionSchema.index({ workplaceId: 1, isDeleted: 1 });
 conditionSchema.index({ snomedId: 1 }, { sparse: true });
 conditionSchema.index({ onsetDate: -1 });
 conditionSchema.index({ createdAt: -1 });
-conditionSchema.index({ pharmacyId: 1, patientId: 1, name: 1 }, { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } });
+conditionSchema.index({ workplaceId: 1, patientId: 1, name: 1 }, { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } });
 conditionSchema.virtual('patient', {
     ref: 'Patient',
     localField: 'patientId',
@@ -121,29 +121,29 @@ conditionSchema.pre('save', function () {
         this.onsetDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     }
 });
-conditionSchema.statics.findByPatient = function (patientId, status, pharmacyId) {
+conditionSchema.statics.findByPatient = function (patientId, status, workplaceId) {
     const query = { patientId };
     if (status) {
         query.status = status;
     }
-    if (pharmacyId) {
-        return this.find(query).setOptions({ pharmacyId }).sort({ onsetDate: -1 });
+    if (workplaceId) {
+        return this.find(query).setOptions({ workplaceId }).sort({ onsetDate: -1 });
     }
     return this.find(query).sort({ onsetDate: -1 });
 };
-conditionSchema.statics.findActiveConditions = function (pharmacyId) {
+conditionSchema.statics.findActiveConditions = function (workplaceId) {
     const query = { status: 'active' };
-    if (pharmacyId) {
-        return this.find(query).setOptions({ pharmacyId }).sort({ createdAt: -1 });
+    if (workplaceId) {
+        return this.find(query).setOptions({ workplaceId }).sort({ createdAt: -1 });
     }
     return this.find(query).sort({ createdAt: -1 });
 };
-conditionSchema.statics.searchByName = function (searchTerm, pharmacyId) {
+conditionSchema.statics.searchByName = function (searchTerm, workplaceId) {
     const query = {
         name: new RegExp(searchTerm, 'i'),
     };
-    if (pharmacyId) {
-        return this.find(query).setOptions({ pharmacyId }).sort({ name: 1 });
+    if (workplaceId) {
+        return this.find(query).setOptions({ workplaceId }).sort({ name: 1 });
     }
     return this.find(query).sort({ name: 1 });
 };

@@ -36,9 +36,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const tenancyGuard_1 = require("../utils/tenancyGuard");
 const drugTherapyProblemSchema = new mongoose_1.Schema({
-    pharmacyId: {
+    workplaceId: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Pharmacy',
+        ref: 'Workplace',
         required: true,
         index: true,
     },
@@ -53,35 +53,108 @@ const drugTherapyProblemSchema = new mongoose_1.Schema({
         ref: 'Visit',
         index: true,
     },
+    reviewId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'MedicationTherapyReview',
+        index: true,
+    },
+    category: {
+        type: String,
+        enum: tenancyGuard_1.DTP_CATEGORIES,
+        required: [true, 'DTP category is required'],
+        index: true,
+    },
+    subcategory: {
+        type: String,
+        trim: true,
+        maxlength: [100, 'Subcategory cannot exceed 100 characters'],
+    },
     type: {
         type: String,
         enum: tenancyGuard_1.DTP_TYPES,
         required: [true, 'DTP type is required'],
         index: true,
     },
+    severity: {
+        type: String,
+        enum: tenancyGuard_1.DTP_SEVERITIES,
+        required: [true, 'DTP severity is required'],
+        index: true,
+    },
     description: {
         type: String,
+        required: [true, 'DTP description is required'],
         trim: true,
         maxlength: [1000, 'Description cannot exceed 1000 characters'],
     },
+    clinicalSignificance: {
+        type: String,
+        required: [true, 'Clinical significance is required'],
+        trim: true,
+        maxlength: [1000, 'Clinical significance cannot exceed 1000 characters'],
+    },
+    affectedMedications: [
+        {
+            type: String,
+            trim: true,
+            maxlength: [200, 'Medication name cannot exceed 200 characters'],
+        },
+    ],
+    relatedConditions: [
+        {
+            type: String,
+            trim: true,
+            maxlength: [200, 'Condition cannot exceed 200 characters'],
+        },
+    ],
+    evidenceLevel: {
+        type: String,
+        enum: tenancyGuard_1.EVIDENCE_LEVELS,
+        required: [true, 'Evidence level is required'],
+        index: true,
+    },
+    riskFactors: [
+        {
+            type: String,
+            trim: true,
+            maxlength: [200, 'Risk factor cannot exceed 200 characters'],
+        },
+    ],
     status: {
         type: String,
-        enum: ['unresolved', 'resolved'],
-        default: 'unresolved',
+        enum: ['identified', 'addressed', 'monitoring', 'resolved', 'not_applicable'],
+        default: 'identified',
         required: true,
         index: true,
     },
-    resolvedAt: {
-        type: Date,
-        validate: {
-            validator: function (value) {
-                if (value) {
-                    return value >= this.createdAt;
-                }
-                return true;
-            },
-            message: 'Resolved date cannot be before DTP creation',
+    resolution: {
+        action: {
+            type: String,
+            trim: true,
+            maxlength: [1000, 'Resolution action cannot exceed 1000 characters'],
         },
+        outcome: {
+            type: String,
+            trim: true,
+            maxlength: [1000, 'Resolution outcome cannot exceed 1000 characters'],
+        },
+        resolvedAt: Date,
+        resolvedBy: {
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'User',
+        },
+    },
+    identifiedBy: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        index: true,
+    },
+    identifiedAt: {
+        type: Date,
+        required: true,
+        default: Date.now,
+        index: true,
     },
 }, {
     timestamps: true,
@@ -89,13 +162,20 @@ const drugTherapyProblemSchema = new mongoose_1.Schema({
     toObject: { virtuals: true },
 });
 (0, tenancyGuard_1.addAuditFields)(drugTherapyProblemSchema);
-drugTherapyProblemSchema.plugin(tenancyGuard_1.tenancyGuardPlugin);
-drugTherapyProblemSchema.index({ pharmacyId: 1, patientId: 1, status: 1 });
-drugTherapyProblemSchema.index({ pharmacyId: 1, type: 1 });
-drugTherapyProblemSchema.index({ pharmacyId: 1, visitId: 1 });
-drugTherapyProblemSchema.index({ pharmacyId: 1, isDeleted: 1 });
-drugTherapyProblemSchema.index({ status: 1, createdAt: -1 });
-drugTherapyProblemSchema.index({ resolvedAt: -1 }, { sparse: true });
+drugTherapyProblemSchema.plugin(tenancyGuard_1.tenancyGuardPlugin, {
+    pharmacyIdField: 'workplaceId',
+});
+drugTherapyProblemSchema.index({ workplaceId: 1, patientId: 1, status: 1 });
+drugTherapyProblemSchema.index({ workplaceId: 1, reviewId: 1 });
+drugTherapyProblemSchema.index({ workplaceId: 1, type: 1, severity: 1 });
+drugTherapyProblemSchema.index({ workplaceId: 1, category: 1 });
+drugTherapyProblemSchema.index({ workplaceId: 1, visitId: 1 });
+drugTherapyProblemSchema.index({ workplaceId: 1, isDeleted: 1 });
+drugTherapyProblemSchema.index({ status: 1, identifiedAt: -1 });
+drugTherapyProblemSchema.index({ severity: 1, status: 1 });
+drugTherapyProblemSchema.index({ evidenceLevel: 1 });
+drugTherapyProblemSchema.index({ 'resolution.resolvedAt': -1 }, { sparse: true });
+drugTherapyProblemSchema.index({ identifiedBy: 1, identifiedAt: -1 });
 drugTherapyProblemSchema.index({ createdAt: -1 });
 drugTherapyProblemSchema.virtual('patient', {
     ref: 'Patient',
@@ -112,25 +192,24 @@ drugTherapyProblemSchema.virtual('visit', {
 drugTherapyProblemSchema
     .virtual('resolutionDurationDays')
     .get(function () {
-    if (this.resolvedAt && this.createdAt) {
-        const diffTime = Math.abs(this.resolvedAt.getTime() - this.createdAt.getTime());
+    if (this.resolution?.resolvedAt && this.identifiedAt) {
+        const diffTime = Math.abs(this.resolution.resolvedAt.getTime() - this.identifiedAt.getTime());
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
     return null;
 });
 drugTherapyProblemSchema
-    .virtual('severity')
+    .virtual('priority')
     .get(function () {
-    const severityMap = {
-        adverseReaction: 'high',
-        wrongDrug: 'high',
-        doseTooHigh: 'medium',
-        doseTooLow: 'medium',
-        unnecessary: 'medium',
-        inappropriateAdherence: 'medium',
-        needsAdditional: 'low',
-    };
-    return severityMap[this.type] || 'medium';
+    if (this.severity === 'critical')
+        return 'high';
+    if (this.severity === 'major' && ['definite', 'probable'].includes(this.evidenceLevel))
+        return 'high';
+    if (this.severity === 'major')
+        return 'medium';
+    if (this.severity === 'moderate' && this.evidenceLevel === 'definite')
+        return 'medium';
+    return 'low';
 });
 drugTherapyProblemSchema
     .virtual('typeDisplay')
@@ -143,22 +222,40 @@ drugTherapyProblemSchema
         adverseReaction: 'Adverse Reaction',
         inappropriateAdherence: 'Inappropriate Adherence',
         needsAdditional: 'Needs Additional Medication',
+        interaction: 'Drug Interaction',
+        duplication: 'Duplicate Therapy',
+        contraindication: 'Contraindication',
+        monitoring: 'Monitoring Required',
     };
     return typeMap[this.type] || this.type;
 });
 drugTherapyProblemSchema.pre('save', function () {
     if (this.isModified('status') &&
         this.status === 'resolved' &&
-        !this.resolvedAt) {
-        this.resolvedAt = new Date();
+        (!this.resolution || !this.resolution.resolvedAt)) {
+        if (!this.resolution) {
+            this.resolution = {
+                action: 'Status updated to resolved',
+                outcome: 'Problem resolved',
+                resolvedAt: new Date(),
+            };
+        }
+        else {
+            this.resolution.resolvedAt = new Date();
+        }
     }
-    if (this.isModified('status') && this.status === 'unresolved') {
-        this.resolvedAt = undefined;
+    if (this.isModified('status') && this.status !== 'resolved') {
+        if (this.resolution) {
+            this.resolution.resolvedAt = undefined;
+        }
     }
-    const highSeverityTypes = ['adverseReaction', 'wrongDrug'];
-    if (highSeverityTypes.includes(this.type) &&
-        (!this.description || this.description.trim().length < 10)) {
-        throw new Error(`DTP type '${this.type}' requires detailed description (minimum 10 characters)`);
+    if (['critical', 'major'].includes(this.severity) &&
+        this.description.trim().length < 20) {
+        throw new Error(`${this.severity} severity DTPs require detailed description (minimum 20 characters)`);
+    }
+    if (['definite', 'probable'].includes(this.evidenceLevel) &&
+        (!this.clinicalSignificance || this.clinicalSignificance.trim().length < 10)) {
+        throw new Error(`DTPs with ${this.evidenceLevel} evidence level require clinical significance explanation`);
     }
 });
 drugTherapyProblemSchema.post('save', async function () {
@@ -168,8 +265,8 @@ drugTherapyProblemSchema.post('save', async function () {
             .model('DrugTherapyProblem')
             .countDocuments({
             patientId: this.patientId,
-            pharmacyId: this.pharmacyId,
-            status: 'unresolved',
+            workplaceId: this.workplaceId,
+            status: { $in: ['identified', 'addressed', 'monitoring'] },
             isDeleted: { $ne: true },
         });
         await Patient.findByIdAndUpdate(this.patientId, { hasActiveDTP: activeDTPCount > 0 }, { new: true });
@@ -178,37 +275,44 @@ drugTherapyProblemSchema.post('save', async function () {
         console.error('Error updating patient hasActiveDTP flag:', error);
     }
 });
-drugTherapyProblemSchema.statics.findByPatient = function (patientId, status, pharmacyId) {
+drugTherapyProblemSchema.statics.findByPatient = function (patientId, status, workplaceId) {
     const query = { patientId };
     if (status) {
         query.status = status;
     }
-    const baseQuery = pharmacyId
-        ? this.find(query).setOptions({ pharmacyId })
+    const baseQuery = workplaceId
+        ? this.find(query).setOptions({ workplaceId })
         : this.find(query);
     return baseQuery.sort({ status: 1, createdAt: -1 });
 };
-drugTherapyProblemSchema.statics.findByType = function (type, status, pharmacyId) {
+drugTherapyProblemSchema.statics.findByType = function (type, status, workplaceId) {
     const query = { type };
     if (status) {
         query.status = status;
     }
-    const baseQuery = pharmacyId
-        ? this.find(query).setOptions({ pharmacyId })
+    const baseQuery = workplaceId
+        ? this.find(query).setOptions({ workplaceId })
         : this.find(query);
     return baseQuery.sort({ createdAt: -1 });
 };
-drugTherapyProblemSchema.statics.findUnresolved = function (pharmacyId) {
-    const query = { status: 'unresolved' };
-    const baseQuery = pharmacyId
-        ? this.find(query).setOptions({ pharmacyId })
+drugTherapyProblemSchema.statics.findActive = function (workplaceId) {
+    const query = { status: { $in: ['identified', 'addressed', 'monitoring'] } };
+    const baseQuery = workplaceId
+        ? this.find(query).setOptions({ workplaceId })
         : this.find(query);
-    return baseQuery.sort({ createdAt: -1 });
+    return baseQuery.sort({ severity: 1, identifiedAt: -1 });
 };
-drugTherapyProblemSchema.statics.getStatistics = async function (pharmacyId, dateRange) {
+drugTherapyProblemSchema.statics.findByReview = function (reviewId, workplaceId) {
+    const query = { reviewId };
+    const baseQuery = workplaceId
+        ? this.find(query).setOptions({ workplaceId })
+        : this.find(query);
+    return baseQuery.sort({ severity: 1, identifiedAt: -1 });
+};
+drugTherapyProblemSchema.statics.getStatistics = async function (workplaceId, dateRange) {
     const matchStage = {};
-    if (pharmacyId) {
-        matchStage.pharmacyId = pharmacyId;
+    if (workplaceId) {
+        matchStage.workplaceId = workplaceId;
     }
     if (dateRange) {
         matchStage.createdAt = {
@@ -278,29 +382,45 @@ drugTherapyProblemSchema.statics.getStatistics = async function (pharmacyId, dat
         dtpsByType: [],
     });
 };
-drugTherapyProblemSchema.methods.resolve = function (resolvedBy) {
+drugTherapyProblemSchema.methods.resolve = function (action, outcome, resolvedBy) {
     this.status = 'resolved';
-    this.resolvedAt = new Date();
+    this.resolution = {
+        action,
+        outcome,
+        resolvedAt: new Date(),
+        resolvedBy,
+    };
     if (resolvedBy) {
         this.updatedBy = resolvedBy;
     }
 };
 drugTherapyProblemSchema.methods.reopen = function (reopenedBy) {
-    this.status = 'unresolved';
-    this.resolvedAt = undefined;
+    this.status = 'identified';
+    if (this.resolution) {
+        this.resolution.resolvedAt = undefined;
+    }
     if (reopenedBy) {
         this.updatedBy = reopenedBy;
     }
 };
 drugTherapyProblemSchema.methods.isHighSeverity = function () {
-    return ['adverseReaction', 'wrongDrug'].includes(this.type);
+    return ['critical', 'major'].includes(this.severity);
+};
+drugTherapyProblemSchema.methods.isCritical = function () {
+    return this.severity === 'critical';
 };
 drugTherapyProblemSchema.methods.isOverdue = function () {
     if (this.status === 'resolved')
         return false;
-    const daysSinceCreation = Math.floor((Date.now() - this.createdAt.getTime()) / (1000 * 60 * 60 * 24));
-    const overdueThreshold = this.get('severity') === 'high' ? 1 : 7;
-    return daysSinceCreation > overdueThreshold;
+    const daysSinceIdentification = Math.floor((Date.now() - this.identifiedAt.getTime()) / (1000 * 60 * 60 * 24));
+    const overdueThresholds = {
+        critical: 1,
+        major: 3,
+        moderate: 7,
+        minor: 14,
+    };
+    const threshold = overdueThresholds[this.severity] || 7;
+    return daysSinceIdentification > threshold;
 };
 exports.default = mongoose_1.default.model('DrugTherapyProblem', drugTherapyProblemSchema);
 //# sourceMappingURL=DrugTherapyProblem.js.map

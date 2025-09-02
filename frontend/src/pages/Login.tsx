@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -74,9 +74,10 @@ const Login = () => {
       } else {
         throw new Error(response.message || 'Login failed');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      const errorMessage = error.message || 'Invalid email or password';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Invalid email or password';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
