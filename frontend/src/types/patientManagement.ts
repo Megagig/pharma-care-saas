@@ -374,7 +374,12 @@ export interface DTPSearchParams {
 }
 
 // RBAC Types
-export type UserRole = 'owner' | 'pharmacist' | 'technician' | 'admin';
+export type UserRole =
+  | 'owner'
+  | 'pharmacist'
+  | 'technician'
+  | 'admin'
+  | 'super_admin';
 
 export interface RBACPermissions {
   canCreate: boolean;

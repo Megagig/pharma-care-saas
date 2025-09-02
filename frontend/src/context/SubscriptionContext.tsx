@@ -61,9 +61,47 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
 
     try {
       setLoading(true);
+
+      // Get auth token from localStorage or cookies
+      const authToken =
+        localStorage.getItem('authToken') ||
+        localStorage.getItem('token') ||
+        localStorage.getItem('accessToken');
+
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
       const response = await fetch('/api/subscriptions/status', {
         credentials: 'include',
+        headers,
       });
+
+      if (!response.ok) {
+        // If unauthorized, set basic access
+        if (response.status === 401) {
+          setSubscriptionStatus({
+            hasWorkspace: false,
+            hasSubscription: false,
+            status: 'unauthorized',
+            accessLevel: 'basic',
+            message: 'Please log in to access subscription features',
+          });
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('Response is not JSON, got:', contentType);
+        throw new Error('Invalid response type from server');
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -80,19 +118,19 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
       }
     } catch (error) {
       console.error('Error fetching subscription status:', error);
-      // Set fallback status on error
+      // Set fallback status on error - allow basic access for super admin
       setSubscriptionStatus({
-        hasWorkspace: false,
+        hasWorkspace: !!user?.workplaceId,
         hasSubscription: false,
         status: 'error',
-        accessLevel: 'basic',
+        accessLevel:
+          (user?.role as string) === 'super_admin' ? 'full' : 'basic',
         message: 'Failed to load subscription data',
       });
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchSubscriptionStatus();
   }, [user]);
@@ -111,7 +149,9 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
   const isActive =
     subscriptionStatus?.accessLevel === 'full' ||
     subscriptionStatus?.isTrialActive ||
-    user?.role === 'super_admin';
+    (user?.role as string) === 'super_admin' ||
+    (subscriptionStatus?.status === 'error' &&
+      (user?.role as string) === 'super_admin');
 
   const value = {
     subscriptionStatus,
