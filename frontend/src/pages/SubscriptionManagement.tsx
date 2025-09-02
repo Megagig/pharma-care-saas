@@ -27,6 +27,7 @@ import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import CheckIcon from '@mui/icons-material/Check';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
+import axios from 'axios';
 
 interface Plan {
   _id: string;
@@ -82,29 +83,34 @@ const SubscriptionManagement: React.FC = () => {
       setLoading(true);
 
       // Fetch subscription status
-      const statusResponse = await fetch('/api/subscriptions/status', {
-        credentials: 'include',
+      const statusResponse = await axios.get('/api/subscriptions/status', {
+        withCredentials: true, // Use httpOnly cookies for authentication
       });
-      const statusData = await statusResponse.json();
 
-      if (statusData.success) {
-        setSubscriptionStatus(statusData.data);
+      if (statusResponse.data.success) {
+        setSubscriptionStatus(statusResponse.data.data);
       }
 
       // Fetch available plans
-      const plansResponse = await fetch(
+      const plansResponse = await axios.get(
         `/api/subscriptions/plans?billingInterval=${billingInterval}`,
         {
-          credentials: 'include',
+          withCredentials: true, // Use httpOnly cookies for authentication
         }
       );
-      const plansData = await plansResponse.json();
 
-      if (plansData.success) {
-        setPlans(plansData.data);
+      if (plansResponse.data.success) {
+        setPlans(plansResponse.data.data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching subscription data:', error);
+
+      if (error.response?.status === 401) {
+        // User not authenticated, redirect to login
+        window.location.href = '/login';
+        return;
+      }
+
       setError('Failed to load subscription information');
     } finally {
       setLoading(false);
@@ -136,28 +142,25 @@ const SubscriptionManagement: React.FC = () => {
     try {
       setLoading(true);
 
-      const response = await fetch('/api/subscriptions/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
+      const response = await axios.post(
+        '/api/subscriptions/checkout',
+        {
           planId: plan._id,
           billingInterval,
           callbackUrl: `${window.location.origin}/subscription/success`,
-        }),
-      });
+        },
+        {
+          withCredentials: true, // Use httpOnly cookies for authentication
+        }
+      );
 
-      const data = await response.json();
-
-      if (data.success && data.data?.authorization_url) {
+      if (response.data.success && response.data.data?.authorization_url) {
         // Redirect to payment provider checkout
-        window.location.href = data.data.authorization_url;
+        window.location.href = response.data.data.authorization_url;
       } else {
-        setError(data.message || 'Failed to initialize payment');
+        setError(response.data.message || 'Failed to initialize payment');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating checkout session:', error);
       setError('Failed to start upgrade process');
     } finally {

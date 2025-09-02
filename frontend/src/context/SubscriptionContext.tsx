@@ -6,6 +6,7 @@ import React, {
   ReactNode,
 } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import axios from 'axios';
 
 interface SubscriptionStatus {
   hasWorkspace: boolean;
@@ -62,50 +63,23 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
     try {
       setLoading(true);
 
-      // Get auth token from localStorage or cookies
-      const authToken =
-        localStorage.getItem('authToken') ||
-        localStorage.getItem('token') ||
-        localStorage.getItem('accessToken');
+      console.log(
+        '🔍 SubscriptionContext: Making request to /api/subscriptions/status'
+      );
 
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-
-      const response = await fetch('/api/subscriptions/status', {
-        credentials: 'include',
-        headers,
+      const response = await axios.get('/api/subscriptions/status', {
+        withCredentials: true, // Use httpOnly cookies for authentication
       });
 
-      if (!response.ok) {
-        // If unauthorized, set basic access
-        if (response.status === 401) {
-          setSubscriptionStatus({
-            hasWorkspace: false,
-            hasSubscription: false,
-            status: 'unauthorized',
-            accessLevel: 'basic',
-            message: 'Please log in to access subscription features',
-          });
-          return;
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      console.log('🔍 SubscriptionContext: Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.config.url,
+        headers: response.headers,
+      });
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        console.warn('Response is not JSON, got:', contentType);
-        throw new Error('Invalid response type from server');
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSubscriptionStatus(data.data);
+      if (response.data.success) {
+        setSubscriptionStatus(response.data.data);
       } else {
         // Fallback status for users without subscription data
         setSubscriptionStatus({
@@ -116,8 +90,21 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
           message: 'No subscription data available',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching subscription status:', error);
+
+      // If unauthorized, set basic access
+      if (error.response?.status === 401) {
+        setSubscriptionStatus({
+          hasWorkspace: false,
+          hasSubscription: false,
+          status: 'unauthorized',
+          accessLevel: 'basic',
+          message: 'Please log in to access subscription features',
+        });
+        return;
+      }
+
       // Set fallback status on error - allow basic access for super admin
       setSubscriptionStatus({
         hasWorkspace: !!user?.workplaceId,

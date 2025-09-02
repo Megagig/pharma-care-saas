@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -58,34 +60,25 @@ interface PaginatedPayments {
 
 class PaymentService {
   private async makeRequest(url: string, options: RequestInit = {}) {
-    // Get the token from localStorage
-    const token = localStorage.getItem('accessToken');
-    if (!token && !url.includes('/public/')) {
-      throw new Error('No access token found');
-    }
+    try {
+      const response = await axios(`${API_BASE_URL}${url}`, {
+        method: (options.method || 'GET') as any,
+        data: options.body ? JSON.parse(options.body as string) : undefined,
+        headers: {
+          'Content-Type': 'application/json',
+          ...((options.headers as Record<string, string>) || {}),
+        },
+        withCredentials: true, // Include httpOnly cookies for authentication
+      });
 
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-        ...options.headers,
-      },
-      credentials: 'include', // Include httpOnly cookies
-      ...options,
-    };
-
-    const response = await fetch(`${API_BASE_URL}${url}`, config);
-
-    if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({ message: 'An error occurred' }));
+      return response.data;
+    } catch (error: any) {
       throw new Error(
-        errorData.message || `HTTP error! status: ${response.status}`
+        error.response?.data?.message ||
+          error.message ||
+          `Request failed with status: ${error.response?.status || 'unknown'}`
       );
     }
-
-    return response.json();
   }
 
   // Payment History Methods

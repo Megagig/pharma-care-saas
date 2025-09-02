@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -53,60 +55,71 @@ class AuthService {
   private refreshPromise: Promise<boolean> | null = null;
 
   async makeRequest(url: string, options: RequestInit = {}) {
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...((options.headers as Record<string, string>) || {}),
-      },
-      credentials: 'include' as RequestCredentials, // Always include cookies
-      ...options,
-    };
+    try {
+      const response = await axios({
+        url: `${API_BASE_URL}${url}`,
+        method: (options.method as any) || 'GET',
+        data: options.body ? JSON.parse(options.body as string) : undefined,
+        headers: {
+          'Content-Type': 'application/json',
+          ...((options.headers as Record<string, string>) || {}),
+        },
+        withCredentials: true, // Always include cookies
+      });
 
-    let response = await fetch(`${API_BASE_URL}${url}`, config);
-
-    // If token expired, try to refresh (but avoid infinite loops)
-    if (
-      response.status === 401 &&
-      !url.includes('/auth/refresh-token') &&
-      !url.includes('/auth/me') &&
-      !url.includes('/auth/login') &&
-      !url.includes('/auth/register')
-    ) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        // Retry the original request
-        response = await fetch(`${API_BASE_URL}${url}`, config);
+      return response.data;
+    } catch (error: any) {
+      // If token expired, try to refresh (but avoid infinite loops)
+      if (
+        error.response?.status === 401 &&
+        !url.includes('/auth/refresh-token') &&
+        !url.includes('/auth/me') &&
+        !url.includes('/auth/login') &&
+        !url.includes('/auth/register')
+      ) {
+        const refreshed = await this.refreshAccessToken();
+        if (refreshed) {
+          // Retry the original request
+          const retryResponse = await axios({
+            url: `${API_BASE_URL}${url}`,
+            method: (options.method as any) || 'GET',
+            data: options.body ? JSON.parse(options.body as string) : undefined,
+            headers: {
+              'Content-Type': 'application/json',
+              ...((options.headers as Record<string, string>) || {}),
+            },
+            withCredentials: true,
+          });
+          return retryResponse.data;
+        }
       }
-    }
 
-    const data = await response.json();
-
-    if (!response.ok) {
       // Handle different types of authentication/authorization errors
-      if (response.status === 401) {
+      if (error.response?.status === 401) {
         // Only redirect to login if this is not an auth check
         if (!url.includes('/auth/me') && !url.includes('/auth/refresh-token')) {
           window.location.href = '/login';
         }
-        const error: AuthError = new Error(
-          data.message || 'Authentication failed'
+        const authError: AuthError = new Error(
+          error.response.data?.message || 'Authentication failed'
         );
-        error.status = response.status;
-        throw error;
-      } else if (response.status === 402) {
+        authError.status = error.response.status;
+        throw authError;
+      } else if (error.response?.status === 402) {
         // Payment/subscription required - don't logout, just throw error
-        const error: AuthError = new Error(
-          data.message || 'Subscription required'
+        const authError: AuthError = new Error(
+          error.response.data?.message || 'Subscription required'
         );
-        error.status = response.status;
-        throw error;
+        authError.status = error.response.status;
+        throw authError;
       }
-      const error: AuthError = new Error(data.message || 'An error occurred');
-      error.status = response.status;
-      throw error;
-    }
 
-    return data;
+      const authError: AuthError = new Error(
+        error.response?.data?.message || error.message || 'An error occurred'
+      );
+      authError.status = error.response?.status;
+      throw authError;
+    }
   }
 
   async refreshAccessToken(): Promise<boolean> {
@@ -123,12 +136,15 @@ class AuthService {
 
   private async performRefresh(): Promise<boolean> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
-        method: 'POST',
-        credentials: 'include', // Include httpOnly cookies
-      });
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/refresh-token`,
+        {},
+        {
+          withCredentials: true, // Include httpOnly cookies
+        }
+      );
 
-      if (response.ok) {
+      if (response.status === 200) {
         // New access token is automatically set as httpOnly cookie by server
         return true;
       } else {

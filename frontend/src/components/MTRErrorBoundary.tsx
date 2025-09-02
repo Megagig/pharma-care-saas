@@ -110,12 +110,10 @@ class MTRErrorBoundary extends Component<Props, State> {
       userId: this.getUserId(), // Get from auth context if available
     };
 
-    // Send to logging service or store locally
+    // Send to logging service only (no local storage for security)
     try {
-      localStorage.setItem(
-        `mtr-error-${this.state.errorId}`,
-        JSON.stringify(errorLog)
-      );
+      // Note: localStorage removed for security - errors are only logged to console in development
+      console.error('MTR Error Log:', errorLog);
 
       // In production, send to error tracking service
       if (process.env.NODE_ENV === 'production') {
@@ -128,21 +126,12 @@ class MTRErrorBoundary extends Component<Props, State> {
   };
 
   private getUserId = (): string | null => {
-    // Try to get user ID from various sources
+    // Note: Authentication moved to httpOnly cookies for security
+    // User ID is not accessible from client-side storage
     try {
-      // From localStorage
-      const authData = localStorage.getItem('auth');
-      if (authData) {
-        const parsed = JSON.parse(authData);
-        return parsed.user?.id || null;
-      }
-
-      // From sessionStorage
-      const sessionAuth = sessionStorage.getItem('auth');
-      if (sessionAuth) {
-        const parsed = JSON.parse(sessionAuth);
-        return parsed.user?.id || null;
-      }
+      // In production, this would be retrieved from the auth context/hook
+      // For error logging, user ID can be omitted or retrieved from server
+      return null; // User ID not available from local storage anymore
     } catch {
       // Ignore parsing errors
     }
