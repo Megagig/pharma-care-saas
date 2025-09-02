@@ -7,6 +7,7 @@ exports.webhookController = exports.WebhookController = void 0;
 const crypto_1 = __importDefault(require("crypto"));
 const Subscription_1 = __importDefault(require("../models/Subscription"));
 const User_1 = __importDefault(require("../models/User"));
+const Workplace_1 = __importDefault(require("../models/Workplace"));
 const Payment_1 = __importDefault(require("../models/Payment"));
 const SubscriptionPlan_1 = __importDefault(require("../models/SubscriptionPlan"));
 const emailService_1 = require("../utils/emailService");
@@ -373,7 +374,7 @@ class WebhookController {
                 });
                 return;
             }
-            subscription.status = 'cancelled';
+            subscription.status = 'canceled';
             subscription.autoRenew = false;
             subscription.webhookEvents.push({
                 eventId: event.id,
@@ -382,7 +383,8 @@ class WebhookController {
                 data: event.data,
             });
             await subscription.save();
-            const user = await User_1.default.findById(subscription.userId);
+            const workspace = await Workplace_1.default.findById(subscription.workspaceId);
+            const user = workspace ? await User_1.default.findById(workspace.ownerId) : null;
             if (user) {
                 await emailService_1.emailService.sendEmail({
                     to: user.email,
@@ -399,7 +401,7 @@ class WebhookController {
             }
             logger_1.default.info('Subscription cancelled via webhook', {
                 subscriptionId,
-                userId: subscription.userId,
+                workspaceId: subscription.workspaceId,
             });
         }
         catch (error) {
@@ -428,7 +430,8 @@ class WebhookController {
                 data: event.data,
             });
             await subscription.save();
-            const user = await User_1.default.findById(subscription.userId);
+            const workspace = await Workplace_1.default.findById(subscription.workspaceId);
+            const user = workspace ? await User_1.default.findById(workspace.ownerId) : null;
             if (user) {
                 await emailService_1.emailService.sendEmail({
                     to: user.email,
@@ -445,7 +448,7 @@ class WebhookController {
             }
             logger_1.default.info('Subscription expiring soon notification sent', {
                 subscriptionId,
-                userId: subscription.userId,
+                workspaceId: subscription.workspaceId,
                 daysRemaining,
             });
         }

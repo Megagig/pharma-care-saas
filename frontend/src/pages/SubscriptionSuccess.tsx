@@ -1,201 +1,225 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Container,
-  Paper,
+  Card,
+  CardContent,
   Typography,
   Button,
   Box,
-  Alert,
   CircularProgress,
+  Alert,
+  Divider,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { subscriptionService } from '../services/subscriptionService';
-import { useAuth } from '../hooks/useAuth';
+import {
+  CheckCircle as CheckIcon,
+  Error as ErrorIcon,
+  Home as HomeIcon,
+  Receipt as ReceiptIcon,
+} from '@mui/icons-material';
 
 const SubscriptionSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [processing, setProcessing] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [subscriptionData, setSubscriptionData] = useState<any>(null);
 
   const reference = searchParams.get('reference');
+  const trxref = searchParams.get('trxref'); // Paystack also uses this parameter
 
   useEffect(() => {
-    const handleSuccessfulPayment = async () => {
-      if (!reference) {
+    const verifyPayment = async () => {
+      const paymentRef = reference || trxref;
+
+      if (!paymentRef) {
         setError('No payment reference found');
-        setProcessing(false);
+        setLoading(false);
         return;
       }
 
       try {
-        // In development mode with simulated payments, directly mark as successful
-        if (reference.startsWith('test_')) {
-          console.log('🧪 Processing simulated payment success');
-          // Simulate API call delay
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          setProcessing(false);
+        // First verify the payment with Paystack (this doesn't require auth)
+        const verifyResponse = await fetch(
+          `/api/subscriptions/verify-payment?reference=${paymentRef}`
+        );
+        const verifyData = await verifyResponse.json();
+
+        if (!verifyData.success) {
+          setError(verifyData.message || 'Payment verification failed');
+          setLoading(false);
           return;
         }
 
-        // First verify the payment with Paystack (this doesn't require auth)
-        const response = await subscriptionService.verifyPayment(reference);
+        // Then process the subscription activation (this requires auth)
+        const activateResponse = await fetch('/api/subscriptions/success', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            paymentReference: paymentRef,
+          }),
+        });
 
-        if (response.success) {
-          console.log('✅ Payment verification successful');
-          setProcessing(false);
+        const activateData = await activateResponse.json();
 
-          try {
-            // Now attempt to activate the subscription (requires auth)
-            const activationResponse =
-              await subscriptionService.handleSuccessfulPayment(reference);
-
-            if (activationResponse.success) {
-              console.log('✅ Subscription activated successfully');
-            }
-          } catch (activationError) {
-            // If activation fails due to auth, we still show success
-            // The subscription will be activated when they sign in
-            console.warn(
-              'Could not activate subscription immediately, will be activated on next login',
-              activationError
-            );
-          }
+        if (activateData.success) {
+          setSuccess(true);
+          setSubscriptionData(activateData.data);
         } else {
-          setError(response.message || 'Payment verification failed');
+          setError(activateData.message || 'Failed to activate subscription');
         }
-      } catch (error: unknown) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : 'An unexpected error occurred';
-        console.error('❌ Error processing payment:', error);
-        setError(errorMessage);
+      } catch (error) {
+        console.error('Error verifying payment:', error);
+        setError('An error occurred while processing your payment');
       } finally {
-        setProcessing(false);
+        setLoading(false);
       }
     };
 
-    handleSuccessfulPayment();
-  }, [reference]);
+    verifyPayment();
+  }, [reference, trxref]);
 
-  if (processing) {
+  const handleGoToDashboard = () => {
+    navigate('/dashboard');
+  };
+
+  const handleViewSubscription = () => {
+    navigate('/subscription-management');
+  };
+
+  if (loading) {
     return (
-      <Container maxWidth="sm" sx={{ py: 8 }}>
-        <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
-          <CircularProgress size={60} sx={{ mb: 3 }} />
-          <Typography variant="h5" gutterBottom>
-            Processing Your Subscription
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Please wait while we activate your subscription...
-          </Typography>
-        </Paper>
+      <Container maxWidth="sm" sx={{ mt: 8, textAlign: 'center' }}>
+        <Card>
+          <CardContent sx={{ py: 6 }}>
+            <CircularProgress size={60} sx={{ mb: 3 }} />
+            <Typography variant="h6" gutterBottom>
+              Processing Your Payment
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Please wait while we verify your payment and activate your
+              subscription...
+            </Typography>
+          </CardContent>
+        </Card>
       </Container>
     );
   }
 
   if (error) {
     return (
-      <Container maxWidth="sm" sx={{ py: 8 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Alert severity="error" sx={{ mb: 3 }}>
-            <Typography variant="h6">Subscription Activation Failed</Typography>
-            <Typography variant="body2">{error}</Typography>
-          </Alert>
-
-          <Box sx={{ textAlign: 'center', mt: 3 }}>
-            <Button
-              variant="contained"
-              onClick={() => navigate('/subscriptions')}
-              sx={{ mr: 2 }}
-            >
-              Try Again
-            </Button>
-            <Button variant="outlined" onClick={() => navigate('/contact')}>
-              Contact Support
-            </Button>
-          </Box>
-        </Paper>
+      <Container maxWidth="sm" sx={{ mt: 8 }}>
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 6 }}>
+            <ErrorIcon sx={{ fontSize: 80, color: 'error.main', mb: 2 }} />
+            <Typography variant="h5" gutterBottom>
+              Payment Failed
+            </Typography>
+            <Typography variant="body1" color="text.secondary" paragraph>
+              {error}
+            </Typography>
+            <Box sx={{ mt: 3 }}>
+              <Button
+                variant="contained"
+                onClick={() => navigate('/subscription-management')}
+                sx={{ mr: 2 }}
+              >
+                Try Again
+              </Button>
+              <Button variant="outlined" onClick={handleGoToDashboard}>
+                Go to Dashboard
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
       </Container>
     );
   }
 
-  return (
-    <Container maxWidth="sm" sx={{ py: 8 }}>
-      <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
-        <CheckCircleIcon color="success" sx={{ fontSize: 80, mb: 3 }} />
-
-        <Typography
-          variant="h4"
-          component="h1"
-          gutterBottom
-          color="success.main"
-        >
-          Payment Successful!
-        </Typography>
-
-        <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
-          Thank you for subscribing to PharmaCare
-        </Typography>
-
-        <Typography variant="body1" sx={{ mb: 4 }}>
-          {user
-            ? 'Your subscription has been successfully activated. You now have access to all the features in your selected plan.'
-            : 'Your payment was successful. Please sign in to access your account and subscription features.'}
-        </Typography>
-
-        {reference && (
-          <Box sx={{ mb: 4, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-            <Typography variant="caption" color="text.secondary">
-              Payment Reference: {reference}
+  if (success) {
+    return (
+      <Container maxWidth="sm" sx={{ mt: 8 }}>
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 6 }}>
+            <CheckIcon sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
+            <Typography variant="h4" gutterBottom color="success.main">
+              Payment Successful!
             </Typography>
-          </Box>
-        )}
+            <Typography variant="body1" color="text.secondary" paragraph>
+              Your subscription has been activated successfully. You now have
+              access to all premium features.
+            </Typography>
 
-        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-          {user ? (
-            <>
+            {subscriptionData && (
+              <>
+                <Divider sx={{ my: 3 }} />
+                <Box sx={{ textAlign: 'left' }}>
+                  <Typography variant="h6" gutterBottom>
+                    Subscription Details
+                  </Typography>
+                  <List dense>
+                    <ListItem>
+                      <ListItemIcon>
+                        <ReceiptIcon />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Plan"
+                        secondary={subscriptionData.planName || 'Premium Plan'}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon>
+                        <CheckIcon />
+                      </ListItemIcon>
+                      <ListItemText primary="Status" secondary="Active" />
+                    </ListItem>
+                    {subscriptionData.endDate && (
+                      <ListItem>
+                        <ListItemIcon>
+                          <CheckIcon />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Valid Until"
+                          secondary={new Date(
+                            subscriptionData.endDate
+                          ).toLocaleDateString()}
+                        />
+                      </ListItem>
+                    )}
+                  </List>
+                </Box>
+              </>
+            )}
+
+            <Box
+              sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}
+            >
               <Button
                 variant="contained"
-                size="large"
-                onClick={() => navigate('/dashboard')}
+                startIcon={<HomeIcon />}
+                onClick={handleGoToDashboard}
               >
                 Go to Dashboard
               </Button>
-
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => navigate('/subscription-management')}
-              >
+              <Button variant="outlined" onClick={handleViewSubscription}>
                 Manage Subscription
               </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="contained"
-                size="large"
-                onClick={() => navigate('/login')}
-              >
-                Sign In
-              </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => navigate('/')}
-              >
-                Go to Homepage
-              </Button>
-            </>
-          )}
-        </Box>
-      </Paper>
-    </Container>
-  );
+            </Box>
+          </CardContent>
+        </Card>
+      </Container>
+    );
+  }
+
+  return null;
 };
 
 export default SubscriptionSuccess;

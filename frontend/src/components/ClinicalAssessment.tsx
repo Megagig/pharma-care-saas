@@ -114,8 +114,7 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
   const createAssessmentMutation = useCreateAssessment();
   const updateAssessmentMutation = useUpdateAssessment();
 
-  const assessments =
-    assessmentsResponse?.assessments || assessmentsResponse || [];
+  const assessments = assessmentsResponse?.data?.results || [];
 
   // Form setup
   const {

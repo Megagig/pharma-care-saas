@@ -3,7 +3,6 @@ import {
   Box,
   Container,
   Typography,
-  Paper,
   Grid,
   Card,
   CardContent,
@@ -21,18 +20,13 @@ import {
   Select,
   MenuItem,
   FormControlLabel,
-  Divider,
   Alert,
-  Tabs,
-  Tab,
   useTheme,
   useMediaQuery,
   Breadcrumbs,
   Link,
   IconButton,
   Tooltip,
-  Fade,
-  Skeleton,
   Table,
   TableBody,
   TableCell,
@@ -46,14 +40,11 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Flag as FlagIcon,
-  Settings as SettingsIcon,
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
   FilterList as FilterIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+
 import { useRBAC } from '../hooks/useRBAC';
 
 // Types
@@ -107,11 +98,9 @@ const USER_ROLES = [
 const FeatureFlagsPage: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { user } = useAuth();
   const { isSuperAdmin } = useRBAC();
-  
+
   // State
-  const [activeTab, setActiveTab] = useState(0);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -119,7 +108,7 @@ const FeatureFlagsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  
+
   // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -153,7 +142,8 @@ const FeatureFlagsPage: React.FC = () => {
             _id: '1',
             name: 'Advanced Analytics',
             key: 'advanced_analytics',
-            description: 'Access to advanced business intelligence dashboards and reports',
+            description:
+              'Access to advanced business intelligence dashboards and reports',
             isActive: true,
             allowedTiers: ['pro', 'pharmily', 'network', 'enterprise'],
             allowedRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet'],
@@ -173,7 +163,8 @@ const FeatureFlagsPage: React.FC = () => {
             _id: '2',
             name: 'Team Management',
             key: 'team_management',
-            description: 'Ability to invite and manage team members across the organization',
+            description:
+              'Ability to invite and manage team members across the organization',
             isActive: true,
             allowedTiers: ['pro', 'pharmily', 'network', 'enterprise'],
             allowedRoles: ['pharmacy_team', 'pharmacy_outlet'],
@@ -192,7 +183,8 @@ const FeatureFlagsPage: React.FC = () => {
             _id: '3',
             name: 'API Access',
             key: 'api_access',
-            description: 'Access to REST API endpoints for external integrations',
+            description:
+              'Access to REST API endpoints for external integrations',
             isActive: false,
             allowedTiers: ['network', 'enterprise'],
             allowedRoles: ['pharmacy_outlet', 'super_admin'],
@@ -219,11 +211,9 @@ const FeatureFlagsPage: React.FC = () => {
   const handleToggleFlag = async (flag: FeatureFlag) => {
     try {
       // Mock API call - replace with actual implementation
-      setFeatureFlags(prev => 
-        prev.map(f => 
-          f._id === flag._id 
-            ? { ...f, isActive: !f.isActive } 
-            : f
+      setFeatureFlags((prev) =>
+        prev.map((f) =>
+          f._id === flag._id ? { ...f, isActive: !f.isActive } : f
         )
       );
     } catch (error) {
@@ -267,30 +257,38 @@ const FeatureFlagsPage: React.FC = () => {
     setDeleteDialogOpen(true);
   };
 
-  const filteredFlags = featureFlags.filter(flag => {
-    const matchesSearch = flag.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          flag.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          flag.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = categoryFilter === 'all' || flag.metadata.category === categoryFilter;
-    const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'active' && flag.isActive) ||
-                         (statusFilter === 'inactive' && !flag.isActive);
+  const filteredFlags = featureFlags.filter((flag) => {
+    const matchesSearch =
+      flag.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      flag.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      flag.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesCategory =
+      categoryFilter === 'all' || flag.metadata.category === categoryFilter;
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && flag.isActive) ||
+      (statusFilter === 'inactive' && !flag.isActive);
 
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
   const getCategoryInfo = (category: string) => {
-    return CATEGORIES.find(c => c.value === category) || CATEGORIES[0];
+    return CATEGORIES.find((c) => c.value === category) || CATEGORIES[0];
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'critical': return 'error';
-      case 'high': return 'warning';
-      case 'medium': return 'info';
-      case 'low': return 'success';
-      default: return 'default';
+      case 'critical':
+        return 'error';
+      case 'high':
+        return 'warning';
+      case 'medium':
+        return 'info';
+      case 'low':
+        return 'success';
+      default:
+        return 'default';
     }
   };
 
@@ -322,23 +320,26 @@ const FeatureFlagsPage: React.FC = () => {
           </Link>
           <Typography color="textPrimary">Feature Flags</Typography>
         </Breadcrumbs>
-        
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 2
-        }}>
+
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
           <Box>
             <Typography variant="h3" component="h1" gutterBottom>
               Feature Flags Management
             </Typography>
             <Typography variant="body1" color="textSecondary">
-              Control feature access across different subscription tiers and user roles
+              Control feature access across different subscription tiers and
+              user roles
             </Typography>
           </Box>
-          
+
           {!isMobile && (
             <Button
               variant="contained"
@@ -354,10 +355,7 @@ const FeatureFlagsPage: React.FC = () => {
 
       {/* Filters Card */}
       <Card sx={{ mb: 4 }}>
-        <CardHeader
-          title="Filters & Search"
-          avatar={<FilterIcon />}
-        />
+        <CardHeader title="Filters & Search" avatar={<FilterIcon />} />
         <CardContent>
           <Grid container spacing={3}>
             <Grid item xs={12} md={4}>
@@ -367,7 +365,9 @@ const FeatureFlagsPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 InputProps={{
-                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                  startAdornment: (
+                    <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  ),
                 }}
               />
             </Grid>
@@ -426,11 +426,16 @@ const FeatureFlagsPage: React.FC = () => {
           }
         />
         <Divider />
-        
+
         {loading ? (
           <Box sx={{ p: 3 }}>
             {Array.from(new Array(5)).map((_, index) => (
-              <Skeleton key={index} variant="rectangular" height={60} sx={{ mb: 1 }} />
+              <Skeleton
+                key={index}
+                variant="rectangular"
+                height={60}
+                sx={{ mb: 1 }}
+              />
             ))}
           </Box>
         ) : (
@@ -475,15 +480,15 @@ const FeatureFlagsPage: React.FC = () => {
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
+                        <Typography
+                          variant="body2"
+                          sx={{
                             fontFamily: 'monospace',
                             backgroundColor: 'background.paper',
                             padding: '2px 6px',
                             borderRadius: 1,
                             border: '1px solid',
-                            borderColor: 'divider'
+                            borderColor: 'divider',
                           }}
                         >
                           {flag.key}
@@ -493,7 +498,16 @@ const FeatureFlagsPage: React.FC = () => {
                         <Chip
                           label={getCategoryInfo(flag.metadata.category).label}
                           size="small"
-                          color={getCategoryInfo(flag.metadata.category).color as any}
+                          color={
+                            getCategoryInfo(flag.metadata.category).color as
+                              | 'default'
+                              | 'primary'
+                              | 'secondary'
+                              | 'error'
+                              | 'info'
+                              | 'success'
+                              | 'warning'
+                          }
                           variant="outlined"
                         />
                       </TableCell>
@@ -501,12 +515,23 @@ const FeatureFlagsPage: React.FC = () => {
                         <Chip
                           label={flag.metadata.priority.toUpperCase()}
                           size="small"
-                          color={getPriorityColor(flag.metadata.priority) as any}
+                          color={
+                            getPriorityColor(flag.metadata.priority) as
+                              | 'default'
+                              | 'primary'
+                              | 'secondary'
+                              | 'error'
+                              | 'info'
+                              | 'success'
+                              | 'warning'
+                          }
                           variant="filled"
                         />
                       </TableCell>
                       <TableCell>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        <Box
+                          sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}
+                        >
                           {flag.allowedTiers.slice(0, 2).map((tier) => (
                             <Chip
                               key={tier}
@@ -609,7 +634,9 @@ const FeatureFlagsPage: React.FC = () => {
                 fullWidth
                 label="Feature Name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -617,7 +644,9 @@ const FeatureFlagsPage: React.FC = () => {
                 fullWidth
                 label="Feature Key"
                 value={formData.key}
-                onChange={(e) => setFormData({ ...formData, key: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, key: e.target.value })
+                }
                 helperText="Unique identifier for the feature"
               />
             </Grid>
@@ -628,7 +657,9 @@ const FeatureFlagsPage: React.FC = () => {
                 rows={3}
                 label="Description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -637,7 +668,9 @@ const FeatureFlagsPage: React.FC = () => {
                 <Select
                   value={formData.category}
                   label="Category"
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, category: e.target.value })
+                  }
                 >
                   {CATEGORIES.map((category) => (
                     <MenuItem key={category.value} value={category.value}>
@@ -653,7 +686,16 @@ const FeatureFlagsPage: React.FC = () => {
                 <Select
                   value={formData.priority}
                   label="Priority"
-                  onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      priority: e.target.value as
+                        | 'low'
+                        | 'medium'
+                        | 'high'
+                        | 'critical',
+                    })
+                  }
                 >
                   <MenuItem value="low">Low</MenuItem>
                   <MenuItem value="medium">Medium</MenuItem>
@@ -669,7 +711,12 @@ const FeatureFlagsPage: React.FC = () => {
                   multiple
                   value={formData.allowedTiers}
                   label="Allowed Tiers"
-                  onChange={(e) => setFormData({ ...formData, allowedTiers: e.target.value as string[] })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      allowedTiers: e.target.value as string[],
+                    })
+                  }
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((value) => (
@@ -693,7 +740,12 @@ const FeatureFlagsPage: React.FC = () => {
                   multiple
                   value={formData.allowedRoles}
                   label="Allowed Roles"
-                  onChange={(e) => setFormData({ ...formData, allowedRoles: e.target.value as string[] })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      allowedRoles: e.target.value as string[],
+                    })
+                  }
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((value) => (
@@ -715,7 +767,9 @@ const FeatureFlagsPage: React.FC = () => {
                 control={
                   <Switch
                     checked={formData.isActive}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isActive: e.target.checked })
+                    }
                   />
                 }
                 label="Active by default"
@@ -725,10 +779,13 @@ const FeatureFlagsPage: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={() => {
-            // Handle create logic here
-            setCreateDialogOpen(false);
-          }}>
+          <Button
+            variant="contained"
+            onClick={() => {
+              // Handle create logic here
+              setCreateDialogOpen(false);
+            }}
+          >
             Create Feature Flag
           </Button>
         </DialogActions>
@@ -754,7 +811,9 @@ const FeatureFlagsPage: React.FC = () => {
                 fullWidth
                 label="Feature Name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -762,7 +821,9 @@ const FeatureFlagsPage: React.FC = () => {
                 fullWidth
                 label="Feature Key"
                 value={formData.key}
-                onChange={(e) => setFormData({ ...formData, key: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, key: e.target.value })
+                }
                 disabled
                 helperText="Key cannot be changed after creation"
               />
@@ -774,7 +835,9 @@ const FeatureFlagsPage: React.FC = () => {
                 rows={3}
                 label="Description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -783,7 +846,9 @@ const FeatureFlagsPage: React.FC = () => {
                 <Select
                   value={formData.category}
                   label="Category"
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, category: e.target.value })
+                  }
                 >
                   {CATEGORIES.map((category) => (
                     <MenuItem key={category.value} value={category.value}>
@@ -799,7 +864,12 @@ const FeatureFlagsPage: React.FC = () => {
                 <Select
                   value={formData.priority}
                   label="Priority"
-                  onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      priority: e.target.value as unknown,
+                    })
+                  }
                 >
                   <MenuItem value="low">Low</MenuItem>
                   <MenuItem value="medium">Medium</MenuItem>
@@ -815,7 +885,12 @@ const FeatureFlagsPage: React.FC = () => {
                   multiple
                   value={formData.allowedTiers}
                   label="Allowed Tiers"
-                  onChange={(e) => setFormData({ ...formData, allowedTiers: e.target.value as string[] })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      allowedTiers: e.target.value as string[],
+                    })
+                  }
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((value) => (
@@ -839,7 +914,12 @@ const FeatureFlagsPage: React.FC = () => {
                   multiple
                   value={formData.allowedRoles}
                   label="Allowed Roles"
-                  onChange={(e) => setFormData({ ...formData, allowedRoles: e.target.value as string[] })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      allowedRoles: e.target.value as string[],
+                    })
+                  }
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((value) => (
@@ -861,7 +941,9 @@ const FeatureFlagsPage: React.FC = () => {
                 control={
                   <Switch
                     checked={formData.isActive}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isActive: e.target.checked })
+                    }
                   />
                 }
                 label="Feature is active"
@@ -871,10 +953,13 @@ const FeatureFlagsPage: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={() => {
-            // Handle update logic here
-            setEditDialogOpen(false);
-          }}>
+          <Button
+            variant="contained"
+            onClick={() => {
+              // Handle update logic here
+              setEditDialogOpen(false);
+            }}
+          >
             Update Feature Flag
           </Button>
         </DialogActions>
@@ -888,17 +973,26 @@ const FeatureFlagsPage: React.FC = () => {
         fullWidth
       >
         <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              color: 'error.main',
+            }}
+          >
             <DeleteIcon />
             Delete Feature Flag
           </Box>
         </DialogTitle>
         <DialogContent>
           <Alert severity="warning" sx={{ mb: 2 }}>
-            This action cannot be undone. This will permanently delete the feature flag and may affect users who depend on it.
+            This action cannot be undone. This will permanently delete the
+            feature flag and may affect users who depend on it.
           </Alert>
           <Typography variant="body1">
-            Are you sure you want to delete the feature flag <strong>"${selectedFlag?.name}"</strong>?
+            Are you sure you want to delete the feature flag{' '}
+            <strong>"${selectedFlag?.name}"</strong>?
           </Typography>
           <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
             Key: {selectedFlag?.key}
@@ -912,7 +1006,9 @@ const FeatureFlagsPage: React.FC = () => {
             onClick={() => {
               // Handle delete logic here
               if (selectedFlag) {
-                setFeatureFlags(prev => prev.filter(f => f._id !== selectedFlag._id));
+                setFeatureFlags((prev) =>
+                  prev.filter((f) => f._id !== selectedFlag._id)
+                );
               }
               setDeleteDialogOpen(false);
             }}

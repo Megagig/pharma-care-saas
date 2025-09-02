@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -101,6 +102,8 @@ const BLOOD_GROUPS: BloodGroup[] = [
 const GENOTYPES: Genotype[] = ['AA', 'AS', 'SS', 'AC', 'SC', 'CC'];
 
 const Patients = () => {
+  const navigate = useNavigate();
+
   // Search and filter state
   const [searchParams, setSearchParams] = useState<PatientSearchParams>({
     page: 1,
@@ -122,10 +125,20 @@ const Patients = () => {
   const deletePatientMutation = useDeletePatient();
 
   // Computed values
-  const patients =
-    patientsResponse?.data?.results || patientsResponse?.data || [];
+  const patients = patientsResponse?.data?.results || [];
   const totalPatients = patientsResponse?.meta?.total || 0;
   const currentPage = (searchParams.page || 1) - 1; // MUI pagination is 0-based
+
+  // Debug logging
+  console.log('Patients page data:', {
+    patientsResponse,
+    patients: patients.length,
+    totalPatients,
+    searchParams,
+    isLoading,
+    isError,
+    error,
+  });
 
   // Event handlers
   const handleQuickSearch = (value: string) => {
@@ -188,14 +201,12 @@ const Patients = () => {
   };
 
   const handleViewPatient = (patientId: string) => {
-    // TODO: Navigate to patient details page
-    console.log('Navigate to patient:', patientId);
+    navigate(`/patients/${patientId}`);
     handleMenuClose();
   };
 
   const handleEditPatient = (patientId: string) => {
-    // TODO: Navigate to edit patient page
-    console.log('Edit patient:', patientId);
+    navigate(`/patients/${patientId}/edit`);
     handleMenuClose();
   };
 
@@ -254,8 +265,9 @@ const Patients = () => {
         <Alert severity="error" sx={{ mb: 3 }}>
           <Typography variant="h6">Failed to load patients</Typography>
           <Typography variant="body2">
-            {(error as any)?.message ||
-              'An unexpected error occurred while loading patient data.'}
+            {error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred while loading patient data.'}
           </Typography>
         </Alert>
         <Button
@@ -297,7 +309,7 @@ const Patients = () => {
             <LocalHospitalIcon color="primary" />
             Patient Management
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography component="div" variant="body1" color="text.secondary">
             Comprehensive patient care and medical records management
             {totalPatients > 0 && (
               <Chip
@@ -323,9 +335,7 @@ const Patients = () => {
             variant="contained"
             startIcon={<PersonAddIcon />}
             sx={{ borderRadius: 2, py: 1.5, px: 3 }}
-            onClick={() => {
-              /* TODO: Navigate to create patient */
-            }}
+            onClick={() => navigate('/patients/new')}
           >
             Add New Patient
           </Button>
@@ -454,6 +464,7 @@ const Patients = () => {
                 <TableCell sx={{ fontWeight: 600 }}>Contact</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Location</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Medical Info</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>MTR Status</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Vitals</TableCell>
                 <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>
                   Actions
@@ -466,7 +477,7 @@ const Patients = () => {
                 Array.from({ length: searchParams.limit || 10 }).map(
                   (_, index) => (
                     <TableRow key={index}>
-                      {Array.from({ length: 8 }).map((_, cellIndex) => (
+                      {Array.from({ length: 9 }).map((_, cellIndex) => (
                         <TableCell key={cellIndex}>
                           <Skeleton variant="text" height={40} />
                         </TableCell>
@@ -477,7 +488,7 @@ const Patients = () => {
               ) : patients.length === 0 ? (
                 // Empty state
                 <TableRow>
-                  <TableCell colSpan={8} sx={{ textAlign: 'center', py: 6 }}>
+                  <TableCell colSpan={9} sx={{ textAlign: 'center', py: 6 }}>
                     <Stack spacing={2} alignItems="center">
                       <LocalHospitalIcon
                         sx={{ fontSize: 48, color: 'text.secondary' }}
@@ -494,9 +505,7 @@ const Patients = () => {
                         variant="contained"
                         startIcon={<PersonAddIcon />}
                         sx={{ mt: 2 }}
-                        onClick={() => {
-                          /* TODO: Navigate to create patient */
-                        }}
+                        onClick={() => navigate('/patients/new')}
                       >
                         Add First Patient
                       </Button>
@@ -505,7 +514,7 @@ const Patients = () => {
                 </TableRow>
               ) : (
                 // Patient data rows
-                patients.map((patient) => (
+                patients.map((patient: Patient) => (
                   <TableRow
                     key={patient._id}
                     hover
@@ -608,6 +617,16 @@ const Patients = () => {
                           />
                         )}
                       </Box>
+                    </TableCell>
+
+                    <TableCell>
+                      {/* Temporarily disabled to prevent excessive API calls */}
+                      <Chip
+                        label="MTR Available"
+                        size="small"
+                        variant="outlined"
+                        color="default"
+                      />
                     </TableCell>
 
                     <TableCell>

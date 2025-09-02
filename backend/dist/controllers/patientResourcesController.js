@@ -17,7 +17,7 @@ exports.createCondition = (0, responseHelpers_1.asyncHandler)(async (req, res) =
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const existingCondition = await Condition_1.default.findOne({
         patientId,
         name: req.body.name,
@@ -29,7 +29,7 @@ exports.createCondition = (0, responseHelpers_1.asyncHandler)(async (req, res) =
     const condition = new Condition_1.default({
         ...req.body,
         patientId,
-        pharmacyId: patient.pharmacyId,
+        workplaceId: patient.workplaceId,
         createdBy: context.userId,
     });
     await condition.save();
@@ -41,7 +41,7 @@ exports.getConditions = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const query = { patientId };
     if (status)
         query.status = status;
@@ -59,7 +59,7 @@ exports.updateCondition = (0, responseHelpers_1.asyncHandler)(async (req, res) =
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const condition = await Condition_1.default.findById(conditionId);
     (0, responseHelpers_1.ensureResourceExists)(condition, 'Condition', conditionId);
-    (0, responseHelpers_1.checkTenantAccess)(condition.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(condition.workplaceId.toString(), context.workplaceId, context.isAdmin);
     Object.assign(condition, req.body, { updatedBy: context.userId });
     await condition.save();
     (0, responseHelpers_1.sendSuccess)(res, { condition }, 'Condition updated successfully');
@@ -69,7 +69,7 @@ exports.deleteCondition = (0, responseHelpers_1.asyncHandler)(async (req, res) =
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const condition = await Condition_1.default.findById(conditionId);
     (0, responseHelpers_1.ensureResourceExists)(condition, 'Condition', conditionId);
-    (0, responseHelpers_1.checkTenantAccess)(condition.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(condition.workplaceId.toString(), context.workplaceId, context.isAdmin);
     condition.isDeleted = true;
     condition.updatedBy = context.userId;
     await condition.save();
@@ -80,12 +80,12 @@ exports.createMedication = (0, responseHelpers_1.asyncHandler)(async (req, res) 
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     responseHelpers_1.validateBusinessRules.validateMedicationDates(req.body.startDate, req.body.endDate);
     const medication = new MedicationRecord_1.default({
         ...req.body,
         patientId,
-        pharmacyId: patient.pharmacyId,
+        workplaceId: patient.workplaceId,
         createdBy: context.userId,
     });
     await medication.save();
@@ -97,7 +97,7 @@ exports.getMedications = (0, responseHelpers_1.asyncHandler)(async (req, res) =>
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const query = { patientId };
     if (phase)
         query.phase = phase;
@@ -115,7 +115,7 @@ exports.updateMedication = (0, responseHelpers_1.asyncHandler)(async (req, res) 
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const medication = await MedicationRecord_1.default.findById(medId);
     (0, responseHelpers_1.ensureResourceExists)(medication, 'Medication', medId);
-    (0, responseHelpers_1.checkTenantAccess)(medication.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(medication.workplaceId.toString(), context.workplaceId, context.isAdmin);
     if (req.body.startDate || req.body.endDate) {
         responseHelpers_1.validateBusinessRules.validateMedicationDates(req.body.startDate || medication.startDate, req.body.endDate || medication.endDate);
     }
@@ -128,7 +128,7 @@ exports.deleteMedication = (0, responseHelpers_1.asyncHandler)(async (req, res) 
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const medication = await MedicationRecord_1.default.findById(medId);
     (0, responseHelpers_1.ensureResourceExists)(medication, 'Medication', medId);
-    (0, responseHelpers_1.checkTenantAccess)(medication.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(medication.workplaceId.toString(), context.workplaceId, context.isAdmin);
     medication.isDeleted = true;
     medication.updatedBy = context.userId;
     await medication.save();
@@ -139,14 +139,14 @@ exports.createAssessment = (0, responseHelpers_1.asyncHandler)(async (req, res) 
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     if (req.body.vitals?.bpSys && req.body.vitals?.bpDia) {
         responseHelpers_1.validateBusinessRules.validateBloodPressure(req.body.vitals.bpSys, req.body.vitals.bpDia);
     }
     const assessment = new ClinicalAssessment_1.default({
         ...req.body,
         patientId,
-        pharmacyId: patient.pharmacyId,
+        workplaceId: patient.workplaceId,
         createdBy: context.userId,
     });
     await assessment.save();
@@ -165,7 +165,7 @@ exports.getAssessments = (0, responseHelpers_1.asyncHandler)(async (req, res) =>
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const [assessments, total] = await Promise.all([
         ClinicalAssessment_1.default.find({ patientId })
             .sort('-recordedAt')
@@ -180,7 +180,7 @@ exports.updateAssessment = (0, responseHelpers_1.asyncHandler)(async (req, res) 
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const assessment = await ClinicalAssessment_1.default.findById(assessmentId);
     (0, responseHelpers_1.ensureResourceExists)(assessment, 'Assessment', assessmentId);
-    (0, responseHelpers_1.checkTenantAccess)(assessment.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(assessment.workplaceId.toString(), context.workplaceId, context.isAdmin);
     if (req.body.vitals?.bpSys && req.body.vitals?.bpDia) {
         responseHelpers_1.validateBusinessRules.validateBloodPressure(req.body.vitals.bpSys, req.body.vitals.bpDia);
     }
@@ -193,15 +193,15 @@ exports.createDTP = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const dtp = new DrugTherapyProblem_1.default({
         ...req.body,
         patientId,
-        pharmacyId: patient.pharmacyId,
+        workplaceId: patient.workplaceId,
         createdBy: context.userId,
     });
     await dtp.save();
-    if (dtp.status === 'unresolved') {
+    if (dtp.status === 'identified') {
         patient.hasActiveDTP = true;
         await patient.save();
     }
@@ -213,7 +213,7 @@ exports.getDTPs = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const query = { patientId };
     if (status)
         query.status = status;
@@ -231,7 +231,7 @@ exports.updateDTP = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const dtp = await DrugTherapyProblem_1.default.findById(dtpId);
     (0, responseHelpers_1.ensureResourceExists)(dtp, 'DTP', dtpId);
-    (0, responseHelpers_1.checkTenantAccess)(dtp.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(dtp.workplaceId.toString(), context.workplaceId, context.isAdmin);
     Object.assign(dtp, req.body, { updatedBy: context.userId });
     await dtp.save();
     if (req.body.status === 'resolved') {
@@ -252,14 +252,14 @@ exports.createCarePlan = (0, responseHelpers_1.asyncHandler)(async (req, res) =>
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     if (req.body.followUpDate) {
         responseHelpers_1.validateBusinessRules.validateFollowUpDate(new Date(req.body.followUpDate));
     }
     const carePlan = new CarePlan_1.default({
         ...req.body,
         patientId,
-        pharmacyId: patient.pharmacyId,
+        workplaceId: patient.workplaceId,
         createdBy: context.userId,
     });
     await carePlan.save();
@@ -271,7 +271,7 @@ exports.getCarePlans = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const [carePlans, total] = await Promise.all([
         CarePlan_1.default.find({ patientId })
             .sort('-createdAt')
@@ -286,7 +286,7 @@ exports.updateCarePlan = (0, responseHelpers_1.asyncHandler)(async (req, res) =>
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const carePlan = await CarePlan_1.default.findById(carePlanId);
     (0, responseHelpers_1.ensureResourceExists)(carePlan, 'CarePlan', carePlanId);
-    (0, responseHelpers_1.checkTenantAccess)(carePlan.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(carePlan.workplaceId.toString(), context.workplaceId, context.isAdmin);
     if (req.body.followUpDate) {
         responseHelpers_1.validateBusinessRules.validateFollowUpDate(new Date(req.body.followUpDate));
     }
@@ -299,11 +299,11 @@ exports.createVisit = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const visit = new Visit_1.default({
         ...req.body,
         patientId,
-        pharmacyId: patient.pharmacyId,
+        workplaceId: patient.workplaceId,
         createdBy: context.userId,
     });
     await visit.save();
@@ -315,7 +315,7 @@ exports.getVisits = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const [visits, total] = await Promise.all([
         Visit_1.default.find({ patientId })
             .sort('-date')
@@ -330,7 +330,7 @@ exports.getVisit = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const visit = await Visit_1.default.findById(visitId).populate('patientId', 'firstName lastName mrn');
     (0, responseHelpers_1.ensureResourceExists)(visit, 'Visit', visitId);
-    (0, responseHelpers_1.checkTenantAccess)(visit.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(visit.workplaceId.toString(), context.workplaceId, context.isAdmin);
     (0, responseHelpers_1.sendSuccess)(res, { visit }, 'Visit details retrieved successfully');
 });
 exports.updateVisit = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -338,7 +338,7 @@ exports.updateVisit = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const visit = await Visit_1.default.findById(visitId);
     (0, responseHelpers_1.ensureResourceExists)(visit, 'Visit', visitId);
-    (0, responseHelpers_1.checkTenantAccess)(visit.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(visit.workplaceId.toString(), context.workplaceId, context.isAdmin);
     Object.assign(visit, req.body, { updatedBy: context.userId });
     await visit.save();
     (0, responseHelpers_1.sendSuccess)(res, { visit }, 'Visit updated successfully');
@@ -348,7 +348,7 @@ exports.addVisitAttachment = (0, responseHelpers_1.asyncHandler)(async (req, res
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const visit = await Visit_1.default.findById(visitId);
     (0, responseHelpers_1.ensureResourceExists)(visit, 'Visit', visitId);
-    (0, responseHelpers_1.checkTenantAccess)(visit.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(visit.workplaceId.toString(), context.workplaceId, context.isAdmin);
     if (!visit.attachments)
         visit.attachments = [];
     if (visit.attachments.length >= 10) {

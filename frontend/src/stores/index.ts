@@ -4,6 +4,7 @@ export * from './uiStore';
 export * from './patientStore';
 export * from './medicationStore';
 export * from './clinicalNoteStore';
+export * from './mtrStore';
 
 // Re-export all store hooks for easier importing
 export {
@@ -45,6 +46,19 @@ export {
   useClinicalNoteAnalytics,
 } from './clinicalNoteStore';
 
+export {
+  // MTR Store hooks
+  useMTRStore,
+  useMTRSession,
+  useMTRNavigation,
+  useMTRPatient,
+  useMTRMedications,
+  useMTRAssessment,
+  useMTRPlan,
+  useMTRInterventions,
+  useMTRFollowUps,
+} from './mtrStore';
+
 // Store reset function for clearing all stores (useful for logout)
 export const resetAllStores = () => {
   // Clear localStorage for all persisted stores
@@ -52,7 +66,8 @@ export const resetAllStores = () => {
   localStorage.removeItem('patient-store');
   localStorage.removeItem('medication-store');
   localStorage.removeItem('clinical-note-store');
-  
+  localStorage.removeItem('mtr-store');
+
   // You can also programmatically reset stores if needed
   // This would require implementing reset actions in each store
 };
@@ -77,6 +92,9 @@ export const getStoreStatus = () => {
     },
     clinicalNote: {
       hasPersistedData: !!localStorage.getItem('clinical-note-store'),
+    },
+    mtr: {
+      hasPersistedData: !!localStorage.getItem('mtr-store'),
     },
   };
 };

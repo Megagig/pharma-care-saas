@@ -27,9 +27,22 @@ import adminRoutes from './routes/admin';
 import licenseRoutes from './routes/license';
 import subscriptionManagementRoutes from './routes/subscription';
 import subAnalyticsRoutes from './routes/subscriptionManagement';
+import workspaceSubscriptionRoutes from './routes/subscriptionManagementRoutes';
 import webhookRoutes from './routes/webhookRoutes';
 import featureFlagRoutes from './routes/featureFlagRoutes';
 import healthRoutes from './routes/healthRoutes';
+import mtrRoutes from './routes/mtrRoutes';
+import mtrNotificationRoutes from './routes/mtrNotificationRoutes';
+import patientMTRIntegrationRoutes from './routes/patientMTRIntegrationRoutes';
+import auditRoutes from './routes/auditRoutes';
+import securityRoutes from './routes/securityRoutes';
+import invitationRoutes from './routes/invitationRoutes';
+import usageMonitoringRoutes from './routes/usageMonitoringRoutes';
+import locationRoutes from './routes/locationRoutes';
+import locationDataRoutes from './routes/locationDataRoutes';
+import legacyApiRoutes from './routes/legacyApiRoutes';
+import migrationDashboardRoutes from './routes/migrationDashboardRoutes';
+import emailWebhookRoutes from './routes/emailWebhookRoutes';
 
 const app: Application = express();
 
@@ -46,11 +59,24 @@ app.use(
   })
 );
 
-// Rate limiting
+// Security monitoring middleware
+import { blockSuspiciousIPs, detectAnomalies } from './middlewares/securityMonitoring';
+app.use(blockSuspiciousIPs);
+app.use(detectAnomalies);
+
+// Rate limiting - more lenient for development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Higher limit for development
   message: 'Too many requests from this IP, please try again later.',
+  skip: (req) => {
+    // Skip rate limiting for health checks and certain endpoints in development
+    if (process.env.NODE_ENV === 'development' &&
+      (req.path.includes('/health') || req.path.includes('/mtr/summary'))) {
+      return true;
+    }
+    return false;
+  }
 });
 app.use('/api/', limiter);
 
@@ -92,6 +118,10 @@ app.use('/api/patients', assessmentRoutes);
 app.use('/api/patients', dtpRoutes);
 app.use('/api/patients', carePlanRoutes);
 app.use('/api/patients', visitRoutes);
+app.use('/api/patients', patientMTRIntegrationRoutes);
+
+// Invitation routes (must come before individual resource routes to avoid auth conflicts)
+app.use('/api', invitationRoutes);
 
 // Individual resource routes
 app.use('/api', allergyRoutes);
@@ -105,12 +135,29 @@ app.use('/api', visitRoutes);
 // Other routes
 app.use('/api/notes', noteRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/mtr', mtrRoutes);
+app.use('/api/mtr/notifications', mtrNotificationRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/security', securityRoutes);
+app.use('/api/usage', usageMonitoringRoutes);
+app.use('/api/locations', locationRoutes);
+app.use('/api/location-data', locationDataRoutes);
+
+// Legacy API compatibility routes
+app.use('/api/legacy', legacyApiRoutes);
+
+// Migration dashboard routes (Super Admin only)
+app.use('/api/migration', migrationDashboardRoutes);
+
+// Email delivery and webhook routes
+app.use('/api/email', emailWebhookRoutes);
 
 // RBAC and enhanced features
 app.use('/api/admin', adminRoutes);
 app.use('/api/license', licenseRoutes);
 app.use('/api/subscription-management', subAnalyticsRoutes); // Using correct subscriptionManagement routes
 app.use('/api/subscription', subscriptionManagementRoutes); // Old routes at /api/subscription
+app.use('/api/workspace-subscription', workspaceSubscriptionRoutes); // New workspace subscription routes
 app.use('/api/feature-flags', featureFlagRoutes);
 
 // Webhooks - no rate limiting and body parsing is raw for signature verification

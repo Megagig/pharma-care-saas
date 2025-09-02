@@ -56,7 +56,7 @@ export const licenseService = {
   // Upload license for verification
   async uploadLicense(licenseData: LicenseUpload) {
     const formData = new FormData();
-    
+
     // Append all text fields
     Object.entries(licenseData).forEach(([key, value]) => {
       if (key === 'licenseDocument') {
@@ -85,7 +85,7 @@ export const licenseService = {
   // Resubmit license after rejection
   async resubmitLicense(licenseData: Partial<LicenseUpload>) {
     const formData = new FormData();
-    
+
     Object.entries(licenseData).forEach(([key, value]) => {
       if (key === 'licenseDocument' && value instanceof File) {
         formData.append('licenseDocument', value);
@@ -106,10 +106,10 @@ export const licenseService = {
 
   // Download license document
   async downloadLicenseDocument(licenseId?: string) {
-    const endpoint = licenseId 
-      ? `/license/document/${licenseId}` 
+    const endpoint = licenseId
+      ? `/license/document/${licenseId}`
       : '/license/document';
-      
+
     const response = await apiClient.get(endpoint, {
       responseType: 'blob'
     });
@@ -152,11 +152,11 @@ export const licenseService = {
   // Submit additional documentation
   async submitAdditionalDocs(documents: File[], notes?: string) {
     const formData = new FormData();
-    
-    documents.forEach((doc, index) => {
+
+    documents.forEach((doc) => {
       formData.append(`documents`, doc);
     });
-    
+
     if (notes) {
       formData.append('notes', notes);
     }
@@ -183,14 +183,14 @@ export const licenseService = {
     renewalFeeReceipt?: File;
   }) {
     const formData = new FormData();
-    
+
     formData.append('newExpiryDate', renewalData.newExpiryDate);
     formData.append('renewalCertificate', renewalData.renewalCertificate);
-    
+
     if (renewalData.continuingEducationHours) {
       formData.append('continuingEducationHours', renewalData.continuingEducationHours.toString());
     }
-    
+
     if (renewalData.renewalFeeReceipt) {
       formData.append('renewalFeeReceipt', renewalData.renewalFeeReceipt);
     }
@@ -216,10 +216,10 @@ export const licenseService = {
     supportingDocuments?: File[];
   }) {
     const formData = new FormData();
-    
+
     formData.append('type', issue.type);
     formData.append('description', issue.description);
-    
+
     if (issue.supportingDocuments) {
       issue.supportingDocuments.forEach((doc) => {
         formData.append('supportingDocuments', doc);

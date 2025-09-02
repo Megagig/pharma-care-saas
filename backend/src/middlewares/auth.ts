@@ -5,6 +5,7 @@ import SubscriptionPlan from '../models/SubscriptionPlan';
 import Subscription, { ISubscription } from '../models/Subscription';
 import FeatureFlag from '../models/FeatureFlag';
 
+// Export AuthRequest interface for backward compatibility
 export interface AuthRequest extends Request {
   user?: IUser & {
     currentUsage?: number;
@@ -43,9 +44,22 @@ export const auth = async (
 ): Promise<void> => {
   try {
     // Try to get token from httpOnly cookie first, fallback to Authorization header for API compatibility
-    const token = req.cookies.accessToken || req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
+    const token =
+      req.cookies.accessToken ||
+      req.cookies.token ||
+      req.header('Authorization')?.replace('Bearer ', '');
+
+    console.log('Auth middleware - checking token:', {
+      hasAccessToken: !!req.cookies.accessToken,
+      hasToken: !!req.cookies.token,
+      hasAuthHeader: !!req.header('Authorization'),
+      tokenExists: !!token,
+      url: req.url,
+      method: req.method,
+    });
 
     if (!token) {
+      console.log('Auth middleware - No token provided');
       res.status(401).json({ message: 'Access denied. No token provided.' });
       return;
     }
@@ -69,23 +83,35 @@ export const auth = async (
     }
 
     // Check if user account is active
-    if (!['active', 'license_pending'].includes(user.status)) {
+    // In development, allow pending users to access the system for testing
+    const allowedStatuses =
+      process.env.NODE_ENV === 'development'
+        ? ['active', 'license_pending', 'pending']
+        : ['active', 'license_pending'];
+
+    if (!allowedStatuses.includes(user.status)) {
       res.status(401).json({
         message: 'Account is not active.',
         status: user.status,
         requiresAction:
           user.status === 'license_pending'
             ? 'license_verification'
-            : 'account_activation',
+            : user.status === 'pending'
+              ? 'email_verification'
+              : 'account_activation',
       });
       return;
     }
 
-    // Get user's subscription
-    const subscription = await Subscription.findOne({
-      userId: user._id,
-      status: { $in: ['active', 'trial', 'grace_period'] },
-    }).populate('planId');
+    // Get user's subscription through their workspace
+    let subscription = null;
+    if (user.workplaceId) {
+      subscription = await Subscription.findOne({
+        workspaceId: user.workplaceId,
+        status: { $in: ['active', 'trial', 'grace_period'] },
+      }).populate('planId');
+    }
+    // Users without workplaces don't have subscriptions (they access basic features only)
 
     // Set subscription information regardless of validity
     // This allows the request to proceed even if subscription is expired
@@ -113,7 +139,10 @@ export const authOptionalSubscription = async (
 ): Promise<void> => {
   try {
     // Try to get token from httpOnly cookie first, fallback to Authorization header for API compatibility
-    const token = req.cookies.accessToken || req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
+    const token =
+      req.cookies.accessToken ||
+      req.cookies.token ||
+      req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
       res.status(401).json({ message: 'Access denied. No token provided.' });
@@ -151,11 +180,15 @@ export const authOptionalSubscription = async (
       return;
     }
 
-    // Get user's subscription (optional - don't block if none)
-    const subscription = await Subscription.findOne({
-      userId: user._id,
-      status: { $in: ['active', 'trial', 'grace_period'] },
-    }).populate('planId');
+    // Get user's subscription through their workspace (optional - don't block if none)
+    let subscription = null;
+    if (user.workplaceId) {
+      subscription = await Subscription.findOne({
+        workspaceId: user.workplaceId,
+        status: { $in: ['active', 'trial', 'grace_period'] },
+      }).populate('planId');
+    }
+    // Users without workplaces don't have subscriptions (they access basic features only)
 
     req.user = user;
     req.subscription = subscription || undefined; // May be undefined

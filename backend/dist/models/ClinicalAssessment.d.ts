@@ -19,7 +19,7 @@ export interface ILabs {
 }
 export interface IClinicalAssessment extends Document {
     _id: mongoose.Types.ObjectId;
-    pharmacyId: mongoose.Types.ObjectId;
+    workplaceId: mongoose.Types.ObjectId;
     patientId: mongoose.Types.ObjectId;
     visitId?: mongoose.Types.ObjectId;
     vitals?: IVitals;

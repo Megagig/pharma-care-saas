@@ -7,6 +7,7 @@ import ClinicalAssessment from './models/ClinicalAssessment';
 import DrugTherapyProblem from './models/DrugTherapyProblem';
 import CarePlan from './models/CarePlan';
 import Visit from './models/Visit';
+import { EmailDelivery } from './models/EmailDelivery';
 import {
   tenancyGuardPlugin,
   addAuditFields,

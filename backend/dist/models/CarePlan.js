@@ -36,9 +36,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const tenancyGuard_1 = require("../utils/tenancyGuard");
 const carePlanSchema = new mongoose_1.Schema({
-    pharmacyId: {
+    workplaceId: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Pharmacy',
+        ref: 'Workplace',
         required: true,
         index: true,
     },
@@ -128,12 +128,12 @@ const carePlanSchema = new mongoose_1.Schema({
     toObject: { virtuals: true },
 });
 (0, tenancyGuard_1.addAuditFields)(carePlanSchema);
-carePlanSchema.plugin(tenancyGuard_1.tenancyGuardPlugin);
-carePlanSchema.index({ pharmacyId: 1, patientId: 1, createdAt: -1 });
-carePlanSchema.index({ pharmacyId: 1, visitId: 1 });
-carePlanSchema.index({ pharmacyId: 1, planQuality: 1 });
-carePlanSchema.index({ pharmacyId: 1, dtpSummary: 1 });
-carePlanSchema.index({ pharmacyId: 1, isDeleted: 1 });
+carePlanSchema.plugin(tenancyGuard_1.tenancyGuardPlugin, { pharmacyIdField: 'workplaceId' });
+carePlanSchema.index({ workplaceId: 1, patientId: 1, createdAt: -1 });
+carePlanSchema.index({ workplaceId: 1, visitId: 1 });
+carePlanSchema.index({ workplaceId: 1, planQuality: 1 });
+carePlanSchema.index({ workplaceId: 1, dtpSummary: 1 });
+carePlanSchema.index({ workplaceId: 1, isDeleted: 1 });
 carePlanSchema.index({ followUpDate: 1 }, { sparse: true });
 carePlanSchema.index({ createdAt: -1 });
 carePlanSchema.virtual('patient', {
@@ -219,11 +219,11 @@ carePlanSchema.pre('save', function () {
         throw new Error('At least one objective is required');
     }
 });
-carePlanSchema.statics.findByPatient = function (patientId, limit, pharmacyId) {
+carePlanSchema.statics.findByPatient = function (patientId, limit, workplaceId) {
     const query = { patientId };
     let baseQuery;
-    if (pharmacyId) {
-        baseQuery = this.find(query).setOptions({ pharmacyId });
+    if (workplaceId) {
+        baseQuery = this.find(query).setOptions({ workplaceId });
     }
     else {
         baseQuery = this.find(query);
@@ -234,30 +234,30 @@ carePlanSchema.statics.findByPatient = function (patientId, limit, pharmacyId) {
     }
     return baseQuery;
 };
-carePlanSchema.statics.findLatestByPatient = function (patientId, pharmacyId) {
+carePlanSchema.statics.findLatestByPatient = function (patientId, workplaceId) {
     const query = { patientId };
-    if (pharmacyId) {
+    if (workplaceId) {
         return this.findOne(query)
-            .setOptions({ pharmacyId })
+            .setOptions({ workplaceId })
             .sort({ createdAt: -1 });
     }
     return this.findOne(query).sort({ createdAt: -1 });
 };
-carePlanSchema.statics.findByVisit = function (visitId, pharmacyId) {
+carePlanSchema.statics.findByVisit = function (visitId, workplaceId) {
     const query = { visitId };
-    if (pharmacyId) {
-        return this.find(query).setOptions({ pharmacyId });
+    if (workplaceId) {
+        return this.find(query).setOptions({ workplaceId });
     }
     return this.find(query);
 };
-carePlanSchema.statics.findNeedingReview = function (pharmacyId) {
+carePlanSchema.statics.findNeedingReview = function (workplaceId) {
     const query = { planQuality: 'needsReview' };
-    if (pharmacyId) {
-        return this.find(query).setOptions({ pharmacyId }).sort({ createdAt: -1 });
+    if (workplaceId) {
+        return this.find(query).setOptions({ workplaceId }).sort({ createdAt: -1 });
     }
     return this.find(query).sort({ createdAt: -1 });
 };
-carePlanSchema.statics.findDueFollowUps = function (daysAhead = 7, pharmacyId) {
+carePlanSchema.statics.findDueFollowUps = function (daysAhead = 7, workplaceId) {
     const today = new Date();
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + daysAhead);
@@ -267,21 +267,21 @@ carePlanSchema.statics.findDueFollowUps = function (daysAhead = 7, pharmacyId) {
             $lte: futureDate,
         },
     };
-    if (pharmacyId) {
+    if (workplaceId) {
         return this.find(query)
-            .setOptions({ pharmacyId })
+            .setOptions({ workplaceId })
             .sort({ followUpDate: 1 });
     }
     return this.find(query).sort({ followUpDate: 1 });
 };
-carePlanSchema.statics.findOverdueFollowUps = function (pharmacyId) {
+carePlanSchema.statics.findOverdueFollowUps = function (workplaceId) {
     const today = new Date();
     const query = {
         followUpDate: { $lt: today },
     };
-    if (pharmacyId) {
+    if (workplaceId) {
         return this.find(query)
-            .setOptions({ pharmacyId })
+            .setOptions({ workplaceId })
             .sort({ followUpDate: 1 });
     }
     return this.find(query).sort({ followUpDate: 1 });

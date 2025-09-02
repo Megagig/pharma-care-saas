@@ -4,7 +4,7 @@ import { queryKeys } from '../lib/queryClient';
 import { useUIStore } from '../stores';
 
 // Hook to fetch all clinical notes with optional filters
-export const useClinicalNotes = (filters: Record<string, any> = {}) => {
+export const useClinicalNotes = (filters: Record<string, unknown> = {}) => {
   return useQuery({
     queryKey: queryKeys.clinicalNotes.list(filters),
     queryFn: () => clinicalNoteService.getClinicalNotes(filters),
@@ -39,17 +39,17 @@ export const useCreateClinicalNote = () => {
 
   return useMutation({
     mutationFn: clinicalNoteService.createClinicalNote,
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       // Invalidate clinical notes lists
       queryClient.invalidateQueries({ queryKey: queryKeys.clinicalNotes.lists() });
-      
+
       // If note has a patient, invalidate patient-specific notes
       if (data?.patientId) {
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.clinicalNotes.byPatient(data.patientId) 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.clinicalNotes.byPatient(data.patientId)
         });
       }
-      
+
       // Show success notification
       addNotification({
         type: 'success',
@@ -58,7 +58,7 @@ export const useCreateClinicalNote = () => {
         duration: 5000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       addNotification({
         type: 'error',
         title: 'Creation Failed',
@@ -75,25 +75,25 @@ export const useUpdateClinicalNote = () => {
   const addNotification = useUIStore((state) => state.addNotification);
 
   return useMutation({
-    mutationFn: ({ noteId, noteData }: { noteId: string; noteData: any }) =>
+    mutationFn: ({ noteId, noteData }: { noteId: string; noteData: unknown }) =>
       clinicalNoteService.updateClinicalNote(noteId, noteData),
-    onSuccess: (data: any, variables) => {
+    onSuccess: (data: unknown, variables) => {
       // Update specific note in cache
       queryClient.setQueryData(
         queryKeys.clinicalNotes.detail(variables.noteId),
         data
       );
-      
+
       // Invalidate notes lists
       queryClient.invalidateQueries({ queryKey: queryKeys.clinicalNotes.lists() });
-      
+
       // If note has a patient, invalidate patient-specific notes
       if (data?.patientId) {
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.clinicalNotes.byPatient(data.patientId) 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.clinicalNotes.byPatient(data.patientId)
         });
       }
-      
+
       addNotification({
         type: 'success',
         title: 'Note Updated',
@@ -101,7 +101,7 @@ export const useUpdateClinicalNote = () => {
         duration: 5000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       addNotification({
         type: 'error',
         title: 'Update Failed',
@@ -122,16 +122,16 @@ export const useToggleNotePrivacy = () => {
     onMutate: async (noteId) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.clinicalNotes.detail(noteId) });
-      
+
       // Snapshot previous value
       const previousNote = queryClient.getQueryData(queryKeys.clinicalNotes.detail(noteId));
-      
+
       // Optimistically update privacy status
       queryClient.setQueryData(
         queryKeys.clinicalNotes.detail(noteId),
-        (old: any) => old ? { ...old, isPrivate: !old.isPrivate } : old
+        (old: unknown) => old ? { ...old, isPrivate: !old.isPrivate } : old
       );
-      
+
       return { previousNote };
     },
     onError: (error, noteId, context) => {
@@ -142,7 +142,7 @@ export const useToggleNotePrivacy = () => {
           context.previousNote
         );
       }
-      
+
       addNotification({
         type: 'error',
         title: 'Privacy Update Failed',
@@ -150,16 +150,16 @@ export const useToggleNotePrivacy = () => {
         duration: 5000,
       });
     },
-    onSuccess: (data: any, noteId: string) => {
+    onSuccess: (data: unknown) => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.clinicalNotes.lists() });
-      
+
       if (data?.patientId) {
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.clinicalNotes.byPatient(data.patientId) 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.clinicalNotes.byPatient(data.patientId)
         });
       }
-      
+
       const newStatus = data?.isPrivate ? 'private' : 'public';
       addNotification({
         type: 'success',
@@ -178,16 +178,16 @@ export const useDeleteClinicalNote = () => {
 
   return useMutation({
     mutationFn: (noteId: string) => clinicalNoteService.deleteClinicalNote(noteId),
-    onSuccess: (data: any, noteId: string) => {
+    onSuccess: (data: unknown, noteId: string) => {
       // Remove from cache
       queryClient.removeQueries({ queryKey: queryKeys.clinicalNotes.detail(noteId) });
-      
+
       // Invalidate lists
       queryClient.invalidateQueries({ queryKey: queryKeys.clinicalNotes.lists() });
-      
+
       // Invalidate patient-specific notes if applicable
       queryClient.invalidateQueries({ queryKey: queryKeys.clinicalNotes.all });
-      
+
       addNotification({
         type: 'success',
         title: 'Note Deleted',
@@ -195,7 +195,7 @@ export const useDeleteClinicalNote = () => {
         duration: 5000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       addNotification({
         type: 'error',
         title: 'Deletion Failed',

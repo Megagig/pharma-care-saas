@@ -3,6 +3,8 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IClinicalNote extends Document {
   patient: mongoose.Types.ObjectId;
   pharmacist: mongoose.Types.ObjectId;
+  workplaceId: mongoose.Types.ObjectId; // Added for tenancy
+  locationId?: string; // Location ID within the workplace for multi-location support
   type: 'consultation' | 'medication_review' | 'follow_up' | 'adverse_event' | 'other';
   title: string;
   content: {
@@ -48,6 +50,17 @@ const clinicalNoteSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'User',
     required: true
+  },
+  workplaceId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Workplace',
+    required: true,
+    index: true,
+  },
+  locationId: {
+    type: String,
+    index: true,
+    sparse: true, // Allow null values and don't index them
   },
   type: {
     type: String,
@@ -99,5 +112,12 @@ const clinicalNoteSchema = new Schema({
   },
   isConfidential: { type: Boolean, default: false }
 }, { timestamps: true });
+
+// Indexes for efficient querying
+clinicalNoteSchema.index({ workplaceId: 1, patient: 1 });
+clinicalNoteSchema.index({ workplaceId: 1, pharmacist: 1 });
+clinicalNoteSchema.index({ workplaceId: 1, type: 1 });
+clinicalNoteSchema.index({ workplaceId: 1, locationId: 1 }, { sparse: true });
+clinicalNoteSchema.index({ createdAt: -1 });
 
 export default mongoose.model<IClinicalNote>('ClinicalNote', clinicalNoteSchema);

@@ -1,31 +1,53 @@
 import { useAuth } from './useAuth';
-// import { useRBAC } from './useRBAC';
+import { useSubscriptionContext } from '../context/SubscriptionContext';
 
-// Custom hook to check subscription status
-export const useSubscriptionStatus = () => {
+interface SubscriptionStatus {
+  hasWorkspace: boolean;
+  hasSubscription: boolean;
+  status: string;
+  tier?: string;
+  accessLevel: 'basic' | 'limited' | 'full';
+  isTrialActive?: boolean;
+  daysRemaining?: number;
+  endDate?: string;
+  message?: string;
+}
+
+// Custom hook to check subscription status - now uses context for better state management
+export const useSubscriptionStatus = (): SubscriptionStatus & { loading: boolean; isActive: boolean; refetch: () => Promise<void> } => {
   const { user } = useAuth();
-  // const { role, canAccess } = useRBAC();
+  const { subscriptionStatus, loading, isActive, refetch } = useSubscriptionContext();
 
-  // Calculate days remaining in subscription if applicable
-  const calculateDaysRemaining = () => {
-    if (!user?.subscription?.expiresAt) return 0;
-
-    const expiryDate = new Date(user.subscription.expiresAt);
-    const today = new Date();
-    const diffTime = expiryDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    return diffDays > 0 ? diffDays : 0;
+  // Fallback to user data if context data is not available
+  const fallbackStatus: SubscriptionStatus = {
+    hasWorkspace: !!user?.workplaceId,
+    hasSubscription: !!user?.subscription,
+    status: user?.subscription?.status || 'inactive',
+    tier: user?.subscription?.tier || 'free',
+    accessLevel: 'basic',
+    isTrialActive: user?.subscription?.status === 'trial',
+    daysRemaining: 0,
+    endDate: user?.subscription?.expiresAt || undefined,
+    message: 'No subscription data available',
   };
 
+  if (subscriptionStatus) {
+    return {
+      ...subscriptionStatus,
+      isActive,
+      loading,
+      refetch,
+    };
+  }
+
   return {
-    status: user?.subscription?.status || 'inactive',
+    ...fallbackStatus,
     isActive:
-      user?.subscription?.status === 'active' || user?.role === 'super_admin',
-    tier: 'free', // getSubscriptionTier(),
-    expiresAt: user?.subscription?.expiresAt || null,
-    daysRemaining: calculateDaysRemaining(),
-    canceledAt: user?.subscription?.canceledAt || null,
+      user?.subscription?.status === 'active' ||
+      user?.subscription?.status === 'trial' ||
+      user?.role === 'super_admin',
+    loading,
+    refetch,
   };
 };
 

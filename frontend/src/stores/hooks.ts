@@ -4,8 +4,6 @@ import {
   useMedicationStore,
   useClinicalNoteStore,
   useUIStore,
-  useNotifications as useUINotifications,
-  useSidebar as useUISidebar,
 } from './index';
 import { useMemo } from 'react';
 
@@ -131,7 +129,6 @@ export const useMedicationManagement = () => {
   const updateMedicationStatus = useMedicationStore((state) => state.updateMedicationStatus);
   const selectedMedication = useMedicationStore((state) => state.selectedMedication);
   const selectMedication = useMedicationStore((state) => state.selectMedication);
-  const getActiveMedicationsCount = useMedicationStore((state) => state.getActiveMedicationsCount);
   const addNotification = useUIStore((state) => state.addNotification);
 
   const handleCreateMedication = useCallback(async (medicationData: Record<string, unknown>) => {
@@ -156,7 +153,7 @@ export const useMedicationManagement = () => {
   }, [createMedication, addNotification]);
 
   const handleUpdateMedicationStatus = useCallback(async (id: string, status: string, medicationName: string) => {
-    const result = await updateMedicationStatus(id, status as any);
+    const result = await updateMedicationStatus(id, status as 'active' | 'inactive' | 'discontinued');
     if (result) {
       addNotification({
         type: 'success',
@@ -203,7 +200,6 @@ export const useClinicalNoteManagement = () => {
   const selectedNote = useClinicalNoteStore((state) => state.selectedNote);
   const selectNote = useClinicalNoteStore((state) => state.selectNote);
   const toggleNotePrivacy = useClinicalNoteStore((state) => state.toggleNotePrivacy);
-  const getAllTags = useClinicalNoteStore((state) => state.getAllTags);
   const addNotification = useUIStore((state) => state.addNotification);
 
   const handleCreateNote = useCallback(async (noteData: Record<string, unknown>) => {

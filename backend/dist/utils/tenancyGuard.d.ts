@@ -13,4 +13,7 @@ export declare const MARITAL_STATUS: string[];
 export declare const GENDERS: string[];
 export declare const SEVERITY_LEVELS: string[];
 export declare const DTP_TYPES: string[];
+export declare const DTP_CATEGORIES: string[];
+export declare const DTP_SEVERITIES: string[];
+export declare const EVIDENCE_LEVELS: string[];
 //# sourceMappingURL=tenancyGuard.d.ts.map

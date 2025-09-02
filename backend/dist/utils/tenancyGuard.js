@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DTP_TYPES = exports.SEVERITY_LEVELS = exports.GENDERS = exports.MARITAL_STATUS = exports.GENOTYPES = exports.BLOOD_GROUPS = exports.NIGERIAN_STATES = void 0;
+exports.EVIDENCE_LEVELS = exports.DTP_SEVERITIES = exports.DTP_CATEGORIES = exports.DTP_TYPES = exports.SEVERITY_LEVELS = exports.GENDERS = exports.MARITAL_STATUS = exports.GENOTYPES = exports.BLOOD_GROUPS = exports.NIGERIAN_STATES = void 0;
 exports.tenancyGuardPlugin = tenancyGuardPlugin;
 exports.addAuditFields = addAuditFields;
 exports.generateMRN = generateMRN;
@@ -145,5 +145,27 @@ exports.DTP_TYPES = [
     'adverseReaction',
     'inappropriateAdherence',
     'needsAdditional',
+    'interaction',
+    'duplication',
+    'contraindication',
+    'monitoring',
+];
+exports.DTP_CATEGORIES = [
+    'indication',
+    'effectiveness',
+    'safety',
+    'adherence',
+];
+exports.DTP_SEVERITIES = [
+    'critical',
+    'major',
+    'moderate',
+    'minor',
+];
+exports.EVIDENCE_LEVELS = [
+    'definite',
+    'probable',
+    'possible',
+    'unlikely',
 ];
 //# sourceMappingURL=tenancyGuard.js.map

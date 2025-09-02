@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
@@ -8,14 +8,12 @@ import {
   CardContent,
   CardHeader,
   Grid,
-  Divider,
   Alert,
   Breadcrumbs,
   Link,
   Tabs,
   Tab,
   Button,
-  IconButton,
   Chip,
   Avatar,
   List,
@@ -23,21 +21,17 @@ import {
   ListItemText,
   ListItemIcon,
   ListItemSecondaryAction,
-  Switch,
   useTheme,
   useMediaQuery,
-  Skeleton,
   LinearProgress,
   Badge,
 } from '@mui/material';
 import {
-  Settings as SettingsIcon,
   Security as SecurityIcon,
   People as PeopleIcon,
   Assessment as AssessmentIcon,
   Notifications as NotificationsIcon,
   Storage as StorageIcon,
-  Api as ApiIcon,
   Flag as FlagIcon,
   Dashboard as DashboardIcon,
   AdminPanelSettings as AdminIcon,
@@ -47,17 +41,14 @@ import {
   Timeline as MonitoringIcon,
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
 import { useRBAC } from '../hooks/useRBAC';
 
 const SaasSettings: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { user } = useAuth();
   const { isSuperAdmin } = useRBAC();
   const [activeTab, setActiveTab] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [systemStats, setSystemStats] = useState({
+  const [systemStats] = useState({
     totalUsers: 1247,
     activeSubscriptions: 892,
     monthlyRevenue: 4250000,
@@ -75,7 +66,8 @@ const SaasSettings: React.FC = () => {
             Access Denied
           </Typography>
           <Typography variant="body1">
-            This page is restricted to Super Admin users only. You need super admin permissions to access SaaS settings.
+            This page is restricted to Super Admin users only. You need super
+            admin permissions to access SaaS settings.
           </Typography>
         </Alert>
       </Container>
@@ -247,7 +239,7 @@ const SaasSettings: React.FC = () => {
                   </Box>
                 </Button>
               </Grid>
-              
+
               <Grid item xs={12} sm={6} md={4}>
                 <Button
                   fullWidth
@@ -265,13 +257,16 @@ const SaasSettings: React.FC = () => {
                   </Box>
                 </Button>
               </Grid>
-              
+
               <Grid item xs={12} sm={6} md={4}>
                 <Button
                   fullWidth
                   variant="outlined"
                   startIcon={
-                    <Badge badgeContent={systemStats.pendingLicenses} color="error">
+                    <Badge
+                      badgeContent={systemStats.pendingLicenses}
+                      color="error"
+                    >
                       <ShieldIcon />
                     </Badge>
                   }
@@ -293,10 +288,7 @@ const SaasSettings: React.FC = () => {
       {/* System Health */}
       <Grid item xs={12} md={6}>
         <Card>
-          <CardHeader
-            title="System Health"
-            avatar={<MonitoringIcon />}
-          />
+          <CardHeader title="System Health" avatar={<MonitoringIcon />} />
           <CardContent>
             <List>
               <ListItem>
@@ -346,7 +338,9 @@ const SaasSettings: React.FC = () => {
             <List>
               <ListItem>
                 <ListItemIcon>
-                  <Avatar sx={{ bgcolor: 'success.main', width: 32, height: 32 }}>
+                  <Avatar
+                    sx={{ bgcolor: 'success.main', width: 32, height: 32 }}
+                  >
                     <PeopleIcon fontSize="small" />
                   </Avatar>
                 </ListItemIcon>
@@ -357,7 +351,9 @@ const SaasSettings: React.FC = () => {
               </ListItem>
               <ListItem>
                 <ListItemIcon>
-                  <Avatar sx={{ bgcolor: 'warning.main', width: 32, height: 32 }}>
+                  <Avatar
+                    sx={{ bgcolor: 'warning.main', width: 32, height: 32 }}
+                  >
                     <FlagIcon fontSize="small" />
                   </Avatar>
                 </ListItemIcon>
@@ -391,7 +387,8 @@ const SaasSettings: React.FC = () => {
           {title}
         </Typography>
         <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
-          This section is under development. Advanced {title.toLowerCase()} features will be available soon.
+          This section is under development. Advanced {title.toLowerCase()}{' '}
+          features will be available soon.
         </Typography>
         <Button variant="outlined" disabled>
           Coming Soon
@@ -410,14 +407,16 @@ const SaasSettings: React.FC = () => {
           </Link>
           <Typography color="textPrimary">SaaS Settings</Typography>
         </Breadcrumbs>
-        
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 2
-        }}>
+
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
           <Box>
             <Typography variant="h3" component="h1" gutterBottom>
               <SuperAdminIcon sx={{ mr: 1, fontSize: 'inherit' }} />
@@ -427,7 +426,7 @@ const SaasSettings: React.FC = () => {
               Comprehensive system administration and configuration
             </Typography>
           </Box>
-          
+
           <Chip
             icon={<SuperAdminIcon />}
             label="Super Admin Access"
@@ -442,10 +441,10 @@ const SaasSettings: React.FC = () => {
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant={isMobile ? "scrollable" : "fullWidth"}
+          variant={isMobile ? 'scrollable' : 'fullWidth'}
           scrollButtons="auto"
         >
-          {settingsCategories.map((category, index) => (
+          {settingsCategories.map((category) => (
             <Tab
               key={category.id}
               icon={category.icon}
@@ -460,11 +459,11 @@ const SaasSettings: React.FC = () => {
       {/* Tab Content */}
       <Box sx={{ mt: 3 }}>
         {activeTab === 0 && renderOverviewTab()}
-        {activeTab === 1 && renderPlaceholderTab("User Management")}
-        {activeTab === 2 && renderPlaceholderTab("Feature Flags")}
-        {activeTab === 3 && renderPlaceholderTab("Security Settings")}
-        {activeTab === 4 && renderPlaceholderTab("Analytics & Reports")}
-        {activeTab === 5 && renderPlaceholderTab("Notifications")}
+        {activeTab === 1 && renderPlaceholderTab('User Management')}
+        {activeTab === 2 && renderPlaceholderTab('Feature Flags')}
+        {activeTab === 3 && renderPlaceholderTab('Security Settings')}
+        {activeTab === 4 && renderPlaceholderTab('Analytics & Reports')}
+        {activeTab === 5 && renderPlaceholderTab('Notifications')}
       </Box>
     </Container>
   );

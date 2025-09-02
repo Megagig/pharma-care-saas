@@ -31,7 +31,7 @@ interface User {
   lastLoginAt?: Date;
   licenseStatus?: 'pending' | 'approved' | 'rejected';
   subscription?: {
-    status: 'active' | 'canceled' | 'expired' | 'pending';
+    status: 'active' | 'canceled' | 'expired' | 'pending' | 'trial';
     expiresAt: string;
     canceledAt?: string;
     tier?: string;

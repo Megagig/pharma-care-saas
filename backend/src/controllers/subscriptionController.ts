@@ -16,25 +16,50 @@ export class SubscriptionController {
   // Get current subscription details
   async getCurrentSubscription(req: AuthRequest, res: Response): Promise<any> {
     try {
+      const user = req.user;
+
+      // Users without workplaces have no subscription
+      if (!user.workplaceId) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            hasWorkspace: false,
+            hasSubscription: false,
+            subscription: null,
+            status: 'no_workspace',
+            accessLevel: 'basic', // Knowledge Hub, CPD, Forum only
+            availableFeatures: [],
+            isExpired: false,
+            isInGracePeriod: false,
+            canRenew: false,
+            message: 'Create or join a workplace to access full features',
+          },
+        });
+      }
+
       const subscription = await Subscription.findOne({
-        userId: req.user._id,
+        workspaceId: user.workplaceId,
         status: { $in: ['active', 'trial', 'grace_period'] },
       })
         .populate('planId')
         .populate('paymentHistory');
 
       if (!subscription) {
-        // Instead of returning 404, return a structured response indicating no subscription
+        // User has workspace but no subscription
         return res.status(200).json({
           success: true,
           data: {
+            hasWorkspace: true,
+            hasSubscription: false,
             subscription: null,
+            status: 'no_subscription',
+            accessLevel: 'limited',
             availableFeatures: [],
             isExpired: true,
             isInGracePeriod: false,
             canRenew: true,
+            message: 'No active subscription found for your workplace',
           },
-          message: 'No active subscription found',
         });
       }
 
@@ -44,14 +69,34 @@ export class SubscriptionController {
         allowedTiers: subscription.tier,
       }).select('key name description metadata.category');
 
+      // Calculate trial info
+      const now = new Date();
+      const isTrialActive = subscription.status === 'trial' &&
+        subscription.endDate &&
+        now <= subscription.endDate;
+
+      let daysRemaining = 0;
+      if (isTrialActive && subscription.endDate) {
+        const diffTime = subscription.endDate.getTime() - now.getTime();
+        daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+
       res.json({
         success: true,
         data: {
+          hasWorkspace: true,
+          hasSubscription: true,
           subscription,
+          status: subscription.status,
+          tier: subscription.tier,
+          accessLevel: 'full',
           availableFeatures,
           isExpired: subscription.isExpired(),
           isInGracePeriod: subscription.isInGracePeriod(),
           canRenew: subscription.canRenew(),
+          isTrialActive,
+          daysRemaining,
+          endDate: subscription.endDate,
         },
       });
     } catch (error) {
@@ -66,23 +111,27 @@ export class SubscriptionController {
   // Get available subscription plans
   getAvailablePlans = async (req: AuthRequest, res: Response): Promise<any> => {
     try {
-      const billingInterval =
-        (req.query.billingInterval as string) || 'monthly';
+      const billingInterval = (req.query.billingInterval as string) || 'monthly';
 
-      const plans = await SubscriptionPlan.find({
-        isActive: true,
-        billingInterval: billingInterval,
-      }).sort({
-        priceNGN: 1,
-      });
+      // Import PlanConfigService dynamically to avoid circular imports
+      const PlanConfigService = (await import('../services/PlanConfigService')).default;
+      const planConfigService = PlanConfigService.getInstance();
 
-      // Transform plans to include computed features
-      const transformedPlans = plans.map((plan) => ({
-        ...plan.toObject(),
-        // Ensure tier is set
-        tier: plan.tier,
-        // Transform features for display
-        displayFeatures: this.getDisplayFeatures(plan),
+      // Get plans from configuration
+      const configPlans = await planConfigService.getActivePlans();
+
+      // Filter by billing interval and sort by tier rank
+      const filteredPlans = configPlans
+        .filter(plan => plan.billingInterval === billingInterval)
+        .sort((a, b) => a.tierRank - b.tierRank);
+
+      // Get feature definitions for display
+      const config = await planConfigService.loadConfiguration();
+
+      // Transform plans to include feature details
+      const transformedPlans = filteredPlans.map((plan) => ({
+        ...plan,
+        displayFeatures: this.getDisplayFeaturesFromConfig(plan, config.features),
       }));
 
       res.json({
@@ -97,6 +146,49 @@ export class SubscriptionController {
       });
     }
   };
+
+  private getDisplayFeaturesFromConfig(plan: any, featureDefinitions: any): string[] {
+    const features: string[] = [];
+
+    // Add limits as features
+    if (plan.limits.patients) {
+      features.push(`Up to ${plan.limits.patients} patients`);
+    } else {
+      features.push('Unlimited patients');
+    }
+
+    if (plan.limits.users) {
+      features.push(`Up to ${plan.limits.users} team members`);
+    } else {
+      features.push('Unlimited team members');
+    }
+
+    if (plan.limits.locations) {
+      features.push(`Up to ${plan.limits.locations} locations`);
+    } else if (plan.features.includes('multi_location_dashboard')) {
+      features.push('Unlimited locations');
+    }
+
+    // Add feature names from configuration
+    plan.features.forEach((featureCode: string) => {
+      const featureDef = featureDefinitions[featureCode];
+      if (featureDef) {
+        features.push(featureDef.name);
+      }
+    });
+
+    // Add special tier-specific features
+    if (plan.tier === 'free_trial') {
+      features.unshift('14-day free trial with full access');
+    }
+
+    if (plan.isContactSales) {
+      features.push('Custom pricing available');
+      features.push('Dedicated account manager');
+    }
+
+    return features;
+  }
 
   private getDisplayFeatures(plan: any): string[] {
     const features: string[] = [];
@@ -164,11 +256,11 @@ export class SubscriptionController {
         body: req.body,
         user: req.user
           ? {
-              id: req.user._id,
-              email: req.user.email,
-              role: req.user.role,
-              hasSubscription: !!req.user.currentSubscriptionId,
-            }
+            id: req.user._id,
+            email: req.user.email,
+            role: req.user.role,
+            hasSubscription: !!req.user.currentSubscriptionId,
+          }
           : 'No user',
       });
 
@@ -216,11 +308,11 @@ export class SubscriptionController {
         'Existing subscription check result:',
         existingSubscription
           ? {
-              id: existingSubscription._id,
-              status: existingSubscription.status,
-              planId: existingSubscription.planId,
-              endDate: existingSubscription.endDate,
-            }
+            id: existingSubscription._id,
+            status: existingSubscription.status,
+            planId: existingSubscription.planId,
+            endDate: existingSubscription.endDate,
+          }
           : 'No active subscription'
       );
 
@@ -566,7 +658,7 @@ export class SubscriptionController {
       const gracePeriodEnd = new Date();
       gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
 
-      subscription.status = 'grace_period';
+      subscription.status = 'past_due';
       subscription.gracePeriodEnd = gracePeriodEnd;
       subscription.autoRenew = false;
 
@@ -651,7 +743,7 @@ export class SubscriptionController {
       const currentPlan = currentSubscription.planId as any;
       const daysRemaining = Math.ceil(
         (currentSubscription.endDate.getTime() - Date.now()) /
-          (1000 * 60 * 60 * 24)
+        (1000 * 60 * 60 * 24)
       );
       const totalDaysInPeriod = billingInterval === 'yearly' ? 365 : 30;
       const proratedDiscount =
@@ -793,6 +885,81 @@ export class SubscriptionController {
         success: false,
         message: 'Error scheduling downgrade',
         error: (error as Error).message,
+      });
+    }
+  }
+
+  // Get subscription status for frontend
+  async getSubscriptionStatus(req: AuthRequest, res: Response): Promise<any> {
+    try {
+      const user = req.user;
+
+      // Users without workplaces have no subscription
+      if (!user.workplaceId) {
+        return res.json({
+          success: true,
+          data: {
+            hasWorkspace: false,
+            hasSubscription: false,
+            status: 'no_workspace',
+            accessLevel: 'basic', // Knowledge Hub, CPD, Forum only
+            message: 'Create or join a workplace to access full features',
+          },
+        });
+      }
+
+      // Get workspace subscription
+      const subscription = await Subscription.findOne({
+        workspaceId: user.workplaceId,
+        status: { $in: ['active', 'trial', 'grace_period'] },
+      }).populate('planId');
+
+      if (!subscription) {
+        return res.json({
+          success: true,
+          data: {
+            hasWorkspace: true,
+            hasSubscription: false,
+            status: 'no_subscription',
+            accessLevel: 'limited',
+            message: 'No active subscription found',
+          },
+        });
+      }
+
+      // Calculate trial info
+      const now = new Date();
+      const isTrialActive = subscription.status === 'trial' &&
+        subscription.endDate &&
+        now <= subscription.endDate;
+
+      let daysRemaining = 0;
+      if (isTrialActive && subscription.endDate) {
+        const diffTime = subscription.endDate.getTime() - now.getTime();
+        daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      res.json({
+        success: true,
+        data: {
+          hasWorkspace: true,
+          hasSubscription: true,
+          status: subscription.status,
+          tier: subscription.tier,
+          accessLevel: 'full',
+          isTrialActive,
+          daysRemaining,
+          endDate: subscription.endDate,
+          planId: subscription.planId,
+          features: subscription.features || [],
+          limits: subscription.limits || {},
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching subscription status:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch subscription status',
       });
     }
   }

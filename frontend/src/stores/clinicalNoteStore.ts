@@ -78,11 +78,13 @@ interface ClinicalNoteStore {
 
 // Mock clinical note service (you'll need to implement the actual service)
 const noteService = {
-  async getNotes(_filters: ClinicalNoteFilters) {
+  async getNotes(filters: ClinicalNoteFilters) {
     // This should be implemented to call your actual API
+    console.log('Fetching notes with filters:', filters);
     return { success: true, data: [], pagination: { page: 1, limit: 10, total: 0, pages: 0 } };
   },
-  async getNotesByPatient(_patientId: string) {
+  async getNotesByPatient(patientId: string) {
+    console.log('Fetching notes for patient:', patientId);
     return { success: true, data: [] };
   },
   async createNote(data: ClinicalNoteFormData) {
@@ -114,10 +116,12 @@ const noteService = {
       data: fullNote
     };
   },
-  async deleteNote(_id: string) {
+  async deleteNote(id: string) {
+    console.log('Deleting note:', id);
     return { success: true };
   },
-  async getNoteById(_id: string) {
+  async getNoteById(id: string) {
+    console.log('Fetching note by id:', id);
     return { success: true, data: null };
   },
   async toggleNotePrivacy(_id: string, _isPrivate: boolean) {

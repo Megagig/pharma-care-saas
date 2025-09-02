@@ -34,8 +34,8 @@ export const createAllergy = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -54,7 +54,7 @@ export const createAllergy = asyncHandler(
     const allergy = new Allergy({
       ...allergyData,
       patientId,
-      pharmacyId: patient!.pharmacyId,
+      workplaceId: patient!.workplaceId,
       createdBy: context.userId,
       isDeleted: false,
     });
@@ -91,8 +91,8 @@ export const getAllergies = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -160,8 +160,8 @@ export const getAllergy = asyncHandler(
 
     ensureResourceExists(allergy, 'Allergy', allergyId);
     checkTenantAccess(
-      allergy!.pharmacyId.toString(),
-      context.pharmacyId,
+      allergy!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -183,8 +183,8 @@ export const updateAllergy = asyncHandler(
     const allergy = await Allergy.findById(allergyId);
     ensureResourceExists(allergy, 'Allergy', allergyId);
     checkTenantAccess(
-      allergy!.pharmacyId.toString(),
-      context.pharmacyId,
+      allergy!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -240,8 +240,8 @@ export const deleteAllergy = asyncHandler(
     const allergy = await Allergy.findById(allergyId);
     ensureResourceExists(allergy, 'Allergy', allergyId);
     checkTenantAccess(
-      allergy!.pharmacyId.toString(),
-      context.pharmacyId,
+      allergy!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -279,8 +279,8 @@ export const getCriticalAllergies = asyncHandler(
     const patient = await Patient.findById(patientId);
     ensureResourceExists(patient, 'Patient', patientId);
     checkTenantAccess(
-      patient!.pharmacyId.toString(),
-      context.pharmacyId,
+      patient!.workplaceId.toString(),
+      context.workplaceId,
       context.isAdmin
     );
 
@@ -337,7 +337,7 @@ export const searchAllergies = asyncHandler(
 
     // Tenant filtering
     if (!context.isAdmin) {
-      query.pharmacyId = context.pharmacyId;
+      query.workplaceId = context.workplaceId;
     }
 
     const allergies = await Allergy.find(query)

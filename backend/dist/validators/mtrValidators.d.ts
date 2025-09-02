@@ -1,0 +1,20 @@
+export declare const createMTRSessionSchema: import("express-validator").ValidationChain[];
+export declare const updateMTRSessionSchema: import("express-validator").ValidationChain[];
+export declare const updateStepSchema: import("express-validator").ValidationChain[];
+export declare const medicationSchema: import("express-validator").ValidationChain[];
+export declare const createProblemSchema: import("express-validator").ValidationChain[];
+export declare const updateProblemSchema: import("express-validator").ValidationChain[];
+export declare const createInterventionSchema: import("express-validator").ValidationChain[];
+export declare const updateInterventionSchema: import("express-validator").ValidationChain[];
+export declare const createFollowUpSchema: import("express-validator").ValidationChain[];
+export declare const updateFollowUpSchema: import("express-validator").ValidationChain[];
+export declare const mtrParamsSchema: import("express-validator").ValidationChain[];
+export declare const problemParamsSchema: import("express-validator").ValidationChain[];
+export declare const interventionParamsSchema: import("express-validator").ValidationChain[];
+export declare const followUpParamsSchema: import("express-validator").ValidationChain[];
+export declare const patientParamsSchema: import("express-validator").ValidationChain[];
+export declare const mtrQuerySchema: import("express-validator").ValidationChain[];
+export declare const reportsQuerySchema: import("express-validator").ValidationChain[];
+export declare const drugInteractionSchema: import("express-validator").ValidationChain[];
+export declare const validateRequest: (validations: any[], location?: "body" | "params" | "query") => any[];
+//# sourceMappingURL=mtrValidators.d.ts.map

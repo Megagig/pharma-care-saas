@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import Subscription from '../models/Subscription';
 import User from '../models/User';
+import Workplace from '../models/Workplace';
 import Payment from '../models/Payment';
 import SubscriptionPlan from '../models/SubscriptionPlan';
 import { emailService } from '../utils/emailService';
@@ -278,14 +279,12 @@ export class WebhookController {
           await emailService.sendEmail({
             to: user.email,
             subject: 'Payment Received',
-            text: `Dear ${user.firstName}, your payment of ₦${
-              amount / 100
-            } has been received and your subscription is now active.`,
+            text: `Dear ${user.firstName}, your payment of ₦${amount / 100
+              } has been received and your subscription is now active.`,
             html: `
               <h2>Payment Successful</h2>
               <p>Dear ${user.firstName},</p>
-              <p>Your payment of <strong>₦${
-                amount / 100
+              <p>Your payment of <strong>₦${amount / 100
               }</strong> has been received.</p>
               <p>Your subscription is now active until ${new Date(
                 subscription.endDate
@@ -379,19 +378,16 @@ export class WebhookController {
           await emailService.sendEmail({
             to: user.email,
             subject: 'Payment Failed',
-            text: `Dear ${user.firstName}, your payment of ₦${
-              amount / 100
-            } has failed. Reason: ${failureReason}. Please update your payment method to avoid service interruption.`,
+            text: `Dear ${user.firstName}, your payment of ₦${amount / 100
+              } has failed. Reason: ${failureReason}. Please update your payment method to avoid service interruption.`,
             html: `
               <h2>Payment Failed</h2>
               <p>Dear ${user.firstName},</p>
-              <p>Your payment of <strong>₦${
-                amount / 100
+              <p>Your payment of <strong>₦${amount / 100
               }</strong> has failed.</p>
               <p><strong>Reason:</strong> ${failureReason}</p>
               <p>Please update your payment method to avoid service interruption.</p>
-              <p><a href="${
-                process.env.FRONTEND_URL
+              <p><a href="${process.env.FRONTEND_URL
               }/subscription-management">Manage your subscription</a></p>
             `,
           });
@@ -480,23 +476,19 @@ export class WebhookController {
         to: user.email,
         subject: isRenewal ? 'Subscription Renewed' : 'Subscription Activated',
         text: isRenewal
-          ? `Dear ${
-              user.firstName
-            }, your subscription has been renewed and is valid until ${new Date(
-              endDate
-            ).toLocaleDateString()}.`
-          : `Dear ${
-              user.firstName
-            }, your subscription has been activated and is valid until ${new Date(
-              endDate
-            ).toLocaleDateString()}.`,
+          ? `Dear ${user.firstName
+          }, your subscription has been renewed and is valid until ${new Date(
+            endDate
+          ).toLocaleDateString()}.`
+          : `Dear ${user.firstName
+          }, your subscription has been activated and is valid until ${new Date(
+            endDate
+          ).toLocaleDateString()}.`,
         html: `
-          <h2>${
-            isRenewal ? 'Subscription Renewed' : 'Subscription Activated'
+          <h2>${isRenewal ? 'Subscription Renewed' : 'Subscription Activated'
           }</h2>
           <p>Dear ${user.firstName},</p>
-          <p>Your subscription has been ${
-            isRenewal ? 'renewed' : 'activated'
+          <p>Your subscription has been ${isRenewal ? 'renewed' : 'activated'
           } successfully.</p>
           <p>Valid until: <strong>${new Date(
             endDate
@@ -532,7 +524,7 @@ export class WebhookController {
       }
 
       // Update subscription
-      subscription.status = 'cancelled';
+      subscription.status = 'canceled';
       subscription.autoRenew = false;
 
       // Log webhook event
@@ -545,25 +537,25 @@ export class WebhookController {
 
       await subscription.save();
 
-      // Find user
-      const user = await User.findById(subscription.userId);
+      // Find workspace and its owner
+      const workspace = await Workplace.findById(subscription.workspaceId);
+      const user = workspace ? await User.findById(workspace.ownerId) : null;
       if (user) {
         // Send email notification
         await emailService.sendEmail({
           to: user.email,
           subject: 'Subscription Cancelled',
-          text: `Dear ${
-            user.firstName
-          }, your subscription has been cancelled. You will still have access until ${new Date(
-            subscription.endDate
-          ).toLocaleDateString()}.`,
+          text: `Dear ${user.firstName
+            }, your subscription has been cancelled. You will still have access until ${new Date(
+              subscription.endDate
+            ).toLocaleDateString()}.`,
           html: `
             <h2>Subscription Cancelled</h2>
             <p>Dear ${user.firstName},</p>
             <p>Your subscription has been cancelled as requested.</p>
             <p>You will still have access to your features until <strong>${new Date(
-              subscription.endDate
-            ).toLocaleDateString()}</strong>.</p>
+            subscription.endDate
+          ).toLocaleDateString()}</strong>.</p>
             <p>If this was a mistake or you'd like to reactivate your subscription, please contact support.</p>
           `,
         });
@@ -571,7 +563,7 @@ export class WebhookController {
 
       logger.info('Subscription cancelled via webhook', {
         subscriptionId,
-        userId: subscription.userId,
+        workspaceId: subscription.workspaceId,
       });
     } catch (error) {
       logger.error('Error processing subscription cancellation webhook', {
@@ -610,8 +602,9 @@ export class WebhookController {
 
       await subscription.save();
 
-      // Find user
-      const user = await User.findById(subscription.userId);
+      // Find workspace and its owner
+      const workspace = await Workplace.findById(subscription.workspaceId);
+      const user = workspace ? await User.findById(workspace.ownerId) : null;
       if (user) {
         // Send email notification
         await emailService.sendEmail({
@@ -630,7 +623,7 @@ export class WebhookController {
 
       logger.info('Subscription expiring soon notification sent', {
         subscriptionId,
-        userId: subscription.userId,
+        workspaceId: subscription.workspaceId,
         daysRemaining,
       });
     } catch (error) {
@@ -801,17 +794,14 @@ export class WebhookController {
         .sendEmail({
           to: user.email,
           subject: 'Subscription Payment Successful',
-          text: `Dear ${user.firstName}, your payment of ₦${
-            amount / 100
-          } has been received and your ${
-            plan.name
-          } subscription is now active.`,
+          text: `Dear ${user.firstName}, your payment of ₦${amount / 100
+            } has been received and your ${plan.name
+            } subscription is now active.`,
           html: `
           <h2>Subscription Payment Successful</h2>
           <p>Dear ${user.firstName},</p>
-          <p>We have received your payment of <strong>₦${
-            amount / 100
-          }</strong> for the <strong>${plan.name}</strong> plan.</p>
+          <p>We have received your payment of <strong>₦${amount / 100
+            }</strong> for the <strong>${plan.name}</strong> plan.</p>
           <p>Your subscription is now active and will be valid until ${endDate.toLocaleDateString()}.</p>
           <p>Thank you for choosing our service!</p>
         `,

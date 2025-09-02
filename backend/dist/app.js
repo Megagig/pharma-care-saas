@@ -29,9 +29,22 @@ const admin_1 = __importDefault(require("./routes/admin"));
 const license_1 = __importDefault(require("./routes/license"));
 const subscription_1 = __importDefault(require("./routes/subscription"));
 const subscriptionManagement_1 = __importDefault(require("./routes/subscriptionManagement"));
+const subscriptionManagementRoutes_1 = __importDefault(require("./routes/subscriptionManagementRoutes"));
 const webhookRoutes_1 = __importDefault(require("./routes/webhookRoutes"));
 const featureFlagRoutes_1 = __importDefault(require("./routes/featureFlagRoutes"));
 const healthRoutes_1 = __importDefault(require("./routes/healthRoutes"));
+const mtrRoutes_1 = __importDefault(require("./routes/mtrRoutes"));
+const mtrNotificationRoutes_1 = __importDefault(require("./routes/mtrNotificationRoutes"));
+const patientMTRIntegrationRoutes_1 = __importDefault(require("./routes/patientMTRIntegrationRoutes"));
+const auditRoutes_1 = __importDefault(require("./routes/auditRoutes"));
+const securityRoutes_1 = __importDefault(require("./routes/securityRoutes"));
+const invitationRoutes_1 = __importDefault(require("./routes/invitationRoutes"));
+const usageMonitoringRoutes_1 = __importDefault(require("./routes/usageMonitoringRoutes"));
+const locationRoutes_1 = __importDefault(require("./routes/locationRoutes"));
+const locationDataRoutes_1 = __importDefault(require("./routes/locationDataRoutes"));
+const legacyApiRoutes_1 = __importDefault(require("./routes/legacyApiRoutes"));
+const migrationDashboardRoutes_1 = __importDefault(require("./routes/migrationDashboardRoutes"));
+const emailWebhookRoutes_1 = __importDefault(require("./routes/emailWebhookRoutes"));
 const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
@@ -42,10 +55,20 @@ app.use((0, cors_1.default)({
     ],
     credentials: true,
 }));
+const securityMonitoring_1 = require("./middlewares/securityMonitoring");
+app.use(securityMonitoring_1.blockSuspiciousIPs);
+app.use(securityMonitoring_1.detectAnomalies);
 const limiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: process.env.NODE_ENV === 'development' ? 1000 : 100,
     message: 'Too many requests from this IP, please try again later.',
+    skip: (req) => {
+        if (process.env.NODE_ENV === 'development' &&
+            (req.path.includes('/health') || req.path.includes('/mtr/summary'))) {
+            return true;
+        }
+        return false;
+    }
 });
 app.use('/api/', limiter);
 app.use(express_1.default.json({ limit: '10mb' }));
@@ -75,6 +98,8 @@ app.use('/api/patients', assessmentRoutes_1.default);
 app.use('/api/patients', dtpRoutes_1.default);
 app.use('/api/patients', carePlanRoutes_1.default);
 app.use('/api/patients', visitRoutes_1.default);
+app.use('/api/patients', patientMTRIntegrationRoutes_1.default);
+app.use('/api', invitationRoutes_1.default);
 app.use('/api', allergyRoutes_1.default);
 app.use('/api', conditionRoutes_1.default);
 app.use('/api', medicationRoutes_1.default);
@@ -84,10 +109,21 @@ app.use('/api', carePlanRoutes_1.default);
 app.use('/api', visitRoutes_1.default);
 app.use('/api/notes', noteRoutes_1.default);
 app.use('/api/payments', paymentRoutes_1.default);
+app.use('/api/mtr', mtrRoutes_1.default);
+app.use('/api/mtr/notifications', mtrNotificationRoutes_1.default);
+app.use('/api/audit', auditRoutes_1.default);
+app.use('/api/security', securityRoutes_1.default);
+app.use('/api/usage', usageMonitoringRoutes_1.default);
+app.use('/api/locations', locationRoutes_1.default);
+app.use('/api/location-data', locationDataRoutes_1.default);
+app.use('/api/legacy', legacyApiRoutes_1.default);
+app.use('/api/migration', migrationDashboardRoutes_1.default);
+app.use('/api/email', emailWebhookRoutes_1.default);
 app.use('/api/admin', admin_1.default);
 app.use('/api/license', license_1.default);
 app.use('/api/subscription-management', subscriptionManagement_1.default);
 app.use('/api/subscription', subscription_1.default);
+app.use('/api/workspace-subscription', subscriptionManagementRoutes_1.default);
 app.use('/api/feature-flags', featureFlagRoutes_1.default);
 app.use('/api/webhooks', express_1.default.raw({ type: 'application/json' }), webhookRoutes_1.default);
 app.use('/uploads', express_1.default.static('uploads', {

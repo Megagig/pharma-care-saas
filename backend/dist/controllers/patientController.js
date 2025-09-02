@@ -16,11 +16,13 @@ const Visit_1 = __importDefault(require("../models/Visit"));
 const tenancyGuard_1 = require("../utils/tenancyGuard");
 const responseHelpers_1 = require("../utils/responseHelpers");
 exports.getPatients = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const { page, limit, q, name, mrn, phone, state, bloodGroup, genotype, sort, } = req.query;
+    const { page = 1, limit = 10, q, name, mrn, phone, state, bloodGroup, genotype, sort, } = req.query;
     const context = (0, responseHelpers_1.getRequestContext)(req);
+    const parsedPage = Math.max(1, parseInt(page) || 1);
+    const parsedLimit = Math.min(50, Math.max(1, parseInt(limit) || 10));
     const query = {};
     if (!context.isAdmin) {
-        query.pharmacyId = context.pharmacyId;
+        query.workplaceId = context.workplaceId;
     }
     if (q) {
         const searchRegex = new RegExp(q, 'i');
@@ -44,7 +46,7 @@ exports.getPatients = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     if (mrn)
         query.mrn = new RegExp(mrn, 'i');
     if (phone)
-        query.phone = new RegExp(phone, 'i');
+        query.phone = new RegExp(phone.replace('+', '\\+'), 'i');
     if (state)
         query.state = state;
     if (bloodGroup)
@@ -54,13 +56,13 @@ exports.getPatients = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const [patients, total] = await Promise.all([
         Patient_1.default.find(query)
             .sort(sort || '-createdAt')
-            .limit(limit)
-            .skip((page - 1) * limit)
+            .limit(parsedLimit)
+            .skip((parsedPage - 1) * parsedLimit)
             .select('-__v')
             .lean(),
         Patient_1.default.countDocuments(query),
     ]);
-    (0, responseHelpers_1.respondWithPaginatedResults)(res, patients, total, page, limit, `Found ${total} patients`);
+    (0, responseHelpers_1.respondWithPaginatedResults)(res, patients, total, parsedPage, parsedLimit, `Found ${total} patients`);
 });
 exports.getPatient = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;
@@ -69,7 +71,7 @@ exports.getPatient = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
         .populate('createdBy', 'firstName lastName')
         .populate('updatedBy', 'firstName lastName');
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', id);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const responseData = {
         patient: {
             ...patient.toObject(),
@@ -86,15 +88,15 @@ exports.createPatient = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
     const session = await mongoose_1.default.startSession();
     session.startTransaction();
     try {
-        const pharmacyCode = 'GEN';
+        const workplaceCode = 'GEN';
         const patientCount = await Patient_1.default.countDocuments({
-            pharmacyId: context.pharmacyId,
+            workplaceId: context.workplaceId,
         });
-        const mrn = (0, tenancyGuard_1.generateMRN)(pharmacyCode, patientCount + 1);
+        const mrn = (0, tenancyGuard_1.generateMRN)(workplaceCode, patientCount + 1);
         const patient = new Patient_1.default({
             ...patientData,
             mrn,
-            pharmacyId: context.pharmacyId,
+            workplaceId: context.workplaceId,
             createdBy: context.userId,
             isDeleted: false,
         });
@@ -104,7 +106,7 @@ exports.createPatient = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
             const allergyDocs = allergies.map((allergy) => ({
                 ...allergy,
                 patientId: patient._id,
-                pharmacyId: context.pharmacyId,
+                workplaceId: context.workplaceId,
                 createdBy: context.userId,
             }));
             relatedData.allergies = await Allergy_1.default.insertMany(allergyDocs, {
@@ -115,7 +117,7 @@ exports.createPatient = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
             const conditionDocs = conditions.map((condition) => ({
                 ...condition,
                 patientId: patient._id,
-                pharmacyId: context.pharmacyId,
+                workplaceId: context.workplaceId,
                 createdBy: context.userId,
             }));
             relatedData.conditions = await Condition_1.default.insertMany(conditionDocs, {
@@ -126,7 +128,7 @@ exports.createPatient = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
             const medicationDocs = medications.map((medication) => ({
                 ...medication,
                 patientId: patient._id,
-                pharmacyId: context.pharmacyId,
+                workplaceId: context.workplaceId,
                 createdBy: context.userId,
             }));
             relatedData.medications = await MedicationRecord_1.default.insertMany(medicationDocs, { session });
@@ -135,7 +137,7 @@ exports.createPatient = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
             const assessmentDoc = new ClinicalAssessment_1.default({
                 ...assessment,
                 patientId: patient._id,
-                pharmacyId: context.pharmacyId,
+                workplaceId: context.workplaceId,
                 createdBy: context.userId,
             });
             await assessmentDoc.save({ session });
@@ -152,7 +154,7 @@ exports.createPatient = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
             const dtpDocs = dtps.map((dtp) => ({
                 ...dtp,
                 patientId: patient._id,
-                pharmacyId: context.pharmacyId,
+                workplaceId: context.workplaceId,
                 createdBy: context.userId,
             }));
             const createdDTPs = await DrugTherapyProblem_1.default.insertMany(dtpDocs, {
@@ -169,7 +171,7 @@ exports.createPatient = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
             const carePlanDoc = new CarePlan_1.default({
                 ...carePlan,
                 patientId: patient._id,
-                pharmacyId: context.pharmacyId,
+                workplaceId: context.workplaceId,
                 createdBy: context.userId,
             });
             await carePlanDoc.save({ session });
@@ -200,7 +202,7 @@ exports.updatePatient = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
     const updates = req.body;
     const patient = await Patient_1.default.findById(id);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', id);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     if (updates.dob || updates.age) {
         responseHelpers_1.validateBusinessRules.validatePatientAge(updates.dob || patient.dob, updates.age || patient.age);
     }
@@ -217,7 +219,7 @@ exports.deletePatient = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(id);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', id);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     patient.isDeleted = true;
     patient.updatedBy = context.userId;
     await patient.save();
@@ -241,7 +243,7 @@ exports.searchPatients = (0, responseHelpers_1.asyncHandler)(async (req, res) =>
         ],
     };
     if (!context.isAdmin) {
-        query.pharmacyId = context.pharmacyId;
+        query.workplaceId = context.workplaceId;
     }
     const patients = await Patient_1.default.find(query)
         .select('firstName lastName otherNames mrn phone dob bloodGroup latestVitals')
@@ -267,7 +269,7 @@ exports.getPatientSummary = (0, responseHelpers_1.asyncHandler)(async (req, res)
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const patient = await Patient_1.default.findById(id);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', id);
-    (0, responseHelpers_1.checkTenantAccess)(patient.pharmacyId.toString(), context.pharmacyId, context.isAdmin);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const [allergyCount, conditionCount, medicationCount, visitCount] = await Promise.all([
         Allergy_1.default.countDocuments({ patientId: id, isDeleted: false }),
         Condition_1.default.countDocuments({ patientId: id, isDeleted: false }),

@@ -22,8 +22,9 @@ export interface IPatientVitals {
 
 export interface IPatient extends Document {
   _id: mongoose.Types.ObjectId;
-  pharmacyId: mongoose.Types.ObjectId; // ref Pharmacy, indexed
-  mrn: string; // generated patient code, unique per pharmacy
+  workplaceId: mongoose.Types.ObjectId; // ref Workplace, indexed (changed from pharmacyId)
+  locationId?: string; // Location ID within the workplace for multi-location support
+  mrn: string; // generated patient code, unique per workplace
 
   // Demography
   firstName: string;
@@ -45,6 +46,35 @@ export interface IPatient extends Document {
   // Clinical snapshots (latest vitals cached for list speed)
   latestVitals?: IPatientVitals;
 
+  // Multi-location and sharing metadata
+  metadata?: {
+    sharedAccess?: {
+      patientId: mongoose.Types.ObjectId;
+      sharedWithLocations: string[];
+      sharedBy: mongoose.Types.ObjectId;
+      sharedAt: Date;
+      accessLevel: 'read' | 'write' | 'full';
+      expiresAt?: Date;
+    };
+    transferWorkflow?: {
+      transferId: string;
+      patientId: mongoose.Types.ObjectId;
+      fromLocationId: string;
+      toLocationId: string;
+      transferredBy: mongoose.Types.ObjectId;
+      transferReason?: string;
+      status: 'pending' | 'approved' | 'completed';
+      createdAt: Date;
+      completedAt?: Date;
+      completedBy?: mongoose.Types.ObjectId;
+      steps: Array<{
+        step: string;
+        completedAt: Date;
+        completedBy: mongoose.Types.ObjectId;
+      }>;
+    };
+  };
+
   // Flags
   hasActiveDTP?: boolean;
   isDeleted: boolean;
@@ -61,11 +91,16 @@ export interface IPatient extends Document {
 
 const patientSchema = new Schema(
   {
-    pharmacyId: {
+    workplaceId: {
       type: Schema.Types.ObjectId,
-      ref: 'Pharmacy',
+      ref: 'Workplace',
       required: true,
       index: true,
+    },
+    locationId: {
+      type: String,
+      index: true,
+      sparse: true, // Allow null values and don't index them
     },
     mrn: {
       type: String,
@@ -208,6 +243,63 @@ const patientSchema = new Schema(
       recordedAt: Date,
     },
 
+    // Multi-location and sharing metadata
+    metadata: {
+      sharedAccess: {
+        patientId: {
+          type: Schema.Types.ObjectId,
+          ref: 'Patient',
+        },
+        sharedWithLocations: [{
+          type: String,
+        }],
+        sharedBy: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        sharedAt: Date,
+        accessLevel: {
+          type: String,
+          enum: ['read', 'write', 'full'],
+          default: 'read',
+        },
+        expiresAt: Date,
+      },
+      transferWorkflow: {
+        transferId: String,
+        patientId: {
+          type: Schema.Types.ObjectId,
+          ref: 'Patient',
+        },
+        fromLocationId: String,
+        toLocationId: String,
+        transferredBy: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        transferReason: String,
+        status: {
+          type: String,
+          enum: ['pending', 'approved', 'completed'],
+          default: 'pending',
+        },
+        createdAt: Date,
+        completedAt: Date,
+        completedBy: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        steps: [{
+          step: String,
+          completedAt: Date,
+          completedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+          },
+        }],
+      },
+    },
+
     // Flags
     hasActiveDTP: {
       type: Boolean,
@@ -228,11 +320,13 @@ addAuditFields(patientSchema);
 patientSchema.plugin(tenancyGuardPlugin);
 
 // Compound indexes for tenancy and uniqueness
-patientSchema.index({ pharmacyId: 1, mrn: 1 }, { unique: true });
-patientSchema.index({ pharmacyId: 1, lastName: 1, firstName: 1 });
-patientSchema.index({ pharmacyId: 1, isDeleted: 1 });
-patientSchema.index({ pharmacyId: 1, phone: 1 }, { sparse: true });
-patientSchema.index({ pharmacyId: 1, email: 1 }, { sparse: true });
+patientSchema.index({ workplaceId: 1, mrn: 1 }, { unique: true });
+patientSchema.index({ workplaceId: 1, lastName: 1, firstName: 1 });
+patientSchema.index({ workplaceId: 1, isDeleted: 1 });
+patientSchema.index({ workplaceId: 1, phone: 1 }, { sparse: true });
+patientSchema.index({ workplaceId: 1, email: 1 }, { sparse: true });
+patientSchema.index({ workplaceId: 1, locationId: 1 }, { sparse: true });
+patientSchema.index({ workplaceId: 1, 'metadata.sharedAccess.sharedWithLocations': 1 }, { sparse: true });
 patientSchema.index({ hasActiveDTP: 1 });
 patientSchema.index({ createdAt: -1 });
 
@@ -302,11 +396,11 @@ patientSchema.pre('save', function (this: IPatient) {
 
 // Static method to generate next MRN
 patientSchema.statics.generateNextMRN = async function (
-  pharmacyId: mongoose.Types.ObjectId,
-  pharmacyCode: string
+  workplaceId: mongoose.Types.ObjectId,
+  workplaceCode: string
 ): Promise<string> {
   const lastPatient = await this.findOne(
-    { pharmacyId },
+    { workplaceId },
     {},
     { sort: { createdAt: -1 }, bypassTenancyGuard: true }
   );
@@ -319,7 +413,7 @@ patientSchema.statics.generateNextMRN = async function (
     }
   }
 
-  return `PHM-${pharmacyCode}-${sequence.toString().padStart(5, '0')}`;
+  return `${workplaceCode}-${sequence.toString().padStart(4, '0')}`;
 };
 
 export default mongoose.model<IPatient>('Patient', patientSchema);
