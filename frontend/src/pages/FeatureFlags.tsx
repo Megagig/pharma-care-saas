@@ -3,7 +3,6 @@ import {
   Box,
   Container,
   Typography,
-  Grid,
   Card,
   CardContent,
   CardHeader,
@@ -36,15 +35,14 @@ import {
   TablePagination,
   Divider,
   Skeleton,
+  Grid,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Flag as FlagIcon,
-  FilterList as FilterIcon,
-  Search as SearchIcon,
-} from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import FlagIcon from '@mui/icons-material/Flag';
+import FilterIcon from '@mui/icons-material/FilterList';
+import SearchIcon from '@mui/icons-material/Search';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { useRBAC } from '../hooks/useRBAC';
@@ -869,7 +867,11 @@ const FeatureFlagsPage: React.FC = () => {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      priority: e.target.value as unknown,
+                      priority: e.target.value as
+                        | 'low'
+                        | 'medium'
+                        | 'high'
+                        | 'critical',
                     })
                   }
                 >

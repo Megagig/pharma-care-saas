@@ -14,13 +14,18 @@ interface SubscriptionStatus {
 }
 
 // Custom hook to check subscription status - now uses context for better state management
-export const useSubscriptionStatus = (): SubscriptionStatus & { loading: boolean; isActive: boolean; refetch: () => Promise<void> } => {
+export const useSubscriptionStatus = (): SubscriptionStatus & {
+  loading: boolean;
+  isActive: boolean;
+  refetch: () => Promise<void>;
+} => {
   const { user } = useAuth();
-  const { subscriptionStatus, loading, isActive, refetch } = useSubscriptionContext();
+  const { subscriptionStatus, loading, isActive, refetch } =
+    useSubscriptionContext();
 
   // Fallback to user data if context data is not available
   const fallbackStatus: SubscriptionStatus = {
-    hasWorkspace: !!user?.workplaceId,
+    hasWorkspace: !!user?.pharmacyId,
     hasSubscription: !!user?.subscription,
     status: user?.subscription?.status || 'inactive',
     tier: user?.subscription?.tier || 'free',
