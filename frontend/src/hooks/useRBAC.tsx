@@ -10,6 +10,7 @@ interface UseRBACReturn {
   isPharmacist: boolean;
   isTechnician: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   hasRole: (requiredRole: string | string[]) => boolean;
   hasPermission: (permission: string) => boolean;
   hasFeature: (feature: string) => boolean;
@@ -143,6 +144,7 @@ export const useRBAC = (): UseRBACReturn => {
     isPharmacist: role === 'pharmacist',
     isTechnician: role === 'technician',
     isAdmin: role === 'admin',
+    isSuperAdmin: user?.role === 'super_admin',
     hasRole,
     hasPermission,
     hasFeature,
