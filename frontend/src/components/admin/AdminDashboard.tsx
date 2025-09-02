@@ -40,8 +40,23 @@ import PeopleIcon from '@mui/icons-material/People';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import SettingsIcon from '@mui/icons-material/Settings';
+import SecurityIcon from '@mui/icons-material/Security';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import SwapVertIcon from '@mui/icons-material/SwapVert';
+import EmailIcon from '@mui/icons-material/Email';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import WebhookIcon from '@mui/icons-material/Webhook';
 import { useUIStore } from '../../stores';
 import LoadingSpinner from '../LoadingSpinner';
+
+// Import the new admin components
+import SecurityDashboard from './SecurityDashboard';
+import UsageMonitoring from './UsageMonitoring';
+import MigrationDashboard from './MigrationDashboard';
+import InvitationManagement from './InvitationManagement';
+import LocationManagement from './LocationManagement';
+import WebhookManagement from './WebhookManagement';
+import AdvancedSubscriptionAnalytics from '../subscription/AdvancedSubscriptionAnalytics';
 
 interface User {
   _id: string;
@@ -366,6 +381,8 @@ const AdminDashboard: React.FC = () => {
         <Tabs
           value={activeTab}
           onChange={(_, newValue) => setActiveTab(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
         >
           <Tab
             icon={<PeopleIcon />}
@@ -386,6 +403,24 @@ const AdminDashboard: React.FC = () => {
             label="Analytics"
             iconPosition="start"
           />
+          <Tab icon={<SecurityIcon />} label="Security" iconPosition="start" />
+          <Tab
+            icon={<TrendingUpIcon />}
+            label="Usage Monitoring"
+            iconPosition="start"
+          />
+          <Tab
+            icon={<SwapVertIcon />}
+            label="Migrations"
+            iconPosition="start"
+          />
+          <Tab icon={<EmailIcon />} label="Invitations" iconPosition="start" />
+          <Tab
+            icon={<LocationOnIcon />}
+            label="Locations"
+            iconPosition="start"
+          />
+          <Tab icon={<WebhookIcon />} label="Webhooks" iconPosition="start" />
           <Tab
             icon={<SettingsIcon />}
             label="System Settings"
@@ -660,8 +695,29 @@ const AdminDashboard: React.FC = () => {
         </Grid>
       )}
 
+      {/* Security Dashboard Tab */}
+      {activeTab === 3 && <SecurityDashboard />}
+
+      {/* Usage Monitoring Tab */}
+      {activeTab === 4 && <UsageMonitoring />}
+
+      {/* Migration Dashboard Tab */}
+      {activeTab === 5 && <MigrationDashboard />}
+
+      {/* Invitation Management Tab */}
+      {activeTab === 6 && <InvitationManagement />}
+
+      {/* Location Management Tab */}
+      {activeTab === 7 && <LocationManagement />}
+
+      {/* Webhook Management Tab */}
+      {activeTab === 8 && <WebhookManagement />}
+
+      {/* Advanced Subscription Analytics Tab */}
+      {activeTab === 9 && <AdvancedSubscriptionAnalytics />}
+
       {/* System Settings Tab */}
-      {activeTab === 3 && (
+      {activeTab === 10 && (
         <Alert severity="info">
           System settings panel will be available in the next update.
         </Alert>
