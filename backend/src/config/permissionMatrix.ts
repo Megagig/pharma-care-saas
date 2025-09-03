@@ -131,6 +131,54 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
 
     // ========================================
+    // CLINICAL INTERVENTIONS
+    // ========================================
+    'clinical_intervention.create': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['clinicalInterventions'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'clinical_intervention.read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
+        features: ['clinicalInterventions'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'clinical_intervention.update': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['clinicalInterventions'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'clinical_intervention.delete': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['clinicalInterventions'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'clinical_intervention.assign': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['clinicalInterventions', 'teamManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'clinical_intervention.reports': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['clinicalInterventions', 'advancedReports'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'clinical_intervention.export': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['clinicalInterventions', 'dataExport'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+
+    // ========================================
     // SUBSCRIPTION MANAGEMENT
     // ========================================
     'subscription.manage': {
@@ -528,6 +576,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'patientLimit',
         'basicReports',
         'emailReminders',
+        'clinicalInterventions',
     ],
     pro: [
         'dashboard',
@@ -539,6 +588,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'apiAccess',
         'auditLogs',
         'integrations',
+        'clinicalInterventions',
     ],
     pharmily: [
         'dashboard',
@@ -555,6 +605,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'adrReporting',
         'scheduledReports',
         'dataBackup',
+        'clinicalInterventions',
     ],
     network: [
         'dashboard',
@@ -575,6 +626,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'multiLocationDashboard',
         'teamManagement',
         'multiUserSupport',
+        'clinicalInterventions',
     ],
     enterprise: [
         'dashboard',
@@ -598,5 +650,6 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'customIntegrations',
         'prioritySupport',
         'dedicatedManager',
+        'clinicalInterventions',
     ],
 };

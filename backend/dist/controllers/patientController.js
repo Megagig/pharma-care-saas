@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPatientSummary = exports.searchPatients = exports.deletePatient = exports.updatePatient = exports.createPatient = exports.getPatient = exports.getPatients = void 0;
+exports.searchPatientsWithInterventions = exports.getPatientInterventions = exports.getPatientSummary = exports.searchPatients = exports.deletePatient = exports.updatePatient = exports.createPatient = exports.getPatient = exports.getPatients = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const Patient_1 = __importDefault(require("../models/Patient"));
 const Allergy_1 = __importDefault(require("../models/Allergy"));
@@ -270,7 +270,7 @@ exports.getPatientSummary = (0, responseHelpers_1.asyncHandler)(async (req, res)
     const patient = await Patient_1.default.findById(id);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', id);
     (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
-    const [allergyCount, conditionCount, medicationCount, visitCount] = await Promise.all([
+    const [allergyCount, conditionCount, medicationCount, visitCount, interventionCount, activeInterventionCount] = await Promise.all([
         Allergy_1.default.countDocuments({ patientId: id, isDeleted: false }),
         Condition_1.default.countDocuments({ patientId: id, isDeleted: false }),
         MedicationRecord_1.default.countDocuments({
@@ -279,6 +279,8 @@ exports.getPatientSummary = (0, responseHelpers_1.asyncHandler)(async (req, res)
             phase: 'current',
         }),
         Visit_1.default.countDocuments({ patientId: id, isDeleted: false }),
+        patient.getInterventionCount(),
+        patient.getActiveInterventionCount(),
     ]);
     const summary = {
         patient: {
@@ -296,9 +298,58 @@ exports.getPatientSummary = (0, responseHelpers_1.asyncHandler)(async (req, res)
             conditions: conditionCount,
             currentMedications: medicationCount,
             visits: visitCount,
+            interventions: interventionCount,
+            activeInterventions: activeInterventionCount,
             hasActiveDTP: patient.hasActiveDTP,
+            hasActiveInterventions: patient.hasActiveInterventions,
         },
     };
     (0, responseHelpers_1.sendSuccess)(res, summary, 'Patient summary retrieved successfully');
+});
+exports.getPatientInterventions = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
+    const { page = 1, limit = 10, status, category } = req.query;
+    const context = (0, responseHelpers_1.getRequestContext)(req);
+    const patient = await Patient_1.default.findById(id);
+    (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', id);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
+    const parsedPage = Math.max(1, parseInt(page) || 1);
+    const parsedLimit = Math.min(50, Math.max(1, parseInt(limit) || 10));
+    const query = {
+        patientId: id,
+        isDeleted: false,
+    };
+    if (status) {
+        query.status = status;
+    }
+    if (category) {
+        query.category = category;
+    }
+    const ClinicalIntervention = mongoose_1.default.model('ClinicalIntervention');
+    const [interventions, total] = await Promise.all([
+        ClinicalIntervention.find(query)
+            .populate('identifiedBy', 'firstName lastName')
+            .populate('assignments.userId', 'firstName lastName role')
+            .sort({ identifiedDate: -1 })
+            .limit(parsedLimit)
+            .skip((parsedPage - 1) * parsedLimit)
+            .lean(),
+        ClinicalIntervention.countDocuments(query),
+    ]);
+    (0, responseHelpers_1.respondWithPaginatedResults)(res, interventions, total, parsedPage, parsedLimit, `Found ${total} interventions for patient`);
+});
+exports.searchPatientsWithInterventions = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
+    const { q, limit = 10 } = req.query;
+    const context = (0, responseHelpers_1.getRequestContext)(req);
+    if (!q) {
+        return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Search query is required', 400);
+    }
+    const ClinicalInterventionService = require('../services/clinicalInterventionService').default;
+    const patients = await ClinicalInterventionService.searchPatientsWithInterventions(q, context.workplaceId, Math.min(parseInt(limit), 50));
+    (0, responseHelpers_1.sendSuccess)(res, {
+        patients,
+        total: patients.length,
+        query: q,
+    }, `Found ${patients.length} patients with intervention context`);
 });
 //# sourceMappingURL=patientController.js.map

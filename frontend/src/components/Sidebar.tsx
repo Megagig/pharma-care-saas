@@ -144,7 +144,6 @@ const Sidebar = () => {
       path: '/pharmacy/clinical-interventions',
       icon: MedicalServicesIcon,
       show: true,
-      badge: 'Coming Soon',
     },
     {
       name: 'Lab Result Integration',

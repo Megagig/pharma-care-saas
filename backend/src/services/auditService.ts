@@ -21,7 +21,7 @@ export interface AuditContext {
 
 export interface AuditLogData {
     action: string;
-    resourceType: 'MedicationTherapyReview' | 'DrugTherapyProblem' | 'MTRIntervention' | 'MTRFollowUp' | 'Patient' | 'User';
+    resourceType: 'MedicationTherapyReview' | 'DrugTherapyProblem' | 'MTRIntervention' | 'MTRFollowUp' | 'Patient' | 'User' | 'ClinicalIntervention';
     resourceId: mongoose.Types.ObjectId;
     patientId?: mongoose.Types.ObjectId;
     reviewId?: mongoose.Types.ObjectId;

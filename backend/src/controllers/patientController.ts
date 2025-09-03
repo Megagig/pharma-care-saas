@@ -459,9 +459,9 @@ export const searchPatients = asyncHandler(
       displayName: `${patient.firstName} ${patient.lastName}`,
       age: patient.dob
         ? Math.floor(
-            (Date.now() - patient.dob.getTime()) /
-              (1000 * 60 * 60 * 24 * 365.25)
-          )
+          (Date.now() - patient.dob.getTime()) /
+          (1000 * 60 * 60 * 24 * 365.25)
+        )
         : null,
     }));
 
@@ -496,7 +496,7 @@ export const getPatientSummary = asyncHandler(
     );
 
     // Get counts for patient's related records
-    const [allergyCount, conditionCount, medicationCount, visitCount] =
+    const [allergyCount, conditionCount, medicationCount, visitCount, interventionCount, activeInterventionCount] =
       await Promise.all([
         Allergy.countDocuments({ patientId: id, isDeleted: false }),
         Condition.countDocuments({ patientId: id, isDeleted: false }),
@@ -506,6 +506,8 @@ export const getPatientSummary = asyncHandler(
           phase: 'current',
         }),
         Visit.countDocuments({ patientId: id, isDeleted: false }),
+        patient!.getInterventionCount(),
+        patient!.getActiveInterventionCount(),
       ]);
 
     const summary = {
@@ -515,9 +517,9 @@ export const getPatientSummary = asyncHandler(
         mrn: patient!.mrn,
         age: patient!.dob
           ? Math.floor(
-              (Date.now() - patient!.dob.getTime()) /
-                (1000 * 60 * 60 * 24 * 365.25)
-            )
+            (Date.now() - patient!.dob.getTime()) /
+            (1000 * 60 * 60 * 24 * 365.25)
+          )
           : null,
         latestVitals: patient!.latestVitals,
       },
@@ -526,10 +528,113 @@ export const getPatientSummary = asyncHandler(
         conditions: conditionCount,
         currentMedications: medicationCount,
         visits: visitCount,
+        interventions: interventionCount,
+        activeInterventions: activeInterventionCount,
         hasActiveDTP: patient!.hasActiveDTP,
+        hasActiveInterventions: patient!.hasActiveInterventions,
       },
     };
 
     sendSuccess(res, summary, 'Patient summary retrieved successfully');
+  }
+);
+
+/**
+ * GET /api/patients/:id/interventions
+ * Get patient intervention history
+ */
+export const getPatientInterventions = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const { page = 1, limit = 10, status, category } = req.query as any;
+    const context = getRequestContext(req);
+
+    // Find patient
+    const patient = await Patient.findById(id);
+    ensureResourceExists(patient, 'Patient', id);
+    checkTenantAccess(
+      patient!.workplaceId.toString(),
+      context.workplaceId,
+      context.isAdmin
+    );
+
+    // Parse pagination parameters
+    const parsedPage = Math.max(1, parseInt(page as string) || 1);
+    const parsedLimit = Math.min(
+      50,
+      Math.max(1, parseInt(limit as string) || 10)
+    );
+
+    // Build query for interventions
+    const query: any = {
+      patientId: id,
+      isDeleted: false,
+    };
+
+    if (status) {
+      query.status = status;
+    }
+
+    if (category) {
+      query.category = category;
+    }
+
+    // Import ClinicalIntervention model
+    const ClinicalIntervention = mongoose.model('ClinicalIntervention');
+
+    // Get interventions with pagination
+    const [interventions, total] = await Promise.all([
+      ClinicalIntervention.find(query)
+        .populate('identifiedBy', 'firstName lastName')
+        .populate('assignments.userId', 'firstName lastName role')
+        .sort({ identifiedDate: -1 })
+        .limit(parsedLimit)
+        .skip((parsedPage - 1) * parsedLimit)
+        .lean(),
+      ClinicalIntervention.countDocuments(query),
+    ]);
+
+    respondWithPaginatedResults(
+      res,
+      interventions,
+      total,
+      parsedPage,
+      parsedLimit,
+      `Found ${total} interventions for patient`
+    );
+  }
+);
+
+/**
+ * GET /api/patients/search-with-interventions
+ * Search patients with intervention context
+ */
+export const searchPatientsWithInterventions = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const { q, limit = 10 } = req.query as any;
+    const context = getRequestContext(req);
+
+    if (!q) {
+      return sendError(res, 'BAD_REQUEST', 'Search query is required', 400);
+    }
+
+    // Import ClinicalInterventionService
+    const ClinicalInterventionService = require('../services/clinicalInterventionService').default;
+
+    const patients = await ClinicalInterventionService.searchPatientsWithInterventions(
+      q,
+      context.workplaceId,
+      Math.min(parseInt(limit), 50)
+    );
+
+    sendSuccess(
+      res,
+      {
+        patients,
+        total: patients.length,
+        query: q,
+      },
+      `Found ${patients.length} patients with intervention context`
+    );
   }
 );

@@ -5,6 +5,7 @@ export * from './patientStore';
 export * from './medicationStore';
 export * from './clinicalNoteStore';
 export * from './mtrStore';
+export * from './clinicalInterventionStore';
 
 // Re-export all store hooks for easier importing
 export {
@@ -58,6 +59,18 @@ export {
   useMTRInterventions,
   useMTRFollowUps,
 } from './mtrStore';
+
+export {
+  // Clinical Intervention Store hooks
+  useClinicalInterventionStore,
+  useInterventions,
+  useSelectedIntervention,
+  useInterventionFilters,
+  useInterventionActions,
+  useInterventionWorkflow,
+  useInterventionUI,
+  useInterventionAnalytics,
+} from './clinicalInterventionStore';
 
 // Store reset function for clearing all stores (useful for logout)
 export const resetAllStores = () => {
