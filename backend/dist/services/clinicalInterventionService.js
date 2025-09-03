@@ -33,13 +33,13 @@ class ClinicalInterventionService {
                 startedAt: new Date(),
                 status: 'identified',
                 followUp: {
-                    required: false
+                    required: false,
                 },
                 relatedDTPIds: data.relatedDTPIds || [],
-                createdBy: data.identifiedBy
+                createdBy: data.identifiedBy,
             });
             if (data.strategies && data.strategies.length > 0) {
-                data.strategies.forEach(strategy => {
+                data.strategies.forEach((strategy) => {
                     intervention.addStrategy(strategy);
                 });
             }
@@ -63,13 +63,14 @@ class ClinicalInterventionService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: id,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
             }
             const oldValues = intervention.toObject();
-            if (updates.status && !this.isValidStatusTransition(intervention.status, updates.status)) {
+            if (updates.status &&
+                !this.isValidStatusTransition(intervention.status, updates.status)) {
                 throw (0, responseHelpers_1.createBusinessRuleError)(`Invalid status transition from ${intervention.status} to ${updates.status}`);
             }
             Object.assign(intervention, updates);
@@ -93,10 +94,12 @@ class ClinicalInterventionService {
             }
             await ClinicalInterventionService.logActivity('UPDATE_INTERVENTION', intervention._id.toString(), userId, workplaceId, {
                 updates: Object.keys(updates),
-                statusChange: oldValues.status !== intervention.status ? {
-                    from: oldValues.status,
-                    to: intervention.status
-                } : undefined
+                statusChange: oldValues.status !== intervention.status
+                    ? {
+                        from: oldValues.status,
+                        to: intervention.status,
+                    }
+                    : undefined,
             }, undefined, oldValues, intervention.toObject());
             return intervention;
         }
@@ -107,7 +110,7 @@ class ClinicalInterventionService {
     }
     static async getInterventions(filters) {
         return await performanceOptimization_1.PerformanceMonitor.trackOperation('getInterventions', async () => {
-            const { workplaceId, page = 1, limit = 20, sortBy = 'identifiedDate', sortOrder = 'desc' } = filters;
+            const { workplaceId, page = 1, limit = 20, sortBy = 'identifiedDate', sortOrder = 'desc', } = filters;
             const cacheKey = performanceOptimization_1.CacheManager.generateKey('interventions_list', JSON.stringify(filters), workplaceId.toString());
             const cached = await performanceOptimization_1.CacheManager.get(cacheKey);
             if (cached) {
@@ -127,8 +130,8 @@ class ClinicalInterventionService {
                     ClinicalIntervention_1.default.aggregate(pipeline),
                     ClinicalIntervention_1.default.aggregate([
                         ...databaseOptimization_1.OptimizedQueryBuilder.buildInterventionListQuery(filters).slice(0, -1),
-                        { $count: 'total' }
-                    ])
+                        { $count: 'total' },
+                    ]),
                 ]);
                 const total = countResult[0]?.total || 0;
                 const pages = Math.ceil(total / limit);
@@ -140,8 +143,8 @@ class ClinicalInterventionService {
                         total,
                         pages,
                         hasNext: page < pages,
-                        hasPrev: page > 1
-                    }
+                        hasPrev: page > 1,
+                    },
                 };
                 await performanceOptimization_1.CacheManager.set(cacheKey, result, { ttl: 300 });
                 const duration = Date.now() - startTime;
@@ -149,13 +152,16 @@ class ClinicalInterventionService {
                     source: 'database',
                     filters,
                     resultCount: results.length,
-                    totalCount: total
+                    totalCount: total,
                 });
                 return result;
             }
             catch (error) {
                 const duration = Date.now() - startTime;
-                performanceMonitoring_1.default.recordInterventionMetrics('getInterventions', filters.workplaceId.toString(), duration, false, { error: error instanceof Error ? error.message : 'Unknown error', filters });
+                performanceMonitoring_1.default.recordInterventionMetrics('getInterventions', filters.workplaceId.toString(), duration, false, {
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                    filters,
+                });
                 throw error;
             }
         }, { workplaceId: filters.workplaceId.toString(), filters });
@@ -165,7 +171,7 @@ class ClinicalInterventionService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: id,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             })
                 .populate('patientId', 'firstName lastName dateOfBirth phoneNumber email')
                 .populate('identifiedBy', 'firstName lastName email')
@@ -187,7 +193,7 @@ class ClinicalInterventionService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: id,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
@@ -215,8 +221,10 @@ class ClinicalInterventionService {
                 patientId,
                 category,
                 workplaceId,
-                status: { $in: ['identified', 'planning', 'in_progress', 'implemented'] },
-                isDeleted: { $ne: true }
+                status: {
+                    $in: ['identified', 'planning', 'in_progress', 'implemented'],
+                },
+                isDeleted: { $ne: true },
             };
             if (excludeId) {
                 query._id = { $ne: excludeId };
@@ -235,12 +243,12 @@ class ClinicalInterventionService {
     }
     static isValidStatusTransition(currentStatus, newStatus) {
         const validTransitions = {
-            'identified': ['planning', 'cancelled'],
-            'planning': ['in_progress', 'cancelled'],
-            'in_progress': ['implemented', 'cancelled'],
-            'implemented': ['completed', 'cancelled'],
-            'completed': [],
-            'cancelled': []
+            identified: ['planning', 'cancelled'],
+            planning: ['in_progress', 'cancelled'],
+            in_progress: ['implemented', 'cancelled'],
+            implemented: ['completed', 'cancelled'],
+            completed: [],
+            cancelled: [],
         };
         return validTransitions[currentStatus]?.includes(newStatus) || false;
     }
@@ -249,7 +257,7 @@ class ClinicalInterventionService {
             const patient = await Patient_1.default.findOne({
                 _id: patientId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (patient) {
                 await patient.updateInterventionFlags();
@@ -261,55 +269,57 @@ class ClinicalInterventionService {
     }
     static async getPatientInterventionSummary(patientId, workplaceId) {
         try {
-            const [totalInterventions, activeInterventions, completedInterventions, successfulInterventions, categoryStats, recentInterventions] = await Promise.all([
+            const [totalInterventions, activeInterventions, completedInterventions, successfulInterventions, categoryStats, recentInterventions,] = await Promise.all([
                 ClinicalIntervention_1.default.countDocuments({
                     patientId,
                     workplaceId,
-                    isDeleted: { $ne: true }
+                    isDeleted: { $ne: true },
                 }),
                 ClinicalIntervention_1.default.countDocuments({
                     patientId,
                     workplaceId,
-                    status: { $in: ['identified', 'planning', 'in_progress', 'implemented'] },
-                    isDeleted: { $ne: true }
+                    status: {
+                        $in: ['identified', 'planning', 'in_progress', 'implemented'],
+                    },
+                    isDeleted: { $ne: true },
                 }),
                 ClinicalIntervention_1.default.countDocuments({
                     patientId,
                     workplaceId,
                     status: 'completed',
-                    isDeleted: { $ne: true }
+                    isDeleted: { $ne: true },
                 }),
                 ClinicalIntervention_1.default.countDocuments({
                     patientId,
                     workplaceId,
                     status: 'completed',
                     'outcomes.successMetrics.problemResolved': true,
-                    isDeleted: { $ne: true }
+                    isDeleted: { $ne: true },
                 }),
                 ClinicalIntervention_1.default.aggregate([
                     {
                         $match: {
                             patientId,
                             workplaceId,
-                            isDeleted: { $ne: true }
-                        }
+                            isDeleted: { $ne: true },
+                        },
                     },
                     {
                         $group: {
                             _id: '$category',
-                            count: { $sum: 1 }
-                        }
-                    }
+                            count: { $sum: 1 },
+                        },
+                    },
                 ]),
                 ClinicalIntervention_1.default.find({
                     patientId,
                     workplaceId,
-                    isDeleted: { $ne: true }
+                    isDeleted: { $ne: true },
                 })
                     .populate('identifiedBy', 'firstName lastName')
                     .sort({ identifiedDate: -1 })
                     .limit(5)
-                    .lean()
+                    .lean(),
             ]);
             const categoryBreakdown = {};
             categoryStats.forEach((stat) => {
@@ -321,7 +331,7 @@ class ClinicalInterventionService {
                 completedInterventions,
                 successfulInterventions,
                 categoryBreakdown,
-                recentInterventions: recentInterventions
+                recentInterventions: recentInterventions,
             };
         }
         catch (error) {
@@ -338,8 +348,8 @@ class ClinicalInterventionService {
                 $or: [
                     { firstName: searchRegex },
                     { lastName: searchRegex },
-                    { mrn: searchRegex }
-                ]
+                    { mrn: searchRegex },
+                ],
             })
                 .select('firstName lastName mrn dob')
                 .limit(limit)
@@ -349,22 +359,24 @@ class ClinicalInterventionService {
                     ClinicalIntervention_1.default.countDocuments({
                         patientId: patient._id,
                         workplaceId,
-                        isDeleted: { $ne: true }
+                        isDeleted: { $ne: true },
                     }),
                     ClinicalIntervention_1.default.countDocuments({
                         patientId: patient._id,
                         workplaceId,
-                        status: { $in: ['identified', 'planning', 'in_progress', 'implemented'] },
-                        isDeleted: { $ne: true }
+                        status: {
+                            $in: ['identified', 'planning', 'in_progress', 'implemented'],
+                        },
+                        isDeleted: { $ne: true },
                     }),
                     ClinicalIntervention_1.default.findOne({
                         patientId: patient._id,
                         workplaceId,
-                        isDeleted: { $ne: true }
+                        isDeleted: { $ne: true },
                     })
                         .sort({ identifiedDate: -1 })
                         .select('identifiedDate')
-                        .lean()
+                        .lean(),
                 ]);
                 return {
                     _id: patient._id.toString(),
@@ -372,10 +384,13 @@ class ClinicalInterventionService {
                     lastName: patient.lastName,
                     mrn: patient.mrn,
                     displayName: `${patient.firstName} ${patient.lastName}`,
-                    age: patient.dob ? Math.floor((Date.now() - patient.dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : undefined,
+                    age: patient.dob
+                        ? Math.floor((Date.now() - patient.dob.getTime()) /
+                            (1000 * 60 * 60 * 24 * 365.25))
+                        : undefined,
                     interventionCount,
                     activeInterventionCount,
-                    lastInterventionDate: lastIntervention?.identifiedDate
+                    lastInterventionDate: lastIntervention?.identifiedDate,
                 };
             }));
             return patientsWithInterventions;
@@ -390,7 +405,7 @@ class ClinicalInterventionService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: interventionId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
@@ -399,7 +414,7 @@ class ClinicalInterventionService {
             const mtr = await MedicationTherapyReview.findOne({
                 _id: mtrId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!mtr) {
                 throw (0, responseHelpers_1.createNotFoundError)('MTR not found');
@@ -424,7 +439,7 @@ class ClinicalInterventionService {
             const mtr = await MedicationTherapyReview.findOne({
                 _id: mtrId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             }).populate('problems');
             if (!mtr) {
                 throw (0, responseHelpers_1.createNotFoundError)('MTR not found');
@@ -433,7 +448,7 @@ class ClinicalInterventionService {
             const problems = await DrugTherapyProblem.find({
                 _id: { $in: problemIds },
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (problems.length !== problemIds.length) {
                 throw (0, responseHelpers_1.createNotFoundError)('One or more problems not found');
@@ -443,13 +458,14 @@ class ClinicalInterventionService {
                 const interventionData = {
                     patientId: mtr.patientId,
                     category: this.mapDTPCategoryToInterventionCategory(problem.category),
-                    priority: additionalData?.priority || this.determinePriorityFromProblem(problem),
+                    priority: additionalData?.priority ||
+                        this.determinePriorityFromProblem(problem),
                     issueDescription: `MTR-identified issue: ${problem.description}`,
                     identifiedBy: userId,
                     workplaceId,
                     relatedMTRId: new mongoose_1.default.Types.ObjectId(mtrId),
                     relatedDTPIds: [problem._id],
-                    estimatedDuration: additionalData?.estimatedDuration
+                    estimatedDuration: additionalData?.estimatedDuration,
                 };
                 const intervention = await this.createIntervention(interventionData);
                 const recommendedStrategies = this.getRecommendedStrategiesForDTP(problem);
@@ -461,8 +477,8 @@ class ClinicalInterventionService {
             }
             await this.logActivity('CREATE_INTERVENTIONS_FROM_MTR', mtrId, userId, workplaceId, {
                 problemIds,
-                interventionIds: createdInterventions.map(i => i._id.toString()),
-                mtrNumber: mtr.reviewNumber
+                interventionIds: createdInterventions.map((i) => i._id.toString()),
+                mtrNumber: mtr.reviewNumber,
             });
             return createdInterventions;
         }
@@ -477,7 +493,7 @@ class ClinicalInterventionService {
             const mtr = await MedicationTherapyReview.findOne({
                 _id: mtrId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             })
                 .populate('patientId', 'firstName lastName')
                 .populate('pharmacistId', 'firstName lastName')
@@ -488,7 +504,7 @@ class ClinicalInterventionService {
             const interventionCount = await ClinicalIntervention_1.default.countDocuments({
                 relatedMTRId: mtrId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             const mtrData = Array.isArray(mtr) ? mtr[0] : mtr;
             if (!mtrData) {
@@ -504,7 +520,7 @@ class ClinicalInterventionService {
                 patientName: `${mtrData.patientId?.firstName || ''} ${mtrData.patientId?.lastName || ''}`,
                 pharmacistName: `${mtrData.pharmacistId?.firstName || ''} ${mtrData.pharmacistId?.lastName || ''}`,
                 problemCount: mtrData.problems?.length || 0,
-                interventionCount
+                interventionCount,
             };
         }
         catch (error) {
@@ -517,7 +533,7 @@ class ClinicalInterventionService {
             const interventions = await ClinicalIntervention_1.default.find({
                 relatedMTRId: mtrId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             })
                 .populate('identifiedBy', 'firstName lastName')
                 .populate('assignments.userId', 'firstName lastName')
@@ -535,7 +551,7 @@ class ClinicalInterventionService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: interventionId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!intervention || !intervention.relatedMTRId) {
                 return;
@@ -552,7 +568,7 @@ class ClinicalInterventionService {
                     interventionId,
                     mtrId: mtr._id.toString(),
                     interventionPatient: intervention.patientId.toString(),
-                    mtrPatient: mtr.patientId.toString()
+                    mtrPatient: mtr.patientId.toString(),
                 });
             }
             if (intervention.status === 'completed' && intervention.outcomes) {
@@ -565,22 +581,24 @@ class ClinicalInterventionService {
     }
     static mapDTPCategoryToInterventionCategory(dtpCategory) {
         const categoryMap = {
-            'untreated_indication': 'drug_therapy_problem',
-            'improper_drug_selection': 'drug_therapy_problem',
-            'subtherapeutic_dosage': 'dosing_issue',
-            'failure_to_receive_drug': 'medication_nonadherence',
-            'overdosage': 'dosing_issue',
-            'adverse_drug_reaction': 'adverse_drug_reaction',
-            'drug_interaction': 'drug_interaction',
-            'drug_use_without_indication': 'drug_therapy_problem'
+            untreated_indication: 'drug_therapy_problem',
+            improper_drug_selection: 'drug_therapy_problem',
+            subtherapeutic_dosage: 'dosing_issue',
+            failure_to_receive_drug: 'medication_nonadherence',
+            overdosage: 'dosing_issue',
+            adverse_drug_reaction: 'adverse_drug_reaction',
+            drug_interaction: 'drug_interaction',
+            drug_use_without_indication: 'drug_therapy_problem',
         };
         return categoryMap[dtpCategory] || 'other';
     }
     static determinePriorityFromProblem(problem) {
-        if (problem.severity === 'critical' || problem.category === 'adverse_drug_reaction') {
+        if (problem.severity === 'critical' ||
+            problem.category === 'adverse_drug_reaction') {
             return 'critical';
         }
-        if (problem.severity === 'major' || problem.category === 'drug_interaction') {
+        if (problem.severity === 'major' ||
+            problem.category === 'drug_interaction') {
             return 'high';
         }
         if (problem.severity === 'moderate') {
@@ -597,7 +615,7 @@ class ClinicalInterventionService {
                     description: 'Consider discontinuing the offending medication',
                     rationale: 'Eliminate source of adverse drug reaction',
                     expectedOutcome: 'Resolution of adverse effects',
-                    priority: 'primary'
+                    priority: 'primary',
                 });
                 break;
             case 'drug_interaction':
@@ -606,7 +624,7 @@ class ClinicalInterventionService {
                     description: 'Review all medications for interactions',
                     rationale: 'Identify and manage drug interactions',
                     expectedOutcome: 'Elimination of harmful interactions',
-                    priority: 'primary'
+                    priority: 'primary',
                 });
                 break;
             case 'subtherapeutic_dosage':
@@ -616,7 +634,7 @@ class ClinicalInterventionService {
                     description: 'Adjust medication dosage',
                     rationale: 'Optimize therapeutic effect',
                     expectedOutcome: 'Improved clinical response',
-                    priority: 'primary'
+                    priority: 'primary',
                 });
                 break;
             default:
@@ -625,7 +643,7 @@ class ClinicalInterventionService {
                     description: 'Comprehensive medication review',
                     rationale: 'Address identified drug therapy problem',
                     expectedOutcome: 'Optimized medication therapy',
-                    priority: 'primary'
+                    priority: 'primary',
                 });
         }
         return strategies;
@@ -642,8 +660,9 @@ class ClinicalInterventionService {
                 mtr.clinicalOutcomes.adherenceImproved = true;
             }
             if (intervention.outcomes?.successMetrics.costSavings) {
-                mtr.clinicalOutcomes.costSavings = (mtr.clinicalOutcomes.costSavings || 0) +
-                    intervention.outcomes.successMetrics.costSavings;
+                mtr.clinicalOutcomes.costSavings =
+                    (mtr.clinicalOutcomes.costSavings || 0) +
+                        intervention.outcomes.successMetrics.costSavings;
             }
             await mtr.save();
         }
@@ -669,7 +688,9 @@ class ClinicalInterventionService {
                 resourceId: new mongoose_1.default.Types.ObjectId(interventionId),
                 oldValues,
                 newValues,
-                changedFields: oldValues && newValues ? this.getChangedFields(oldValues, newValues) : undefined,
+                changedFields: oldValues && newValues
+                    ? this.getChangedFields(oldValues, newValues)
+                    : undefined,
                 details: {
                     ...details,
                     service: 'clinical-intervention',
@@ -686,7 +707,7 @@ class ClinicalInterventionService {
                 workplaceId: workplaceId.toString(),
                 details,
                 timestamp: new Date(),
-                service: 'clinical-intervention'
+                service: 'clinical-intervention',
             });
         }
         catch (error) {
@@ -734,9 +755,9 @@ class ClinicalInterventionService {
                 limit: options.limit || 50,
                 sort: '-timestamp',
             });
-            const uniqueUsers = new Set(logs.map(log => log.userId?.toString()).filter(Boolean)).size;
+            const uniqueUsers = new Set(logs.map((log) => log.userId?.toString()).filter(Boolean)).size;
             const lastActivity = logs.length > 0 ? logs[0]?.timestamp : null;
-            const riskActivities = logs.filter(log => log.riskLevel === 'high' || log.riskLevel === 'critical').length;
+            const riskActivities = logs.filter((log) => log.riskLevel === 'high' || log.riskLevel === 'critical').length;
             return {
                 logs,
                 total,
@@ -761,7 +782,9 @@ class ClinicalInterventionService {
                 isDeleted: { $ne: true },
             };
             if (options.interventionIds?.length) {
-                interventionQuery._id = { $in: options.interventionIds.map(id => new mongoose_1.default.Types.ObjectId(id)) };
+                interventionQuery._id = {
+                    $in: options.interventionIds.map((id) => new mongoose_1.default.Types.ObjectId(id)),
+                };
             }
             const interventions = await ClinicalIntervention_1.default.find(interventionQuery)
                 .select('_id interventionNumber createdAt status')
@@ -772,13 +795,15 @@ class ClinicalInterventionService {
                 endDate: dateRange.end,
             };
             const { logs: auditLogs } = await auditService_1.default.getAuditLogs(workplaceId, auditFilters, { limit: 10000 });
-            const interventionCompliance = interventions.map(intervention => {
-                const interventionAudits = auditLogs.filter(log => log.resourceId?.toString() === intervention._id.toString());
+            const interventionCompliance = interventions.map((intervention) => {
+                const interventionAudits = auditLogs.filter((log) => log.resourceId?.toString() === intervention._id.toString());
                 const auditCount = interventionAudits.length;
                 const lastAudit = interventionAudits.length > 0
-                    ? interventionAudits.reduce((latest, log) => log.timestamp > (latest || new Date(0)) ? log.timestamp : (latest || new Date(0)), interventionAudits[0]?.timestamp || null)
+                    ? interventionAudits.reduce((latest, log) => log.timestamp > (latest || new Date(0))
+                        ? log.timestamp
+                        : latest || new Date(0), interventionAudits[0]?.timestamp || null)
                     : null;
-                const riskActivities = interventionAudits.filter(log => log.riskLevel === 'high' || log.riskLevel === 'critical').length;
+                const riskActivities = interventionAudits.filter((log) => log.riskLevel === 'high' || log.riskLevel === 'critical').length;
                 let complianceStatus = 'compliant';
                 let riskLevel = 'low';
                 if (auditCount === 0) {
@@ -804,8 +829,8 @@ class ClinicalInterventionService {
             });
             const totalInterventions = interventions.length;
             const auditedActions = auditLogs.length;
-            const riskActivities = auditLogs.filter(log => log.riskLevel === 'high' || log.riskLevel === 'critical').length;
-            const compliantInterventions = interventionCompliance.filter(i => i.complianceStatus === 'compliant').length;
+            const riskActivities = auditLogs.filter((log) => log.riskLevel === 'high' || log.riskLevel === 'critical').length;
+            const compliantInterventions = interventionCompliance.filter((i) => i.complianceStatus === 'compliant').length;
             const complianceScore = totalInterventions > 0
                 ? Math.round((compliantInterventions / totalInterventions) * 100)
                 : 100;
@@ -816,7 +841,7 @@ class ClinicalInterventionService {
             if (riskActivities > totalInterventions * 0.1) {
                 recommendations.push('Review high-risk activities and implement additional controls');
             }
-            if (interventionCompliance.some(i => i.auditCount === 0)) {
+            if (interventionCompliance.some((i) => i.auditCount === 0)) {
                 recommendations.push('Ensure all interventions have proper audit logging');
             }
             return {
@@ -839,7 +864,10 @@ class ClinicalInterventionService {
         const changedFields = [];
         if (!oldValues || !newValues)
             return changedFields;
-        const allKeys = new Set([...Object.keys(oldValues), ...Object.keys(newValues)]);
+        const allKeys = new Set([
+            ...Object.keys(oldValues),
+            ...Object.keys(newValues),
+        ]);
         for (const key of allKeys) {
             if (JSON.stringify(oldValues[key]) !== JSON.stringify(newValues[key])) {
                 changedFields.push(key);
@@ -851,17 +879,21 @@ class ClinicalInterventionService {
         if (action.includes('DELETE') || action.includes('CANCEL')) {
             return 'critical';
         }
-        if (action.includes('OUTCOME') || action.includes('COMPLETE') || details?.priority === 'critical') {
+        if (action.includes('OUTCOME') ||
+            action.includes('COMPLETE') ||
+            details?.priority === 'critical') {
             return 'high';
         }
-        if (action.includes('UPDATE') || action.includes('ASSIGN') || action.includes('STRATEGY')) {
+        if (action.includes('UPDATE') ||
+            action.includes('ASSIGN') ||
+            action.includes('STRATEGY')) {
             return 'medium';
         }
         return 'low';
     }
 }
 const STRATEGY_MAPPINGS = {
-    'drug_therapy_problem': [
+    drug_therapy_problem: [
         {
             type: 'medication_review',
             label: 'Comprehensive Medication Review',
@@ -869,7 +901,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Identify potential drug therapy problems and optimization opportunities',
             expectedOutcome: 'Improved medication safety and efficacy',
             priority: 'primary',
-            applicableCategories: ['drug_therapy_problem', 'dosing_issue']
+            applicableCategories: ['drug_therapy_problem', 'dosing_issue'],
         },
         {
             type: 'dose_adjustment',
@@ -878,7 +910,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Optimize therapeutic effect while minimizing adverse effects',
             expectedOutcome: 'Improved clinical response with reduced side effects',
             priority: 'primary',
-            applicableCategories: ['drug_therapy_problem', 'dosing_issue']
+            applicableCategories: ['drug_therapy_problem', 'dosing_issue'],
         },
         {
             type: 'alternative_therapy',
@@ -887,7 +919,11 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Current therapy may not be optimal for patient-specific factors',
             expectedOutcome: 'Better therapeutic outcomes with improved tolerability',
             priority: 'secondary',
-            applicableCategories: ['drug_therapy_problem', 'adverse_drug_reaction', 'contraindication']
+            applicableCategories: [
+                'drug_therapy_problem',
+                'adverse_drug_reaction',
+                'contraindication',
+            ],
         },
         {
             type: 'additional_monitoring',
@@ -896,10 +932,10 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Ensure early detection of therapeutic response or adverse effects',
             expectedOutcome: 'Improved safety monitoring and outcome tracking',
             priority: 'secondary',
-            applicableCategories: ['drug_therapy_problem', 'adverse_drug_reaction']
-        }
+            applicableCategories: ['drug_therapy_problem', 'adverse_drug_reaction'],
+        },
     ],
-    'adverse_drug_reaction': [
+    adverse_drug_reaction: [
         {
             type: 'discontinuation',
             label: 'Medication Discontinuation',
@@ -907,7 +943,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Eliminate the source of adverse drug reaction',
             expectedOutcome: 'Resolution of adverse effects',
             priority: 'primary',
-            applicableCategories: ['adverse_drug_reaction', 'contraindication']
+            applicableCategories: ['adverse_drug_reaction', 'contraindication'],
         },
         {
             type: 'dose_adjustment',
@@ -916,7 +952,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Maintain therapeutic benefit while reducing toxicity',
             expectedOutcome: 'Reduced adverse effects while preserving efficacy',
             priority: 'primary',
-            applicableCategories: ['adverse_drug_reaction', 'dosing_issue']
+            applicableCategories: ['adverse_drug_reaction', 'dosing_issue'],
         },
         {
             type: 'alternative_therapy',
@@ -925,7 +961,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Maintain therapeutic effect with improved safety profile',
             expectedOutcome: 'Continued therapeutic benefit without adverse effects',
             priority: 'secondary',
-            applicableCategories: ['adverse_drug_reaction', 'contraindication']
+            applicableCategories: ['adverse_drug_reaction', 'contraindication'],
         },
         {
             type: 'additional_monitoring',
@@ -934,10 +970,10 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Ensure safe resolution and prevent recurrence',
             expectedOutcome: 'Safe management and prevention of future ADRs',
             priority: 'secondary',
-            applicableCategories: ['adverse_drug_reaction']
-        }
+            applicableCategories: ['adverse_drug_reaction'],
+        },
     ],
-    'medication_nonadherence': [
+    medication_nonadherence: [
         {
             type: 'patient_counseling',
             label: 'Patient Education and Counseling',
@@ -945,7 +981,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Address knowledge gaps and misconceptions about medications',
             expectedOutcome: 'Improved understanding and medication adherence',
             priority: 'primary',
-            applicableCategories: ['medication_nonadherence']
+            applicableCategories: ['medication_nonadherence'],
         },
         {
             type: 'medication_review',
@@ -954,7 +990,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Identify and address specific adherence challenges',
             expectedOutcome: 'Simplified regimen with improved adherence',
             priority: 'primary',
-            applicableCategories: ['medication_nonadherence']
+            applicableCategories: ['medication_nonadherence'],
         },
         {
             type: 'alternative_therapy',
@@ -963,7 +999,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Reduce dosing frequency or complexity to improve adherence',
             expectedOutcome: 'Improved adherence through simplified regimen',
             priority: 'secondary',
-            applicableCategories: ['medication_nonadherence']
+            applicableCategories: ['medication_nonadherence'],
         },
         {
             type: 'additional_monitoring',
@@ -972,10 +1008,10 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Track adherence patterns and provide timely interventions',
             expectedOutcome: 'Sustained improvement in medication adherence',
             priority: 'secondary',
-            applicableCategories: ['medication_nonadherence']
-        }
+            applicableCategories: ['medication_nonadherence'],
+        },
     ],
-    'drug_interaction': [
+    drug_interaction: [
         {
             type: 'medication_review',
             label: 'Drug Interaction Assessment',
@@ -983,7 +1019,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Identify and manage clinically significant drug interactions',
             expectedOutcome: 'Elimination of harmful drug interactions',
             priority: 'primary',
-            applicableCategories: ['drug_interaction']
+            applicableCategories: ['drug_interaction'],
         },
         {
             type: 'dose_adjustment',
@@ -992,7 +1028,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Maintain efficacy while minimizing interaction effects',
             expectedOutcome: 'Safe concurrent use of interacting medications',
             priority: 'primary',
-            applicableCategories: ['drug_interaction', 'dosing_issue']
+            applicableCategories: ['drug_interaction', 'dosing_issue'],
         },
         {
             type: 'alternative_therapy',
@@ -1001,7 +1037,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Eliminate interaction while maintaining therapeutic goals',
             expectedOutcome: 'Continued therapy without drug interactions',
             priority: 'secondary',
-            applicableCategories: ['drug_interaction']
+            applicableCategories: ['drug_interaction'],
         },
         {
             type: 'additional_monitoring',
@@ -1010,10 +1046,10 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Early detection of interaction-related problems',
             expectedOutcome: 'Safe management of unavoidable interactions',
             priority: 'secondary',
-            applicableCategories: ['drug_interaction']
-        }
+            applicableCategories: ['drug_interaction'],
+        },
     ],
-    'dosing_issue': [
+    dosing_issue: [
         {
             type: 'dose_adjustment',
             label: 'Dose Optimization',
@@ -1021,7 +1057,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Optimize dose for individual patient characteristics',
             expectedOutcome: 'Improved therapeutic response with optimal safety',
             priority: 'primary',
-            applicableCategories: ['dosing_issue']
+            applicableCategories: ['dosing_issue'],
         },
         {
             type: 'medication_review',
@@ -1030,7 +1066,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Ensure dosing aligns with current guidelines and patient factors',
             expectedOutcome: 'Evidence-based dosing optimization',
             priority: 'primary',
-            applicableCategories: ['dosing_issue']
+            applicableCategories: ['dosing_issue'],
         },
         {
             type: 'additional_monitoring',
@@ -1039,7 +1075,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Guide dose adjustments based on objective measurements',
             expectedOutcome: 'Precision dosing with improved outcomes',
             priority: 'secondary',
-            applicableCategories: ['dosing_issue']
+            applicableCategories: ['dosing_issue'],
         },
         {
             type: 'alternative_therapy',
@@ -1048,10 +1084,10 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Improve dosing convenience or therapeutic profile',
             expectedOutcome: 'Better dosing outcomes through alternative approach',
             priority: 'secondary',
-            applicableCategories: ['dosing_issue']
-        }
+            applicableCategories: ['dosing_issue'],
+        },
     ],
-    'contraindication': [
+    contraindication: [
         {
             type: 'discontinuation',
             label: 'Immediate Discontinuation',
@@ -1059,7 +1095,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Prevent serious adverse outcomes from contraindicated use',
             expectedOutcome: 'Elimination of contraindication risk',
             priority: 'primary',
-            applicableCategories: ['contraindication']
+            applicableCategories: ['contraindication'],
         },
         {
             type: 'alternative_therapy',
@@ -1068,7 +1104,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Maintain therapeutic benefit while ensuring safety',
             expectedOutcome: 'Continued therapy without contraindication risk',
             priority: 'primary',
-            applicableCategories: ['contraindication']
+            applicableCategories: ['contraindication'],
         },
         {
             type: 'physician_consultation',
@@ -1077,7 +1113,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Obtain expert guidance for challenging clinical situations',
             expectedOutcome: 'Expert-guided safe medication management',
             priority: 'secondary',
-            applicableCategories: ['contraindication']
+            applicableCategories: ['contraindication'],
         },
         {
             type: 'additional_monitoring',
@@ -1086,10 +1122,10 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Minimize risk when contraindicated medication must be continued',
             expectedOutcome: 'Safest possible management of unavoidable contraindication',
             priority: 'secondary',
-            applicableCategories: ['contraindication']
-        }
+            applicableCategories: ['contraindication'],
+        },
     ],
-    'other': [
+    other: [
         {
             type: 'medication_review',
             label: 'Comprehensive Assessment',
@@ -1097,7 +1133,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Understand the specific nature of the clinical issue',
             expectedOutcome: 'Clear identification and management plan',
             priority: 'primary',
-            applicableCategories: ['other']
+            applicableCategories: ['other'],
         },
         {
             type: 'patient_counseling',
@@ -1106,7 +1142,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Ensure patient understanding of their medication therapy',
             expectedOutcome: 'Improved patient knowledge and engagement',
             priority: 'primary',
-            applicableCategories: ['other']
+            applicableCategories: ['other'],
         },
         {
             type: 'physician_consultation',
@@ -1115,7 +1151,7 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Ensure coordinated care and optimal outcomes',
             expectedOutcome: 'Integrated healthcare team approach',
             priority: 'secondary',
-            applicableCategories: ['other']
+            applicableCategories: ['other'],
         },
         {
             type: 'custom',
@@ -1124,9 +1160,9 @@ const STRATEGY_MAPPINGS = {
             rationale: 'Address specific clinical needs not covered by standard approaches',
             expectedOutcome: 'Individualized solution for complex clinical issue',
             priority: 'secondary',
-            applicableCategories: ['other']
-        }
-    ]
+            applicableCategories: ['other'],
+        },
+    ],
 };
 class StrategyRecommendationEngine {
     static getRecommendedStrategies(category) {
@@ -1140,9 +1176,9 @@ class StrategyRecommendationEngine {
     }
     static getAllStrategies() {
         const allStrategies = [];
-        Object.values(STRATEGY_MAPPINGS).forEach(categoryStrategies => {
-            categoryStrategies.forEach(strategy => {
-                if (!allStrategies.find(s => s.type === strategy.type)) {
+        Object.values(STRATEGY_MAPPINGS).forEach((categoryStrategies) => {
+            categoryStrategies.forEach((strategy) => {
+                if (!allStrategies.find((s) => s.type === strategy.type)) {
                     allStrategies.push(strategy);
                 }
             });
@@ -1151,10 +1187,10 @@ class StrategyRecommendationEngine {
     }
     static getStrategiesForCategories(categories) {
         const applicableStrategies = [];
-        categories.forEach(category => {
+        categories.forEach((category) => {
             const categoryStrategies = this.getRecommendedStrategies(category);
-            categoryStrategies.forEach(strategy => {
-                if (!applicableStrategies.find(s => s.type === strategy.type) &&
+            categoryStrategies.forEach((strategy) => {
+                if (!applicableStrategies.find((s) => s.type === strategy.type) &&
                     strategy.applicableCategories.includes(category)) {
                     applicableStrategies.push(strategy);
                 }
@@ -1178,7 +1214,8 @@ class StrategyRecommendationEngine {
         if (!strategy.rationale || strategy.rationale.trim().length < 10) {
             errors.push('Strategy rationale must be at least 10 characters');
         }
-        if (!strategy.expectedOutcome || strategy.expectedOutcome.trim().length < 20) {
+        if (!strategy.expectedOutcome ||
+            strategy.expectedOutcome.trim().length < 20) {
             errors.push('Expected outcome must be at least 20 characters');
         }
         if (strategy.description && strategy.description.length > 500) {
@@ -1192,13 +1229,13 @@ class StrategyRecommendationEngine {
         }
         return {
             isValid: errors.length === 0,
-            errors
+            errors,
         };
     }
     static generateRecommendations(category, priority, issueDescription, patientFactors) {
         let recommendations = this.getRecommendedStrategies(category);
         if (priority === 'critical' || priority === 'high') {
-            recommendations = recommendations.filter(r => r.priority === 'primary');
+            recommendations = recommendations.filter((r) => r.priority === 'primary');
         }
         if (patientFactors) {
             recommendations = StrategyRecommendationEngine.applyContextualFiltering(recommendations, patientFactors, issueDescription);
@@ -1206,8 +1243,9 @@ class StrategyRecommendationEngine {
         return recommendations.slice(0, 4);
     }
     static applyContextualFiltering(strategies, patientFactors, issueDescription) {
-        return strategies.filter(strategy => {
-            if (patientFactors.currentMedications?.length > 5 && strategy.type === 'medication_review') {
+        return strategies.filter((strategy) => {
+            if (patientFactors.currentMedications?.length > 5 &&
+                strategy.type === 'medication_review') {
                 return true;
             }
             if (patientFactors.age > 65 && strategy.type === 'dose_adjustment') {
@@ -1216,14 +1254,15 @@ class StrategyRecommendationEngine {
             }
             if (issueDescription.toLowerCase().includes('adherence') ||
                 issueDescription.toLowerCase().includes('compliance')) {
-                return strategy.type === 'patient_counseling' || strategy.type === 'medication_review';
+                return (strategy.type === 'patient_counseling' ||
+                    strategy.type === 'medication_review');
             }
             return true;
         });
     }
     static getStrategyByType(type) {
         for (const categoryStrategies of Object.values(STRATEGY_MAPPINGS)) {
-            const strategy = categoryStrategies.find(s => s.type === type);
+            const strategy = categoryStrategies.find((s) => s.type === type);
             if (strategy) {
                 return strategy;
             }
@@ -1231,26 +1270,32 @@ class StrategyRecommendationEngine {
         return null;
     }
 }
-ClinicalInterventionService.getRecommendedStrategies = StrategyRecommendationEngine.getRecommendedStrategies;
-ClinicalInterventionService.getAllStrategies = StrategyRecommendationEngine.getAllStrategies;
-ClinicalInterventionService.getStrategiesForCategories = StrategyRecommendationEngine.getStrategiesForCategories;
-ClinicalInterventionService.validateCustomStrategy = StrategyRecommendationEngine.validateCustomStrategy;
-ClinicalInterventionService.generateRecommendations = StrategyRecommendationEngine.generateRecommendations;
-ClinicalInterventionService.getStrategyByType = StrategyRecommendationEngine.getStrategyByType;
+ClinicalInterventionService.getRecommendedStrategies =
+    StrategyRecommendationEngine.getRecommendedStrategies;
+ClinicalInterventionService.getAllStrategies =
+    StrategyRecommendationEngine.getAllStrategies;
+ClinicalInterventionService.getStrategiesForCategories =
+    StrategyRecommendationEngine.getStrategiesForCategories;
+ClinicalInterventionService.validateCustomStrategy =
+    StrategyRecommendationEngine.validateCustomStrategy;
+ClinicalInterventionService.generateRecommendations =
+    StrategyRecommendationEngine.generateRecommendations;
+ClinicalInterventionService.getStrategyByType =
+    StrategyRecommendationEngine.getStrategyByType;
 class TeamCollaborationService {
     static async assignTeamMember(interventionId, assignment, assignedBy, workplaceId) {
         try {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: interventionId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
             }
             const user = await User_1.default.findOne({
                 _id: assignment.userId,
-                workplaceId
+                workplaceId,
             });
             if (!user) {
                 throw (0, responseHelpers_1.createNotFoundError)('User not found or not in workplace');
@@ -1259,13 +1304,13 @@ class TeamCollaborationService {
             if (!validationResult.isValid) {
                 throw (0, responseHelpers_1.createBusinessRuleError)(validationResult.errors.join(', '));
             }
-            const existingAssignment = intervention.assignments.find(a => a.userId.equals(assignment.userId) && a.status !== 'cancelled');
+            const existingAssignment = intervention.assignments.find((a) => a.userId.equals(assignment.userId) && a.status !== 'cancelled');
             if (existingAssignment) {
                 throw (0, responseHelpers_1.createBusinessRuleError)('User is already assigned to this intervention');
             }
             const newAssignment = {
                 ...assignment,
-                assignedAt: new Date()
+                assignedAt: new Date(),
             };
             intervention.assignTeamMember(newAssignment);
             intervention.updatedBy = assignedBy;
@@ -1273,7 +1318,7 @@ class TeamCollaborationService {
             await ClinicalInterventionService.logActivity('ASSIGN_TEAM_MEMBER', interventionId, assignedBy, workplaceId, {
                 assignedUserId: assignment.userId.toString(),
                 role: assignment.role,
-                task: assignment.task
+                task: assignment.task,
             });
             await this.triggerAssignmentNotification(intervention, newAssignment, assignedBy);
             return intervention;
@@ -1288,12 +1333,12 @@ class TeamCollaborationService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: interventionId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
             }
-            const assignment = intervention.assignments.find(a => a.userId.equals(assignmentUserId));
+            const assignment = intervention.assignments.find((a) => a.userId.equals(assignmentUserId));
             if (!assignment) {
                 throw (0, responseHelpers_1.createNotFoundError)('Assignment not found');
             }
@@ -1312,7 +1357,7 @@ class TeamCollaborationService {
                 assignedUserId: assignmentUserId.toString(),
                 previousStatus,
                 newStatus: status,
-                notes
+                notes,
             });
             await this.triggerStatusChangeNotification(intervention, assignment, previousStatus, updatedBy);
             return intervention;
@@ -1327,7 +1372,7 @@ class TeamCollaborationService {
             const query = {
                 workplaceId,
                 'assignments.userId': userId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             };
             if (status && status.length > 0) {
                 query['assignments.status'] = { $in: status };
@@ -1349,16 +1394,15 @@ class TeamCollaborationService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: interventionId,
                 workplaceId,
-                isDeleted: { $ne: true }
-            })
-                .populate('assignments.userId', 'firstName lastName email');
+                isDeleted: { $ne: true },
+            }).populate('assignments.userId', 'firstName lastName email');
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
             }
             const auditTrail = await this.getAssignmentAuditTrail(interventionId);
             return {
                 assignments: intervention.assignments,
-                auditTrail
+                auditTrail,
             };
         }
         catch (error) {
@@ -1371,12 +1415,12 @@ class TeamCollaborationService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: interventionId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
             }
-            const assignmentIndex = intervention.assignments.findIndex(a => a.userId.equals(assignmentUserId));
+            const assignmentIndex = intervention.assignments.findIndex((a) => a.userId.equals(assignmentUserId));
             if (assignmentIndex === -1) {
                 throw (0, responseHelpers_1.createNotFoundError)('Assignment not found');
             }
@@ -1393,7 +1437,7 @@ class TeamCollaborationService {
             await intervention.save();
             await ClinicalInterventionService.logActivity('REMOVE_ASSIGNMENT', interventionId, removedBy, workplaceId, {
                 assignedUserId: assignmentUserId.toString(),
-                reason
+                reason,
             });
             return intervention;
         }
@@ -1405,11 +1449,11 @@ class TeamCollaborationService {
     static validateRoleAssignment(role, user) {
         const errors = [];
         const roleRequirements = {
-            'pharmacist': ['Pharmacist', 'Owner'],
-            'physician': ['Physician', 'Doctor'],
-            'nurse': ['Nurse', 'Pharmacist', 'Owner'],
-            'patient': [],
-            'caregiver': []
+            pharmacist: ['Pharmacist', 'Owner'],
+            physician: ['Physician', 'Doctor'],
+            nurse: ['Nurse', 'Pharmacist', 'Owner'],
+            patient: [],
+            caregiver: [],
         };
         const requiredRoles = roleRequirements[role];
         if (requiredRoles && requiredRoles.length > 0) {
@@ -1420,15 +1464,15 @@ class TeamCollaborationService {
         }
         return {
             isValid: errors.length === 0,
-            errors
+            errors,
         };
     }
     static isValidAssignmentStatusTransition(currentStatus, newStatus) {
         const validTransitions = {
-            'pending': ['in_progress', 'cancelled'],
-            'in_progress': ['completed', 'cancelled'],
-            'completed': [],
-            'cancelled': []
+            pending: ['in_progress', 'cancelled'],
+            in_progress: ['completed', 'cancelled'],
+            completed: [],
+            cancelled: [],
         };
         return validTransitions[currentStatus]?.includes(newStatus) || false;
     }
@@ -1439,7 +1483,7 @@ class TeamCollaborationService {
                 assignedUserId: assignment.userId.toString(),
                 assignedBy: assignedBy.toString(),
                 role: assignment.role,
-                task: assignment.task
+                task: assignment.task,
             });
         }
         catch (error) {
@@ -1453,7 +1497,7 @@ class TeamCollaborationService {
                 assignedUserId: assignment.userId.toString(),
                 updatedBy: updatedBy.toString(),
                 previousStatus,
-                newStatus: assignment.status
+                newStatus: assignment.status,
             });
         }
         catch (error) {
@@ -1473,22 +1517,21 @@ class TeamCollaborationService {
         try {
             const query = {
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             };
             if (dateRange) {
                 query.createdAt = {
                     $gte: dateRange.from,
-                    $lte: dateRange.to
+                    $lte: dateRange.to,
                 };
             }
-            const interventions = await ClinicalIntervention_1.default.find(query)
-                .populate('assignments.userId', 'firstName lastName');
+            const interventions = await ClinicalIntervention_1.default.find(query).populate('assignments.userId', 'firstName lastName');
             let totalAssignments = 0;
             let activeAssignments = 0;
             let completedAssignments = 0;
             const userStats = {};
-            interventions.forEach(intervention => {
-                intervention.assignments.forEach(assignment => {
+            interventions.forEach((intervention) => {
+                intervention.assignments.forEach((assignment) => {
                     totalAssignments++;
                     const userId = assignment.userId.toString();
                     if (!userStats[userId]) {
@@ -1497,14 +1540,15 @@ class TeamCollaborationService {
                             userName: `${assignment.userId.firstName} ${assignment.userId.lastName}`,
                             activeAssignments: 0,
                             completedAssignments: 0,
-                            completionTimes: []
+                            completionTimes: [],
                         };
                     }
                     if (assignment.status === 'completed') {
                         completedAssignments++;
                         userStats[userId].completedAssignments++;
                         if (assignment.completedAt && assignment.assignedAt) {
-                            const completionTime = assignment.completedAt.getTime() - assignment.assignedAt.getTime();
+                            const completionTime = assignment.completedAt.getTime() -
+                                assignment.assignedAt.getTime();
                             userStats[userId].completionTimes.push(completionTime);
                         }
                     }
@@ -1520,14 +1564,15 @@ class TeamCollaborationService {
                 activeAssignments: stats.activeAssignments,
                 completedAssignments: stats.completedAssignments,
                 averageCompletionTime: stats.completionTimes.length > 0
-                    ? stats.completionTimes.reduce((a, b) => a + b, 0) / stats.completionTimes.length
-                    : 0
+                    ? stats.completionTimes.reduce((a, b) => a + b, 0) /
+                        stats.completionTimes.length
+                    : 0,
             }));
             return {
                 totalAssignments,
                 activeAssignments,
                 completedAssignments,
-                userWorkloads
+                userWorkloads,
             };
         }
         catch (error) {
@@ -1540,7 +1585,7 @@ class TeamCollaborationService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: interventionId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
@@ -1561,12 +1606,12 @@ class TeamCollaborationService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: interventionId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
             }
-            const strategy = intervention.strategies.find(s => s._id?.toString() === strategyId);
+            const strategy = intervention.strategies.find((s) => s._id?.toString() === strategyId);
             if (!strategy) {
                 throw (0, responseHelpers_1.createNotFoundError)('Strategy not found');
             }
@@ -1586,14 +1631,15 @@ class TeamCollaborationService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: interventionId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
             }
             intervention.outcomes = outcome;
             intervention.updatedBy = userId;
-            if (outcome.patientResponse === 'improved' && outcome.successMetrics?.problemResolved) {
+            if (outcome.patientResponse === 'improved' &&
+                outcome.successMetrics?.problemResolved) {
                 intervention.status = 'completed';
                 intervention.completedAt = new Date();
             }
@@ -1611,7 +1657,7 @@ class TeamCollaborationService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: interventionId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
@@ -1629,13 +1675,14 @@ class TeamCollaborationService {
     }
     static async advancedSearch(filters, advancedOptions) {
         try {
-            const { workplaceId, page = 1, limit = 20, sortBy = 'identifiedDate', sortOrder = 'desc' } = filters;
+            const { workplaceId, page = 1, limit = 20, sortBy = 'identifiedDate', sortOrder = 'desc', } = filters;
             const query = {
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             };
             if (filters.category) {
-                if (typeof filters.category === 'object' && filters.category.$in) {
+                if (typeof filters.category === 'object' &&
+                    filters.category.$in) {
                     query.category = filters.category;
                 }
                 else {
@@ -1643,7 +1690,8 @@ class TeamCollaborationService {
                 }
             }
             if (filters.priority) {
-                if (typeof filters.priority === 'object' && filters.priority.$in) {
+                if (typeof filters.priority === 'object' &&
+                    filters.priority.$in) {
                     query.priority = filters.priority;
                 }
                 else {
@@ -1666,19 +1714,28 @@ class TeamCollaborationService {
                     query.identifiedDate.$lte = filters.dateTo;
             }
             if (advancedOptions.interventionNumber) {
-                query.interventionNumber = { $regex: advancedOptions.interventionNumber, $options: 'i' };
+                query.interventionNumber = {
+                    $regex: advancedOptions.interventionNumber,
+                    $options: 'i',
+                };
             }
-            if (advancedOptions.assignedUsers && advancedOptions.assignedUsers.length > 0) {
-                query['assignments.userId'] = { $in: advancedOptions.assignedUsers.map(id => new mongoose_1.default.Types.ObjectId(id)) };
+            if (advancedOptions.assignedUsers &&
+                advancedOptions.assignedUsers.length > 0) {
+                query['assignments.userId'] = {
+                    $in: advancedOptions.assignedUsers.map((id) => new mongoose_1.default.Types.ObjectId(id)),
+                };
             }
-            if (advancedOptions.outcomeTypes && advancedOptions.outcomeTypes.length > 0) {
-                query['outcomes.patientResponse'] = { $in: advancedOptions.outcomeTypes };
+            if (advancedOptions.outcomeTypes &&
+                advancedOptions.outcomeTypes.length > 0) {
+                query['outcomes.patientResponse'] = {
+                    $in: advancedOptions.outcomeTypes,
+                };
             }
             if (filters.search) {
                 query.$or = [
                     { interventionNumber: { $regex: filters.search, $options: 'i' } },
                     { issueDescription: { $regex: filters.search, $options: 'i' } },
-                    { implementationNotes: { $regex: filters.search, $options: 'i' } }
+                    { implementationNotes: { $regex: filters.search, $options: 'i' } },
                 ];
             }
             let populatePatient = false;
@@ -1699,16 +1756,17 @@ class TeamCollaborationService {
             }
             const [interventions, total] = await Promise.all([
                 interventionsQuery.lean(),
-                ClinicalIntervention_1.default.countDocuments(query)
+                ClinicalIntervention_1.default.countDocuments(query),
             ]);
             let filteredInterventions = interventions;
             if (advancedOptions.patientName && populatePatient) {
                 const nameRegex = new RegExp(advancedOptions.patientName, 'i');
                 filteredInterventions = interventions.filter((intervention) => {
                     const patient = intervention.patientId;
-                    return patient && (nameRegex.test(patient.firstName) ||
-                        nameRegex.test(patient.lastName) ||
-                        nameRegex.test(`${patient.firstName} ${patient.lastName}`));
+                    return (patient &&
+                        (nameRegex.test(patient.firstName) ||
+                            nameRegex.test(patient.lastName) ||
+                            nameRegex.test(`${patient.firstName} ${patient.lastName}`)));
                 });
             }
             const pages = Math.ceil(total / limit);
@@ -1720,8 +1778,8 @@ class TeamCollaborationService {
                     total,
                     pages,
                     hasNext: page < pages,
-                    hasPrev: page > 1
-                }
+                    hasPrev: page > 1,
+                },
             };
         }
         catch (error) {
@@ -1734,17 +1792,20 @@ class TeamCollaborationService {
             const query = {
                 patientId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             };
             const interventions = await ClinicalIntervention_1.default.find(query).lean();
             const totalInterventions = interventions.length;
-            const activeInterventions = interventions.filter(i => ['identified', 'planning', 'in_progress', 'implemented'].includes(i.status)).length;
-            const completedInterventions = interventions.filter(i => i.status === 'completed').length;
-            const successfulInterventions = interventions.filter(i => i.outcomes?.patientResponse === 'improved').length;
-            const successRate = completedInterventions > 0 ? (successfulInterventions / completedInterventions) * 100 : 0;
+            const activeInterventions = interventions.filter((i) => ['identified', 'planning', 'in_progress', 'implemented'].includes(i.status)).length;
+            const completedInterventions = interventions.filter((i) => i.status === 'completed').length;
+            const successfulInterventions = interventions.filter((i) => i.outcomes?.patientResponse === 'improved').length;
+            const successRate = completedInterventions > 0
+                ? (successfulInterventions / completedInterventions) * 100
+                : 0;
             const categoryBreakdown = {};
-            interventions.forEach(intervention => {
-                categoryBreakdown[intervention.category] = (categoryBreakdown[intervention.category] || 0) + 1;
+            interventions.forEach((intervention) => {
+                categoryBreakdown[intervention.category] =
+                    (categoryBreakdown[intervention.category] || 0) + 1;
             });
             const recentInterventions = await ClinicalIntervention_1.default.find(query)
                 .populate('identifiedBy', 'firstName lastName')
@@ -1757,7 +1818,7 @@ class TeamCollaborationService {
                 completedInterventions,
                 successRate,
                 categoryBreakdown,
-                recentInterventions: recentInterventions
+                recentInterventions: recentInterventions,
             };
         }
         catch (error) {
@@ -1770,7 +1831,7 @@ class TeamCollaborationService {
             const query = {
                 workplaceId,
                 'assignments.userId': userId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             };
             const interventions = await ClinicalIntervention_1.default.find(query).lean();
             let totalAssignments = 0;
@@ -1778,8 +1839,8 @@ class TeamCollaborationService {
             let completedAssignments = 0;
             let overdueAssignments = 0;
             const now = new Date();
-            interventions.forEach(intervention => {
-                intervention.assignments.forEach(assignment => {
+            interventions.forEach((intervention) => {
+                intervention.assignments.forEach((assignment) => {
                     if (assignment.userId.toString() === userId.toString()) {
                         totalAssignments++;
                         switch (assignment.status) {
@@ -1799,13 +1860,15 @@ class TeamCollaborationService {
                     }
                 });
             });
-            const completionRate = totalAssignments > 0 ? (completedAssignments / totalAssignments) * 100 : 0;
+            const completionRate = totalAssignments > 0
+                ? (completedAssignments / totalAssignments) * 100
+                : 0;
             return {
                 totalAssignments,
                 activeAssignments,
                 completedAssignments,
                 overdueAssignments,
-                completionRate
+                completionRate,
             };
         }
         catch (error) {
@@ -1818,7 +1881,7 @@ class TeamCollaborationService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: interventionId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
@@ -1839,7 +1902,7 @@ class TeamCollaborationService {
             const intervention = await ClinicalIntervention_1.default.findOne({
                 _id: interventionId,
                 workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
@@ -1847,18 +1910,18 @@ class TeamCollaborationService {
             logger_1.default.info('Intervention notification sent', {
                 interventionId,
                 type: notification.type,
-                recipients: notification.recipients.map(id => id.toString()),
+                recipients: notification.recipients.map((id) => id.toString()),
                 urgency: notification.urgency,
-                sentBy: notification.sentBy.toString()
+                sentBy: notification.sentBy.toString(),
             });
             await ClinicalInterventionService.logActivity('SEND_NOTIFICATIONS', intervention._id.toString(), notification.sentBy, workplaceId, {
                 type: notification.type,
                 recipientCount: notification.recipients.length,
-                urgency: notification.urgency
+                urgency: notification.urgency,
             });
             return {
                 sent: notification.recipients.length,
-                failed: 0
+                failed: 0,
             };
         }
         catch (error) {
@@ -1872,40 +1935,38 @@ class TeamCollaborationService {
                 workplaceId,
                 identifiedDate: {
                     $gte: dateRange.from,
-                    $lte: dateRange.to
+                    $lte: dateRange.to,
                 },
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             };
-            const pipeline = [
-                { $match: query }
-            ];
+            const pipeline = [{ $match: query }];
             let dateGrouping = {};
             switch (period) {
                 case 'day':
                     dateGrouping = {
                         year: { $year: '$identifiedDate' },
                         month: { $month: '$identifiedDate' },
-                        day: { $dayOfMonth: '$identifiedDate' }
+                        day: { $dayOfMonth: '$identifiedDate' },
                     };
                     break;
                 case 'week':
                     dateGrouping = {
                         year: { $year: '$identifiedDate' },
-                        week: { $week: '$identifiedDate' }
+                        week: { $week: '$identifiedDate' },
                     };
                     break;
                 case 'month':
                     dateGrouping = {
                         year: { $year: '$identifiedDate' },
-                        month: { $month: '$identifiedDate' }
+                        month: { $month: '$identifiedDate' },
                     };
                     break;
                 case 'quarter':
                     dateGrouping = {
                         year: { $year: '$identifiedDate' },
                         quarter: {
-                            $ceil: { $divide: [{ $month: '$identifiedDate' }, 3] }
-                        }
+                            $ceil: { $divide: [{ $month: '$identifiedDate' }, 3] },
+                        },
                     };
                     break;
             }
@@ -1919,17 +1980,17 @@ class TeamCollaborationService {
                     count: { $sum: 1 },
                     completed: {
                         $sum: {
-                            $cond: [{ $eq: ['$status', 'completed'] }, 1, 0]
-                        }
+                            $cond: [{ $eq: ['$status', 'completed'] }, 1, 0],
+                        },
                     },
                     successful: {
                         $sum: {
-                            $cond: [{ $eq: ['$outcomes.patientResponse', 'improved'] }, 1, 0]
-                        }
-                    }
-                }
+                            $cond: [{ $eq: ['$outcomes.patientResponse', 'improved'] }, 1, 0],
+                        },
+                    },
+                },
             });
-            pipeline.push({ $sort: { '_id': 1 } });
+            pipeline.push({ $sort: { _id: 1 } });
             const trends = await ClinicalIntervention_1.default.aggregate(pipeline);
             return trends;
         }
@@ -1942,7 +2003,7 @@ class TeamCollaborationService {
         try {
             const query = {
                 workplaceId: filters.workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             };
             if (filters.dateFrom || filters.dateTo) {
                 query.identifiedDate = {};
@@ -1960,16 +2021,18 @@ class TeamCollaborationService {
                 .populate('identifiedBy', 'firstName lastName')
                 .lean();
             const totalInterventions = interventions.length;
-            const completedInterventions = interventions.filter(i => i.status === 'completed').length;
-            const successfulInterventions = interventions.filter(i => i.outcomes?.patientResponse === 'improved').length;
-            const successRate = completedInterventions > 0 ? (successfulInterventions / completedInterventions) * 100 : 0;
+            const completedInterventions = interventions.filter((i) => i.status === 'completed').length;
+            const successfulInterventions = interventions.filter((i) => i.outcomes?.patientResponse === 'improved').length;
+            const successRate = completedInterventions > 0
+                ? (successfulInterventions / completedInterventions) * 100
+                : 0;
             const categoryBreakdown = {};
-            interventions.forEach(intervention => {
+            interventions.forEach((intervention) => {
                 if (!categoryBreakdown[intervention.category]) {
                     categoryBreakdown[intervention.category] = {
                         total: 0,
                         completed: 0,
-                        successful: 0
+                        successful: 0,
                     };
                 }
                 categoryBreakdown[intervention.category].total++;
@@ -1980,21 +2043,22 @@ class TeamCollaborationService {
                     }
                 }
             });
-            Object.keys(categoryBreakdown).forEach(category => {
+            Object.keys(categoryBreakdown).forEach((category) => {
                 const data = categoryBreakdown[category];
-                data.successRate = data.completed > 0 ? (data.successful / data.completed) * 100 : 0;
+                data.successRate =
+                    data.completed > 0 ? (data.successful / data.completed) * 100 : 0;
             });
             return {
                 summary: {
                     totalInterventions,
                     completedInterventions,
                     successfulInterventions,
-                    successRate
+                    successRate,
                 },
                 categoryBreakdown,
                 interventions: filters.includeDetails ? interventions : undefined,
                 generatedAt: new Date(),
-                filters
+                filters,
             };
         }
         catch (error) {
@@ -2006,7 +2070,7 @@ class TeamCollaborationService {
         try {
             const query = {
                 workplaceId: filters.workplaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             };
             if (filters.dateFrom || filters.dateTo) {
                 query.identifiedDate = {};
@@ -2026,21 +2090,23 @@ class TeamCollaborationService {
                 .populate('identifiedBy', 'firstName lastName')
                 .populate('assignments.userId', 'firstName lastName')
                 .lean();
-            const exportData = interventions.map(intervention => ({
+            const exportData = interventions.map((intervention) => ({
                 interventionNumber: intervention.interventionNumber,
-                patientName: intervention.patientId ?
-                    `${intervention.patientId.firstName} ${intervention.patientId.lastName}` : 'N/A',
+                patientName: intervention.patientId
+                    ? `${intervention.patientId.firstName} ${intervention.patientId.lastName}`
+                    : 'N/A',
                 category: intervention.category,
                 priority: intervention.priority,
                 status: intervention.status,
                 issueDescription: intervention.issueDescription,
-                identifiedBy: intervention.identifiedBy ?
-                    `${intervention.identifiedBy.firstName} ${intervention.identifiedBy.lastName}` : 'N/A',
+                identifiedBy: intervention.identifiedBy
+                    ? `${intervention.identifiedBy.firstName} ${intervention.identifiedBy.lastName}`
+                    : 'N/A',
                 identifiedDate: intervention.identifiedDate,
                 completedDate: intervention.completedAt,
                 patientResponse: intervention.outcomes?.patientResponse || 'N/A',
                 strategiesCount: intervention.strategies.length,
-                assignmentsCount: intervention.assignments.length
+                assignmentsCount: intervention.assignments.length,
             }));
             switch (format) {
                 case 'csv':
@@ -2064,13 +2130,16 @@ class TeamCollaborationService {
         const headers = Object.keys(data[0]);
         const csvContent = [
             headers.join(','),
-            ...data.map(row => headers.map(header => {
+            ...data.map((row) => headers
+                .map((header) => {
                 const value = row[header];
-                if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                if (typeof value === 'string' &&
+                    (value.includes(',') || value.includes('"'))) {
                     return `"${value.replace(/"/g, '""')}"`;
                 }
                 return value || '';
-            }).join(','))
+            })
+                .join(',')),
         ].join('\n');
         return csvContent;
     }
@@ -2088,23 +2157,32 @@ class TeamCollaborationService {
             const baseQuery = {
                 workplaceId,
                 isDeleted: { $ne: true },
-                identifiedDate: { $gte: from, $lte: to }
+                identifiedDate: { $gte: from, $lte: to },
             };
-            const [totalInterventions, completedInterventions, inProgressInterventions, pendingInterventions] = await Promise.all([
+            const [totalInterventions, completedInterventions, inProgressInterventions, pendingInterventions,] = await Promise.all([
                 ClinicalIntervention_1.default.countDocuments(baseQuery),
-                ClinicalIntervention_1.default.countDocuments({ ...baseQuery, status: 'completed' }),
-                ClinicalIntervention_1.default.countDocuments({ ...baseQuery, status: 'in_progress' }),
-                ClinicalIntervention_1.default.countDocuments({ ...baseQuery, status: 'identified' })
+                ClinicalIntervention_1.default.countDocuments({
+                    ...baseQuery,
+                    status: 'completed',
+                }),
+                ClinicalIntervention_1.default.countDocuments({
+                    ...baseQuery,
+                    status: 'in_progress',
+                }),
+                ClinicalIntervention_1.default.countDocuments({
+                    ...baseQuery,
+                    status: 'identified',
+                }),
             ]);
             const categoryBreakdown = await ClinicalIntervention_1.default.aggregate([
                 { $match: baseQuery },
                 { $group: { _id: '$category', count: { $sum: 1 } } },
-                { $sort: { count: -1 } }
+                { $sort: { count: -1 } },
             ]);
             const priorityBreakdown = await ClinicalIntervention_1.default.aggregate([
                 { $match: baseQuery },
                 { $group: { _id: '$priority', count: { $sum: 1 } } },
-                { $sort: { count: -1 } }
+                { $sort: { count: -1 } },
             ]);
             const completionRate = totalInterventions > 0
                 ? (completedInterventions / totalInterventions) * 100
@@ -2123,7 +2201,7 @@ class TeamCollaborationService {
                     acc[item._id] = item.count;
                     return acc;
                 }, {}),
-                dateRange
+                dateRange,
             };
         }
         catch (error) {
@@ -2132,19 +2210,25 @@ class TeamCollaborationService {
         }
     }
 }
-ClinicalInterventionService.assignTeamMember = TeamCollaborationService.assignTeamMember;
-ClinicalInterventionService.updateAssignmentStatus = TeamCollaborationService.updateAssignmentStatus;
-ClinicalInterventionService.getUserAssignments = TeamCollaborationService.getUserAssignments;
-ClinicalInterventionService.getAssignmentHistory = TeamCollaborationService.getAssignmentHistory;
-ClinicalInterventionService.removeAssignment = TeamCollaborationService.removeAssignment;
-ClinicalInterventionService.getTeamWorkloadStats = TeamCollaborationService.getTeamWorkloadStats;
+ClinicalInterventionService.assignTeamMember =
+    TeamCollaborationService.assignTeamMember;
+ClinicalInterventionService.updateAssignmentStatus =
+    TeamCollaborationService.updateAssignmentStatus;
+ClinicalInterventionService.getUserAssignments =
+    TeamCollaborationService.getUserAssignments;
+ClinicalInterventionService.getAssignmentHistory =
+    TeamCollaborationService.getAssignmentHistory;
+ClinicalInterventionService.removeAssignment =
+    TeamCollaborationService.removeAssignment;
+ClinicalInterventionService.getTeamWorkloadStats =
+    TeamCollaborationService.getTeamWorkloadStats;
 ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters) => {
     try {
         const { dateFrom, dateTo, category, priority, outcome, pharmacist } = filters;
         const baseQuery = {
             workplaceId,
             isDeleted: { $ne: true },
-            status: 'completed'
+            status: 'completed',
         };
         if (dateFrom || dateTo) {
             baseQuery.completedAt = {};
@@ -2168,17 +2252,24 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
         const totalInterventions = await ClinicalIntervention_1.default.countDocuments(baseQuery);
         const successfulInterventions = await ClinicalIntervention_1.default.countDocuments({
             ...baseQuery,
-            'outcomes.patientResponse': 'improved'
+            'outcomes.patientResponse': 'improved',
         });
-        const successRate = totalInterventions > 0 ? (successfulInterventions / totalInterventions) * 100 : 0;
+        const successRate = totalInterventions > 0
+            ? (successfulInterventions / totalInterventions) * 100
+            : 0;
         const costSavingsAgg = await ClinicalIntervention_1.default.aggregate([
-            { $match: { ...baseQuery, 'outcomes.successMetrics.costSavings': { $exists: true } } },
+            {
+                $match: {
+                    ...baseQuery,
+                    'outcomes.successMetrics.costSavings': { $exists: true },
+                },
+            },
             {
                 $group: {
                     _id: null,
-                    totalSavings: { $sum: '$outcomes.successMetrics.costSavings' }
-                }
-            }
+                    totalSavings: { $sum: '$outcomes.successMetrics.costSavings' },
+                },
+            },
         ]);
         const totalCostSavings = costSavingsAgg.length > 0 ? costSavingsAgg[0].totalSavings : 0;
         const resolutionTimeAgg = await ClinicalIntervention_1.default.aggregate([
@@ -2188,17 +2279,17 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
                     resolutionTime: {
                         $divide: [
                             { $subtract: ['$completedAt', '$startedAt'] },
-                            1000 * 60 * 60 * 24
-                        ]
-                    }
-                }
+                            1000 * 60 * 60 * 24,
+                        ],
+                    },
+                },
             },
             {
                 $group: {
                     _id: null,
-                    avgResolutionTime: { $avg: '$resolutionTime' }
-                }
-            }
+                    avgResolutionTime: { $avg: '$resolutionTime' },
+                },
+            },
         ]);
         const averageResolutionTime = resolutionTimeAgg.length > 0 ? resolutionTimeAgg[0].avgResolutionTime : 0;
         const categoryAnalysis = await ClinicalIntervention_1.default.aggregate([
@@ -2208,34 +2299,54 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
                     _id: '$category',
                     total: { $sum: 1 },
                     successful: {
-                        $sum: { $cond: [{ $eq: ['$outcomes.patientResponse', 'improved'] }, 1, 0] }
+                        $sum: {
+                            $cond: [{ $eq: ['$outcomes.patientResponse', 'improved'] }, 1, 0],
+                        },
                     },
                     totalCostSavings: { $sum: '$outcomes.successMetrics.costSavings' },
                     totalResolutionTime: {
                         $sum: {
                             $divide: [
                                 { $subtract: ['$completedAt', '$startedAt'] },
-                                1000 * 60 * 60 * 24
-                            ]
-                        }
-                    }
-                }
+                                1000 * 60 * 60 * 24,
+                            ],
+                        },
+                    },
+                },
             },
             {
                 $project: {
                     category: {
                         $switch: {
                             branches: [
-                                { case: { $eq: ['$_id', 'drug_therapy_problem'] }, then: 'Drug Therapy Problem' },
-                                { case: { $eq: ['$_id', 'adverse_drug_reaction'] }, then: 'Adverse Drug Reaction' },
-                                { case: { $eq: ['$_id', 'medication_nonadherence'] }, then: 'Medication Non-adherence' },
-                                { case: { $eq: ['$_id', 'drug_interaction'] }, then: 'Drug Interaction' },
-                                { case: { $eq: ['$_id', 'dosing_issue'] }, then: 'Dosing Issue' },
-                                { case: { $eq: ['$_id', 'contraindication'] }, then: 'Contraindication' },
-                                { case: { $eq: ['$_id', 'other'] }, then: 'Other' }
+                                {
+                                    case: { $eq: ['$_id', 'drug_therapy_problem'] },
+                                    then: 'Drug Therapy Problem',
+                                },
+                                {
+                                    case: { $eq: ['$_id', 'adverse_drug_reaction'] },
+                                    then: 'Adverse Drug Reaction',
+                                },
+                                {
+                                    case: { $eq: ['$_id', 'medication_nonadherence'] },
+                                    then: 'Medication Non-adherence',
+                                },
+                                {
+                                    case: { $eq: ['$_id', 'drug_interaction'] },
+                                    then: 'Drug Interaction',
+                                },
+                                {
+                                    case: { $eq: ['$_id', 'dosing_issue'] },
+                                    then: 'Dosing Issue',
+                                },
+                                {
+                                    case: { $eq: ['$_id', 'contraindication'] },
+                                    then: 'Contraindication',
+                                },
+                                { case: { $eq: ['$_id', 'other'] }, then: 'Other' },
                             ],
-                            default: '$_id'
-                        }
+                            default: '$_id',
+                        },
                     },
                     total: 1,
                     successful: 1,
@@ -2243,26 +2354,26 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
                         $cond: [
                             { $gt: ['$total', 0] },
                             { $multiply: [{ $divide: ['$successful', '$total'] }, 100] },
-                            0
-                        ]
+                            0,
+                        ],
                     },
                     avgCostSavings: {
                         $cond: [
                             { $gt: ['$total', 0] },
                             { $divide: ['$totalCostSavings', '$total'] },
-                            0
-                        ]
+                            0,
+                        ],
                     },
                     avgResolutionTime: {
                         $cond: [
                             { $gt: ['$total', 0] },
                             { $divide: ['$totalResolutionTime', '$total'] },
-                            0
-                        ]
-                    }
-                }
+                            0,
+                        ],
+                    },
+                },
             },
-            { $sort: { total: -1 } }
+            { $sort: { total: -1 } },
         ]);
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -2270,29 +2381,31 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
             {
                 $match: {
                     ...baseQuery,
-                    completedAt: { $gte: sixMonthsAgo }
-                }
+                    completedAt: { $gte: sixMonthsAgo },
+                },
             },
             {
                 $group: {
                     _id: {
                         year: { $year: '$completedAt' },
-                        month: { $month: '$completedAt' }
+                        month: { $month: '$completedAt' },
                     },
                     interventions: { $sum: 1 },
                     successful: {
-                        $sum: { $cond: [{ $eq: ['$outcomes.patientResponse', 'improved'] }, 1, 0] }
+                        $sum: {
+                            $cond: [{ $eq: ['$outcomes.patientResponse', 'improved'] }, 1, 0],
+                        },
                     },
                     costSavings: { $sum: '$outcomes.successMetrics.costSavings' },
                     totalResolutionTime: {
                         $sum: {
                             $divide: [
                                 { $subtract: ['$completedAt', '$startedAt'] },
-                                1000 * 60 * 60 * 24
-                            ]
-                        }
-                    }
-                }
+                                1000 * 60 * 60 * 24,
+                            ],
+                        },
+                    },
+                },
             },
             {
                 $project: {
@@ -2302,30 +2415,35 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
                             date: {
                                 $dateFromParts: {
                                     year: '$_id.year',
-                                    month: '$_id.month'
-                                }
-                            }
-                        }
+                                    month: '$_id.month',
+                                },
+                            },
+                        },
                     },
                     interventions: 1,
                     successRate: {
                         $cond: [
                             { $gt: ['$interventions', 0] },
-                            { $multiply: [{ $divide: ['$successful', '$interventions'] }, 100] },
-                            0
-                        ]
+                            {
+                                $multiply: [
+                                    { $divide: ['$successful', '$interventions'] },
+                                    100,
+                                ],
+                            },
+                            0,
+                        ],
                     },
                     costSavings: 1,
                     resolutionTime: {
                         $cond: [
                             { $gt: ['$interventions', 0] },
                             { $divide: ['$totalResolutionTime', '$interventions'] },
-                            0
-                        ]
-                    }
-                }
+                            0,
+                        ],
+                    },
+                },
             },
-            { $sort: { '_id.year': 1, '_id.month': 1 } }
+            { $sort: { '_id.year': 1, '_id.month': 1 } },
         ]);
         const detailedOutcomes = await ClinicalIntervention_1.default.find(baseQuery)
             .populate('patientId', 'firstName lastName')
@@ -2333,62 +2451,84 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
             .sort({ completedAt: -1 })
             .limit(100)
             .lean();
-        const formattedDetailedOutcomes = detailedOutcomes.map(intervention => ({
+        const formattedDetailedOutcomes = detailedOutcomes.map((intervention) => ({
             interventionId: intervention._id.toString(),
             interventionNumber: intervention.interventionNumber,
-            patientName: intervention.patientId ?
-                `${intervention.patientId.firstName} ${intervention.patientId.lastName}` :
-                'Unknown Patient',
+            patientName: intervention.patientId
+                ? `${intervention.patientId.firstName} ${intervention.patientId.lastName}`
+                : 'Unknown Patient',
             category: intervention.category,
             priority: intervention.priority,
             outcome: intervention.outcomes?.patientResponse || 'unknown',
             costSavings: intervention.outcomes?.successMetrics?.costSavings || 0,
-            resolutionTime: intervention.completedAt && intervention.startedAt ?
-                Math.ceil((intervention.completedAt.getTime() - intervention.startedAt.getTime()) / (1000 * 60 * 60 * 24)) : 0,
+            resolutionTime: intervention.completedAt && intervention.startedAt
+                ? Math.ceil((intervention.completedAt.getTime() -
+                    intervention.startedAt.getTime()) /
+                    (1000 * 60 * 60 * 24))
+                : 0,
             patientResponse: intervention.outcomes?.patientResponse || 'unknown',
-            completedDate: intervention.completedAt?.toISOString() || ''
+            completedDate: intervention.completedAt?.toISOString() || '',
         }));
-        const periodLength = dateTo && dateFrom ?
-            dateTo.getTime() - dateFrom.getTime() :
-            30 * 24 * 60 * 60 * 1000;
+        const periodLength = dateTo && dateFrom
+            ? dateTo.getTime() - dateFrom.getTime()
+            : 30 * 24 * 60 * 60 * 1000;
         const previousPeriodStart = new Date((dateFrom || new Date()).getTime() - periodLength);
         const previousPeriodEnd = dateFrom || new Date();
         const previousPeriodQuery = {
             ...baseQuery,
-            completedAt: { $gte: previousPeriodStart, $lte: previousPeriodEnd }
+            completedAt: { $gte: previousPeriodStart, $lte: previousPeriodEnd },
         };
         const previousPeriodTotal = await ClinicalIntervention_1.default.countDocuments(previousPeriodQuery);
         const previousPeriodSuccessful = await ClinicalIntervention_1.default.countDocuments({
             ...previousPeriodQuery,
-            'outcomes.patientResponse': 'improved'
+            'outcomes.patientResponse': 'improved',
         });
-        const previousPeriodSuccessRate = previousPeriodTotal > 0 ?
-            (previousPeriodSuccessful / previousPeriodTotal) * 100 : 0;
+        const previousPeriodSuccessRate = previousPeriodTotal > 0
+            ? (previousPeriodSuccessful / previousPeriodTotal) * 100
+            : 0;
         const previousPeriodCostSavings = await ClinicalIntervention_1.default.aggregate([
-            { $match: { ...previousPeriodQuery, 'outcomes.successMetrics.costSavings': { $exists: true } } },
-            { $group: { _id: null, total: { $sum: '$outcomes.successMetrics.costSavings' } } }
+            {
+                $match: {
+                    ...previousPeriodQuery,
+                    'outcomes.successMetrics.costSavings': { $exists: true },
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: '$outcomes.successMetrics.costSavings' },
+                },
+            },
         ]);
-        const prevCostSavings = previousPeriodCostSavings.length > 0 ?
-            previousPeriodCostSavings[0].total : 0;
+        const prevCostSavings = previousPeriodCostSavings.length > 0
+            ? previousPeriodCostSavings[0].total
+            : 0;
         const comparativeAnalysis = {
             currentPeriod: {
                 interventions: totalInterventions,
                 successRate: successRate,
-                costSavings: totalCostSavings
+                costSavings: totalCostSavings,
             },
             previousPeriod: {
                 interventions: previousPeriodTotal,
                 successRate: previousPeriodSuccessRate,
-                costSavings: prevCostSavings
+                costSavings: prevCostSavings,
             },
             percentageChange: {
-                interventions: previousPeriodTotal > 0 ?
-                    ((totalInterventions - previousPeriodTotal) / previousPeriodTotal) * 100 : 0,
-                successRate: previousPeriodSuccessRate > 0 ?
-                    ((successRate - previousPeriodSuccessRate) / previousPeriodSuccessRate) * 100 : 0,
-                costSavings: prevCostSavings > 0 ?
-                    ((totalCostSavings - prevCostSavings) / prevCostSavings) * 100 : 0
-            }
+                interventions: previousPeriodTotal > 0
+                    ? ((totalInterventions - previousPeriodTotal) /
+                        previousPeriodTotal) *
+                        100
+                    : 0,
+                successRate: previousPeriodSuccessRate > 0
+                    ? ((successRate - previousPeriodSuccessRate) /
+                        previousPeriodSuccessRate) *
+                        100
+                    : 0,
+                costSavings: prevCostSavings > 0
+                    ? ((totalCostSavings - prevCostSavings) / prevCostSavings) * 100
+                    : 0,
+            },
         };
         return {
             summary: {
@@ -2398,12 +2538,12 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
                 successRate,
                 totalCostSavings,
                 averageResolutionTime,
-                patientSatisfactionScore: 4.5
+                patientSatisfactionScore: 4.5,
             },
             categoryAnalysis,
             trendAnalysis,
             comparativeAnalysis,
-            detailedOutcomes: formattedDetailedOutcomes
+            detailedOutcomes: formattedDetailedOutcomes,
         };
     }
     catch (error) {
@@ -2413,12 +2553,12 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
 };
 ClinicalInterventionService.calculateCostSavings = async (interventions, parameters = {}) => {
     try {
-        const { adverseEventCost = 5000, hospitalAdmissionCost = 15000, medicationWasteCost = 200, pharmacistHourlyCost = 50 } = parameters;
+        const { adverseEventCost = 5000, hospitalAdmissionCost = 15000, medicationWasteCost = 200, pharmacistHourlyCost = 50, } = parameters;
         let adverseEventsAvoided = 0;
         let hospitalAdmissionsAvoided = 0;
         let medicationWasteReduced = 0;
         let totalInterventionTime = 0;
-        interventions.forEach(intervention => {
+        interventions.forEach((intervention) => {
             if (intervention.category === 'adverse_drug_reaction' &&
                 intervention.outcomes?.patientResponse === 'improved') {
                 adverseEventsAvoided++;
@@ -2445,7 +2585,7 @@ ClinicalInterventionService.calculateCostSavings = async (interventions, paramet
             adverseEventsAvoided: adverseEventsAvoided * adverseEventCost,
             hospitalAdmissionsAvoided: hospitalAdmissionsAvoided * hospitalAdmissionCost,
             medicationWasteReduced: medicationWasteReduced * medicationWasteCost,
-            interventionCost: (totalInterventionTime / 60) * pharmacistHourlyCost
+            interventionCost: (totalInterventionTime / 60) * pharmacistHourlyCost,
         };
         const totalSavings = breakdown.adverseEventsAvoided +
             breakdown.hospitalAdmissionsAvoided +
@@ -2453,7 +2593,7 @@ ClinicalInterventionService.calculateCostSavings = async (interventions, paramet
             breakdown.interventionCost;
         return {
             totalSavings: Math.max(0, totalSavings),
-            breakdown
+            breakdown,
         };
     }
     catch (error) {
@@ -2461,5 +2601,162 @@ ClinicalInterventionService.calculateCostSavings = async (interventions, paramet
         throw error;
     }
 };
+async function getDashboardMetrics(workplaceId, dateRange) {
+    try {
+        const { from, to } = dateRange;
+        const baseQuery = {
+            workplaceId,
+            isDeleted: { $ne: true },
+            identifiedDate: { $gte: from, $lte: to },
+        };
+        const [totalInterventions, completedInterventions, inProgressInterventions, pendingInterventions,] = await Promise.all([
+            ClinicalIntervention_1.default.countDocuments(baseQuery),
+            ClinicalIntervention_1.default.countDocuments({
+                ...baseQuery,
+                status: 'completed',
+            }),
+            ClinicalIntervention_1.default.countDocuments({
+                ...baseQuery,
+                status: 'in_progress',
+            }),
+            ClinicalIntervention_1.default.countDocuments({
+                ...baseQuery,
+                status: 'identified',
+            }),
+        ]);
+        const now = new Date();
+        const overdueInterventions = await ClinicalIntervention_1.default.countDocuments({
+            ...baseQuery,
+            status: { $nin: ['completed', 'cancelled'] },
+            'followUp.scheduledDate': { $lt: now },
+        });
+        const categoryBreakdown = await ClinicalIntervention_1.default.aggregate([
+            { $match: baseQuery },
+            { $group: { _id: '$category', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+        ]);
+        const priorityBreakdown = await ClinicalIntervention_1.default.aggregate([
+            { $match: baseQuery },
+            { $group: { _id: '$priority', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+        ]);
+        const successRate = totalInterventions > 0
+            ? (completedInterventions / totalInterventions) * 100
+            : 0;
+        const averageResolutionResult = await ClinicalIntervention_1.default.aggregate([
+            {
+                $match: {
+                    ...baseQuery,
+                    status: 'completed',
+                    completedAt: { $exists: true },
+                },
+            },
+            {
+                $project: {
+                    resolutionTime: {
+                        $divide: [
+                            { $subtract: ['$completedAt', '$identifiedDate'] },
+                            1000 * 60 * 60 * 24,
+                        ],
+                    },
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    averageResolutionTime: { $avg: '$resolutionTime' },
+                },
+            },
+        ]);
+        const averageResolutionTime = averageResolutionResult.length > 0
+            ? Math.round(averageResolutionResult[0].averageResolutionTime * 10) / 10
+            : 0;
+        const recentInterventions = await ClinicalIntervention_1.default.find(baseQuery)
+            .sort({ identifiedDate: -1 })
+            .limit(5)
+            .select('interventionNumber category priority status identifiedDate assignments')
+            .lean();
+        const categoryColors = [
+            '#8884d8',
+            '#82ca9d',
+            '#ffc658',
+            '#ff7c7c',
+            '#8dd1e1',
+            '#d084d0',
+            '#ffb347',
+        ];
+        const priorityColors = ['#ff4444', '#ffaa44', '#44aa44', '#4444ff'];
+        const categoryDistribution = categoryBreakdown.map((item, index) => ({
+            name: formatCategoryName(item._id),
+            value: item.count,
+            successRate: Math.round((item.count / totalInterventions) * 100),
+            color: categoryColors[index % categoryColors.length],
+        }));
+        const priorityDistribution = priorityBreakdown.map((item, index) => ({
+            name: formatPriorityName(item._id),
+            value: item.count,
+            color: priorityColors[index % priorityColors.length],
+        }));
+        const monthlyTrends = [
+            {
+                month: 'Current',
+                total: totalInterventions,
+                completed: completedInterventions,
+                successRate: successRate,
+            },
+        ];
+        const formattedRecentInterventions = recentInterventions.map((intervention) => ({
+            _id: intervention._id.toString(),
+            interventionNumber: intervention.interventionNumber,
+            category: formatCategoryName(intervention.category),
+            priority: formatPriorityName(intervention.priority),
+            status: intervention.status,
+            patientName: 'Patient',
+            identifiedDate: intervention.identifiedDate,
+            assignedTo: intervention.assignments && intervention.assignments.length > 0
+                ? intervention.assignments[0].userId?.toString()
+                : undefined,
+        }));
+        return {
+            totalInterventions,
+            activeInterventions: inProgressInterventions,
+            completedInterventions,
+            overdueInterventions,
+            successRate: Math.round(successRate * 100) / 100,
+            averageResolutionTime,
+            totalCostSavings: 0,
+            categoryDistribution,
+            priorityDistribution,
+            monthlyTrends,
+            recentInterventions: formattedRecentInterventions,
+        };
+    }
+    catch (error) {
+        logger_1.default.error('Error getting dashboard metrics:', error);
+        throw error;
+    }
+}
+function formatCategoryName(category) {
+    const categoryMap = {
+        drug_therapy_problem: 'Drug Therapy Problem',
+        adverse_drug_reaction: 'Adverse Drug Reaction',
+        medication_nonadherence: 'Medication Non-adherence',
+        drug_interaction: 'Drug Interaction',
+        dosing_issue: 'Dosing Issue',
+        contraindication: 'Contraindication',
+        other: 'Other',
+    };
+    return categoryMap[category] || category;
+}
+function formatPriorityName(priority) {
+    const priorityMap = {
+        low: 'Low',
+        medium: 'Medium',
+        high: 'High',
+        critical: 'Critical',
+    };
+    return priorityMap[priority] || priority;
+}
+ClinicalInterventionService.getDashboardMetrics = getDashboardMetrics;
 exports.default = ClinicalInterventionService;
 //# sourceMappingURL=clinicalInterventionService.js.map

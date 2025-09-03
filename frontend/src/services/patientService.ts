@@ -66,9 +66,9 @@ class PatientService {
       console.error('API Request failed:', error);
       throw new Error(
         error.response?.data?.error?.message ||
-        error.response?.data?.message ||
-        error.message ||
-        'An error occurred'
+          error.response?.data?.message ||
+          error.message ||
+          'An error occurred'
       );
     }
   }
@@ -160,10 +160,26 @@ class PatientService {
    */
   async searchPatients(query: string): Promise<unknown> {
     try {
+      if (!query || query.trim().length < 2) {
+        return { patients: [], total: 0, query: '' };
+      }
+
+      // Log the search request
+      console.log('Searching for patients with query:', query);
+
       const result = await this.makeRequest<unknown>(
         `/patients/search?q=${encodeURIComponent(query)}`
       );
-      console.log('Search result:', result);
+
+      // Debug the response structure
+      console.log('Search response structure:', {
+        result,
+        hasPatients: result?.data?.patients || result?.patients,
+        responseType: typeof result,
+        isArray: Array.isArray(result),
+        keys: result ? Object.keys(result) : [],
+      });
+
       return result;
     } catch (error) {
       console.error('Search error:', error);
@@ -284,8 +300,9 @@ class PatientService {
       // Add defensive URL encoding for patientId
       const encodedPatientId = encodeURIComponent(patientId);
       const queryString = searchParams.toString();
-      const url = `/patients/${encodedPatientId}/conditions${queryString ? `?${queryString}` : ''
-        }`;
+      const url = `/patients/${encodedPatientId}/conditions${
+        queryString ? `?${queryString}` : ''
+      }`;
 
       console.log('Fetching conditions with URL:', url);
       return await this.makeRequest<PaginatedResponse<Condition>>(url);
@@ -750,20 +767,8 @@ class PatientService {
   async searchPatientsWithInterventions(
     query: string,
     limit = 10
-  ): Promise<ApiResponse<{
-    patients: Array<{
-      _id: string;
-      firstName: string;
-      lastName: string;
-      mrn: string;
-      displayName: string;
-      age?: number;
-      interventionCount: number;
-      activeInterventionCount: number;
-      lastInterventionDate?: string;
-    }>;
-  }>> {
-    return this.makeRequest<ApiResponse<{
+  ): Promise<
+    ApiResponse<{
       patients: Array<{
         _id: string;
         firstName: string;
@@ -775,7 +780,27 @@ class PatientService {
         activeInterventionCount: number;
         lastInterventionDate?: string;
       }>;
-    }>>(`/patients/search-with-interventions?q=${encodeURIComponent(query)}&limit=${limit}`);
+    }>
+  > {
+    return this.makeRequest<
+      ApiResponse<{
+        patients: Array<{
+          _id: string;
+          firstName: string;
+          lastName: string;
+          mrn: string;
+          displayName: string;
+          age?: number;
+          interventionCount: number;
+          activeInterventionCount: number;
+          lastInterventionDate?: string;
+        }>;
+      }>
+    >(
+      `/patients/search-with-interventions?q=${encodeURIComponent(
+        query
+      )}&limit=${limit}`
+    );
   }
 
   /**

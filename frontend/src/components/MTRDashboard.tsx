@@ -595,6 +595,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
   // Get step status
   const getStepStatus = (stepIndex: number) => {
     if (!currentReview) return 'pending';
+    if (!currentReview.steps) return 'pending';
 
     const stepNames = [
       'patientSelection',
@@ -605,13 +606,18 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       'followUp',
     ];
 
-    const stepName = stepNames[stepIndex] as keyof typeof currentReview.steps;
-    const step = currentReview.steps[stepName];
+    try {
+      const stepName = stepNames[stepIndex] as keyof typeof currentReview.steps;
+      const step = currentReview.steps[stepName];
 
-    if (step?.completed) return 'completed';
-    if (stepIndex === currentStep) return 'active';
-    if (stepIndex < currentStep) return 'completed';
-    return 'pending';
+      if (step?.completed) return 'completed';
+      if (stepIndex === currentStep) return 'active';
+      if (stepIndex < currentStep) return 'completed';
+      return 'pending';
+    } catch (error) {
+      console.error('Error determining step status:', error);
+      return 'pending';
+    }
   };
 
   // Calculate completion percentage
@@ -893,13 +899,17 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                   color={completionPercentage === 100 ? 'success' : 'primary'}
                   variant="outlined"
                 />
-                <Chip
-                  label={currentReview.status.replace('_', ' ').toUpperCase()}
-                  color={
-                    currentReview.status === 'completed' ? 'success' : 'default'
-                  }
-                  size="small"
-                />
+                {currentReview && currentReview.status && (
+                  <Chip
+                    label={currentReview.status.replace('_', ' ').toUpperCase()}
+                    color={
+                      currentReview.status === 'completed'
+                        ? 'success'
+                        : 'default'
+                    }
+                    size="small"
+                  />
+                )}
               </Box>
             </Box>
 

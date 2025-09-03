@@ -78,7 +78,9 @@ class OfflineStorageManager {
     type: 'create' | 'update' = 'create'
   ): Promise<string> {
     const db = await this.ensureDB();
-    const id = `offline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `offline_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
 
     const offlineIntervention: OfflineIntervention = {
       id,
@@ -162,7 +164,10 @@ class OfflineStorageManager {
   }
 
   // Get cached data
-  async getCachedData(key: string, maxAge: number = 24 * 60 * 60 * 1000): Promise<any> {
+  async getCachedData(
+    key: string,
+    maxAge: number = 24 * 60 * 60 * 1000
+  ): Promise<any> {
     const db = await this.ensureDB();
 
     return new Promise((resolve, reject) => {
@@ -265,7 +270,7 @@ class OfflineStorageManager {
       let completed = 0;
       const total = storeNames.length;
 
-      storeNames.forEach(storeName => {
+      storeNames.forEach((storeName) => {
         const store = transaction.objectStore(storeName);
         const request = store.clear();
 
@@ -297,13 +302,18 @@ class OfflineStorageManager {
     };
 
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(['offlineInterventions', 'formDrafts', 'offlineCache'], 'readonly');
+      const transaction = db.transaction(
+        ['offlineInterventions', 'formDrafts', 'offlineCache'],
+        'readonly'
+      );
 
       let completed = 0;
       const total = 3;
 
       // Count offline interventions
-      const interventionsStore = transaction.objectStore('offlineInterventions');
+      const interventionsStore = transaction.objectStore(
+        'offlineInterventions'
+      );
       const interventionsRequest = interventionsStore.count();
       interventionsRequest.onsuccess = () => {
         stats.offlineInterventions = interventionsRequest.result;
@@ -330,6 +340,70 @@ class OfflineStorageManager {
       };
 
       transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  // Get sync queue items
+  async getSyncQueue(): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) {
+        console.warn('Database not initialized, returning empty sync queue');
+        resolve([]);
+        return;
+      }
+
+      try {
+        const transaction = this.db.transaction(
+          ['offlineInterventions'],
+          'readonly'
+        );
+        const store = transaction.objectStore('offlineInterventions');
+        const request = store.getAll();
+
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => {
+          console.error('Error getting sync queue:', request.error);
+          reject(request.error);
+        };
+
+        transaction.onerror = () => {
+          console.error(
+            'Transaction error getting sync queue:',
+            transaction.error
+          );
+          reject(transaction.error);
+        };
+      } catch (error) {
+        console.error('Error in getSyncQueue method:', error);
+        resolve([]); // Return empty array on error to prevent crashes
+      }
+    });
+  }
+
+  // Remove item from sync queue
+  async removeSyncQueueItem(id: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) {
+        reject(new Error('Database not initialized'));
+        return;
+      }
+
+      try {
+        const transaction = this.db.transaction(
+          ['offlineInterventions'],
+          'readwrite'
+        );
+        const store = transaction.objectStore('offlineInterventions');
+        const request = store.delete(id);
+
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+
+        transaction.onerror = () => reject(transaction.error);
+      } catch (error) {
+        console.error('Error removing item from sync queue:', error);
+        reject(error);
+      }
     });
   }
 }
@@ -374,7 +448,10 @@ export const offlineUtils = {
 
   // Request background sync
   async requestBackgroundSync(tag: string): Promise<void> {
-    if (!('serviceWorker' in navigator) || !('sync' in window.ServiceWorkerRegistration.prototype)) {
+    if (
+      !('serviceWorker' in navigator) ||
+      !('sync' in window.ServiceWorkerRegistration.prototype)
+    ) {
       console.warn('Background Sync not supported');
       return;
     }
@@ -389,7 +466,9 @@ export const offlineUtils = {
   },
 
   // Show offline notification
-  showOfflineNotification(message: string = 'You are currently offline. Data will sync when connection is restored.'): void {
+  showOfflineNotification(
+    message: string = 'You are currently offline. Data will sync when connection is restored.'
+  ): void {
     // This would integrate with your notification system
     console.log('Offline notification:', message);
   },
