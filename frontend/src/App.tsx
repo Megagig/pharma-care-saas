@@ -44,7 +44,7 @@ import MTRHelp from './pages/MTRHelp';
 
 // Pharmacy Module Components
 import MedicationTherapyReview from './pages/MedicationTherapyReview';
-import ClinicalInterventions from './pages/ClinicalInterventions';
+import ClinicalInterventionsLayout from './components/ClinicalInterventionsLayout';
 import LabResultIntegration from './pages/LabResultIntegration';
 import CommunicationHub from './pages/CommunicationHub';
 import DrugInformationCenter from './pages/DrugInformationCenter';
@@ -304,11 +304,11 @@ function App(): JSX.Element {
                           }
                         />
                         <Route
-                          path="/pharmacy/clinical-interventions"
+                          path="/pharmacy/clinical-interventions/*"
                           element={
                             <ProtectedRoute requiresActiveSubscription>
                               <AppLayout>
-                                <ClinicalInterventions />
+                                <ClinicalInterventionsLayout />
                               </AppLayout>
                             </ProtectedRoute>
                           }
