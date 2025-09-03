@@ -40,6 +40,7 @@ import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import WarningIcon from '@mui/icons-material/Warning';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { usePatients, useDeletePatient } from '../queries/usePatients';
+import { useRBAC } from '../hooks/useRBAC';
 import type {
   Patient,
   PatientSearchParams,
@@ -103,6 +104,9 @@ const GENOTYPES: Genotype[] = ['AA', 'AS', 'SS', 'AC', 'SC', 'CC'];
 
 const Patients = () => {
   const navigate = useNavigate();
+
+  // RBAC permissions
+  const { permissions } = useRBAC();
 
   // Search and filter state
   const [searchParams, setSearchParams] = useState<PatientSearchParams>({
@@ -733,18 +737,20 @@ const Patients = () => {
           <EditIcon sx={{ mr: 1, fontSize: 18 }} />
           Edit Patient Info
         </MenuItem>
-        <MenuItem
-          onClick={handleDeletePatient}
-          sx={{ color: 'error.main' }}
-          disabled={deletePatientMutation.isPending}
-        >
-          {deletePatientMutation.isPending ? (
-            <CircularProgress size={18} sx={{ mr: 1 }} />
-          ) : (
-            <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
-          )}
-          Delete Patient
-        </MenuItem>
+        {permissions.canDelete && (
+          <MenuItem
+            onClick={handleDeletePatient}
+            sx={{ color: 'error.main' }}
+            disabled={deletePatientMutation.isPending}
+          >
+            {deletePatientMutation.isPending ? (
+              <CircularProgress size={18} sx={{ mr: 1 }} />
+            ) : (
+              <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
+            )}
+            Delete Patient
+          </MenuItem>
+        )}
       </Menu>
     </Box>
   );
