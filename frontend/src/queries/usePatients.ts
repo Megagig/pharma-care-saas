@@ -46,9 +46,32 @@ export const useSearchPatients = (searchQuery: string) => {
     queryKey: queryKeys.patients.search(searchQuery),
     queryFn: () => patientService.searchPatients(searchQuery),
     enabled: !!searchQuery && searchQuery.length >= 2, // Only search with 2+ characters
-    select: (data: unknown) => {
-      // Properly handle response structure regardless of format
-      if (data.patients) {
+    select: (data: any) => {
+      console.log('Raw search data:', data);
+
+      // Check for the standard API response format
+      // { success: true, message: string, data: { patients: [...], total, query }, timestamp: string }
+      if (data?.success && data?.data) {
+        if (data.data.patients) {
+          return {
+            data: {
+              results: data.data.patients,
+            },
+            meta: {
+              total: data.data.total || 0,
+              page: 1,
+              limit: data.data.patients?.length || 10,
+              totalPages: 1,
+              hasNext: false,
+              hasPrev: false,
+            },
+          };
+        }
+      }
+
+      // Check for direct response format
+      // { patients: [...], total, query }
+      if (data?.patients) {
         return {
           data: {
             results: data.patients,
@@ -63,7 +86,39 @@ export const useSearchPatients = (searchQuery: string) => {
           },
         };
       }
-      return data.data || data;
+
+      // If we receive an array directly
+      if (Array.isArray(data)) {
+        return {
+          data: {
+            results: data,
+          },
+          meta: {
+            total: data.length,
+            page: 1,
+            limit: data.length,
+            totalPages: 1,
+            hasNext: false,
+            hasPrev: false,
+          },
+        };
+      }
+
+      // Last resort fallback
+      console.warn('Unexpected response structure in patient search:', data);
+      return {
+        data: {
+          results: [],
+        },
+        meta: {
+          total: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        },
+      };
     },
   });
 };

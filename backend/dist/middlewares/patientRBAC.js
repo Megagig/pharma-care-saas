@@ -5,7 +5,7 @@ const PATIENT_MANAGEMENT_PERMISSIONS = {
     owner: ['create', 'read', 'update', 'delete', 'manage'],
     pharmacist: ['create', 'read', 'update', 'delete', 'manage'],
     technician: ['read'],
-    admin: ['read', 'manage'],
+    admin: ['create', 'read', 'update', 'delete', 'manage'],
 };
 const TECHNICIAN_ALLOWED_RESOURCES = ['clinical-assessments', 'vitals', 'labs'];
 const hasPatientManagementPermission = (userRole, action, resource) => {

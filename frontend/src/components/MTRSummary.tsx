@@ -164,17 +164,19 @@ const MTRSummary: React.FC = () => {
       </Box>
 
       {/* Status Chip */}
-      <Box sx={{ mb: 3 }}>
-        <Chip
-          icon={<CheckCircleIcon />}
-          label={`Status: ${currentReview.status
-            .replace('_', ' ')
-            .toUpperCase()}`}
-          color="success"
-          variant="outlined"
-          size="large"
-        />
-      </Box>
+      {currentReview && currentReview.status && (
+        <Box sx={{ mb: 3 }}>
+          <Chip
+            icon={<CheckCircleIcon />}
+            label={`Status: ${currentReview.status
+              .replace('_', ' ')
+              .toUpperCase()}`}
+            color="success"
+            variant="outlined"
+            size="large"
+          />
+        </Box>
+      )}
 
       <Grid container spacing={3}>
         {/* Review Overview */}

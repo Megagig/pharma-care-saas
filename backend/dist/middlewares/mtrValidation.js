@@ -265,7 +265,7 @@ const validateMTRAccess = (req, res, next) => {
             });
             throw new mtrErrors_1.MTRAuthorizationError('Pharmacist credentials required for MTR operations');
         }
-        if (user.licenseStatus && !['active', 'approved'].includes(user.licenseStatus)) {
+        if (user.role !== 'super_admin' && user.licenseStatus && !['active', 'approved'].includes(user.licenseStatus)) {
             logger_1.default.warn('MTR access attempt with inactive license', {
                 userId: user.id,
                 licenseStatus: user.licenseStatus,
