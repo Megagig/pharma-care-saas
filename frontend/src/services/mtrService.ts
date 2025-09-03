@@ -510,8 +510,18 @@ export const mtrService = {
     sessionData: UpdateMTRData
   ): Promise<MTRResponse['data']> {
     try {
-      if (!sessionId?.trim()) {
+      console.log(`Updating MTR session, ID: "${sessionId}"`);
+
+      if (!sessionId) {
+        console.error('MTR update failed: session ID is undefined or null');
         throw new MTRValidationError('Session ID is required');
+      }
+
+      if (!sessionId.trim()) {
+        console.error('MTR update failed: session ID is empty string');
+        throw new MTRValidationError(
+          'Session ID is required (empty string provided)'
+        );
       }
 
       // Validate medications if provided

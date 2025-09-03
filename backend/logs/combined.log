@@ -2278,3 +2278,13 @@
 {"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-03 20:41:34"}
 {"alertId":"5bel88dfp","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 97.69007536943661%, threshold is 85%","metric":"memory_heap_usage_percent","ruleId":"krr0egoay","service":"pharma-care-api","threshold":85,"timestamp":"2025-09-03 20:42:01","value":97.69007536943661}
 {"action":"USER_LOGIN_SUCCESS","auditId":"68b89c4086e2a4edc8fc79f8","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-03 20:51:28","userId":"68b5cb81f1f0f9758b8afadd"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-03 22:47:08"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-03 22:47:11"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-03 22:47:11"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-03 22:47:11"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-03 22:47:11"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-03 22:47:11"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-03 22:47:11"}
+{"alertId":"2wzla8exm","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 95.89744254888542%, threshold is 85%","metric":"memory_heap_usage_percent","ruleId":"cs3cmozp7","service":"pharma-care-api","threshold":85,"timestamp":"2025-09-03 22:47:38","value":95.89744254888542}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68b8b79cdb1097538ebf82ba","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-03 22:48:12","userId":"68b5cb81f1f0f9758b8afadd"}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68b8c3d0db1097538ebf82e3","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-03 23:40:16","userId":"68b5cb81f1f0f9758b8afadd"}

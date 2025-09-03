@@ -442,8 +442,35 @@ export const useMTRStore = create<MTRStore>()(
 
           const response = await mtrService.createMTRSession(createData);
 
+          console.log(
+            'Created review response:',
+            JSON.stringify({
+              id: response.review._id,
+              status: response.review.status,
+            })
+          );
+
+          if (!response.review._id) {
+            console.error(
+              'Error: Created MTR review is missing an ID',
+              response.review
+            );
+            throw new Error('Failed to create MTR review with valid ID');
+          }
+
+          // Create a valid review object with _id guaranteed
+          const validReview = {
+            ...response.review,
+            _id: response.review._id, // Ensure ID is explicitly set
+          };
+
+          console.log(
+            'Setting current review with verified ID:',
+            validReview._id
+          );
+
           set({
-            currentReview: response.review,
+            currentReview: validReview,
             currentStep: 0,
             stepData: {},
             medications: (response.review.medications || []).map(
@@ -495,13 +522,32 @@ export const useMTRStore = create<MTRStore>()(
           const response = await mtrService.getMTRSession(reviewId);
 
           if (response.review) {
+            if (!response.review._id) {
+              console.error(
+                'Error: Loaded MTR review is missing an ID',
+                response.review
+              );
+              throw new Error('Failed to load MTR review with valid ID');
+            }
+
+            // Create a valid review object with _id guaranteed
+            const validReview = {
+              ...response.review,
+              _id: response.review._id, // Ensure ID is explicitly set
+            };
+
+            console.log(
+              'Setting current review with verified ID:',
+              validReview._id
+            );
+
             set({
-              currentReview: response.review,
-              medications: (response.review.medications || []).map(
+              currentReview: validReview,
+              medications: (validReview.medications || []).map(
                 convertMedicationEntryToMTRMedication
               ),
               identifiedProblems: [], // Will be populated from actual DrugTherapyProblem objects
-              therapyPlan: response.review.plan || null,
+              therapyPlan: validReview.plan || null,
               interventions: [], // Will be populated from actual MTRIntervention objects
               followUps: [], // Will be populated from actual MTRFollowUp objects
               // Set current step based on review progress
@@ -561,13 +607,34 @@ export const useMTRStore = create<MTRStore>()(
             // Load the most recent in-progress review
             const inProgressReview = response.results[0];
 
+            if (!inProgressReview._id) {
+              console.error(
+                'Error: In-progress MTR review is missing an ID',
+                inProgressReview
+              );
+              throw new Error(
+                'Failed to load in-progress MTR review with valid ID'
+              );
+            }
+
+            // Create a valid review object with _id guaranteed
+            const validReview = {
+              ...inProgressReview,
+              _id: inProgressReview._id, // Ensure ID is explicitly set
+            };
+
+            console.log(
+              'Setting current in-progress review with verified ID:',
+              validReview._id
+            );
+
             set({
-              currentReview: inProgressReview,
-              medications: (inProgressReview.medications || []).map(
+              currentReview: validReview,
+              medications: (validReview.medications || []).map(
                 convertMedicationEntryToMTRMedication
               ),
               identifiedProblems: [], // Will be populated from actual DrugTherapyProblem objects
-              therapyPlan: inProgressReview.plan || null,
+              therapyPlan: validReview.plan || null,
               interventions: [], // Will be populated from actual MTRIntervention objects
               followUps: [], // Will be populated from actual MTRFollowUp objects
               currentStep: get().getNextStep() || 0,
@@ -608,7 +675,24 @@ export const useMTRStore = create<MTRStore>()(
           interventions,
           followUps,
         } = get();
-        if (!currentReview) return;
+        if (!currentReview) {
+          console.error('Cannot save review - No current review');
+          return;
+        }
+
+        console.log(
+          'Current review before save:',
+          JSON.stringify({
+            id: currentReview._id,
+            status: currentReview.status,
+          })
+        );
+
+        if (!currentReview._id || currentReview._id === '') {
+          setError('saveReview', 'Session ID is missing');
+          console.error('Cannot save review - Session ID is missing');
+          return;
+        }
 
         setLoading('saveReview', true);
         setError('saveReview', null);
@@ -680,14 +764,34 @@ export const useMTRStore = create<MTRStore>()(
         }
       },
 
-      completeReview: async () => {
+      completeReview: async (reviewId?: string) => {
         const { setLoading, setError, currentReview } = get();
-        if (!currentReview) throw new Error('No current review');
+
+        // Use provided reviewId or fallback to currentReview._id
+        const idToUse = reviewId || (currentReview && currentReview._id);
+
+        if (!currentReview) {
+          const error = new Error('No current review');
+          console.error('Complete review failed:', error);
+          throw error;
+        }
+
+        if (!idToUse || idToUse === '') {
+          const error = new Error('Session ID is missing');
+          console.error(
+            'Complete review failed:',
+            error,
+            'Review:',
+            currentReview
+          );
+          throw error;
+        }
 
         setLoading('completeReview', true);
         setError('completeReview', null);
 
         try {
+          console.log('Starting review completion for ID:', idToUse);
           // Import the mtrService
           const { mtrService } = await import('../services/mtrService');
 
@@ -699,7 +803,7 @@ export const useMTRStore = create<MTRStore>()(
           };
 
           const response = await mtrService.updateMTRSession(
-            currentReview._id,
+            idToUse,
             updateData
           );
 
@@ -712,7 +816,7 @@ export const useMTRStore = create<MTRStore>()(
 
           set({ currentReview: completedReview });
 
-          console.log('MTR review completed successfully:', currentReview._id);
+          console.log('MTR review completed successfully:', idToUse);
           return completedReview;
         } catch (error) {
           console.error('Failed to complete MTR review:', error);
@@ -793,11 +897,12 @@ export const useMTRStore = create<MTRStore>()(
             },
           };
 
+          // Ensure ID is preserved explicitly
           const updatedReview = {
             ...currentReview,
+            _id: currentReview._id, // Explicitly preserve the ID
             steps: updatedSteps,
           };
-
           set({
             currentReview: updatedReview,
             stepData: { ...get().stepData, [stepName]: data },
