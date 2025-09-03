@@ -39,7 +39,7 @@ const PATIENT_MANAGEMENT_PERMISSIONS: Record<
   owner: ['create', 'read', 'update', 'delete', 'manage'],
   pharmacist: ['create', 'read', 'update', 'delete', 'manage'],
   technician: ['read'], // Technicians can only view and add specific data
-  admin: ['read', 'manage'], // Admins can view across tenants but limited modifications
+  admin: ['create', 'read', 'update', 'delete', 'manage'], // Admins have full access across tenants
 };
 
 // Special permissions for technicians - they can create/update these specific data types
