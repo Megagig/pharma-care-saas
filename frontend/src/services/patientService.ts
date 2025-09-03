@@ -66,9 +66,9 @@ class PatientService {
       console.error('API Request failed:', error);
       throw new Error(
         error.response?.data?.error?.message ||
-          error.response?.data?.message ||
-          error.message ||
-          'An error occurred'
+        error.response?.data?.message ||
+        error.message ||
+        'An error occurred'
       );
     }
   }
@@ -284,9 +284,8 @@ class PatientService {
       // Add defensive URL encoding for patientId
       const encodedPatientId = encodeURIComponent(patientId);
       const queryString = searchParams.toString();
-      const url = `/patients/${encodedPatientId}/conditions${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/patients/${encodedPatientId}/conditions${queryString ? `?${queryString}` : ''
+        }`;
 
       console.log('Fetching conditions with URL:', url);
       return await this.makeRequest<PaginatedResponse<Condition>>(url);
@@ -715,6 +714,69 @@ class PatientService {
   // =============================================
   // UTILITY METHODS
   // =============================================
+
+  // =============================================
+  // CLINICAL INTERVENTION INTEGRATION
+  // =============================================
+
+  /**
+   * Get patient interventions
+   */
+  async getPatientInterventions(
+    patientId: string,
+    params: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      category?: string;
+    } = {}
+  ): Promise<PaginatedResponse<any>> {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<PaginatedResponse<any>>(
+      `/patients/${patientId}/interventions?${searchParams.toString()}`
+    );
+  }
+
+  /**
+   * Search patients with intervention context
+   */
+  async searchPatientsWithInterventions(
+    query: string,
+    limit = 10
+  ): Promise<ApiResponse<{
+    patients: Array<{
+      _id: string;
+      firstName: string;
+      lastName: string;
+      mrn: string;
+      displayName: string;
+      age?: number;
+      interventionCount: number;
+      activeInterventionCount: number;
+      lastInterventionDate?: string;
+    }>;
+  }>> {
+    return this.makeRequest<ApiResponse<{
+      patients: Array<{
+        _id: string;
+        firstName: string;
+        lastName: string;
+        mrn: string;
+        displayName: string;
+        age?: number;
+        interventionCount: number;
+        activeInterventionCount: number;
+        lastInterventionDate?: string;
+      }>;
+    }>>(`/patients/search-with-interventions?q=${encodeURIComponent(query)}&limit=${limit}`);
+  }
 
   /**
    * Upload file and return URL (for attachments, etc.)

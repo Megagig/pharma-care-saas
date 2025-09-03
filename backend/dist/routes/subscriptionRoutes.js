@@ -9,6 +9,8 @@ const auth_1 = require("../middlewares/auth");
 const router = express_1.default.Router();
 router.get('/plans', subscriptionController_1.subscriptionController.getAvailablePlans.bind(subscriptionController_1.subscriptionController));
 router.get('/', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.getCurrentSubscription.bind(subscriptionController_1.subscriptionController));
+router.get('/status', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.getSubscriptionStatus.bind(subscriptionController_1.subscriptionController));
+router.get('/verify-payment', subscriptionController_1.subscriptionController.verifyPaymentByReference.bind(subscriptionController_1.subscriptionController));
 router.get('/analytics', auth_1.auth, subscriptionController_1.subscriptionController.getSubscriptionAnalytics.bind(subscriptionController_1.subscriptionController));
 router.post('/checkout', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.createCheckoutSession.bind(subscriptionController_1.subscriptionController));
 router.post('/success', auth_1.authOptionalSubscription, subscriptionController_1.subscriptionController.handleSuccessfulPayment.bind(subscriptionController_1.subscriptionController));

@@ -77,6 +77,7 @@ export interface IPatient extends Document {
 
   // Flags
   hasActiveDTP?: boolean;
+  hasActiveInterventions?: boolean;
   isDeleted: boolean;
   createdBy: mongoose.Types.ObjectId;
   updatedBy?: mongoose.Types.ObjectId;
@@ -87,6 +88,9 @@ export interface IPatient extends Document {
   getAge(): number;
   getDisplayName(): string;
   updateLatestVitals(vitals: IPatientVitals): void;
+  getInterventionCount(): Promise<number>;
+  getActiveInterventionCount(): Promise<number>;
+  updateInterventionFlags(): Promise<void>;
 }
 
 const patientSchema = new Schema(
@@ -305,6 +309,10 @@ const patientSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    hasActiveInterventions: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -379,6 +387,29 @@ patientSchema.methods.updateLatestVitals = function (
     ...vitals,
     recordedAt: new Date(),
   };
+};
+
+patientSchema.methods.getInterventionCount = async function (this: IPatient): Promise<number> {
+  const ClinicalIntervention = mongoose.model('ClinicalIntervention');
+  return await ClinicalIntervention.countDocuments({
+    patientId: this._id,
+    isDeleted: false,
+  });
+};
+
+patientSchema.methods.getActiveInterventionCount = async function (this: IPatient): Promise<number> {
+  const ClinicalIntervention = mongoose.model('ClinicalIntervention');
+  return await ClinicalIntervention.countDocuments({
+    patientId: this._id,
+    status: { $in: ['identified', 'planning', 'in_progress', 'implemented'] },
+    isDeleted: false,
+  });
+};
+
+patientSchema.methods.updateInterventionFlags = async function (this: IPatient): Promise<void> {
+  const activeCount = await this.getActiveInterventionCount();
+  this.hasActiveInterventions = activeCount > 0;
+  await this.save();
 };
 
 // Pre-save middleware to validate and set computed fields

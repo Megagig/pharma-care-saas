@@ -241,6 +241,10 @@ const patientSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false,
     },
+    hasActiveInterventions: {
+        type: Boolean,
+        default: false,
+    },
 }, {
     timestamps: true,
     toJSON: { virtuals: true },
@@ -295,6 +299,26 @@ patientSchema.methods.updateLatestVitals = function (vitals) {
         ...vitals,
         recordedAt: new Date(),
     };
+};
+patientSchema.methods.getInterventionCount = async function () {
+    const ClinicalIntervention = mongoose_1.default.model('ClinicalIntervention');
+    return await ClinicalIntervention.countDocuments({
+        patientId: this._id,
+        isDeleted: false,
+    });
+};
+patientSchema.methods.getActiveInterventionCount = async function () {
+    const ClinicalIntervention = mongoose_1.default.model('ClinicalIntervention');
+    return await ClinicalIntervention.countDocuments({
+        patientId: this._id,
+        status: { $in: ['identified', 'planning', 'in_progress', 'implemented'] },
+        isDeleted: false,
+    });
+};
+patientSchema.methods.updateInterventionFlags = async function () {
+    const activeCount = await this.getActiveInterventionCount();
+    this.hasActiveInterventions = activeCount > 0;
+    await this.save();
 };
 patientSchema.pre('save', function () {
     if (!this.dob && !this.age) {

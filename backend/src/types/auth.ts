@@ -58,6 +58,7 @@ export interface PlanLimits {
     locations: number | null;
     storage: number | null;
     apiCalls: number | null;
+    interventions?: number | null;
 }
 
 export interface AuthRequest extends Request {
@@ -69,6 +70,7 @@ export interface AuthRequest extends Request {
     workspace?: IWorkplace | null;
     workspaceContext?: WorkspaceContext;
     usageInfo?: UsageLimitResult | { [resource: string]: UsageLimitResult };
+    interventionData?: any; // For storing intervention data in middleware
 }
 
 export interface UsageLimitResult {

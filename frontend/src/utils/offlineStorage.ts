@@ -1,65 +1,44 @@
 /**
- * Offline storage utilities for MTR functionality
- * Provides local storage and IndexedDB support for critical MTR data
+ * Offline Storage Utility for Clinical Interventions
+ * Handles caching of intervention forms and data for offline use
  */
 
-import { MTRMedication } from '../stores/mtrStore';
-import type { Patient } from '../types/patientManagement';
-import type {
-  DrugTherapyProblem,
-  TherapyPlan,
-  MTRIntervention,
-  MTRFollowUp,
-} from '../types/mtr';
-
-// IndexedDB configuration
-const DB_NAME = 'MTROfflineDB';
-const DB_VERSION = 1;
-
-// Store names
-const STORES = {
-  PATIENTS: 'patients',
-  MEDICATIONS: 'medications',
-  PROBLEMS: 'problems',
-  PLANS: 'therapyPlans',
-  INTERVENTIONS: 'interventions',
-  FOLLOWUPS: 'followUps',
-  SYNC_QUEUE: 'syncQueue',
-  DRAFTS: 'drafts',
-} as const;
-
-interface SyncQueueItem {
+interface OfflineIntervention {
   id: string;
-  type: 'create' | 'update' | 'delete';
-  entity: keyof typeof STORES;
-  data: Record<string, unknown>;
+  data: any;
+  authToken: string;
   timestamp: number;
-  retryCount: number;
+  type: 'create' | 'update';
 }
 
-interface MTRDraft {
-  id: string;
-  type: 'medication' | 'problem' | 'plan' | 'intervention' | 'followup';
-  data: Record<string, unknown>;
-  timestamp: number;
-  patientId?: string;
-  reviewId?: string;
+interface OfflineCache {
+  patients: any[];
+  strategies: any[];
+  lastUpdated: number;
 }
 
-class OfflineStorage {
+class OfflineStorageManager {
+  private dbName = 'ClinicalInterventionsDB';
+  private dbVersion = 1;
   private db: IDBDatabase | null = null;
-  private isInitialized = false;
 
-  async initialize(): Promise<void> {
-    if (this.isInitialized) return;
+  constructor() {
+    this.initDB();
+  }
 
+  // Initialize IndexedDB
+  private async initDB(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      const request = indexedDB.open(this.dbName, this.dbVersion);
 
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        console.error('Failed to open IndexedDB:', request.error);
+        reject(request.error);
+      };
+
       request.onsuccess = () => {
         this.db = request.result;
-        this.isInitialized = true;
+        console.log('IndexedDB initialized successfully');
         resolve();
       };
 
@@ -67,389 +46,388 @@ class OfflineStorage {
         const db = (event.target as IDBOpenDBRequest).result;
 
         // Create object stores
-        if (!db.objectStoreNames.contains(STORES.PATIENTS)) {
-          const patientsStore = db.createObjectStore(STORES.PATIENTS, {
-            keyPath: '_id',
-          });
-          patientsStore.createIndex('mrn', 'mrn', { unique: false });
-          patientsStore.createIndex('name', ['firstName', 'lastName'], {
-            unique: false,
-          });
+        if (!db.objectStoreNames.contains('offlineInterventions')) {
+          db.createObjectStore('offlineInterventions', { keyPath: 'id' });
         }
 
-        if (!db.objectStoreNames.contains(STORES.MEDICATIONS)) {
-          const medicationsStore = db.createObjectStore(STORES.MEDICATIONS, {
-            keyPath: 'id',
-          });
-          medicationsStore.createIndex('patientId', 'patientId', {
-            unique: false,
-          });
+        if (!db.objectStoreNames.contains('offlineCache')) {
+          db.createObjectStore('offlineCache', { keyPath: 'key' });
         }
 
-        if (!db.objectStoreNames.contains(STORES.PROBLEMS)) {
-          const problemsStore = db.createObjectStore(STORES.PROBLEMS, {
-            keyPath: '_id',
-          });
-          problemsStore.createIndex('patientId', 'patientId', {
-            unique: false,
-          });
-          problemsStore.createIndex('reviewId', 'reviewId', { unique: false });
+        if (!db.objectStoreNames.contains('formDrafts')) {
+          db.createObjectStore('formDrafts', { keyPath: 'id' });
         }
 
-        if (!db.objectStoreNames.contains(STORES.PLANS)) {
-          const plansStore = db.createObjectStore(STORES.PLANS, {
-            keyPath: 'id',
-          });
-          plansStore.createIndex('patientId', 'patientId', { unique: false });
-        }
-
-        if (!db.objectStoreNames.contains(STORES.INTERVENTIONS)) {
-          const interventionsStore = db.createObjectStore(
-            STORES.INTERVENTIONS,
-            { keyPath: '_id' }
-          );
-          interventionsStore.createIndex('reviewId', 'reviewId', {
-            unique: false,
-          });
-        }
-
-        if (!db.objectStoreNames.contains(STORES.FOLLOWUPS)) {
-          const followupsStore = db.createObjectStore(STORES.FOLLOWUPS, {
-            keyPath: '_id',
-          });
-          followupsStore.createIndex('reviewId', 'reviewId', { unique: false });
-        }
-
-        if (!db.objectStoreNames.contains(STORES.SYNC_QUEUE)) {
-          db.createObjectStore(STORES.SYNC_QUEUE, { keyPath: 'id' });
-        }
-
-        if (!db.objectStoreNames.contains(STORES.DRAFTS)) {
-          const draftsStore = db.createObjectStore(STORES.DRAFTS, {
-            keyPath: 'id',
-          });
-          draftsStore.createIndex('type', 'type', { unique: false });
-          draftsStore.createIndex('patientId', 'patientId', { unique: false });
-        }
+        console.log('IndexedDB object stores created');
       };
     });
   }
 
-  private async ensureInitialized(): Promise<void> {
-    if (!this.isInitialized) {
-      await this.initialize();
+  // Ensure DB is initialized
+  private async ensureDB(): Promise<IDBDatabase> {
+    if (!this.db) {
+      await this.initDB();
     }
+    return this.db!;
   }
 
-  // Generic CRUD operations
-  async save<T>(storeName: string, data: T): Promise<void> {
-    await this.ensureInitialized();
-    if (!this.db) throw new Error('Database not initialized');
+  // Store intervention for offline sync
+  async storeOfflineIntervention(
+    interventionData: any,
+    authToken: string,
+    type: 'create' | 'update' = 'create'
+  ): Promise<string> {
+    const db = await this.ensureDB();
+    const id = `offline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    const offlineIntervention: OfflineIntervention = {
+      id,
+      data: interventionData,
+      authToken,
+      timestamp: Date.now(),
+      type,
+    };
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([storeName], 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.put(data);
+      const transaction = db.transaction(['offlineInterventions'], 'readwrite');
+      const store = transaction.objectStore('offlineInterventions');
+      const request = store.add(offlineIntervention);
 
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve();
+      request.onsuccess = () => {
+        console.log('Offline intervention stored:', id);
+        resolve(id);
+      };
+
+      request.onerror = () => {
+        console.error('Failed to store offline intervention:', request.error);
+        reject(request.error);
+      };
     });
   }
 
-  async get<T>(storeName: string, id: string): Promise<T | null> {
-    await this.ensureInitialized();
-    if (!this.db) throw new Error('Database not initialized');
+  // Get all offline interventions
+  async getOfflineInterventions(): Promise<OfflineIntervention[]> {
+    const db = await this.ensureDB();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([storeName], 'readonly');
-      const store = transaction.objectStore(storeName);
-      const request = store.get(id);
-
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result || null);
-    });
-  }
-
-  async getAll<T>(storeName: string): Promise<T[]> {
-    await this.ensureInitialized();
-    if (!this.db) throw new Error('Database not initialized');
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([storeName], 'readonly');
-      const store = transaction.objectStore(storeName);
+      const transaction = db.transaction(['offlineInterventions'], 'readonly');
+      const store = transaction.objectStore('offlineInterventions');
       const request = store.getAll();
 
+      request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result || []);
     });
   }
 
-  async delete(storeName: string, id: string): Promise<void> {
-    await this.ensureInitialized();
-    if (!this.db) throw new Error('Database not initialized');
+  // Remove offline intervention after successful sync
+  async removeOfflineIntervention(id: string): Promise<void> {
+    const db = await this.ensureDB();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([storeName], 'readwrite');
-      const store = transaction.objectStore(storeName);
+      const transaction = db.transaction(['offlineInterventions'], 'readwrite');
+      const store = transaction.objectStore('offlineInterventions');
       const request = store.delete(id);
 
+      request.onsuccess = () => {
+        console.log('Offline intervention removed:', id);
+        resolve();
+      };
+
       request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve();
     });
   }
 
-  // Patient operations
-  async savePatient(patient: Patient): Promise<void> {
-    await this.save(STORES.PATIENTS, patient);
-  }
+  // Cache frequently used data for offline access
+  async cacheData(key: string, data: any): Promise<void> {
+    const db = await this.ensureDB();
 
-  async getPatient(id: string): Promise<Patient | null> {
-    return this.get<Patient>(STORES.PATIENTS, id);
-  }
-
-  async getAllPatients(): Promise<Patient[]> {
-    return this.getAll<Patient>(STORES.PATIENTS);
-  }
-
-  async searchPatients(query: string): Promise<Patient[]> {
-    const patients = await this.getAllPatients();
-    const lowerQuery = query.toLowerCase();
-
-    return patients.filter(
-      (patient) =>
-        patient.firstName.toLowerCase().includes(lowerQuery) ||
-        patient.lastName.toLowerCase().includes(lowerQuery) ||
-        patient.mrn.toLowerCase().includes(lowerQuery) ||
-        (patient.phone && patient.phone.includes(query))
-    );
-  }
-
-  // Medication operations
-  async saveMedication(medication: MTRMedication): Promise<void> {
-    await this.save(STORES.MEDICATIONS, medication);
-  }
-
-  async getMedicationsByPatient(patientId: string): Promise<MTRMedication[]> {
-    await this.ensureInitialized();
-    if (!this.db) return [];
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(
-        [STORES.MEDICATIONS],
-        'readonly'
-      );
-      const store = transaction.objectStore(STORES.MEDICATIONS);
-      const index = store.index('patientId');
-      const request = index.getAll(patientId);
-
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result || []);
-    });
-  }
-
-  // Problem operations
-  async saveProblem(problem: DrugTherapyProblem): Promise<void> {
-    await this.save(STORES.PROBLEMS, problem);
-  }
-
-  async getProblemsByReview(reviewId: string): Promise<DrugTherapyProblem[]> {
-    await this.ensureInitialized();
-    if (!this.db) return [];
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([STORES.PROBLEMS], 'readonly');
-      const store = transaction.objectStore(STORES.PROBLEMS);
-      const index = store.index('reviewId');
-      const request = index.getAll(reviewId);
-
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result || []);
-    });
-  }
-
-  // Therapy plan operations
-  async saveTherapyPlan(plan: TherapyPlan): Promise<void> {
-    await this.save(STORES.PLANS, plan);
-  }
-
-  async getTherapyPlan(id: string): Promise<TherapyPlan | null> {
-    return this.get<TherapyPlan>(STORES.PLANS, id);
-  }
-
-  // Intervention operations
-  async saveIntervention(intervention: MTRIntervention): Promise<void> {
-    await this.save(STORES.INTERVENTIONS, intervention);
-  }
-
-  async getInterventionsByReview(reviewId: string): Promise<MTRIntervention[]> {
-    await this.ensureInitialized();
-    if (!this.db) return [];
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(
-        [STORES.INTERVENTIONS],
-        'readonly'
-      );
-      const store = transaction.objectStore(STORES.INTERVENTIONS);
-      const index = store.index('reviewId');
-      const request = index.getAll(reviewId);
-
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result || []);
-    });
-  }
-
-  // Follow-up operations
-  async saveFollowUp(followUp: MTRFollowUp): Promise<void> {
-    await this.save(STORES.FOLLOWUPS, followUp);
-  }
-
-  async getFollowUpsByReview(reviewId: string): Promise<MTRFollowUp[]> {
-    await this.ensureInitialized();
-    if (!this.db) return [];
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([STORES.FOLLOWUPS], 'readonly');
-      const store = transaction.objectStore(STORES.FOLLOWUPS);
-      const index = store.index('reviewId');
-      const request = index.getAll(reviewId);
-
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result || []);
-    });
-  }
-
-  // Draft operations for auto-save
-  async saveDraft(draft: MTRDraft): Promise<void> {
-    await this.save(STORES.DRAFTS, draft);
-  }
-
-  async getDraft(id: string): Promise<MTRDraft | null> {
-    return this.get<MTRDraft>(STORES.DRAFTS, id);
-  }
-
-  async getDraftsByType(type: MTRDraft['type']): Promise<MTRDraft[]> {
-    await this.ensureInitialized();
-    if (!this.db) return [];
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([STORES.DRAFTS], 'readonly');
-      const store = transaction.objectStore(STORES.DRAFTS);
-      const index = store.index('type');
-      const request = index.getAll(type);
-
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result || []);
-    });
-  }
-
-  async deleteDraft(id: string): Promise<void> {
-    await this.delete(STORES.DRAFTS, id);
-  }
-
-  // Sync queue operations
-  async addToSyncQueue(
-    item: Omit<SyncQueueItem, 'id' | 'timestamp' | 'retryCount'>
-  ): Promise<void> {
-    const syncItem: SyncQueueItem = {
-      ...item,
-      id: `${item.entity}_${item.type}_${Date.now()}_${Math.random()}`,
+    const cacheEntry = {
+      key,
+      data,
       timestamp: Date.now(),
-      retryCount: 0,
     };
-    await this.save(STORES.SYNC_QUEUE, syncItem);
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['offlineCache'], 'readwrite');
+      const store = transaction.objectStore('offlineCache');
+      const request = store.put(cacheEntry);
+
+      request.onsuccess = () => {
+        console.log('Data cached:', key);
+        resolve();
+      };
+
+      request.onerror = () => reject(request.error);
+    });
   }
 
-  async getSyncQueue(): Promise<SyncQueueItem[]> {
-    return this.getAll<SyncQueueItem>(STORES.SYNC_QUEUE);
+  // Get cached data
+  async getCachedData(key: string, maxAge: number = 24 * 60 * 60 * 1000): Promise<any> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['offlineCache'], 'readonly');
+      const store = transaction.objectStore('offlineCache');
+      const request = store.get(key);
+
+      request.onsuccess = () => {
+        const result = request.result;
+
+        if (!result) {
+          resolve(null);
+          return;
+        }
+
+        // Check if data is still fresh
+        const age = Date.now() - result.timestamp;
+        if (age > maxAge) {
+          console.log('Cached data expired:', key);
+          resolve(null);
+          return;
+        }
+
+        resolve(result.data);
+      };
+
+      request.onerror = () => reject(request.error);
+    });
   }
 
-  async removeSyncQueueItem(id: string): Promise<void> {
-    await this.delete(STORES.SYNC_QUEUE, id);
+  // Save form draft
+  async saveFormDraft(formId: string, formData: any): Promise<void> {
+    const db = await this.ensureDB();
+
+    const draft = {
+      id: formId,
+      data: formData,
+      timestamp: Date.now(),
+    };
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['formDrafts'], 'readwrite');
+      const store = transaction.objectStore('formDrafts');
+      const request = store.put(draft);
+
+      request.onsuccess = () => {
+        console.log('Form draft saved:', formId);
+        resolve();
+      };
+
+      request.onerror = () => reject(request.error);
+    });
   }
 
-  async updateSyncQueueItem(item: SyncQueueItem): Promise<void> {
-    await this.save(STORES.SYNC_QUEUE, item);
+  // Get form draft
+  async getFormDraft(formId: string): Promise<any> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['formDrafts'], 'readonly');
+      const store = transaction.objectStore('formDrafts');
+      const request = store.get(formId);
+
+      request.onsuccess = () => {
+        const result = request.result;
+        resolve(result ? result.data : null);
+      };
+
+      request.onerror = () => reject(request.error);
+    });
   }
 
-  // Utility methods
+  // Remove form draft
+  async removeFormDraft(formId: string): Promise<void> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['formDrafts'], 'readwrite');
+      const store = transaction.objectStore('formDrafts');
+      const request = store.delete(formId);
+
+      request.onsuccess = () => {
+        console.log('Form draft removed:', formId);
+        resolve();
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  // Clear all offline data
   async clearAllData(): Promise<void> {
-    await this.ensureInitialized();
-    if (!this.db) return;
+    const db = await this.ensureDB();
 
-    const storeNames = Object.values(STORES);
-    const transaction = this.db.transaction(storeNames, 'readwrite');
+    const storeNames = ['offlineInterventions', 'offlineCache', 'formDrafts'];
 
-    await Promise.all(
-      storeNames.map((storeName) => {
-        return new Promise<void>((resolve, reject) => {
-          const store = transaction.objectStore(storeName);
-          const request = store.clear();
-          request.onerror = () => reject(request.error);
-          request.onsuccess = () => resolve();
-        });
-      })
-    );
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeNames, 'readwrite');
+
+      let completed = 0;
+      const total = storeNames.length;
+
+      storeNames.forEach(storeName => {
+        const store = transaction.objectStore(storeName);
+        const request = store.clear();
+
+        request.onsuccess = () => {
+          completed++;
+          if (completed === total) {
+            console.log('All offline data cleared');
+            resolve();
+          }
+        };
+
+        request.onerror = () => reject(request.error);
+      });
+    });
   }
 
-  async getStorageSize(): Promise<{ [key: string]: number }> {
-    await this.ensureInitialized();
-    if (!this.db) return {};
+  // Get storage usage statistics
+  async getStorageStats(): Promise<{
+    offlineInterventions: number;
+    formDrafts: number;
+    cacheEntries: number;
+  }> {
+    const db = await this.ensureDB();
 
-    const sizes: { [key: string]: number } = {};
-    const storeNames = Object.values(STORES);
-
-    for (const storeName of storeNames) {
-      const data = await this.getAll(storeName);
-      sizes[storeName] = JSON.stringify(data).length;
-    }
-
-    return sizes;
-  }
-
-  // Check if we're offline
-  isOffline(): boolean {
-    return !navigator.onLine;
-  }
-
-  // Auto-save functionality
-  async autoSaveDraft(
-    type: MTRDraft['type'],
-    data: unknown,
-    patientId?: string,
-    reviewId?: string
-  ): Promise<void> {
-    const draft: MTRDraft = {
-      id: `${type}_${patientId || reviewId || 'temp'}_${Date.now()}`,
-      type,
-      data: data as Record<string, unknown>,
-      timestamp: Date.now(),
-      patientId,
-      reviewId,
+    const stats = {
+      offlineInterventions: 0,
+      formDrafts: 0,
+      cacheEntries: 0,
     };
-    await this.saveDraft(draft);
-  }
 
-  // Cleanup old drafts (older than 7 days)
-  async cleanupOldDrafts(): Promise<void> {
-    const drafts = await this.getAll<MTRDraft>(STORES.DRAFTS);
-    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['offlineInterventions', 'formDrafts', 'offlineCache'], 'readonly');
 
-    for (const draft of drafts) {
-      if (draft.timestamp < weekAgo) {
-        await this.deleteDraft(draft.id);
-      }
-    }
+      let completed = 0;
+      const total = 3;
+
+      // Count offline interventions
+      const interventionsStore = transaction.objectStore('offlineInterventions');
+      const interventionsRequest = interventionsStore.count();
+      interventionsRequest.onsuccess = () => {
+        stats.offlineInterventions = interventionsRequest.result;
+        completed++;
+        if (completed === total) resolve(stats);
+      };
+
+      // Count form drafts
+      const draftsStore = transaction.objectStore('formDrafts');
+      const draftsRequest = draftsStore.count();
+      draftsRequest.onsuccess = () => {
+        stats.formDrafts = draftsRequest.result;
+        completed++;
+        if (completed === total) resolve(stats);
+      };
+
+      // Count cache entries
+      const cacheStore = transaction.objectStore('offlineCache');
+      const cacheRequest = cacheStore.count();
+      cacheRequest.onsuccess = () => {
+        stats.cacheEntries = cacheRequest.result;
+        completed++;
+        if (completed === total) resolve(stats);
+      };
+
+      transaction.onerror = () => reject(transaction.error);
+    });
   }
 }
 
-// Create singleton instance
-export const offlineStorage = new OfflineStorage();
+// Singleton instance
+export const offlineStorage = new OfflineStorageManager();
 
-// Initialize on module load
-offlineStorage.initialize().catch(console.error);
+// Utility functions for common operations
+export const offlineUtils = {
+  // Check if browser supports offline features
+  isOfflineSupported(): boolean {
+    return 'serviceWorker' in navigator && 'indexedDB' in window;
+  },
 
-// Note: localStorage utilities removed in favor of server-side state management
-// with httpOnly cookies for authentication and IndexedDB for offline capabilities
+  // Check if currently online
+  isOnline(): boolean {
+    return navigator.onLine;
+  },
+
+  // Register service worker
+  async registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+    if (!('serviceWorker' in navigator)) {
+      console.warn('Service Worker not supported');
+      return null;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('Service Worker registered successfully');
+
+      // Listen for updates
+      registration.addEventListener('updatefound', () => {
+        console.log('Service Worker update found');
+      });
+
+      return registration;
+    } catch (error) {
+      console.error('Service Worker registration failed:', error);
+      return null;
+    }
+  },
+
+  // Request background sync
+  async requestBackgroundSync(tag: string): Promise<void> {
+    if (!('serviceWorker' in navigator) || !('sync' in window.ServiceWorkerRegistration.prototype)) {
+      console.warn('Background Sync not supported');
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.sync.register(tag);
+      console.log('Background sync registered:', tag);
+    } catch (error) {
+      console.error('Background sync registration failed:', error);
+    }
+  },
+
+  // Show offline notification
+  showOfflineNotification(message: string = 'You are currently offline. Data will sync when connection is restored.'): void {
+    // This would integrate with your notification system
+    console.log('Offline notification:', message);
+  },
+
+  // Cache essential data for offline use
+  async cacheEssentialData(): Promise<void> {
+    try {
+      // Cache intervention categories and strategies
+      const categories = Object.keys({
+        drug_therapy_problem: 'Drug Therapy Problem',
+        adverse_drug_reaction: 'Adverse Drug Reaction',
+        medication_nonadherence: 'Medication Non-adherence',
+        drug_interaction: 'Drug Interaction',
+        dosing_issue: 'Dosing Issue',
+        contraindication: 'Contraindication',
+        other: 'Other',
+      });
+
+      await offlineStorage.cacheData('intervention_categories', categories);
+
+      const strategies = [
+        'medication_review',
+        'dose_adjustment',
+        'alternative_therapy',
+        'discontinuation',
+        'additional_monitoring',
+        'patient_counseling',
+        'physician_consultation',
+        'custom',
+      ];
+
+      await offlineStorage.cacheData('intervention_strategies', strategies);
+
+      console.log('Essential data cached for offline use');
+    } catch (error) {
+      console.error('Failed to cache essential data:', error);
+    }
+  },
+};
 
 export default offlineStorage;
