@@ -141,7 +141,7 @@ const Sidebar = () => {
     },
     {
       name: 'Clinical Interventions',
-      path: '/pharmacy/clinical-interventions',
+      path: '/pharmacy/clinical-interventions/dashboard',
       icon: MedicalServicesIcon,
       show: true,
     },

@@ -1,8 +1,8 @@
 import React from 'react';
-import ClinicalInterventionDashboard from '../components/ClinicalInterventionDashboard';
+import ClinicalInterventionsLayout from '../components/ClinicalInterventionsLayout';
 
 const ClinicalInterventions: React.FC = () => {
-  return <ClinicalInterventionDashboard />;
+  return <ClinicalInterventionsLayout />;
 };
 
 export default ClinicalInterventions;

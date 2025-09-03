@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -23,19 +23,15 @@ import {
   MenuItem,
   TextField,
   Button,
-  Grid,
   Tooltip,
 } from '@mui/material';
-import {
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Download as DownloadIcon,
-  Visibility as ViewIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
-  Info as InfoIcon,
-  CheckCircle as CheckCircleIcon,
-} from '@mui/icons-material';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import Download from '@mui/icons-material/Download';
+import Warning from '@mui/icons-material/Warning';
+import Error from '@mui/icons-material/Error';
+import Info from '@mui/icons-material/Info';
+import CheckCircle from '@mui/icons-material/CheckCircle';
 import { format, parseISO } from 'date-fns';
 import { clinicalInterventionService } from '../services/clinicalInterventionService';
 
@@ -48,16 +44,18 @@ interface AuditLog {
     lastName: string;
     email: string;
   };
-  details: any;
+  details: Record<string, unknown>;
   riskLevel: 'low' | 'medium' | 'high' | 'critical';
   complianceCategory: string;
   changedFields?: string[];
-  oldValues?: any;
-  newValues?: any;
+  ipAddress?: string;
+  userAgent?: string;
+  oldValues?: Record<string, unknown>;
+  newValues?: Record<string, unknown>;
 }
 
 interface AuditTrailProps {
-  interventionId: string;
+  interventionId?: string;
   interventionNumber?: string;
 }
 
@@ -71,7 +69,6 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
   const [summary, setSummary] = useState<{
     totalActions: number;
     uniqueUsers: number;
@@ -86,16 +83,17 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
 
   const limit = 20;
 
-  useEffect(() => {
-    fetchAuditTrail();
-  }, [interventionId, page, startDate, endDate, riskLevelFilter]);
-
-  const fetchAuditTrail = async () => {
+  const fetchAuditTrail = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const options: any = {
+      const options: {
+        page: number;
+        limit: number;
+        startDate?: string;
+        endDate?: string;
+      } = {
         page,
         limit,
       };
@@ -105,24 +103,32 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
 
       const response =
         await clinicalInterventionService.getInterventionAuditTrail(
-          interventionId,
+          interventionId || '',
           options
         );
 
       if (response.success && response.data) {
-        setAuditLogs(response.data.logs);
-        setTotal(response.data.total);
+        setAuditLogs(response.data.logs as AuditLog[]);
         setTotalPages(Math.ceil(response.data.total / limit));
         setSummary(response.data.summary);
       } else {
         setError(response.message || 'Failed to fetch audit trail');
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while fetching audit trail');
+    } catch (error: unknown) {
+      const err = error as Error;
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'An error occurred while fetching audit trail'
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }, [interventionId, page, startDate, endDate, limit]);
+
+  useEffect(() => {
+    fetchAuditTrail();
+  }, [fetchAuditTrail]);
 
   const handleExportAudit = async () => {
     try {
@@ -132,7 +138,7 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
           startDate ||
           format(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
         endDate: endDate || format(new Date(), 'yyyy-MM-dd'),
-        interventionIds: [interventionId],
+        interventionIds: interventionId ? [interventionId] : [],
         includeDetails: true,
       };
 
@@ -149,8 +155,11 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setError(err.message || 'Failed to export audit data');
+    } catch (error: unknown) {
+      const err = error as Error;
+      setError(
+        err instanceof Error ? err.message : 'Failed to export audit data'
+      );
     }
   };
 
@@ -181,14 +190,14 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
   const getRiskLevelIcon = (riskLevel: string) => {
     switch (riskLevel) {
       case 'critical':
-        return <ErrorIcon />;
+        return <Error />;
       case 'high':
-        return <WarningIcon />;
+        return <Warning />;
       case 'medium':
-        return <InfoIcon />;
+        return <Info />;
       case 'low':
       default:
-        return <CheckCircleIcon />;
+        return <CheckCircle />;
     }
   };
 
@@ -228,7 +237,7 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
             </Typography>
             <Button
               variant="outlined"
-              startIcon={<DownloadIcon />}
+              startIcon={<Download />}
               onClick={handleExportAudit}
               size="small"
             >
@@ -238,117 +247,123 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
 
           {/* Summary Cards */}
           {summary && (
-            <Grid container spacing={2} mb={3}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography color="textSecondary" gutterBottom>
-                      Total Actions
-                    </Typography>
-                    <Typography variant="h4">{summary.totalActions}</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography color="textSecondary" gutterBottom>
-                      Unique Users
-                    </Typography>
-                    <Typography variant="h4">{summary.uniqueUsers}</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography color="textSecondary" gutterBottom>
-                      Risk Activities
-                    </Typography>
-                    <Typography
-                      variant="h4"
-                      color={summary.riskActivities > 0 ? 'error' : 'success'}
-                    >
-                      {summary.riskActivities}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography color="textSecondary" gutterBottom>
-                      Last Activity
-                    </Typography>
-                    <Typography variant="body2">
-                      {summary.lastActivity
-                        ? format(
-                            parseISO(summary.lastActivity),
-                            'MMM dd, yyyy HH:mm'
-                          )
-                        : 'No activity'}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: '1fr 1fr',
+                  md: 'repeat(4, 1fr)',
+                },
+                gap: 2,
+                mb: 3,
+              }}
+            >
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography color="textSecondary" gutterBottom>
+                    Total Actions
+                  </Typography>
+                  <Typography variant="h4">{summary.totalActions}</Typography>
+                </CardContent>
+              </Card>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography color="textSecondary" gutterBottom>
+                    Unique Users
+                  </Typography>
+                  <Typography variant="h4">{summary.uniqueUsers}</Typography>
+                </CardContent>
+              </Card>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography color="textSecondary" gutterBottom>
+                    Risk Activities
+                  </Typography>
+                  <Typography
+                    variant="h4"
+                    color={summary.riskActivities > 0 ? 'error' : 'success'}
+                  >
+                    {summary.riskActivities}
+                  </Typography>
+                </CardContent>
+              </Card>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography color="textSecondary" gutterBottom>
+                    Last Activity
+                  </Typography>
+                  <Typography variant="body2">
+                    {summary.lastActivity
+                      ? format(
+                          parseISO(summary.lastActivity),
+                          'MMM dd, yyyy HH:mm'
+                        )
+                      : 'No activity'}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Box>
           )}
 
           {/* Filters */}
-          <Grid container spacing={2} mb={3}>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                label="Start Date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                label="End Date"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Risk Level</InputLabel>
-                <Select
-                  value={riskLevelFilter}
-                  onChange={(e) => setRiskLevelFilter(e.target.value)}
-                  label="Risk Level"
-                >
-                  <MenuItem value="">All</MenuItem>
-                  <MenuItem value="low">Low</MenuItem>
-                  <MenuItem value="medium">Medium</MenuItem>
-                  <MenuItem value="high">High</MenuItem>
-                  <MenuItem value="critical">Critical</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setStartDate('');
-                  setEndDate('');
-                  setRiskLevelFilter('');
-                  setPage(1);
-                }}
-                fullWidth
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: '1fr 1fr',
+                md: 'repeat(4, 1fr)',
+              },
+              gap: 2,
+              mb: 3,
+            }}
+          >
+            <TextField
+              label="Start Date"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+              fullWidth
+              size="small"
+            />
+            <TextField
+              label="End Date"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+              fullWidth
+              size="small"
+            />
+            <FormControl fullWidth size="small">
+              <InputLabel>Risk Level</InputLabel>
+              <Select
+                value={riskLevelFilter}
+                onChange={(e) => setRiskLevelFilter(e.target.value)}
+                label="Risk Level"
               >
-                Clear Filters
-              </Button>
-            </Grid>
-          </Grid>
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="low">Low</MenuItem>
+                <MenuItem value="medium">Medium</MenuItem>
+                <MenuItem value="high">High</MenuItem>
+                <MenuItem value="critical">Critical</MenuItem>
+              </Select>
+            </FormControl>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setStartDate('');
+                setEndDate('');
+                setRiskLevelFilter('');
+                setPage(1);
+              }}
+              fullWidth
+            >
+              Clear Filters
+            </Button>
+          </Box>
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -403,7 +418,16 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
                         <Chip
                           icon={getRiskLevelIcon(log.riskLevel)}
                           label={log.riskLevel.toUpperCase()}
-                          color={getRiskLevelColor(log.riskLevel) as any}
+                          color={
+                            getRiskLevelColor(log.riskLevel) as
+                              | 'default'
+                              | 'primary'
+                              | 'secondary'
+                              | 'error'
+                              | 'info'
+                              | 'success'
+                              | 'warning'
+                          }
                           size="small"
                         />
                       </TableCell>
@@ -419,9 +443,9 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
                             onClick={() => toggleRowExpansion(log._id)}
                           >
                             {expandedRows.has(log._id) ? (
-                              <ExpandLessIcon />
+                              <ExpandLess />
                             ) : (
-                              <ExpandMoreIcon />
+                              <ExpandMore />
                             )}
                           </IconButton>
                         </Tooltip>
@@ -458,8 +482,14 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
                                 <Typography variant="subtitle2" gutterBottom>
                                   Changes
                                 </Typography>
-                                <Grid container spacing={2}>
-                                  <Grid item xs={6}>
+                                <Box
+                                  sx={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr',
+                                    gap: 2,
+                                  }}
+                                >
+                                  <Box>
                                     <Typography
                                       variant="caption"
                                       color="textSecondary"
@@ -478,8 +508,8 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
                                     >
                                       {JSON.stringify(log.oldValues, null, 2)}
                                     </pre>
-                                  </Grid>
-                                  <Grid item xs={6}>
+                                  </Box>
+                                  <Box>
                                     <Typography
                                       variant="caption"
                                       color="textSecondary"
@@ -498,8 +528,8 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
                                     >
                                       {JSON.stringify(log.newValues, null, 2)}
                                     </pre>
-                                  </Grid>
-                                </Grid>
+                                  </Box>
+                                </Box>
                               </Box>
                             )}
                           </Box>
