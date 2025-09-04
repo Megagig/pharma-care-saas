@@ -222,30 +222,54 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
   // Handle row selection
   const handleRowSelectionChange = (selectionModel: GridRowSelectionModel) => {
     try {
-      // Ensure we have valid state
+      // Ensure we have valid state and selection model
       if (!Array.isArray(selectedNotes)) {
         console.warn('selectedNotes is not an array:', selectedNotes);
         return;
       }
 
-      const currentSelection = new Set(selectedNotes);
+      if (!selectionModel) {
+        console.warn('selectionModel is null or undefined');
+        return;
+      }
 
-      // Handle different selection model formats
+      // Convert selectionModel to array of strings
       let newSelectionArray: string[] = [];
+
       if (Array.isArray(selectionModel)) {
         newSelectionArray = selectionModel.filter(
           (id): id is string => typeof id === 'string' && id.length > 0
         );
       } else if (
-        selectionModel &&
         typeof selectionModel === 'object' &&
-        'ids' in selectionModel
+        selectionModel !== null
       ) {
-        newSelectionArray = Array.from(selectionModel.ids || []).filter(
-          (id: unknown): id is string => typeof id === 'string' && id.length > 0
-        );
+        // Handle Set or Map-like objects
+        if ('size' in selectionModel) {
+          // It's a Set or Map
+          const selectionObj = selectionModel as {
+            values?: () => Iterable<unknown>;
+            keys?: () => Iterable<unknown>;
+          };
+          const values =
+            'values' in selectionModel && selectionObj.values
+              ? Array.from(selectionObj.values())
+              : 'keys' in selectionModel && selectionObj.keys
+              ? Array.from(selectionObj.keys())
+              : [];
+          newSelectionArray = values.filter(
+            (id): id is string => typeof id === 'string' && id.length > 0
+          );
+        } else if ('ids' in selectionModel) {
+          // Legacy format
+          newSelectionArray = Array.from(selectionModel.ids || []).filter(
+            (id: unknown): id is string =>
+              typeof id === 'string' && id.length > 0
+          );
+        }
       }
 
+      const currentSelection = new Set(selectedNotes);
       const newSelection = new Set(newSelectionArray);
 
       // Find differences
@@ -1057,8 +1081,8 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
       ) : (
         // Desktop Table Layout
         <Card>
-          {/* Only render DataGrid when we have a valid state */}
-          {isStoreReady && data?.notes ? (
+          {/* Only render DataGrid when we have a valid state and data */}
+          {isStoreReady && data?.notes && Array.isArray(selectedNotes) ? (
             <>
               <DataGrid
                 rows={data.notes.map((note) => ({
@@ -1070,7 +1094,9 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                 checkboxSelection
                 disableRowSelectionOnClick
                 rowSelectionModel={
-                  (selectedNotes as unknown as GridRowSelectionModel) || []
+                  Array.isArray(selectedNotes)
+                    ? (selectedNotes as unknown as GridRowSelectionModel)
+                    : ([] as unknown as GridRowSelectionModel)
                 }
                 onRowSelectionModelChange={handleRowSelectionChange}
                 paginationMode="client"
@@ -1157,6 +1183,13 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                   <CircularProgress />
                   <Typography variant="body2" color="text.secondary">
                     Initializing data store...
+                  </Typography>
+                </>
+              ) : !Array.isArray(selectedNotes) ? (
+                <>
+                  <CircularProgress />
+                  <Typography variant="body2" color="text.secondary">
+                    Initializing selection state...
                   </Typography>
                 </>
               ) : !data?.notes ? (
