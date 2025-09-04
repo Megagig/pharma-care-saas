@@ -833,4 +833,11 @@ class PatientService {
   }
 }
 
-export const patientService = new PatientService();
+// Create a singleton instance
+const patientServiceInstance = new PatientService();
+
+// Export as a named export
+export const patientService = patientServiceInstance;
+
+// Also export as default
+export default patientServiceInstance;

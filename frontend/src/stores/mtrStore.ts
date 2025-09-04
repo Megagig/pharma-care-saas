@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Patient, LoadingState, ErrorState } from './types';
+// Import from our proxy which handles all the TypeScript issues
+import { mtrService } from '../services/mtrServiceProxy';
 import type {
   MedicationTherapyReview,
   DrugTherapyProblem,
@@ -10,6 +12,8 @@ import type {
   TherapyRecommendation,
   MonitoringParameter,
   TherapyGoal,
+  ClinicalOutcomes,
+  MTRMedicationEntry,
 } from '../types/mtr';
 
 // MTR-specific types based on backend models
@@ -175,7 +179,7 @@ interface MTRStore {
     patientId: string
   ) => Promise<MedicationTherapyReview | null>;
   saveReview: () => Promise<void>;
-  completeReview: () => Promise<MedicationTherapyReview>;
+  completeReview: (reviewId?: string) => Promise<MedicationTherapyReview>;
   cancelReview: () => Promise<void>;
 
   // Step navigation actions
@@ -401,6 +405,19 @@ export const useMTRStore = create<MTRStore>()(
         console.log('Initialized basic MTR session for patient selection');
       },
 
+      /**
+       * Creates a new MTR review for a patient
+       *
+       * ENHANCED RESPONSE HANDLING:
+       * This function has been updated to handle multiple response formats:
+       * 1. Standard format: ID in response.review._id
+       * 2. New API format: ID in response.review.session._id or response.review.session.id
+       * 3. Alternative format: ID in response.data.session._id or response.data.session.id
+       * 4. Direct format: ID in response.data._id or response.data.id
+       *
+       * The function includes comprehensive logging and will construct a valid review
+       * object regardless of which format is returned by the API.
+       */
       createReview: async (patientId: string) => {
         const { setLoading, setError } = get();
         setLoading('createReview', true);
@@ -413,6 +430,11 @@ export const useMTRStore = create<MTRStore>()(
           );
           console.log('🌍 Environment mode:', import.meta.env.MODE);
           console.log('🔧 Development mode:', import.meta.env.DEV);
+
+          // Validate patientId
+          if (!patientId) {
+            throw new Error('Patient ID is required to create an MTR review');
+          }
 
           // Check authentication and permissions first
           console.log('🔐 Checking MTR permissions...');
@@ -428,8 +450,8 @@ export const useMTRStore = create<MTRStore>()(
 
           console.log('✅ Permissions validated, proceeding with MTR creation');
 
-          // Import the mtrService
-          const { mtrService } = await import('../services/mtrService');
+          // mtrService is already imported at the top of the file
+          // No need to dynamically import it here
 
           // Create new MTR session via API
           const createData = {
@@ -442,42 +464,603 @@ export const useMTRStore = create<MTRStore>()(
 
           const response = await mtrService.createMTRSession(createData);
 
+          // For debugging: log the full response structure
           console.log(
-            'Created review response:',
-            JSON.stringify({
-              id: response.review._id,
-              status: response.review.status,
-            })
+            'Full MTR creation response:',
+            JSON.stringify(response, null, 2)
           );
 
-          if (!response.review._id) {
+          // Validate response structure
+          if (!response) {
             console.error(
-              'Error: Created MTR review is missing an ID',
-              response.review
+              'Error: Invalid response structure from MTR service',
+              response
             );
-            throw new Error('Failed to create MTR review with valid ID');
+            throw new Error(
+              'Failed to create MTR review - empty response from server'
+            );
           }
 
-          // Create a valid review object with _id guaranteed
-          const validReview = {
-            ...response.review,
-            _id: response.review._id, // Ensure ID is explicitly set
+          // First attempt to log the full structure to understand what we're dealing with
+          const responseData = response.data as Record<string, unknown>;
+          console.log('Response structure analysis:', {
+            hasReview: !!response.review,
+            hasData: !!response.data,
+            dataKeys: responseData ? Object.keys(responseData) : [],
+            responseKeys: Object.keys(response),
+            // Log deep data using safe access pattern
+            sessionInfo:
+              responseData && 'session' in responseData
+                ? 'exists'
+                : 'not found',
+          });
+
+          // Helper function to create default workflow steps
+          const createDefaultSteps = () => ({
+            patientSelection: {
+              completed: false,
+              completedAt: undefined,
+              data: {},
+            },
+            medicationHistory: {
+              completed: false,
+              completedAt: undefined,
+              data: {},
+            },
+            therapyAssessment: {
+              completed: false,
+              completedAt: undefined,
+              data: {},
+            },
+            planDevelopment: {
+              completed: false,
+              completedAt: undefined,
+              data: {},
+            },
+            interventions: {
+              completed: false,
+              completedAt: undefined,
+              data: {},
+            },
+            followUp: {
+              completed: false,
+              completedAt: undefined,
+              data: {},
+            },
+          });
+
+          // SUPER COMPREHENSIVE ID EXTRACTION - check all possible locations for the ID
+          // Use a safe approach to extract ID from various possible locations
+          let reviewId: string | undefined;
+
+          console.log('Checking all possible locations for MTR review ID...');
+
+          // 1. Check direct review._id (original standard format)
+          if (response.review && response.review._id) {
+            reviewId = response.review._id;
+            console.log('Found ID in response.review._id:', reviewId);
+          }
+
+          // 2. Check for nested session in review (structure from error message)
+          if (
+            !reviewId &&
+            response.review &&
+            typeof response.review === 'object'
+          ) {
+            // First convert to unknown to avoid type errors, then use a more specific type
+            const reviewWithSession = response.review as unknown as {
+              session?: {
+                _id?: string;
+                id?: string;
+                [key: string]: unknown;
+              };
+              [key: string]: unknown;
+            };
+
+            // Check if session exists
+            if (
+              'session' in reviewWithSession &&
+              reviewWithSession.session &&
+              typeof reviewWithSession.session === 'object'
+            ) {
+              const session = reviewWithSession.session;
+              if (session._id || session.id) {
+                reviewId = (session._id as string) || (session.id as string);
+                console.log('Found ID in response.review.session:', reviewId);
+              }
+            }
+          }
+
+          // 3. Check in response.data (alternative format)
+          if (!reviewId && response.data && typeof response.data === 'object') {
+            const data = response.data as Record<string, unknown>;
+
+            // 3a. Check for nested session in data
+            if (
+              'session' in data &&
+              data.session &&
+              typeof data.session === 'object'
+            ) {
+              const session = data.session as Record<string, unknown>;
+              if (session._id || session.id) {
+                reviewId = (session._id as string) || (session.id as string);
+                console.log('Found ID in response.data.session:', reviewId);
+              }
+            }
+
+            // 3b. Check directly in data
+            if (!reviewId && (data._id || data.id)) {
+              reviewId = (data._id as string) || (data.id as string);
+              console.log('Found ID directly in response.data:', reviewId);
+            }
+          }
+
+          // Extract the review data from whatever structure we received
+          let reviewObj:
+            | (MedicationTherapyReview & { session?: Record<string, unknown> })
+            | null = null;
+
+          // Case 1: Direct response.review object with necessary processing
+          if (response.review) {
+            // First convert to unknown to avoid type errors, then use a more specific type
+            const reviewWithSession =
+              response.review as unknown as MedicationTherapyReview & {
+                session?: {
+                  _id?: string;
+                  id?: string;
+                  [key: string]: unknown;
+                };
+              };
+
+            // Handle the nested session case (as seen in the error)
+            if (
+              !reviewWithSession._id &&
+              reviewWithSession.session &&
+              typeof reviewWithSession.session === 'object'
+            ) {
+              const session = reviewWithSession.session;
+              // Get the session ID from either _id or id field
+              const sessionId =
+                (session._id as string) || (session.id as string);
+
+              if (sessionId) {
+                console.log('Found session ID, applying to review:', sessionId);
+                // Create a new review object with the session ID
+                const reviewAsUnknown = response.review as unknown;
+                const typedReview = reviewAsUnknown as {
+                  session?: Record<string, unknown>;
+                  [key: string]: unknown;
+                };
+
+                // Copy the session data to create a valid MedicationTherapyReview
+                const sessionData = typedReview.session || {};
+                reviewObj = {
+                  _id: sessionId, // Use the session ID as the review ID
+                  workplaceId: (sessionData.workplaceId as string) || 'unknown',
+                  patientId: (sessionData.patientId as string) || patientId,
+                  pharmacistId:
+                    (sessionData.pharmacistId as string) || 'current-user',
+                  reviewNumber:
+                    (sessionData.reviewNumber as string) || `MTR-${Date.now()}`,
+                  status:
+                    (sessionData.status as
+                      | 'in_progress'
+                      | 'completed'
+                      | 'cancelled'
+                      | 'on_hold') || 'in_progress',
+                  reviewType:
+                    (sessionData.reviewType as
+                      | 'initial'
+                      | 'follow_up'
+                      | 'annual'
+                      | 'targeted') || 'initial',
+                  priority:
+                    (sessionData.priority as
+                      | 'routine'
+                      | 'urgent'
+                      | 'high_risk') || 'routine',
+                  steps: typedReview.steps
+                    ? (typedReview.steps as unknown as ReturnType<
+                        typeof createDefaultSteps
+                      >)
+                    : createDefaultSteps(),
+                  medications: Array.isArray(sessionData.medications)
+                    ? sessionData.medications
+                    : [],
+                  problems: Array.isArray(sessionData.problems)
+                    ? sessionData.problems
+                    : [],
+                  interventions: Array.isArray(sessionData.interventions)
+                    ? sessionData.interventions
+                    : [],
+                  followUps: Array.isArray(sessionData.followUps)
+                    ? sessionData.followUps
+                    : [],
+                  clinicalOutcomes:
+                    sessionData.clinicalOutcomes &&
+                    typeof sessionData.clinicalOutcomes === 'object'
+                      ? (sessionData.clinicalOutcomes as ClinicalOutcomes)
+                      : {
+                          problemsResolved: 0,
+                          medicationsOptimized: 0,
+                          adherenceImproved: false,
+                          adverseEventsReduced: false,
+                        },
+                  patientConsent: !!sessionData.patientConsent,
+                  confidentialityAgreed: !!sessionData.confidentialityAgreed,
+                  startedAt:
+                    (sessionData.startedAt as string) ||
+                    new Date().toISOString(),
+                  createdAt:
+                    (sessionData.createdAt as string) ||
+                    new Date().toISOString(),
+                  updatedAt:
+                    (sessionData.updatedAt as string) ||
+                    new Date().toISOString(),
+                  createdBy:
+                    (sessionData.createdBy as string) || 'current-user',
+                  isDeleted: !!sessionData.isDeleted,
+                };
+              }
+            } else {
+              reviewObj = response.review;
+            }
+
+            // Double-check we have an ID after processing
+            if (reviewObj && reviewObj._id) {
+              reviewId = reviewObj._id;
+              console.log('Using response.review format. Found ID:', reviewId);
+            }
+          }
+          // Case 2: Nested in response.data.session (new API format)
+          else if (
+            response.data &&
+            typeof response.data === 'object' &&
+            response.data !== null &&
+            'session' in (response.data as Record<string, unknown>) &&
+            (response.data as Record<string, unknown>).session
+          ) {
+            const responseData = response.data as Record<string, unknown>;
+            const sessionData = responseData.session as Record<string, unknown>;
+
+            // Try to extract ID from different possible fields
+            reviewId =
+              (sessionData._id as string) || (sessionData.id as string);
+
+            if (reviewId) {
+              // Create a valid MedicationTherapyReview object from the session data
+              reviewObj = {
+                _id: reviewId,
+                workplaceId: (sessionData.workplaceId as string) || 'unknown',
+                patientId: (sessionData.patientId as string) || '',
+                pharmacistId: (sessionData.pharmacistId as string) || '',
+                reviewNumber:
+                  (sessionData.reviewNumber as string) || `MTR-${Date.now()}`,
+                status:
+                  (sessionData.status as
+                    | 'in_progress'
+                    | 'completed'
+                    | 'cancelled'
+                    | 'on_hold') || 'in_progress',
+                reviewType:
+                  (sessionData.reviewType as
+                    | 'initial'
+                    | 'follow_up'
+                    | 'annual'
+                    | 'targeted') || 'initial',
+                priority:
+                  (sessionData.priority as
+                    | 'routine'
+                    | 'urgent'
+                    | 'high_risk') || 'routine',
+                steps: createDefaultSteps(),
+                medications: (sessionData.medications ||
+                  []) as MTRMedicationEntry[],
+                problems: (sessionData.problems || []) as string[],
+                interventions: (sessionData.interventions || []) as string[],
+                followUps: (sessionData.followUps || []) as string[],
+                clinicalOutcomes:
+                  (sessionData.clinicalOutcomes as ClinicalOutcomes) || {
+                    problemsResolved: 0,
+                    medicationsOptimized: 0,
+                    adherenceImproved: false,
+                    adverseEventsReduced: false,
+                    qualityOfLifeImproved: false,
+                    clinicalParametersImproved: false,
+                  },
+                patientConsent: !!sessionData.patientConsent,
+                confidentialityAgreed: !!sessionData.confidentialityAgreed,
+                startedAt:
+                  (sessionData.startedAt as string) || new Date().toISOString(),
+                createdAt:
+                  (sessionData.createdAt as string) || new Date().toISOString(),
+                updatedAt:
+                  (sessionData.updatedAt as string) || new Date().toISOString(),
+                createdBy: (sessionData.createdBy as string) || '',
+                isDeleted: !!sessionData.isDeleted,
+              };
+
+              // Handle optional fields
+              if (sessionData.completedAt) {
+                reviewObj.completedAt = sessionData.completedAt as string;
+              }
+
+              if (sessionData.plan) {
+                reviewObj.plan = sessionData.plan as TherapyPlan;
+              }
+
+              console.log(
+                'Using response.data.session format. Constructed review with ID:',
+                reviewId
+              );
+            }
+          }
+          // Case 3: Directly in response.data (alternative format)
+          else if (response.data && typeof response.data === 'object') {
+            const responseData = response.data as Record<string, unknown>;
+            reviewId =
+              (responseData._id as string) || (responseData.id as string);
+
+            if (reviewId) {
+              // Create a valid MedicationTherapyReview object
+              reviewObj = {
+                _id: reviewId,
+                workplaceId: (responseData.workplaceId as string) || 'unknown',
+                patientId: (responseData.patientId as string) || '',
+                pharmacistId: (responseData.pharmacistId as string) || '',
+                reviewNumber:
+                  (responseData.reviewNumber as string) || `MTR-${Date.now()}`,
+                status:
+                  (responseData.status as
+                    | 'in_progress'
+                    | 'completed'
+                    | 'cancelled'
+                    | 'on_hold') || 'in_progress',
+                reviewType:
+                  (responseData.reviewType as
+                    | 'initial'
+                    | 'follow_up'
+                    | 'annual'
+                    | 'targeted') || 'initial',
+                priority:
+                  (responseData.priority as
+                    | 'routine'
+                    | 'urgent'
+                    | 'high_risk') || 'routine',
+                steps: createDefaultSteps(),
+                medications: (responseData.medications ||
+                  []) as MTRMedicationEntry[],
+                problems: (responseData.problems || []) as string[],
+                interventions: (responseData.interventions || []) as string[],
+                followUps: (responseData.followUps || []) as string[],
+                clinicalOutcomes:
+                  (responseData.clinicalOutcomes as ClinicalOutcomes) || {
+                    problemsResolved: 0,
+                    medicationsOptimized: 0,
+                    adherenceImproved: false,
+                    adverseEventsReduced: false,
+                    qualityOfLifeImproved: false,
+                    clinicalParametersImproved: false,
+                  },
+                patientConsent: !!responseData.patientConsent,
+                confidentialityAgreed: !!responseData.confidentialityAgreed,
+                startedAt:
+                  (responseData.startedAt as string) ||
+                  new Date().toISOString(),
+                createdAt:
+                  (responseData.createdAt as string) ||
+                  new Date().toISOString(),
+                updatedAt:
+                  (responseData.updatedAt as string) ||
+                  new Date().toISOString(),
+                createdBy: (responseData.createdBy as string) || '',
+                isDeleted: !!responseData.isDeleted,
+              };
+
+              // Handle optional fields
+              if (responseData.completedAt) {
+                reviewObj.completedAt = responseData.completedAt as string;
+              }
+
+              if (responseData.plan) {
+                reviewObj.plan = responseData.plan as TherapyPlan;
+              }
+
+              console.log(
+                'Using response.data format. Constructed review with ID:',
+                reviewId
+              );
+            }
+          }
+
+          // If we found a reviewId but no reviewObj, try to create a basic reviewObj from response.review
+          if (reviewId && !reviewObj && response.review) {
+            // Special case: if response.review has a session object with ID, but review itself doesn't have _id
+            const reviewAny = response.review as MedicationTherapyReview & {
+              session?: {
+                _id?: string;
+                id?: string;
+              };
+            };
+            if (
+              !reviewAny._id &&
+              reviewAny.session &&
+              typeof reviewAny.session === 'object' &&
+              (reviewAny.session._id || reviewAny.session.id)
+            ) {
+              // Copy the session ID to the review object's _id field
+              reviewAny._id = (reviewAny.session._id ||
+                reviewAny.session.id) as string;
+              console.log(
+                'Fixed missing _id in review by copying from session:',
+                reviewAny._id
+              );
+            }
+
+            reviewObj = response.review;
+            console.log(
+              'Using existing review object with found ID:',
+              reviewId
+            );
+          }
+
+          // If we found an ID but still no review object, create a minimal one
+          if (reviewId && !reviewObj) {
+            console.log(
+              'Creating minimal review object with found ID:',
+              reviewId
+            );
+            reviewObj = {
+              _id: reviewId,
+              workplaceId: 'unknown',
+              patientId,
+              pharmacistId: 'current-user',
+              reviewNumber: `MTR-${Date.now()}`,
+              status: 'in_progress' as const,
+              reviewType: 'initial' as const,
+              priority: 'routine' as const,
+              steps: createDefaultSteps(),
+              medications: [],
+              problems: [],
+              interventions: [],
+              followUps: [],
+              clinicalOutcomes: {
+                problemsResolved: 0,
+                medicationsOptimized: 0,
+                adherenceImproved: false,
+                adverseEventsReduced: false,
+              },
+              patientConsent: false,
+              confidentialityAgreed: false,
+              startedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              createdBy: 'current-user',
+              isDeleted: false,
+            };
+          }
+
+          // If we have a review object but it's missing an ID, make sure to add it
+          if (reviewObj && !reviewObj._id && reviewId) {
+            console.log('Adding missing ID to review object:', reviewId);
+            reviewObj._id = reviewId;
+          }
+
+          // Final check if we have what we need
+          if (!reviewObj || !reviewId) {
+            console.error(
+              'Error: Cannot extract a valid review with ID from response. Response structure:',
+              JSON.stringify(response, null, 2)
+            );
+
+            // Log the specific paths we checked to help with debugging
+            console.error('Checked paths for ID:', [
+              'response.review._id',
+              'response.review.session._id',
+              'response.review.session.id',
+              'response.data.session._id',
+              'response.data.session.id',
+              'response.data._id',
+              'response.data.id',
+            ]);
+
+            throw new Error(
+              'Failed to create MTR review - could not find or extract a valid ID'
+            );
+          }
+
+          // We don't need to validate steps here since we're already setting default steps during review construction
+
+          console.log('Setting current review with verified ID:', reviewId);
+
+          // Ensure we have a proper MedicationTherapyReview object with ID explicitly set
+          const validReview: MedicationTherapyReview = {
+            ...reviewObj,
+            _id: reviewId, // Always ensure ID is explicitly set
           };
 
+          // Double-check ID is set properly and log if not
+          if (!validReview._id) {
+            console.error(
+              'CRITICAL ERROR: validReview._id is still undefined despite setting it',
+              {
+                reviewId,
+                originalReviewId: reviewObj?._id,
+                hasReviewObj: !!reviewObj,
+              }
+            );
+          } else {
+            console.log('Confirmed valid review has ID:', validReview._id);
+          }
+
+          // Safely convert medications to MTR medications
+          const medications = (reviewObj.medications || [])
+            .filter((med) => typeof med === 'object' && med !== null)
+            .map((med) => {
+              try {
+                // Create a properly typed object for conversion
+                const typedMed = med as {
+                  _id?: string;
+                  id?: string;
+                  drugName: string;
+                  genericName?: string;
+                  strength: { value: number; unit: string };
+                  dosageForm: string;
+                  instructions: {
+                    dose: string;
+                    frequency: string;
+                    route: string;
+                    duration?: string;
+                  };
+                  category: 'prescribed' | 'otc' | 'herbal' | 'supplement';
+                  prescriber?: {
+                    name: string;
+                    license?: string;
+                    contact?: string;
+                  };
+                  startDate: string | Date;
+                  endDate?: string | Date;
+                  indication: string;
+                  adherenceScore?: number;
+                  notes?: string;
+                  isManual?: boolean;
+                };
+                return convertMedicationEntryToMTRMedication(typedMed);
+              } catch (err) {
+                console.warn('Failed to convert medication:', med, err);
+                return null;
+              }
+            })
+            .filter(Boolean) as MTRMedication[];
+
+          // Double-check that validReview has an ID before setting it in the store
+          if (!validReview._id) {
+            console.error(
+              'CRITICAL: About to set currentReview but validReview._id is missing!',
+              validReview
+            );
+
+            // Force the ID to be set from our previously extracted reviewId
+            validReview._id = reviewId;
+            console.log('Force-set reviewId on validReview:', reviewId);
+          }
+
+          // Final verification check
           console.log(
-            'Setting current review with verified ID:',
+            'Final review ID verification before setting in store:',
             validReview._id
           );
 
           set({
-            currentReview: validReview,
+            currentReview: {
+              ...validReview,
+              _id: reviewId, // Ensure ID is explicitly set one more time for redundancy
+            },
             currentStep: 0,
             stepData: {},
-            medications: (response.review.medications || []).map(
-              convertMedicationEntryToMTRMedication
-            ),
+            medications: medications,
             identifiedProblems: [], // Will be populated from actual DrugTherapyProblem objects
-            therapyPlan: response.review.plan || null,
+            therapyPlan: (reviewObj.plan as TherapyPlan) || null,
             interventions: [], // Will be populated from actual MTRIntervention objects
             followUps: [], // Will be populated from actual MTRFollowUp objects
           });
@@ -515,8 +1098,8 @@ export const useMTRStore = create<MTRStore>()(
         setError('loadReview', null);
 
         try {
-          // Import the mtrService
-          const { mtrService } = await import('../services/mtrService');
+          // mtrService is already imported at the top of the file
+          // No need to dynamically import it here
 
           // Load MTR session from API
           const response = await mtrService.getMTRSession(reviewId);
@@ -594,8 +1177,8 @@ export const useMTRStore = create<MTRStore>()(
         setError('loadReview', null);
 
         try {
-          // Import the mtrService
-          const { mtrService } = await import('../services/mtrService');
+          // mtrService is already imported at the top of the file
+          // No need to dynamically import it here
 
           // Get all MTR sessions for patient
           const response = await mtrService.getMTRSessions({
@@ -698,11 +1281,21 @@ export const useMTRStore = create<MTRStore>()(
         setError('saveReview', null);
 
         try {
-          // Import the mtrService
-          const { mtrService } = await import('../services/mtrService');
+          // mtrService is already imported at the top of the file
+          // No need to dynamically import it here
 
           // Prepare update data with current state
-          const updateData: any = {
+          const updateData: {
+            medications: ReturnType<typeof convertMTRMedicationToEntry>[];
+            problems: DrugTherapyProblem[];
+            plan?: TherapyPlan;
+            interventions: MTRIntervention[];
+            followUps: MTRFollowUp[];
+            updatedAt?: string;
+            steps?: Record<string, unknown>;
+            status?: string;
+            [key: string]: unknown; // Allow additional properties with unknown type
+          } = {
             medications: medications.map(convertMTRMedicationToEntry),
             problems: identifiedProblems,
             plan: therapyPlan || undefined,
@@ -767,13 +1360,29 @@ export const useMTRStore = create<MTRStore>()(
       completeReview: async (reviewId?: string) => {
         const { setLoading, setError, currentReview } = get();
 
+        console.log('Complete review called with:', {
+          providedId: reviewId,
+          hasCurrentReview: !!currentReview,
+          currentReviewId: currentReview?._id,
+        });
+
         // Use provided reviewId or fallback to currentReview._id
-        const idToUse = reviewId || (currentReview && currentReview._id);
+        let idToUse = reviewId || (currentReview && currentReview._id);
 
         if (!currentReview) {
           const error = new Error('No current review');
           console.error('Complete review failed:', error);
           throw error;
+        }
+
+        // If ID is still missing but we have a current review, try to use the session ID if available
+        // Use a type assertion to safely check for session property
+        const reviewWithSession = currentReview as unknown as {
+          session?: { _id?: string };
+        };
+        if ((!idToUse || idToUse === '') && reviewWithSession.session?._id) {
+          idToUse = reviewWithSession.session._id;
+          console.log('Using session ID as fallback:', idToUse);
         }
 
         if (!idToUse || idToUse === '') {
@@ -784,6 +1393,18 @@ export const useMTRStore = create<MTRStore>()(
             'Review:',
             currentReview
           );
+
+          // Log additional details to help debug
+          // Use our type assertion to check for session too
+          console.error('Review ID extraction failed. Details:', {
+            providedReviewId: reviewId,
+            currentReviewExists: !!currentReview,
+            currentReviewHasId: !!currentReview?._id,
+            currentReviewId: currentReview?._id,
+            sessionExists: !!reviewWithSession.session,
+            sessionHasId: !!reviewWithSession.session?._id,
+          });
+
           throw error;
         }
 
@@ -792,8 +1413,8 @@ export const useMTRStore = create<MTRStore>()(
 
         try {
           console.log('Starting review completion for ID:', idToUse);
-          // Import the mtrService
-          const { mtrService } = await import('../services/mtrService');
+          // mtrService is already imported at the top of the file
+          // No need to dynamically import it here
 
           // Update review status to completed
           const updateData = {
@@ -807,12 +1428,26 @@ export const useMTRStore = create<MTRStore>()(
             updateData
           );
 
-          // Update the store with completed review
+          // Update the store with completed review, ensuring ID is preserved
           const completedReview = {
             ...response.review,
+            _id: response.review?._id || idToUse, // Ensure ID is preserved
             status: 'completed' as const,
             completedAt: new Date().toISOString(),
           };
+
+          // Double-check ID is set
+          if (!completedReview._id) {
+            console.error(
+              'CRITICAL: Completed review is missing _id after completion!',
+              {
+                originalId: idToUse,
+                responseReviewId: response.review?._id,
+              }
+            );
+            // Force set the ID we know was used for the API call
+            completedReview._id = idToUse;
+          }
 
           set({ currentReview: completedReview });
 

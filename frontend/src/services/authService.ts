@@ -3,6 +3,14 @@ import axios from 'axios';
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+// Create a type for the auth service to help with imports
+export type AuthServiceType = {
+  login: (credentials: LoginCredentials) => Promise<any>;
+  register: (data: RegisterData) => Promise<any>;
+  // Add other methods as needed
+  // This will ensure TypeScript knows what methods are available
+};
+
 interface RegisterData {
   firstName: string;
   lastName: string;
@@ -269,4 +277,8 @@ class AuthService {
   }
 }
 
-export const authService = new AuthService();
+// Create the service instance
+const authServiceInstance = new AuthService();
+
+// Export as a named export
+export const authService = authServiceInstance;

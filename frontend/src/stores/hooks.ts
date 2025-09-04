@@ -1,32 +1,29 @@
-import { useCallback } from 'react';
-import {
-  usePatientStore,
-  useMedicationStore,
-  useClinicalNoteStore,
-  useUIStore,
-} from './index';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useNotifications } from '../context/NotificationContext';
+import { useSidebarControls } from './sidebarHooks';
 
-// Re-export UI hooks for convenience (using direct store access to prevent re-render loops)
-export const useNotifications = () => useUIStore((state) => ({
-  notifications: state.notifications,
-  addNotification: state.addNotification,
-  removeNotification: state.removeNotification,
-  markNotificationAsRead: state.markNotificationAsRead,
-  clearAllNotifications: state.clearAllNotifications,
-}));
+// Direct imports from store files - using explicit file paths to avoid circular dependencies
+import { usePatientStore } from './patientStore';
+import { useMedicationStore } from './medicationStore';
+import { useClinicalNoteStore } from './clinicalNoteStore';
+import { useAppLoading, useLoadingStore } from './loadingStore';
 
-// Stable individual sidebar hooks to prevent infinite loops
-export const useSidebarOpen = () => useUIStore((state) => state.sidebarOpen);
-export const useSidebarToggle = () => useUIStore((state) => state.toggleSidebar);
-export const useSidebarSetter = () => useUIStore((state) => state.setSidebarOpen);
+// Sidebar hooks are now using the dedicated sidebar store
+export const useSidebarOpen = () => {
+  const { sidebarOpen } = useSidebarControls();
+  return sidebarOpen;
+};
+export const useSidebarToggle = () => {
+  const { toggleSidebar } = useSidebarControls();
+  return toggleSidebar;
+};
+export const useSidebarSetter = () => {
+  const { setSidebarOpen } = useSidebarControls();
+  return setSidebarOpen;
+};
 
-// Legacy hook - avoid using this as it returns objects that can cause re-renders
-export const useSidebar = () => useUIStore((state) => ({
-  sidebarOpen: state.sidebarOpen,
-  toggleSidebar: state.toggleSidebar,
-  setSidebarOpen: state.setSidebarOpen,
-}));
+// Use the combined hook for simplicity
+export const useSidebar = useSidebarControls;
 
 // Enhanced patient hooks with additional functionality
 export const usePatientManagement = () => {
@@ -39,70 +36,79 @@ export const usePatientManagement = () => {
   const deletePatient = usePatientStore((state) => state.deletePatient);
   const selectPatient = usePatientStore((state) => state.selectPatient);
   const selectedPatient = usePatientStore((state) => state.selectedPatient);
-  const addNotification = useUIStore((state) => state.addNotification);
+  const { addNotification } = useNotifications();
 
-  const handleCreatePatient = useCallback(async (patientData: Record<string, unknown>) => {
-    const result = await createPatient(patientData);
-    if (result) {
-      addNotification({
-        type: 'success',
-        title: 'Patient Created',
-        message: `Patient ${result.firstName} ${result.lastName} has been successfully created.`,
-        duration: 5000,
-      });
-      return result;
-    } else {
-      addNotification({
-        type: 'error',
-        title: 'Creation Failed',
-        message: 'Failed to create patient. Please try again.',
-        duration: 5000,
-      });
-      return null;
-    }
-  }, [createPatient, addNotification]);
+  const handleCreatePatient = useCallback(
+    async (patientData: Record<string, unknown>) => {
+      const result = await createPatient(patientData);
+      if (result) {
+        addNotification({
+          type: 'success',
+          title: 'Patient Created',
+          message: `Patient ${result.firstName} ${result.lastName} has been successfully created.`,
+          duration: 5000,
+        });
+        return result;
+      } else {
+        addNotification({
+          type: 'error',
+          title: 'Creation Failed',
+          message: 'Failed to create patient. Please try again.',
+          duration: 5000,
+        });
+        return null;
+      }
+    },
+    [createPatient, addNotification]
+  );
 
-  const handleUpdatePatient = useCallback(async (id: string, patientData: Record<string, unknown>) => {
-    const result = await updatePatient(id, patientData);
-    if (result) {
-      addNotification({
-        type: 'success',
-        title: 'Patient Updated',
-        message: `Patient information has been successfully updated.`,
-        duration: 5000,
-      });
-      return result;
-    } else {
-      addNotification({
-        type: 'error',
-        title: 'Update Failed',
-        message: 'Failed to update patient. Please try again.',
-        duration: 5000,
-      });
-      return null;
-    }
-  }, [updatePatient, addNotification]);
+  const handleUpdatePatient = useCallback(
+    async (id: string, patientData: Record<string, unknown>) => {
+      const result = await updatePatient(id, patientData);
+      if (result) {
+        addNotification({
+          type: 'success',
+          title: 'Patient Updated',
+          message: `Patient information has been successfully updated.`,
+          duration: 5000,
+        });
+        return result;
+      } else {
+        addNotification({
+          type: 'error',
+          title: 'Update Failed',
+          message: 'Failed to update patient. Please try again.',
+          duration: 5000,
+        });
+        return null;
+      }
+    },
+    [updatePatient, addNotification]
+  );
 
-  const handleDeletePatient = useCallback(async (id: string, patientName: string) => {
-    const result = await deletePatient(id);
-    if (result) {
-      addNotification({
-        type: 'success',
-        title: 'Patient Deleted',
-        message: `Patient ${patientName} has been successfully deleted.`,
-        duration: 5000,
-      });
-      return true;
-    } else {
-      addNotification({
-        type: 'error',
-        title: 'Deletion Failed',
-        message: 'Failed to delete patient. Please try again.',
-        duration: 5000,
-      });
-      return false;
-    }
-  }, [deletePatient, addNotification]);
+  const handleDeletePatient = useCallback(
+    async (id: string, patientName: string) => {
+      const result = await deletePatient(id);
+      if (result) {
+        addNotification({
+          type: 'success',
+          title: 'Patient Deleted',
+          message: `Patient ${patientName} has been successfully deleted.`,
+          duration: 5000,
+        });
+        return true;
+      } else {
+        addNotification({
+          type: 'error',
+          title: 'Deletion Failed',
+          message: 'Failed to delete patient. Please try again.',
+          duration: 5000,
+        });
+        return false;
+      }
+    },
+    [deletePatient, addNotification]
+  );
 
   return {
     patients,
@@ -122,63 +128,88 @@ export const useMedicationManagement = () => {
   const medications = useMedicationStore((state) => state.medications);
   const loading = useMedicationStore((state) => state.loading);
   const errors = useMedicationStore((state) => state.errors);
-  const fetchMedications = useMedicationStore((state) => state.fetchMedications);
-  const createMedication = useMedicationStore((state) => state.createMedication);
-  const updateMedication = useMedicationStore((state) => state.updateMedication);
-  const deleteMedication = useMedicationStore((state) => state.deleteMedication);
-  const updateMedicationStatus = useMedicationStore((state) => state.updateMedicationStatus);
-  const selectedMedication = useMedicationStore((state) => state.selectedMedication);
-  const selectMedication = useMedicationStore((state) => state.selectMedication);
-  const addNotification = useUIStore((state) => state.addNotification);
+  const fetchMedications = useMedicationStore(
+    (state) => state.fetchMedications
+  );
+  const createMedication = useMedicationStore(
+    (state) => state.createMedication
+  );
+  const updateMedication = useMedicationStore(
+    (state) => state.updateMedication
+  );
+  const deleteMedication = useMedicationStore(
+    (state) => state.deleteMedication
+  );
+  const updateMedicationStatus = useMedicationStore(
+    (state) => state.updateMedicationStatus
+  );
+  const selectedMedication = useMedicationStore(
+    (state) => state.selectedMedication
+  );
+  const selectMedication = useMedicationStore(
+    (state) => state.selectMedication
+  );
+  const { addNotification } = useNotifications();
 
-  const handleCreateMedication = useCallback(async (medicationData: Record<string, unknown>) => {
-    const result = await createMedication(medicationData);
-    if (result) {
-      addNotification({
-        type: 'success',
-        title: 'Medication Added',
-        message: `Medication ${result.name} has been successfully added.`,
-        duration: 5000,
-      });
-      return result;
-    } else {
-      addNotification({
-        type: 'error',
-        title: 'Addition Failed',
-        message: 'Failed to add medication. Please try again.',
-        duration: 5000,
-      });
-      return null;
-    }
-  }, [createMedication, addNotification]);
+  const handleCreateMedication = useCallback(
+    async (medicationData: Record<string, unknown>) => {
+      const result = await createMedication(medicationData);
+      if (result) {
+        addNotification({
+          type: 'success',
+          title: 'Medication Added',
+          message: `Medication ${result.name} has been successfully added.`,
+          duration: 5000,
+        });
+        return result;
+      } else {
+        addNotification({
+          type: 'error',
+          title: 'Addition Failed',
+          message: 'Failed to add medication. Please try again.',
+          duration: 5000,
+        });
+        return null;
+      }
+    },
+    [createMedication, addNotification]
+  );
 
-  const handleUpdateMedicationStatus = useCallback(async (id: string, status: string, medicationName: string) => {
-    const result = await updateMedicationStatus(id, status as 'active' | 'inactive' | 'discontinued');
-    if (result) {
-      addNotification({
-        type: 'success',
-        title: 'Status Updated',
-        message: `${medicationName} status changed to ${status}.`,
-        duration: 5000,
-      });
-      return true;
-    } else {
-      addNotification({
-        type: 'error',
-        title: 'Update Failed',
-        message: 'Failed to update medication status. Please try again.',
-        duration: 5000,
-      });
-      return false;
-    }
-  }, [updateMedicationStatus, addNotification]);
+  const handleUpdateMedicationStatus = useCallback(
+    async (id: string, status: string, medicationName: string) => {
+      const result = await updateMedicationStatus(
+        id,
+        status as 'active' | 'inactive' | 'discontinued'
+      );
+      if (result) {
+        addNotification({
+          type: 'success',
+          title: 'Status Updated',
+          message: `${medicationName} status changed to ${status}.`,
+          duration: 5000,
+        });
+        return true;
+      } else {
+        addNotification({
+          type: 'error',
+          title: 'Update Failed',
+          message: 'Failed to update medication status. Please try again.',
+          duration: 5000,
+        });
+        return false;
+      }
+    },
+    [updateMedicationStatus, addNotification]
+  );
 
   return {
     medications,
     loading,
     errors,
     selectedMedication,
-    activeMedicationsCount: (medications || []).filter(m => m?.status === 'active').length,
+    activeMedicationsCount: (medications || []).filter(
+      (m) => m?.status === 'active'
+    ).length,
     fetchMedications,
     selectMedication,
     createMedication: handleCreateMedication,
@@ -199,56 +230,64 @@ export const useClinicalNoteManagement = () => {
   const deleteNote = useClinicalNoteStore((state) => state.deleteNote);
   const selectedNote = useClinicalNoteStore((state) => state.selectedNote);
   const selectNote = useClinicalNoteStore((state) => state.selectNote);
-  const toggleNotePrivacy = useClinicalNoteStore((state) => state.toggleNotePrivacy);
-  const addNotification = useUIStore((state) => state.addNotification);
+  const toggleNotePrivacy = useClinicalNoteStore(
+    (state) => state.toggleNotePrivacy
+  );
+  const { addNotification } = useNotifications();
 
-  const handleCreateNote = useCallback(async (noteData: Record<string, unknown>) => {
-    const result = await createNote(noteData);
-    if (result) {
-      addNotification({
-        type: 'success',
-        title: 'Note Created',
-        message: `Clinical note "${result.title}" has been successfully created.`,
-        duration: 5000,
-      });
-      return result;
-    } else {
-      addNotification({
-        type: 'error',
-        title: 'Creation Failed',
-        message: 'Failed to create clinical note. Please try again.',
-        duration: 5000,
-      });
-      return null;
-    }
-  }, [createNote, addNotification]);
+  const handleCreateNote = useCallback(
+    async (noteData: Record<string, unknown>) => {
+      const result = await createNote(noteData);
+      if (result) {
+        addNotification({
+          type: 'success',
+          title: 'Note Created',
+          message: `Clinical note "${result.title}" has been successfully created.`,
+          duration: 5000,
+        });
+        return result;
+      } else {
+        addNotification({
+          type: 'error',
+          title: 'Creation Failed',
+          message: 'Failed to create clinical note. Please try again.',
+          duration: 5000,
+        });
+        return null;
+      }
+    },
+    [createNote, addNotification]
+  );
 
-  const handleTogglePrivacy = useCallback(async (id: string, noteTitle: string) => {
-    const result = await toggleNotePrivacy(id);
-    if (result) {
-      const note = notes.find(n => n._id === id);
-      const newStatus = note?.isPrivate ? 'public' : 'private';
-      addNotification({
-        type: 'success',
-        title: 'Privacy Updated',
-        message: `Note "${noteTitle}" is now ${newStatus}.`,
-        duration: 5000,
-      });
-      return true;
-    } else {
-      addNotification({
-        type: 'error',
-        title: 'Update Failed',
-        message: 'Failed to update note privacy. Please try again.',
-        duration: 5000,
-      });
-      return false;
-    }
-  }, [toggleNotePrivacy, addNotification, notes]);
+  const handleTogglePrivacy = useCallback(
+    async (id: string, noteTitle: string) => {
+      const result = await toggleNotePrivacy(id);
+      if (result) {
+        const note = notes.find((n) => n._id === id);
+        const newStatus = note?.isPrivate ? 'public' : 'private';
+        addNotification({
+          type: 'success',
+          title: 'Privacy Updated',
+          message: `Note "${noteTitle}" is now ${newStatus}.`,
+          duration: 5000,
+        });
+        return true;
+      } else {
+        addNotification({
+          type: 'error',
+          title: 'Update Failed',
+          message: 'Failed to update note privacy. Please try again.',
+          duration: 5000,
+        });
+        return false;
+      }
+    },
+    [toggleNotePrivacy, addNotification, notes]
+  );
 
   // Memoize available tags to prevent re-renders
   const availableTags = useMemo(() => {
-    const allTags = notes.flatMap(note => note.tags || []);
+    const allTags = notes.flatMap((note) => note.tags || []);
     return [...new Set(allTags)]; // Remove duplicates
   }, [notes]);
 
@@ -281,7 +320,11 @@ export const useDashboardData = () => {
     const safeNotes = notes || [];
 
     // Early return with default values if stores are not initialized
-    if (!Array.isArray(safePatients) || !Array.isArray(safeMedications) || !Array.isArray(safeNotes)) {
+    if (
+      !Array.isArray(safePatients) ||
+      !Array.isArray(safeMedications) ||
+      !Array.isArray(safeNotes)
+    ) {
       return {
         totalPatients: 0,
         activeMedications: 0,
@@ -293,7 +336,9 @@ export const useDashboardData = () => {
       };
     }
 
-    const activeMedications = safeMedications.filter(m => m?.status === 'active').length;
+    const activeMedications = safeMedications.filter(
+      (m) => m?.status === 'active'
+    ).length;
 
     return {
       totalPatients: safePatients.length,
@@ -302,15 +347,19 @@ export const useDashboardData = () => {
       recentNotes: safeNotes.slice(0, 5),
       recentPatients: safePatients.slice(0, 5),
       medicationsByStatus: {
-        active: safeMedications.filter(m => m?.status === 'active').length,
-        completed: safeMedications.filter(m => m?.status === 'completed').length,
-        discontinued: safeMedications.filter(m => m?.status === 'discontinued').length,
+        active: safeMedications.filter((m) => m?.status === 'active').length,
+        completed: safeMedications.filter((m) => m?.status === 'completed')
+          .length,
+        discontinued: safeMedications.filter(
+          (m) => m?.status === 'discontinued'
+        ).length,
       },
       notesByType: {
-        consultation: safeNotes.filter(n => n?.type === 'consultation').length,
-        followUp: safeNotes.filter(n => n?.type === 'follow-up').length,
-        emergency: safeNotes.filter(n => n?.type === 'emergency').length,
-        general: safeNotes.filter(n => n?.type === 'general').length,
+        consultation: safeNotes.filter((n) => n?.type === 'consultation')
+          .length,
+        followUp: safeNotes.filter((n) => n?.type === 'follow-up').length,
+        emergency: safeNotes.filter((n) => n?.type === 'emergency').length,
+        general: safeNotes.filter((n) => n?.type === 'general').length,
       },
     };
   }, [patients, medications, notes]); // Only recompute when actual data changes
@@ -321,14 +370,19 @@ export const useDashboardData = () => {
 // Hook for search functionality across all stores
 export const useGlobalSearch = () => {
   const searchPatients = usePatientStore((state) => state.searchPatients);
-  const searchMedications = useMedicationStore((state) => state.searchMedications);
+  const searchMedications = useMedicationStore(
+    (state) => state.searchMedications
+  );
   const searchNotes = useClinicalNoteStore((state) => state.searchNotes);
 
-  const performGlobalSearch = useCallback((searchTerm: string) => {
-    searchPatients(searchTerm);
-    searchMedications(searchTerm);
-    searchNotes(searchTerm);
-  }, [searchPatients, searchMedications, searchNotes]);
+  const performGlobalSearch = useCallback(
+    (searchTerm: string) => {
+      searchPatients(searchTerm);
+      searchMedications(searchTerm);
+      searchNotes(searchTerm);
+    },
+    [searchPatients, searchMedications, searchNotes]
+  );
 
   return {
     performGlobalSearch,
@@ -341,9 +395,11 @@ export const useErrorManagement = () => {
   const medicationErrors = useMedicationStore((state) => state.errors);
   const noteErrors = useClinicalNoteStore((state) => state.errors);
   const clearPatientErrors = usePatientStore((state) => state.clearErrors);
-  const clearMedicationErrors = useMedicationStore((state) => state.clearErrors);
+  const clearMedicationErrors = useMedicationStore(
+    (state) => state.clearErrors
+  );
   const clearNoteErrors = useClinicalNoteStore((state) => state.clearErrors);
-  const addNotification = useUIStore((state) => state.addNotification);
+  const { addNotification } = useNotifications();
 
   const allErrors = {
     ...patientErrors,
@@ -351,7 +407,7 @@ export const useErrorManagement = () => {
     ...noteErrors,
   };
 
-  const hasErrors = Object.values(allErrors).some(error => error !== null);
+  const hasErrors = Object.values(allErrors).some((error) => error !== null);
 
   const clearAllErrors = useCallback(() => {
     clearPatientErrors();
@@ -359,14 +415,17 @@ export const useErrorManagement = () => {
     clearNoteErrors();
   }, [clearPatientErrors, clearMedicationErrors, clearNoteErrors]);
 
-  const displayError = useCallback((title: string, message: string) => {
-    addNotification({
-      type: 'error',
-      title,
-      message,
-      duration: 8000,
-    });
-  }, [addNotification]);
+  const displayError = useCallback(
+    (title: string, message: string) => {
+      addNotification({
+        type: 'error',
+        title,
+        message,
+        duration: 8000,
+      });
+    },
+    [addNotification]
+  );
 
   return {
     allErrors,
@@ -381,11 +440,16 @@ export const useLoadingStates = () => {
   const patientLoading = usePatientStore((state) => state.loading);
   const medicationLoading = useMedicationStore((state) => state.loading);
   const noteLoading = useClinicalNoteStore((state) => state.loading);
-  const uiLoading = useUIStore((state) => state.loading);
+  const { loading: uiLoading } = useAppLoading();
 
   const isLoading = (area?: string) => {
     if (area) {
-      return patientLoading[area] || medicationLoading[area] || noteLoading[area] || false;
+      return (
+        patientLoading[area] ||
+        medicationLoading[area] ||
+        noteLoading[area] ||
+        false
+      );
     }
 
     return (
@@ -411,9 +475,9 @@ export const useDataSync = () => {
     const patientStore = usePatientStore.getState();
     const medicationStore = useMedicationStore.getState();
     const clinicalNoteStore = useClinicalNoteStore.getState();
-    const uiStore = useUIStore.getState();
+    const loadingStore = useLoadingStore.getState();
 
-    uiStore.setLoading(true);
+    loadingStore.setLoading(true);
     try {
       await Promise.all([
         patientStore.fetchPatients(),
@@ -423,7 +487,7 @@ export const useDataSync = () => {
     } catch (error) {
       console.error('Data synchronization failed:', error);
     } finally {
-      uiStore.setLoading(false);
+      loadingStore.setLoading(false);
     }
   }, []); // Safe to use empty dependency array since we're getting fresh state
 

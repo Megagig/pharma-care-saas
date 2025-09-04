@@ -56,6 +56,7 @@ import {
   useDeleteIntervention,
 } from '../queries/useClinicalInterventions';
 import { clinicalInterventionService } from '../services/clinicalInterventionService';
+
 import type {
   ClinicalIntervention,
   InterventionFilters,

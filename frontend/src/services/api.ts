@@ -1,8 +1,29 @@
 import axios, { AxiosResponse, AxiosError } from 'axios';
 
 // Create axios instance with base configuration
+const getBaseURL = () => {
+  try {
+    // Use environment variables in a TypeScript-compatible way
+    const fallbackUrl = 'http://localhost:5000/api';
+
+    // In browser environments, Vite injects environment variables at build time
+    // We'll use a simple check for the environment variable
+    if (
+      typeof process !== 'undefined' &&
+      process.env &&
+      process.env.VITE_API_BASE_URL
+    ) {
+      return process.env.VITE_API_BASE_URL;
+    }
+
+    return fallbackUrl;
+  } catch {
+    return 'http://localhost:5000/api';
+  }
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  baseURL: getBaseURL(),
   timeout: 30000,
   withCredentials: true, // Include httpOnly cookies
   headers: {
@@ -56,4 +77,6 @@ export const apiHelpers = {
   delete: <T = unknown>(url: string) => api.delete<ApiResponse<T>>(url),
 };
 
+// Export both as named and default export
+export { api };
 export default api;
