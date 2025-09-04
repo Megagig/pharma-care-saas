@@ -582,8 +582,19 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     // Create a local variable for the review we'll complete - initialized with the current review
     let reviewToComplete = currentReview;
 
+    // Log detailed information about the current review
+    console.log('Current review for completion:', {
+      hasReview: !!currentReview,
+      reviewId: currentReview?._id,
+      steps: !!currentReview?.steps,
+      urlReviewId: reviewId,
+    });
+
     // Check if we're missing an ID but have a review with steps and other data
-    if (!currentReview._id && currentReview.steps) {
+    if (
+      (!currentReview._id || currentReview._id === '') &&
+      currentReview.steps
+    ) {
       setSnackbarMessage('Attempting to recover review ID...');
       setSnackbarSeverity('info');
       setSnackbarOpen(true);
@@ -653,16 +664,30 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     try {
       // First check if our reviewToComplete has an ID
       if (!reviewToComplete._id) {
-        setSnackbarMessage(
-          'Cannot complete - Review ID is still missing after recovery attempts'
-        );
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
         console.error(
           'Cannot complete review - ID is missing',
           reviewToComplete
         );
-        return;
+
+        // Last resort attempt - if we have a reviewId from URL params
+        if (reviewId) {
+          console.log(
+            'Last resort recovery: Using reviewId from URL params:',
+            reviewId
+          );
+          reviewToComplete._id = reviewId;
+          console.log(
+            'Updated reviewToComplete with URL ID:',
+            reviewToComplete
+          );
+        } else {
+          setSnackbarMessage(
+            'Cannot complete - Review ID is still missing after recovery attempts'
+          );
+          setSnackbarSeverity('error');
+          setSnackbarOpen(true);
+          return;
+        }
       }
 
       // Save the review to ensure all data is up to date

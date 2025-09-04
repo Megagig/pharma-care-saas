@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ClinicalNote, ClinicalNoteFormData, ClinicalNoteFilters, LoadingState, ErrorState } from './types';
+import {
+  ClinicalNote,
+  ClinicalNoteFormData,
+  ClinicalNoteFilters,
+  LoadingState,
+  ErrorState,
+} from './types';
 
 interface ClinicalNoteStore {
   // State
@@ -21,7 +27,10 @@ interface ClinicalNoteStore {
   fetchNotes: (filters?: ClinicalNoteFilters) => Promise<void>;
   fetchNotesByPatient: (patientId: string) => Promise<void>;
   createNote: (noteData: ClinicalNoteFormData) => Promise<ClinicalNote | null>;
-  updateNote: (id: string, noteData: Partial<ClinicalNoteFormData>) => Promise<ClinicalNote | null>;
+  updateNote: (
+    id: string,
+    noteData: Partial<ClinicalNoteFormData>
+  ) => Promise<ClinicalNote | null>;
   deleteNote: (id: string) => Promise<boolean>;
   getNoteById: (id: string) => Promise<ClinicalNote | null>;
 
@@ -38,10 +47,15 @@ interface ClinicalNoteStore {
   setFilters: (filters: Partial<ClinicalNoteFilters>) => void;
   clearFilters: () => void;
   searchNotes: (searchTerm: string) => void;
-  filterByType: (type: 'consultation' | 'follow-up' | 'emergency' | 'general' | 'all') => void;
+  filterByType: (
+    type: 'consultation' | 'follow-up' | 'emergency' | 'general' | 'all'
+  ) => void;
   filterByPatient: (patientId: string) => void;
   filterByTags: (tags: string[]) => void;
-  sortNotes: (sortBy: 'title' | 'createdAt' | 'updatedAt', sortOrder: 'asc' | 'desc') => void;
+  sortNotes: (
+    sortBy: 'title' | 'createdAt' | 'updatedAt',
+    sortOrder: 'asc' | 'desc'
+  ) => void;
 
   // Pagination actions
   setPage: (page: number) => void;
@@ -54,7 +68,10 @@ interface ClinicalNoteStore {
 
   // Bulk operations
   deleteMultipleNotes: (ids: string[]) => Promise<boolean>;
-  updateMultipleNotesPrivacy: (ids: string[], isPrivate: boolean) => Promise<boolean>;
+  updateMultipleNotesPrivacy: (
+    ids: string[],
+    isPrivate: boolean
+  ) => Promise<boolean>;
   addTagToMultipleNotes: (ids: string[], tag: string) => Promise<boolean>;
 
   // Local state management
@@ -81,7 +98,11 @@ const noteService = {
   async getNotes(filters: ClinicalNoteFilters) {
     // This should be implemented to call your actual API
     console.log('Fetching notes with filters:', filters);
-    return { success: true, data: [], pagination: { page: 1, limit: 10, total: 0, pages: 0 } };
+    return {
+      success: true,
+      data: [],
+      pagination: { page: 1, limit: 10, total: 0, pages: 0 },
+    };
   },
   async getNotesByPatient(patientId: string) {
     console.log('Fetching notes for patient:', patientId);
@@ -94,8 +115,8 @@ const noteService = {
         ...data,
         _id: Date.now().toString(),
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
+        updatedAt: new Date().toISOString(),
+      },
     };
   },
   async updateNote(id: string, data: Partial<ClinicalNoteFormData>) {
@@ -109,11 +130,11 @@ const noteService = {
       attachments: data.attachments || [],
       isPrivate: data.isPrivate || false,
       createdAt: '2023-01-01T00:00:00.000Z',
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
     return {
       success: true,
-      data: fullNote
+      data: fullNote,
     };
   },
   async deleteNote(id: string) {
@@ -132,6 +153,7 @@ const noteService = {
   },
 };
 
+// Create and export the clinical note store with proper typing
 export const useClinicalNoteStore = create<ClinicalNoteStore>()(
   persist(
     (set, get) => ({
@@ -160,7 +182,9 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
         const isProduction = import.meta.env.PROD;
 
         if (!isProduction) {
-          console.warn('Skipping clinical notes API call - no token found in development mode');
+          console.warn(
+            'Skipping clinical notes API call - no token found in development mode'
+          );
           return;
         }
 
@@ -179,14 +203,21 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
                 page: currentFilters.page || 1,
                 limit: currentFilters.limit || 10,
                 total: response.data.length,
-                pages: Math.ceil(response.data.length / (currentFilters.limit || 10)),
+                pages: Math.ceil(
+                  response.data.length / (currentFilters.limit || 10)
+                ),
               },
             });
           } else {
             setError('fetchNotes', 'Failed to fetch clinical notes');
           }
         } catch (error) {
-          setError('fetchNotes', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'fetchNotes',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
         } finally {
           setLoading('fetchNotes', false);
         }
@@ -206,7 +237,12 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
             setError('fetchByPatient', 'Failed to fetch patient notes');
           }
         } catch (error) {
-          setError('fetchByPatient', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'fetchByPatient',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
         } finally {
           setLoading('fetchByPatient', false);
         }
@@ -228,7 +264,12 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
             return null;
           }
         } catch (error) {
-          setError('createNote', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'createNote',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return null;
         } finally {
           setLoading('createNote', false);
@@ -258,7 +299,12 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
             return null;
           }
         } catch (error) {
-          setError('updateNote', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'updateNote',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return null;
         } finally {
           setLoading('updateNote', false);
@@ -288,7 +334,12 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
             return false;
           }
         } catch (error) {
-          setError('deleteNote', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'deleteNote',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return false;
         } finally {
           setLoading('deleteNote', false);
@@ -310,7 +361,12 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
             return null;
           }
         } catch (error) {
-          setError('getNoteById', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'getNoteById',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return null;
         } finally {
           setLoading('getNoteById', false);
@@ -324,13 +380,16 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
         setError('togglePrivacy', null);
 
         try {
-          const note = notes.find(n => n._id === id);
+          const note = notes.find((n) => n._id === id);
           if (!note) {
             setError('togglePrivacy', 'Note not found');
             return false;
           }
 
-          const response = await noteService.toggleNotePrivacy(id, !note.isPrivate);
+          const response = await noteService.toggleNotePrivacy(
+            id,
+            !note.isPrivate
+          );
 
           if (response.success) {
             updateNoteInState(id, { isPrivate: !note.isPrivate });
@@ -340,7 +399,12 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
             return false;
           }
         } catch (error) {
-          setError('togglePrivacy', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'togglePrivacy',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return false;
         } finally {
           setLoading('togglePrivacy', false);
@@ -353,7 +417,7 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
         setError('addTag', null);
 
         try {
-          const note = notes.find(n => n._id === id);
+          const note = notes.find((n) => n._id === id);
           if (!note) {
             setError('addTag', 'Note not found');
             return false;
@@ -370,7 +434,12 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
             return false;
           }
         } catch (error) {
-          setError('addTag', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'addTag',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return false;
         } finally {
           setLoading('addTag', false);
@@ -383,13 +452,13 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
         setError('removeTag', null);
 
         try {
-          const note = notes.find(n => n._id === id);
+          const note = notes.find((n) => n._id === id);
           if (!note) {
             setError('removeTag', 'Note not found');
             return false;
           }
 
-          const updatedTags = (note.tags || []).filter(t => t !== tag);
+          const updatedTags = (note.tags || []).filter((t) => t !== tag);
           const response = await noteService.updateNoteTags(id, updatedTags);
 
           if (response.success) {
@@ -400,7 +469,12 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
             return false;
           }
         } catch (error) {
-          setError('removeTag', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'removeTag',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return false;
         } finally {
           setLoading('removeTag', false);
@@ -409,7 +483,7 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
 
       duplicateNote: async (id) => {
         const { notes, createNote } = get();
-        const originalNote = notes.find(n => n._id === id);
+        const originalNote = notes.find((n) => n._id === id);
 
         if (!originalNote) {
           return null;
@@ -512,26 +586,35 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
         setError('deleteMultiple', null);
 
         try {
-          const promises = ids.map(id => noteService.deleteNote(id));
+          const promises = ids.map((id) => noteService.deleteNote(id));
           const results = await Promise.all(promises);
 
-          const successful = results.filter(r => r.success);
+          const successful = results.filter((r) => r.success);
 
           if (successful.length === ids.length) {
             // Remove all successfully deleted notes from state
             set((state) => ({
-              notes: state.notes.filter(n => !ids.includes(n._id)),
-              selectedNote: state.selectedNote && ids.includes(state.selectedNote._id)
-                ? null
-                : state.selectedNote,
+              notes: state.notes.filter((n) => !ids.includes(n._id)),
+              selectedNote:
+                state.selectedNote && ids.includes(state.selectedNote._id)
+                  ? null
+                  : state.selectedNote,
             }));
             return true;
           } else {
-            setError('deleteMultiple', `Only ${successful.length} of ${ids.length} notes were deleted`);
+            setError(
+              'deleteMultiple',
+              `Only ${successful.length} of ${ids.length} notes were deleted`
+            );
             return false;
           }
         } catch (error) {
-          setError('deleteMultiple', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'deleteMultiple',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return false;
         } finally {
           setLoading('deleteMultiple', false);
@@ -544,25 +627,35 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
         setError('updateMultiplePrivacy', null);
 
         try {
-          const promises = ids.map(id => noteService.toggleNotePrivacy(id, isPrivate));
+          const promises = ids.map((id) =>
+            noteService.toggleNotePrivacy(id, isPrivate)
+          );
           const results = await Promise.all(promises);
 
-          const successful = results.filter(r => r.success);
+          const successful = results.filter((r) => r.success);
 
           if (successful.length === ids.length) {
             // Update all successfully updated notes in state
             set((state) => ({
-              notes: state.notes.map(n =>
+              notes: state.notes.map((n) =>
                 ids.includes(n._id) ? { ...n, isPrivate } : n
               ),
             }));
             return true;
           } else {
-            setError('updateMultiplePrivacy', `Only ${successful.length} of ${ids.length} notes were updated`);
+            setError(
+              'updateMultiplePrivacy',
+              `Only ${successful.length} of ${ids.length} notes were updated`
+            );
             return false;
           }
         } catch (error) {
-          setError('updateMultiplePrivacy', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'updateMultiplePrivacy',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return false;
         } finally {
           setLoading('updateMultiplePrivacy', false);
@@ -575,8 +668,8 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
         setError('addTagMultiple', null);
 
         try {
-          const promises = ids.map(id => {
-            const note = notes.find(n => n._id === id);
+          const promises = ids.map((id) => {
+            const note = notes.find((n) => n._id === id);
             if (note) {
               const updatedTags = [...(note.tags || []), tag];
               return noteService.updateNoteTags(id, updatedTags);
@@ -585,12 +678,12 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
           });
 
           const results = await Promise.all(promises);
-          const successful = results.filter(r => r.success);
+          const successful = results.filter((r) => r.success);
 
           if (successful.length === ids.length) {
             // Update all successfully updated notes in state
             set((state) => ({
-              notes: state.notes.map(n => {
+              notes: state.notes.map((n) => {
                 if (ids.includes(n._id)) {
                   const existingTags = n.tags || [];
                   if (!existingTags.includes(tag)) {
@@ -602,11 +695,19 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
             }));
             return true;
           } else {
-            setError('addTagMultiple', `Only ${successful.length} of ${ids.length} notes were updated`);
+            setError(
+              'addTagMultiple',
+              `Only ${successful.length} of ${ids.length} notes were updated`
+            );
             return false;
           }
         } catch (error) {
-          setError('addTagMultiple', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'addTagMultiple',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return false;
         } finally {
           setLoading('addTagMultiple', false);
@@ -625,14 +726,14 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
 
       updateNoteInState: (id, updates) =>
         set((state) => ({
-          notes: state.notes.map(n =>
+          notes: state.notes.map((n) =>
             n._id === id ? { ...n, ...updates } : n
           ),
         })),
 
       removeNoteFromState: (id) =>
         set((state) => ({
-          notes: state.notes.filter(n => n._id !== id),
+          notes: state.notes.filter((n) => n._id !== id),
           pagination: {
             ...state.pagination,
             total: Math.max(0, state.pagination.total - 1),
@@ -642,32 +743,33 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
       // Analytics and insights
       getNotesByType: (type) => {
         const { notes } = get();
-        return notes.filter(n => n.type === type);
+        return notes.filter((n) => n.type === type);
       },
 
       getPatientNoteSummary: (patientId) => {
         const { notes } = get();
-        const patientNotes = notes.filter(n => n.patientId === patientId);
+        const patientNotes = notes.filter((n) => n.patientId === patientId);
 
         return {
-          consultation: patientNotes.filter(n => n.type === 'consultation').length,
-          followUp: patientNotes.filter(n => n.type === 'follow-up').length,
-          emergency: patientNotes.filter(n => n.type === 'emergency').length,
-          general: patientNotes.filter(n => n.type === 'general').length,
+          consultation: patientNotes.filter((n) => n.type === 'consultation')
+            .length,
+          followUp: patientNotes.filter((n) => n.type === 'follow-up').length,
+          emergency: patientNotes.filter((n) => n.type === 'emergency').length,
+          general: patientNotes.filter((n) => n.type === 'general').length,
           total: patientNotes.length,
-          private: patientNotes.filter(n => n.isPrivate).length,
+          private: patientNotes.filter((n) => n.isPrivate).length,
         };
       },
 
       getAllTags: () => {
         const { notes } = get();
-        const allTags = notes.flatMap(n => n.tags || []);
+        const allTags = notes.flatMap((n) => n.tags || []);
         return [...new Set(allTags)];
       },
 
       getNotesCountByTag: (tag) => {
         const { notes } = get();
-        return notes.filter(n => n.tags?.includes(tag)).length;
+        return notes.filter((n) => n.tags?.includes(tag)).length;
       },
     }),
     {
@@ -681,73 +783,78 @@ export const useClinicalNoteStore = create<ClinicalNoteStore>()(
 );
 
 // Utility hooks for easier access to specific clinical note states
-export const useClinicalNotes = () => useClinicalNoteStore((state) => ({
-  notes: state.notes,
-  loading: state.loading.fetchNotes || false,
-  error: state.errors.fetchNotes || null,
-  pagination: state.pagination,
-  fetchNotes: state.fetchNotes,
-  fetchNotesByPatient: state.fetchNotesByPatient,
-}));
+export const useClinicalNotes = () =>
+  useClinicalNoteStore((state) => ({
+    notes: state.notes,
+    loading: state.loading.fetchNotes || false,
+    error: state.errors.fetchNotes || null,
+    pagination: state.pagination,
+    fetchNotes: state.fetchNotes,
+    fetchNotesByPatient: state.fetchNotesByPatient,
+  }));
 
-export const useSelectedNote = () => useClinicalNoteStore((state) => ({
-  selectedNote: state.selectedNote,
-  selectNote: state.selectNote,
-  loading: state.loading.getNoteById || false,
-  error: state.errors.getNoteById || null,
-  getNoteById: state.getNoteById,
-}));
+export const useSelectedNote = () =>
+  useClinicalNoteStore((state) => ({
+    selectedNote: state.selectedNote,
+    selectNote: state.selectNote,
+    loading: state.loading.getNoteById || false,
+    error: state.errors.getNoteById || null,
+    getNoteById: state.getNoteById,
+  }));
 
-export const useClinicalNoteFilters = () => useClinicalNoteStore((state) => ({
-  filters: state.filters,
-  setFilters: state.setFilters,
-  clearFilters: state.clearFilters,
-  searchNotes: state.searchNotes,
-  filterByType: state.filterByType,
-  filterByPatient: state.filterByPatient,
-  filterByTags: state.filterByTags,
-  sortNotes: state.sortNotes,
-}));
+export const useClinicalNoteFilters = () =>
+  useClinicalNoteStore((state) => ({
+    filters: state.filters,
+    setFilters: state.setFilters,
+    clearFilters: state.clearFilters,
+    searchNotes: state.searchNotes,
+    filterByType: state.filterByType,
+    filterByPatient: state.filterByPatient,
+    filterByTags: state.filterByTags,
+    sortNotes: state.sortNotes,
+  }));
 
-export const useClinicalNoteActions = () => useClinicalNoteStore((state) => ({
-  createNote: state.createNote,
-  updateNote: state.updateNote,
-  deleteNote: state.deleteNote,
-  toggleNotePrivacy: state.toggleNotePrivacy,
-  addTagToNote: state.addTagToNote,
-  removeTagFromNote: state.removeTagFromNote,
-  duplicateNote: state.duplicateNote,
-  deleteMultipleNotes: state.deleteMultipleNotes,
-  updateMultipleNotesPrivacy: state.updateMultipleNotesPrivacy,
-  addTagToMultipleNotes: state.addTagToMultipleNotes,
-  loading: {
-    create: state.loading.createNote || false,
-    update: state.loading.updateNote || false,
-    delete: state.loading.deleteNote || false,
-    togglePrivacy: state.loading.togglePrivacy || false,
-    addTag: state.loading.addTag || false,
-    removeTag: state.loading.removeTag || false,
-    deleteMultiple: state.loading.deleteMultiple || false,
-    updateMultiplePrivacy: state.loading.updateMultiplePrivacy || false,
-    addTagMultiple: state.loading.addTagMultiple || false,
-  },
-  errors: {
-    create: state.errors.createNote || null,
-    update: state.errors.updateNote || null,
-    delete: state.errors.deleteNote || null,
-    togglePrivacy: state.errors.togglePrivacy || null,
-    addTag: state.errors.addTag || null,
-    removeTag: state.errors.removeTag || null,
-    deleteMultiple: state.errors.deleteMultiple || null,
-    updateMultiplePrivacy: state.errors.updateMultiplePrivacy || null,
-    addTagMultiple: state.errors.addTagMultiple || null,
-  },
-  clearErrors: state.clearErrors,
-}));
+export const useClinicalNoteActions = () =>
+  useClinicalNoteStore((state) => ({
+    createNote: state.createNote,
+    updateNote: state.updateNote,
+    deleteNote: state.deleteNote,
+    toggleNotePrivacy: state.toggleNotePrivacy,
+    addTagToNote: state.addTagToNote,
+    removeTagFromNote: state.removeTagFromNote,
+    duplicateNote: state.duplicateNote,
+    deleteMultipleNotes: state.deleteMultipleNotes,
+    updateMultipleNotesPrivacy: state.updateMultipleNotesPrivacy,
+    addTagToMultipleNotes: state.addTagToMultipleNotes,
+    loading: {
+      create: state.loading.createNote || false,
+      update: state.loading.updateNote || false,
+      delete: state.loading.deleteNote || false,
+      togglePrivacy: state.loading.togglePrivacy || false,
+      addTag: state.loading.addTag || false,
+      removeTag: state.loading.removeTag || false,
+      deleteMultiple: state.loading.deleteMultiple || false,
+      updateMultiplePrivacy: state.loading.updateMultiplePrivacy || false,
+      addTagMultiple: state.loading.addTagMultiple || false,
+    },
+    errors: {
+      create: state.errors.createNote || null,
+      update: state.errors.updateNote || null,
+      delete: state.errors.deleteNote || null,
+      togglePrivacy: state.errors.togglePrivacy || null,
+      addTag: state.errors.addTag || null,
+      removeTag: state.errors.removeTag || null,
+      deleteMultiple: state.errors.deleteMultiple || null,
+      updateMultiplePrivacy: state.errors.updateMultiplePrivacy || null,
+      addTagMultiple: state.errors.addTagMultiple || null,
+    },
+    clearErrors: state.clearErrors,
+  }));
 
-export const useClinicalNoteAnalytics = () => useClinicalNoteStore((state) => ({
-  getNotesByType: state.getNotesByType,
-  getPatientNoteSummary: state.getPatientNoteSummary,
-  getAllTags: state.getAllTags,
-  getNotesCountByTag: state.getNotesCountByTag,
-}));
+export const useClinicalNoteAnalytics = () =>
+  useClinicalNoteStore((state) => ({
+    getNotesByType: state.getNotesByType,
+    getPatientNoteSummary: state.getPatientNoteSummary,
+    getAllTags: state.getAllTags,
+    getNotesCountByTag: state.getNotesCountByTag,
+  }));
