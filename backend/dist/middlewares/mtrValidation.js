@@ -15,7 +15,7 @@ const handleValidationErrors = (req, res, next) => {
             field: error.type === 'field' ? error.path : 'unknown',
             message: error.msg,
             value: error.type === 'field' ? error.value : undefined,
-            location: 'location' in error ? error.location : 'body'
+            location: 'location' in error ? error.location : 'body',
         }));
         logger_1.default.warn('MTR validation failed', {
             userId: req.user?.id,
@@ -24,7 +24,7 @@ const handleValidationErrors = (req, res, next) => {
             errors: validationErrors,
             timestamp: new Date().toISOString(),
             ip: req.ip,
-            userAgent: req.get('User-Agent')
+            userAgent: req.get('User-Agent'),
         });
         const error = new mtrErrors_1.MTRValidationError('Validation failed for MTR operation', validationErrors);
         return next(error);
@@ -40,13 +40,21 @@ const validateMedicationHistory = (req, res, next) => {
         }
         const validationErrors = [];
         medications.forEach((medication, index) => {
-            const requiredFields = ['drugName', 'strength', 'dosageForm', 'instructions', 'category', 'startDate', 'indication'];
-            requiredFields.forEach(field => {
+            const requiredFields = [
+                'drugName',
+                'strength',
+                'dosageForm',
+                'instructions',
+                'category',
+                'startDate',
+                'indication',
+            ];
+            requiredFields.forEach((field) => {
                 if (!medication[field]) {
                     validationErrors.push({
                         field: `medications[${index}].${field}`,
                         message: `${field} is required`,
-                        value: medication[field]
+                        value: medication[field],
                     });
                 }
             });
@@ -55,25 +63,26 @@ const validateMedicationHistory = (req, res, next) => {
                     validationErrors.push({
                         field: `medications[${index}].strength`,
                         message: 'Strength must include both value and unit',
-                        value: medication.strength
+                        value: medication.strength,
                     });
                 }
-                if (typeof medication.strength.value !== 'number' || medication.strength.value <= 0) {
+                if (typeof medication.strength.value !== 'number' ||
+                    medication.strength.value <= 0) {
                     validationErrors.push({
                         field: `medications[${index}].strength.value`,
                         message: 'Strength value must be a positive number',
-                        value: medication.strength.value
+                        value: medication.strength.value,
                     });
                 }
             }
             if (medication.instructions) {
                 const requiredInstructions = ['dose', 'frequency', 'route'];
-                requiredInstructions.forEach(field => {
+                requiredInstructions.forEach((field) => {
                     if (!medication.instructions[field]) {
                         validationErrors.push({
                             field: `medications[${index}].instructions.${field}`,
                             message: `${field} is required in instructions`,
-                            value: medication.instructions[field]
+                            value: medication.instructions[field],
                         });
                     }
                 });
@@ -82,14 +91,14 @@ const validateMedicationHistory = (req, res, next) => {
                 validationErrors.push({
                     field: `medications[${index}].startDate`,
                     message: 'Start date must be a valid date',
-                    value: medication.startDate
+                    value: medication.startDate,
                 });
             }
             if (medication.endDate && !isValidDate(medication.endDate)) {
                 validationErrors.push({
                     field: `medications[${index}].endDate`,
                     message: 'End date must be a valid date',
-                    value: medication.endDate
+                    value: medication.endDate,
                 });
             }
             if (medication.startDate && medication.endDate) {
@@ -99,16 +108,17 @@ const validateMedicationHistory = (req, res, next) => {
                     validationErrors.push({
                         field: `medications[${index}].endDate`,
                         message: 'End date must be after start date',
-                        value: medication.endDate
+                        value: medication.endDate,
                     });
                 }
             }
             const validCategories = ['prescribed', 'otc', 'herbal', 'supplement'];
-            if (medication.category && !validCategories.includes(medication.category)) {
+            if (medication.category &&
+                !validCategories.includes(medication.category)) {
                 validationErrors.push({
                     field: `medications[${index}].category`,
                     message: `Category must be one of: ${validCategories.join(', ')}`,
-                    value: medication.category
+                    value: medication.category,
                 });
             }
             if (medication.adherenceScore !== undefined) {
@@ -118,7 +128,7 @@ const validateMedicationHistory = (req, res, next) => {
                     validationErrors.push({
                         field: `medications[${index}].adherenceScore`,
                         message: 'Adherence score must be a number between 0 and 100',
-                        value: medication.adherenceScore
+                        value: medication.adherenceScore,
                     });
                 }
             }
@@ -128,7 +138,7 @@ const validateMedicationHistory = (req, res, next) => {
                 userId: req.user?.id,
                 patientId: req.params.patientId || req.body.patientId,
                 errors: validationErrors,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             });
             throw new mtrErrors_1.MTRValidationError('Medication history validation failed', validationErrors);
         }
@@ -146,11 +156,13 @@ const validateTherapyPlan = (req, res, next) => {
             throw new mtrErrors_1.MTRValidationError('Therapy plan is required');
         }
         const validationErrors = [];
-        if (!plan.problems || !Array.isArray(plan.problems) || plan.problems.length === 0) {
+        if (!plan.problems ||
+            !Array.isArray(plan.problems) ||
+            plan.problems.length === 0) {
             validationErrors.push({
                 field: 'plan.problems',
                 message: 'Therapy plan must be linked to at least one drug therapy problem',
-                value: plan.problems
+                value: plan.problems,
             });
         }
         if (plan.problems && Array.isArray(plan.problems)) {
@@ -159,44 +171,58 @@ const validateTherapyPlan = (req, res, next) => {
                     validationErrors.push({
                         field: `plan.problems[${index}]`,
                         message: 'Invalid problem ID format',
-                        value: problemId
+                        value: problemId,
                     });
                 }
             });
         }
-        if (!plan.recommendations || !Array.isArray(plan.recommendations) || plan.recommendations.length === 0) {
+        if (!plan.recommendations ||
+            !Array.isArray(plan.recommendations) ||
+            plan.recommendations.length === 0) {
             validationErrors.push({
                 field: 'plan.recommendations',
                 message: 'At least one recommendation is required',
-                value: plan.recommendations
+                value: plan.recommendations,
             });
         }
         if (plan.recommendations && Array.isArray(plan.recommendations)) {
             plan.recommendations.forEach((recommendation, index) => {
-                const requiredFields = ['type', 'rationale', 'priority', 'expectedOutcome'];
-                requiredFields.forEach(field => {
+                const requiredFields = [
+                    'type',
+                    'rationale',
+                    'priority',
+                    'expectedOutcome',
+                ];
+                requiredFields.forEach((field) => {
                     if (!recommendation[field]) {
                         validationErrors.push({
                             field: `plan.recommendations[${index}].${field}`,
                             message: `${field} is required for each recommendation`,
-                            value: recommendation[field]
+                            value: recommendation[field],
                         });
                     }
                 });
-                const validTypes = ['discontinue', 'adjust_dose', 'switch_therapy', 'add_therapy', 'monitor'];
+                const validTypes = [
+                    'discontinue',
+                    'adjust_dose',
+                    'switch_therapy',
+                    'add_therapy',
+                    'monitor',
+                ];
                 if (recommendation.type && !validTypes.includes(recommendation.type)) {
                     validationErrors.push({
                         field: `plan.recommendations[${index}].type`,
                         message: `Recommendation type must be one of: ${validTypes.join(', ')}`,
-                        value: recommendation.type
+                        value: recommendation.type,
                     });
                 }
                 const validPriorities = ['high', 'medium', 'low'];
-                if (recommendation.priority && !validPriorities.includes(recommendation.priority)) {
+                if (recommendation.priority &&
+                    !validPriorities.includes(recommendation.priority)) {
                     validationErrors.push({
                         field: `plan.recommendations[${index}].priority`,
                         message: `Priority must be one of: ${validPriorities.join(', ')}`,
-                        value: recommendation.priority
+                        value: recommendation.priority,
                     });
                 }
             });
@@ -207,7 +233,7 @@ const validateTherapyPlan = (req, res, next) => {
                     validationErrors.push({
                         field: `plan.monitoringPlan[${index}]`,
                         message: 'Monitoring parameters must include parameter and frequency',
-                        value: parameter
+                        value: parameter,
                     });
                 }
             });
@@ -215,12 +241,12 @@ const validateTherapyPlan = (req, res, next) => {
         if (plan.goals && Array.isArray(plan.goals)) {
             plan.goals.forEach((goal, index) => {
                 const requiredGoalFields = ['description', 'targetValue', 'timeframe'];
-                requiredGoalFields.forEach(field => {
+                requiredGoalFields.forEach((field) => {
                     if (!goal[field]) {
                         validationErrors.push({
                             field: `plan.goals[${index}].${field}`,
                             message: `${field} is required for each therapy goal`,
-                            value: goal[field]
+                            value: goal[field],
                         });
                     }
                 });
@@ -231,7 +257,7 @@ const validateTherapyPlan = (req, res, next) => {
                 userId: req.user?.id,
                 reviewId: req.params.id,
                 errors: validationErrors,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             });
             throw new mtrErrors_1.MTRValidationError('Therapy plan validation failed', validationErrors);
         }
@@ -251,35 +277,47 @@ const validateMTRAccess = (req, res, next) => {
                 method: req.method,
                 ip: req.ip,
                 userAgent: req.get('User-Agent'),
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             });
             throw new mtrErrors_1.MTRAuthorizationError('Authentication required for MTR access');
         }
-        if (!user.role || !['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'super_admin'].includes(user.role)) {
+        if (!user.role ||
+            ![
+                'pharmacist',
+                'pharmacy_team',
+                'pharmacy_outlet',
+                'super_admin',
+            ].includes(user.role)) {
             logger_1.default.warn('Insufficient permissions for MTR access', {
                 userId: user.id,
                 userRole: user.role,
                 endpoint: req.originalUrl,
                 method: req.method,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             });
-            throw new mtrErrors_1.MTRAuthorizationError('Pharmacist credentials required for MTR operations');
+            throw new mtrErrors_1.MTRAuthorizationError('Authorized role required for MTR operations');
         }
-        if (user.role !== 'super_admin' && user.licenseStatus && !['active', 'approved'].includes(user.licenseStatus)) {
-            logger_1.default.warn('MTR access attempt with inactive license', {
-                userId: user.id,
-                licenseStatus: user.licenseStatus,
-                endpoint: req.originalUrl,
-                timestamp: new Date().toISOString()
-            });
-            throw new mtrErrors_1.MTRAuthorizationError('Active or approved pharmacist license required for MTR operations');
+        if (user.role !== 'super_admin') {
+            if (user.licenseStatus &&
+                !['active', 'approved'].includes(user.licenseStatus)) {
+                logger_1.default.warn('MTR access attempt with inactive license', {
+                    userId: user.id,
+                    licenseStatus: user.licenseStatus,
+                    endpoint: req.originalUrl,
+                    timestamp: new Date().toISOString(),
+                });
+                throw new mtrErrors_1.MTRAuthorizationError('Active or approved pharmacist license required for MTR operations');
+            }
+        }
+        else {
+            console.log('Super admin access granted');
         }
         logger_1.default.info('MTR access granted', {
             userId: user.id,
             userRole: user.role,
             endpoint: req.originalUrl,
             method: req.method,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
         });
         next();
     }
@@ -299,26 +337,34 @@ const validateMTRBusinessLogic = (req, res, next) => {
                 validationErrors.push({
                     field: 'data',
                     message: 'Step data is required when marking step as completed',
-                    value: data
+                    value: data,
                 });
             }
-            const stepOrder = ['patientSelection', 'medicationHistory', 'therapyAssessment', 'planDevelopment', 'interventions', 'followUp'];
+            const stepOrder = [
+                'patientSelection',
+                'medicationHistory',
+                'therapyAssessment',
+                'planDevelopment',
+                'interventions',
+                'followUp',
+            ];
             const currentStepIndex = stepOrder.indexOf(stepName || '');
             if (currentStepIndex === -1) {
                 validationErrors.push({
                     field: 'stepName',
                     message: 'Invalid step name',
-                    value: stepName
+                    value: stepName,
                 });
             }
         }
         if (originalUrl.includes('/interventions') && method === 'POST') {
             const { type, targetAudience, communicationMethod } = req.body;
-            if (targetAudience === 'prescriber' && !['written', 'phone', 'email', 'fax'].includes(communicationMethod)) {
+            if (targetAudience === 'prescriber' &&
+                !['written', 'phone', 'email', 'fax'].includes(communicationMethod)) {
                 validationErrors.push({
                     field: 'communicationMethod',
                     message: 'Prescriber communications must use written, phone, email, or fax methods',
-                    value: communicationMethod
+                    value: communicationMethod,
                 });
             }
         }
