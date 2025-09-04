@@ -18,19 +18,18 @@ import {
   Breadcrumbs,
   Link,
 } from '@mui/material';
-import {
-  ArrowBack as ArrowBackIcon,
-  Dashboard as DashboardIcon,
-  CheckCircle as CheckCircleIcon,
-  Schedule as ScheduleIcon,
-  NavigateNext as NavigateNextIcon,
-} from '@mui/icons-material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import type { ModuleInfo, ModulePageProps } from '../types/moduleTypes';
 
 const ModulePage: React.FC<ModulePageProps> = ({
   moduleInfo,
   icon: IconComponent,
   gradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  children,
 }) => {
   const navigate = useNavigate();
 
@@ -379,6 +378,13 @@ const ModulePage: React.FC<ModulePageProps> = ({
           </CardContent>
         </Card>
       </Box>
+
+      {/* Main Content Area for Children */}
+      {children && (
+        <Box sx={{ mb: 4 }}>
+          {children}
+        </Box>
+      )}
 
       {/* Action Buttons */}
       <Box

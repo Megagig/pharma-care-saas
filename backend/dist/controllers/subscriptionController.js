@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -16,16 +49,16 @@ class SubscriptionController {
         this.getAvailablePlans = async (req, res) => {
             try {
                 const billingInterval = req.query.billingInterval || 'monthly';
-                const plans = await SubscriptionPlan_1.default.find({
-                    isActive: true,
-                    billingInterval: billingInterval,
-                }).sort({
-                    priceNGN: 1,
-                });
-                const transformedPlans = plans.map((plan) => ({
-                    ...plan.toObject(),
-                    tier: plan.tier,
-                    displayFeatures: this.getDisplayFeatures(plan),
+                const PlanConfigService = (await Promise.resolve().then(() => __importStar(require('../services/PlanConfigService')))).default;
+                const planConfigService = PlanConfigService.getInstance();
+                const configPlans = await planConfigService.getActivePlans();
+                const filteredPlans = configPlans
+                    .filter(plan => plan.billingInterval === billingInterval)
+                    .sort((a, b) => a.tierRank - b.tierRank);
+                const config = await planConfigService.loadConfiguration();
+                const transformedPlans = filteredPlans.map((plan) => ({
+                    ...plan,
+                    displayFeatures: this.getDisplayFeaturesFromConfig(plan, config.features),
                 }));
                 res.json({
                     success: true,
@@ -43,8 +76,26 @@ class SubscriptionController {
     }
     async getCurrentSubscription(req, res) {
         try {
+            const user = req.user;
+            if (!user.workplaceId) {
+                return res.status(200).json({
+                    success: true,
+                    data: {
+                        hasWorkspace: false,
+                        hasSubscription: false,
+                        subscription: null,
+                        status: 'no_workspace',
+                        accessLevel: 'basic',
+                        availableFeatures: [],
+                        isExpired: false,
+                        isInGracePeriod: false,
+                        canRenew: false,
+                        message: 'Create or join a workplace to access full features',
+                    },
+                });
+            }
             const subscription = await Subscription_1.default.findOne({
-                userId: req.user._id,
+                workspaceId: user.workplaceId,
                 status: { $in: ['active', 'trial', 'grace_period'] },
             })
                 .populate('planId')
@@ -53,27 +104,48 @@ class SubscriptionController {
                 return res.status(200).json({
                     success: true,
                     data: {
+                        hasWorkspace: true,
+                        hasSubscription: false,
                         subscription: null,
+                        status: 'no_subscription',
+                        accessLevel: 'limited',
                         availableFeatures: [],
                         isExpired: true,
                         isInGracePeriod: false,
                         canRenew: true,
+                        message: 'No active subscription found for your workplace',
                     },
-                    message: 'No active subscription found',
                 });
             }
             const availableFeatures = await FeatureFlag_1.default.find({
                 isActive: true,
                 allowedTiers: subscription.tier,
             }).select('key name description metadata.category');
+            const now = new Date();
+            const isTrialActive = subscription.status === 'trial' &&
+                subscription.endDate &&
+                now <= subscription.endDate;
+            let daysRemaining = 0;
+            if (isTrialActive && subscription.endDate) {
+                const diffTime = subscription.endDate.getTime() - now.getTime();
+                daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
             res.json({
                 success: true,
                 data: {
+                    hasWorkspace: true,
+                    hasSubscription: true,
                     subscription,
+                    status: subscription.status,
+                    tier: subscription.tier,
+                    accessLevel: 'full',
                     availableFeatures,
                     isExpired: subscription.isExpired(),
                     isInGracePeriod: subscription.isInGracePeriod(),
                     canRenew: subscription.canRenew(),
+                    isTrialActive,
+                    daysRemaining,
+                    endDate: subscription.endDate,
                 },
             });
         }
@@ -84,6 +156,41 @@ class SubscriptionController {
                 error: error.message,
             });
         }
+    }
+    getDisplayFeaturesFromConfig(plan, featureDefinitions) {
+        const features = [];
+        if (plan.limits.patients) {
+            features.push(`Up to ${plan.limits.patients} patients`);
+        }
+        else {
+            features.push('Unlimited patients');
+        }
+        if (plan.limits.users) {
+            features.push(`Up to ${plan.limits.users} team members`);
+        }
+        else {
+            features.push('Unlimited team members');
+        }
+        if (plan.limits.locations) {
+            features.push(`Up to ${plan.limits.locations} locations`);
+        }
+        else if (plan.features.includes('multi_location_dashboard')) {
+            features.push('Unlimited locations');
+        }
+        plan.features.forEach((featureCode) => {
+            const featureDef = featureDefinitions[featureCode];
+            if (featureDef) {
+                features.push(featureDef.name);
+            }
+        });
+        if (plan.tier === 'free_trial') {
+            features.unshift('14-day free trial with full access');
+        }
+        if (plan.isContactSales) {
+            features.push('Custom pricing available');
+            features.push('Dedicated account manager');
+        }
+        return features;
     }
     getDisplayFeatures(plan) {
         const features = [];
@@ -633,6 +740,71 @@ class SubscriptionController {
                 success: false,
                 message: 'Error scheduling downgrade',
                 error: error.message,
+            });
+        }
+    }
+    async getSubscriptionStatus(req, res) {
+        try {
+            const user = req.user;
+            if (!user.workplaceId) {
+                return res.json({
+                    success: true,
+                    data: {
+                        hasWorkspace: false,
+                        hasSubscription: false,
+                        status: 'no_workspace',
+                        accessLevel: 'basic',
+                        message: 'Create or join a workplace to access full features',
+                    },
+                });
+            }
+            const subscription = await Subscription_1.default.findOne({
+                workspaceId: user.workplaceId,
+                status: { $in: ['active', 'trial', 'grace_period'] },
+            }).populate('planId');
+            if (!subscription) {
+                return res.json({
+                    success: true,
+                    data: {
+                        hasWorkspace: true,
+                        hasSubscription: false,
+                        status: 'no_subscription',
+                        accessLevel: 'limited',
+                        message: 'No active subscription found',
+                    },
+                });
+            }
+            const now = new Date();
+            const isTrialActive = subscription.status === 'trial' &&
+                subscription.endDate &&
+                now <= subscription.endDate;
+            let daysRemaining = 0;
+            if (isTrialActive && subscription.endDate) {
+                const diffTime = subscription.endDate.getTime() - now.getTime();
+                daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
+            res.json({
+                success: true,
+                data: {
+                    hasWorkspace: true,
+                    hasSubscription: true,
+                    status: subscription.status,
+                    tier: subscription.tier,
+                    accessLevel: 'full',
+                    isTrialActive,
+                    daysRemaining,
+                    endDate: subscription.endDate,
+                    planId: subscription.planId,
+                    features: subscription.features || [],
+                    limits: subscription.limits || {},
+                },
+            });
+        }
+        catch (error) {
+            console.error('Error fetching subscription status:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to fetch subscription status',
             });
         }
     }

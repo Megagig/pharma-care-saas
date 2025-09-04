@@ -43,6 +43,7 @@ import locationDataRoutes from './routes/locationDataRoutes';
 import legacyApiRoutes from './routes/legacyApiRoutes';
 import migrationDashboardRoutes from './routes/migrationDashboardRoutes';
 import emailWebhookRoutes from './routes/emailWebhookRoutes';
+import drugRoutes from './routes/drugRoutes';
 
 const app: Application = express();
 
@@ -131,6 +132,9 @@ app.use('/api', assessmentRoutes);
 app.use('/api', dtpRoutes);
 app.use('/api', carePlanRoutes);
 app.use('/api', visitRoutes);
+
+// Drug Information Center routes
+app.use('/api/drugs', drugRoutes);
 
 // Other routes
 app.use('/api/notes', noteRoutes);

@@ -1,72 +1,65 @@
-export interface DrugInfo {
-    drugName: string;
-    genericName?: string;
-    brandName?: string;
-    activeIngredient: string;
-    dosage?: string;
-    route?: string;
-    frequency?: string;
-    therapeuticClass?: string;
-    mechanism?: string;
-}
 export interface DrugInteraction {
-    drug1: string;
-    drug2: string;
-    severity: 'critical' | 'major' | 'moderate' | 'minor';
-    mechanism: string;
-    clinicalEffect: string;
-    recommendation: string;
-    monitoringParameters?: string[];
-    alternativeTherapies?: string[];
-    onsetTime?: 'immediate' | 'rapid' | 'delayed' | 'variable';
-    documentation: 'established' | 'probable' | 'suspected' | 'possible' | 'unlikely';
-    references?: string[];
+    interactionPairs: Array<{
+        interactionConcept: Array<{
+            minConceptItem: {
+                rxcui: string;
+                name: string;
+                tty: string;
+            };
+            sourceConceptItem: {
+                id: string;
+                name: string;
+                url?: string;
+            };
+        }>;
+        severity?: string;
+        description?: string;
+    }>;
 }
-export interface TherapeuticDuplication {
-    drugs: string[];
-    therapeuticClass: string;
-    severity: 'major' | 'moderate' | 'minor';
-    recommendation: string;
-    clinicalRisk: string;
+export interface InteractionResult {
+    nlmDisclaimer?: string;
+    interactions: DrugInteraction[];
 }
-export interface ContraindicationCheck {
-    drug: string;
-    contraindication: string;
-    condition?: string;
-    severity: 'absolute' | 'relative';
-    reason: string;
+export interface SingleDrugInteraction {
+    nlmDisclaimer?: string;
+    interactionTypeGroup?: Array<{
+        sourceDisclaimer: string;
+        sourceName: string;
+        interactionType: Array<{
+            comment?: string;
+            minConcept: Array<{
+                rxcui: string;
+                name: string;
+                tty: string;
+            }>;
+        }>;
+    }>;
+}
+export interface DrugInteractionCheck {
+    drugName: string;
+    rxcui?: string;
+    interactions: Array<{
+        interactingDrug: string;
+        interactingRxcui?: string;
+        severity?: 'minor' | 'moderate' | 'major' | 'contraindicated';
+        description: string;
+        source: string;
+        management?: string;
+    }>;
 }
 export declare class DrugInteractionService {
-    private interactionDB;
+    private client;
     constructor();
-    checkDrugInteractions(medications: DrugInfo[]): Promise<DrugInteraction[]>;
-    checkTherapeuticDuplications(medications: DrugInfo[]): Promise<TherapeuticDuplication[]>;
-    checkContraindications(medications: DrugInfo[], patientConditions: string[]): Promise<ContraindicationCheck[]>;
-    getInteractionReport(medications: DrugInfo[], patientConditions?: string[]): Promise<{
-        summary: {
-            totalMedications: number;
-            totalInteractions: number;
-            criticalInteractions: number;
-            majorInteractions: number;
-            therapeuticDuplications: number;
-            contraindications: number;
-            overallRiskLevel: "low" | "high" | "critical" | "moderate";
-        };
-        interactions: DrugInteraction[];
-        therapeuticDuplications: TherapeuticDuplication[];
-        contraindications: ContraindicationCheck[];
-        criticalIssues: (DrugInteraction | TherapeuticDuplication | ContraindicationCheck)[];
-        recommendations: string[];
+    checkSingleDrugInteractions(rxcui: string): Promise<SingleDrugInteraction>;
+    checkMultiDrugInteractions(rxcuis: string[]): Promise<InteractionResult>;
+    formatInteractionResults(interactionData: SingleDrugInteraction | InteractionResult, primaryRxcui?: string): DrugInteractionCheck[];
+    private determineSeverity;
+    getManagementRecommendations(severity: string, description: string): string;
+    quickInteractionCheck(drugName: string): Promise<{
+        hasInteractions: boolean;
+        count: number;
     }>;
-    private checkPairwiseInteraction;
-    private getTherapeuticClass;
-    private evaluateTherapeuticDuplication;
-    private checkDrugConditionContraindication;
-    private calculateDuplicationSeverity;
-    private getDuplicationRecommendation;
-    private getDuplicationRisk;
-    private calculateOverallRisk;
-    private generateRecommendations;
 }
-export declare const drugInteractionService: DrugInteractionService;
+declare const _default: DrugInteractionService;
+export default _default;
 //# sourceMappingURL=drugInteractionService.d.ts.map
