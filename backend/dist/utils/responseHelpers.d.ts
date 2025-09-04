@@ -38,7 +38,8 @@ export declare const createDuplicateError: (resource: string, field?: string) =>
 export declare const createBusinessRuleError: (rule: string) => PatientManagementError;
 export declare const patientManagementErrorHandler: (error: Error, req: Request, res: Response, next: NextFunction) => void;
 export declare const asyncHandler: (fn: Function) => (req: Request, res: Response, next: NextFunction) => void;
-export declare const checkTenantAccess: (resourceWorkplaceId: string, userWorkplaceId: string, isAdmin?: boolean) => void;
+export declare const checkTenantAccess: (resourceWorkplaceId: string, userWorkplaceId: string, isAdmin?: boolean, isSuperAdmin?: boolean) => void;
+export declare const checkTenantAccessWithRequest: (resourceWorkplaceId: string, userWorkplaceId: string, isAdmin: boolean | undefined, req: AuthRequest) => void;
 export declare const ensureResourceExists: <T>(resource: T | null, name: string, id?: string) => T;
 export declare const validateBusinessRules: {
     validateBloodPressure: (systolic?: number, diastolic?: number) => void;
@@ -48,11 +49,13 @@ export declare const validateBusinessRules: {
 };
 export declare const respondWithPatient: (res: Response, patient: any, message?: string) => void;
 export declare const respondWithPaginatedResults: <T>(res: Response, results: T[], total: number, page: number, limit: number, message?: string) => void;
+export declare const isSuperAdmin: (req: AuthRequest) => boolean;
 export declare const getRequestContext: (req: AuthRequest) => {
     userId: any;
     userRole: "pharmacist" | "pharmacy_team" | "pharmacy_outlet" | "intern_pharmacist" | "super_admin" | undefined;
     workplaceId: string;
     isAdmin: any;
+    isSuperAdmin: boolean;
     canManage: any;
     timestamp: string;
 };

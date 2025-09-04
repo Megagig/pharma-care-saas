@@ -234,7 +234,13 @@ const medicationTherapyReviewSchema = new mongoose_1.Schema({
             {
                 type: {
                     type: String,
-                    enum: ['discontinue', 'adjust_dose', 'switch_therapy', 'add_therapy', 'monitor'],
+                    enum: [
+                        'discontinue',
+                        'adjust_dose',
+                        'switch_therapy',
+                        'add_therapy',
+                        'monitor',
+                    ],
                     required: true,
                 },
                 medication: {
@@ -407,7 +413,11 @@ const medicationTherapyReviewSchema = new mongoose_1.Schema({
 medicationTherapyReviewSchema.plugin(tenancyGuard_1.tenancyGuardPlugin, {
     pharmacyIdField: 'workplaceId',
 });
-medicationTherapyReviewSchema.index({ workplaceId: 1, patientId: 1, status: 1 });
+medicationTherapyReviewSchema.index({
+    workplaceId: 1,
+    patientId: 1,
+    status: 1,
+});
 medicationTherapyReviewSchema.index({ workplaceId: 1, pharmacistId: 1 });
 medicationTherapyReviewSchema.index({ workplaceId: 1, reviewType: 1 });
 medicationTherapyReviewSchema.index({ workplaceId: 1, priority: 1 });
@@ -417,17 +427,23 @@ medicationTherapyReviewSchema.index({ nextReviewDate: 1 }, { sparse: true });
 medicationTherapyReviewSchema.index({ completedAt: -1 }, { sparse: true });
 medicationTherapyReviewSchema.index({ createdAt: -1 });
 medicationTherapyReviewSchema.index({ workplaceId: 1, reviewNumber: 1 }, { unique: true });
-medicationTherapyReviewSchema.virtual('completionPercentage').get(function () {
+medicationTherapyReviewSchema
+    .virtual('completionPercentage')
+    .get(function () {
     const steps = Object.values(this.steps);
-    const completedSteps = steps.filter(step => step.completed).length;
+    const completedSteps = steps.filter((step) => step.completed).length;
     return Math.round((completedSteps / steps.length) * 100);
 });
-medicationTherapyReviewSchema.virtual('durationDays').get(function () {
+medicationTherapyReviewSchema
+    .virtual('durationDays')
+    .get(function () {
     const endDate = this.completedAt || new Date();
     const diffTime = Math.abs(endDate.getTime() - this.startedAt.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
-medicationTherapyReviewSchema.virtual('isOverdue').get(function () {
+medicationTherapyReviewSchema
+    .virtual('isOverdue')
+    .get(function () {
     if (this.status === 'completed' || this.status === 'cancelled')
         return false;
     const daysSinceStart = Math.floor((Date.now() - this.startedAt.getTime()) / (1000 * 60 * 60 * 24));
@@ -436,7 +452,7 @@ medicationTherapyReviewSchema.virtual('isOverdue').get(function () {
 });
 medicationTherapyReviewSchema.methods.getCompletionPercentage = function () {
     const steps = Object.values(this.steps);
-    const completedSteps = steps.filter(step => step.completed).length;
+    const completedSteps = steps.filter((step) => step.completed).length;
     return Math.round((completedSteps / steps.length) * 100);
 };
 medicationTherapyReviewSchema.methods.getNextStep = function () {
@@ -446,7 +462,7 @@ medicationTherapyReviewSchema.methods.getNextStep = function () {
         'therapyAssessment',
         'planDevelopment',
         'interventions',
-        'followUp'
+        'followUp',
     ];
     for (const stepName of stepOrder) {
         if (!this.steps[stepName].completed) {
@@ -456,7 +472,7 @@ medicationTherapyReviewSchema.methods.getNextStep = function () {
     return null;
 };
 medicationTherapyReviewSchema.methods.canComplete = function () {
-    return Object.values(this.steps).every(step => step.completed);
+    return Object.values(this.steps).every((step) => step.completed);
 };
 medicationTherapyReviewSchema.methods.markStepComplete = function (stepName, data) {
     if (this.steps[stepName]) {
@@ -481,29 +497,31 @@ medicationTherapyReviewSchema.pre('save', function () {
         this.status = 'completed';
         this.completedAt = new Date();
     }
-    if (!this.patientConsent) {
+    if (!this.patientConsent && this.createdByRole !== 'super_admin') {
         throw new Error('Patient consent is required to proceed with MTR');
     }
-    if (!this.confidentialityAgreed) {
+    if (!this.confidentialityAgreed &&
+        this.createdByRole !== 'super_admin') {
         throw new Error('Confidentiality agreement is required to proceed with MTR');
     }
 });
-medicationTherapyReviewSchema.statics.generateNextReviewNumber = async function (workplaceId) {
-    const year = new Date().getFullYear();
-    const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
-    const lastReview = await this.findOne({
-        workplaceId,
-        reviewNumber: { $regex: `^MTR-${year}${month}` }
-    }, {}, { sort: { createdAt: -1 }, bypassTenancyGuard: true });
-    let sequence = 1;
-    if (lastReview?.reviewNumber) {
-        const match = lastReview.reviewNumber.match(/-(\d+)$/);
-        if (match) {
-            sequence = parseInt(match[1]) + 1;
+medicationTherapyReviewSchema.statics.generateNextReviewNumber =
+    async function (workplaceId) {
+        const year = new Date().getFullYear();
+        const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
+        const lastReview = await this.findOne({
+            workplaceId,
+            reviewNumber: { $regex: `^MTR-${year}${month}` },
+        }, {}, { sort: { createdAt: -1 }, bypassTenancyGuard: true });
+        let sequence = 1;
+        if (lastReview?.reviewNumber) {
+            const match = lastReview.reviewNumber.match(/-(\d+)$/);
+            if (match) {
+                sequence = parseInt(match[1]) + 1;
+            }
         }
-    }
-    return `MTR-${year}${month}-${sequence.toString().padStart(4, '0')}`;
-};
+        return `MTR-${year}${month}-${sequence.toString().padStart(4, '0')}`;
+    };
 medicationTherapyReviewSchema.statics.findActive = function (workplaceId) {
     const query = { status: { $in: ['in_progress', 'on_hold'] } };
     const baseQuery = workplaceId
@@ -518,8 +536,11 @@ medicationTherapyReviewSchema.statics.findOverdue = function (workplaceId) {
         status: { $in: ['in_progress', 'on_hold'] },
         $or: [
             { priority: 'routine', startedAt: { $lt: routineThreshold } },
-            { priority: { $in: ['urgent', 'high_risk'] }, startedAt: { $lt: urgentThreshold } }
-        ]
+            {
+                priority: { $in: ['urgent', 'high_risk'] },
+                startedAt: { $lt: urgentThreshold },
+            },
+        ],
     };
     const baseQuery = workplaceId
         ? this.find(query).setOptions({ workplaceId })

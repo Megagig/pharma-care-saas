@@ -32,7 +32,18 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
+// Lazy load Clinical Notes components for better performance
+import {
+  LazyClinicalNotesDashboard,
+  LazyClinicalNoteDetail,
+  LazyClinicalNoteForm,
+  preloadClinicalNotesComponents,
+} from './components/ClinicalNotesLazy';
+
+// Keep original imports as fallback
 import ClinicalNotes from './pages/ClinicalNotes';
+import ClinicalNoteDetailPage from './pages/ClinicalNoteDetailPage';
+import ClinicalNoteFormPage from './pages/ClinicalNoteFormPage';
 import Medications from './pages/Medications';
 import Subscriptions from './pages/Subscriptions';
 import Reports from './pages/Reports';
@@ -201,6 +212,48 @@ function App(): JSX.Element {
                             >
                               <AppLayout>
                                 <ClinicalNotes />
+                              </AppLayout>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/notes/new"
+                          element={
+                            <ProtectedRoute
+                              requiredFeature="clinical_notes"
+                              requiresLicense
+                              requiresActiveSubscription
+                            >
+                              <AppLayout>
+                                <ClinicalNoteFormPage />
+                              </AppLayout>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/notes/:id"
+                          element={
+                            <ProtectedRoute
+                              requiredFeature="clinical_notes"
+                              requiresLicense
+                              requiresActiveSubscription
+                            >
+                              <AppLayout>
+                                <ClinicalNoteDetailPage />
+                              </AppLayout>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/notes/:id/edit"
+                          element={
+                            <ProtectedRoute
+                              requiredFeature="clinical_notes"
+                              requiresLicense
+                              requiresActiveSubscription
+                            >
+                              <AppLayout>
+                                <ClinicalNoteFormPage />
                               </AppLayout>
                             </ProtectedRoute>
                           }

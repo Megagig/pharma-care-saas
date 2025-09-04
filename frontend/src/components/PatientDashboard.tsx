@@ -37,6 +37,7 @@ import CakeIcon from '@mui/icons-material/Cake';
 
 import { usePatient } from '../queries/usePatients';
 import { PatientMTRWidget } from './PatientMTRWidget';
+import PatientClinicalNotes from './PatientClinicalNotes';
 import type { Patient } from '../types/patientManagement';
 
 interface PatientDashboardProps {
@@ -340,6 +341,15 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
       {/* MTR Integration Widget */}
       <Box sx={{ mb: 4 }}>
         <PatientMTRWidget patientId={patientId!} />
+      </Box>
+
+      {/* Clinical Notes Widget */}
+      <Box sx={{ mb: 4 }}>
+        <PatientClinicalNotes
+          patientId={patientId!}
+          maxNotes={5}
+          showCreateButton={true}
+        />
       </Box>
 
       {/* Patient Details and Recent Activity */}
