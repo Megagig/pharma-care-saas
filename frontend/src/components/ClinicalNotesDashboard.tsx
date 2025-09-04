@@ -241,8 +241,8 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
         typeof selectionModel === 'object' &&
         'ids' in selectionModel
       ) {
-        newSelectionArray = (selectionModel.ids || []).filter(
-          (id): id is string => typeof id === 'string' && id.length > 0
+        newSelectionArray = Array.from(selectionModel.ids || []).filter(
+          (id: unknown): id is string => typeof id === 'string' && id.length > 0
         );
       }
 
@@ -1070,9 +1070,7 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                 checkboxSelection
                 disableRowSelectionOnClick
                 rowSelectionModel={
-                  Array.isArray(selectedNotes)
-                    ? selectedNotes.filter(Boolean)
-                    : []
+                  (selectedNotes as unknown as GridRowSelectionModel) || []
                 }
                 onRowSelectionModelChange={handleRowSelectionChange}
                 paginationMode="client"
