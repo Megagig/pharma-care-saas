@@ -623,7 +623,7 @@ const registerWithWorkplace = async (req, res) => {
                 trialEndDate.setDate(trialEndDate.getDate() + 14);
                 const subscriptionArray = await Subscription_1.default.create([
                     {
-                        userId: createdUser._id,
+                        workspaceId: workplaceData._id,
                         planId: freeTrialPlan._id,
                         tier: 'free_trial',
                         status: 'trial',
@@ -658,36 +658,18 @@ const registerWithWorkplace = async (req, res) => {
                         : undefined,
                     workplaceRole: workplaceRole || 'Staff',
                 });
-                const owner = await User_1.default.findById(workplaceData.ownerId).populate('currentSubscriptionId');
-                if (owner?.currentSubscriptionId) {
+                const workplaceSubscription = await Subscription_1.default.findOne({
+                    workspaceId: workplaceData._id,
+                    status: { $in: ['active', 'trial', 'grace_period'] }
+                });
+                if (workplaceSubscription) {
                     await User_1.default.findByIdAndUpdate(createdUser._id, {
-                        currentSubscriptionId: owner.currentSubscriptionId,
-                        subscriptionTier: owner.subscriptionTier,
+                        currentSubscriptionId: workplaceSubscription._id,
+                        subscriptionTier: workplaceSubscription.tier,
                     }, { session });
                 }
             }
             else if (workplaceFlow === 'skip') {
-                const trialEndDate = new Date();
-                trialEndDate.setDate(trialEndDate.getDate() + 14);
-                const subscriptionArray = await Subscription_1.default.create([
-                    {
-                        userId: createdUser._id,
-                        planId: freeTrialPlan._id,
-                        tier: 'free_trial',
-                        status: 'trial',
-                        startDate: new Date(),
-                        endDate: trialEndDate,
-                        priceAtPurchase: 0,
-                        autoRenew: false,
-                    },
-                ], { session });
-                subscription = subscriptionArray[0];
-                if (!subscription) {
-                    throw new Error('Failed to create subscription');
-                }
-                await User_1.default.findByIdAndUpdate(createdUser._id, {
-                    currentSubscriptionId: subscription._id,
-                }, { session });
             }
             const verificationToken = createdUser.generateVerificationToken();
             const verificationCode = createdUser.generateVerificationCode();

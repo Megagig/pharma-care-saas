@@ -65,10 +65,13 @@ const auth = async (req, res, next) => {
             });
             return;
         }
-        const subscription = await Subscription_1.default.findOne({
-            userId: user._id,
-            status: { $in: ['active', 'trial', 'grace_period'] },
-        }).populate('planId');
+        let subscription = null;
+        if (user.workplaceId) {
+            subscription = await Subscription_1.default.findOne({
+                workspaceId: user.workplaceId,
+                status: { $in: ['active', 'trial', 'grace_period'] },
+            }).populate('planId');
+        }
         req.subscription = subscription;
         req.user = user;
         req.subscription = subscription;
@@ -114,10 +117,13 @@ const authOptionalSubscription = async (req, res, next) => {
             });
             return;
         }
-        const subscription = await Subscription_1.default.findOne({
-            userId: user._id,
-            status: { $in: ['active', 'trial', 'grace_period'] },
-        }).populate('planId');
+        let subscription = null;
+        if (user.workplaceId) {
+            subscription = await Subscription_1.default.findOne({
+                workspaceId: user.workplaceId,
+                status: { $in: ['active', 'trial', 'grace_period'] },
+            }).populate('planId');
+        }
         req.user = user;
         req.subscription = subscription || undefined;
         next();

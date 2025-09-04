@@ -165,7 +165,6 @@ const Sidebar = () => {
       path: '/pharmacy/drug-information',
       icon: MenuBookIcon,
       show: true,
-      badge: 'Coming Soon',
     },
     {
       name: 'Clinical Decision Support',

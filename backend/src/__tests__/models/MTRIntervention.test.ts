@@ -85,7 +85,7 @@ describe('MTRIntervention Model', () => {
                 targetAudience: 'prescriber',
                 communicationMethod: 'phone',
                 priority: 'high',
-                documentation: 'This is a detailed documentation for high priority intervention that meets the minimum character requirement for proper validation and compliance with system requirements.'
+                documentation: 'This is a detailed documentation for high priority intervention that meets the minimum character requirement for proper validation and compliance with system requirements.',
                 createdBy: pharmacistId
             };
 

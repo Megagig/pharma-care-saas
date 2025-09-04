@@ -1,229 +1,142 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.drugInteractionService = exports.DrugInteractionService = void 0;
+exports.DrugInteractionService = void 0;
+const apiClient_1 = require("../utils/apiClient");
 const logger_1 = require("../utils/logger");
-const drugInteractionDatabase_1 = require("../data/drugInteractionDatabase");
 class DrugInteractionService {
     constructor() {
-        this.interactionDB = new drugInteractionDatabase_1.DrugInteractionDB();
+        this.client = new apiClient_1.ApiClient({
+            baseURL: 'https://rxnav.nlm.nih.gov/REST/interaction',
+            timeout: 15000,
+            retryAttempts: 3,
+            retryDelay: 1000
+        });
     }
-    async checkDrugInteractions(medications) {
+    async checkSingleDrugInteractions(rxcui) {
         try {
-            const interactions = [];
-            for (let i = 0; i < medications.length; i++) {
-                for (let j = i + 1; j < medications.length; j++) {
-                    const interaction = await this.checkPairwiseInteraction(medications[i], medications[j]);
-                    if (interaction) {
-                        interactions.push(interaction);
-                    }
-                }
-            }
-            interactions.sort((a, b) => {
-                const severityOrder = { critical: 4, major: 3, moderate: 2, minor: 1 };
-                return severityOrder[b.severity] - severityOrder[a.severity];
+            const response = await this.client.get(`/interaction.json`, {
+                params: { rxcui }
             });
-            logger_1.logger.info(`Checked ${medications.length} medications, found ${interactions.length} interactions`);
-            return interactions;
+            logger_1.logger.info(`Drug interaction check completed for RxCUI ${rxcui}`);
+            return response.data;
         }
         catch (error) {
-            logger_1.logger.error('Error checking drug interactions:', error);
-            throw error;
+            logger_1.logger.error('Single drug interaction check failed:', error);
+            throw new Error(`Failed to check interactions for RxCUI ${rxcui}: ${error}`);
         }
     }
-    async checkTherapeuticDuplications(medications) {
+    async checkMultiDrugInteractions(rxcuis) {
         try {
-            const duplications = [];
-            const classGroups = new Map();
-            for (const med of medications) {
-                const therapeuticClass = await this.getTherapeuticClass(med.activeIngredient);
-                if (!classGroups.has(therapeuticClass)) {
-                    classGroups.set(therapeuticClass, []);
-                }
-                classGroups.get(therapeuticClass).push(med);
-            }
-            for (const [therapeuticClass, drugs] of classGroups) {
-                if (drugs.length > 1) {
-                    const duplication = await this.evaluateTherapeuticDuplication(therapeuticClass, drugs);
-                    if (duplication) {
-                        duplications.push(duplication);
+            const response = await this.client.post('/list.json', {
+                rxcuis
+            });
+            logger_1.logger.info(`Multi-drug interaction check completed for ${rxcuis.length} drugs`);
+            return response.data;
+        }
+        catch (error) {
+            logger_1.logger.error('Multi-drug interaction check failed:', error);
+            throw new Error(`Failed to check interactions for multiple drugs: ${error}`);
+        }
+    }
+    formatInteractionResults(interactionData, primaryRxcui) {
+        const results = [];
+        try {
+            if ('interactionTypeGroup' in interactionData && interactionData.interactionTypeGroup) {
+                for (const typeGroup of interactionData.interactionTypeGroup) {
+                    for (const interactionType of typeGroup.interactionType) {
+                        if (interactionType.minConcept) {
+                            for (const concept of interactionType.minConcept) {
+                                if (concept.rxcui === primaryRxcui)
+                                    continue;
+                                results.push({
+                                    drugName: concept.name,
+                                    rxcui: concept.rxcui,
+                                    interactions: [{
+                                            interactingDrug: concept.name,
+                                            interactingRxcui: concept.rxcui,
+                                            description: interactionType.comment || 'Interaction detected',
+                                            source: typeGroup.sourceName,
+                                            severity: this.determineSeverity(interactionType.comment || '')
+                                        }]
+                                });
+                            }
+                        }
                     }
                 }
             }
-            return duplications;
-        }
-        catch (error) {
-            logger_1.logger.error('Error checking therapeutic duplications:', error);
-            throw error;
-        }
-    }
-    async checkContraindications(medications, patientConditions) {
-        try {
-            const contraindications = [];
-            for (const med of medications) {
-                for (const condition of patientConditions) {
-                    const contraindication = await this.checkDrugConditionContraindication(med, condition);
-                    if (contraindication) {
-                        contraindications.push(contraindication);
+            if ('interactions' in interactionData && interactionData.interactions) {
+                for (const interaction of interactionData.interactions) {
+                    if (interaction.interactionPairs) {
+                        for (const pair of interaction.interactionPairs) {
+                            if (pair.interactionConcept && pair.interactionConcept.length >= 2) {
+                                const drug1 = pair.interactionConcept[0];
+                                const drug2 = pair.interactionConcept[1];
+                                results.push({
+                                    drugName: drug1.minConceptItem.name,
+                                    rxcui: drug1.minConceptItem.rxcui,
+                                    interactions: [{
+                                            interactingDrug: drug2.minConceptItem.name,
+                                            interactingRxcui: drug2.minConceptItem.rxcui,
+                                            description: pair.description || 'Drug interaction detected',
+                                            source: drug1.sourceConceptItem.name,
+                                            severity: this.determineSeverity(pair.description || '')
+                                        }]
+                                });
+                            }
+                        }
                     }
                 }
             }
-            return contraindications;
         }
         catch (error) {
-            logger_1.logger.error('Error checking contraindications:', error);
-            throw error;
+            logger_1.logger.error('Error formatting interaction results:', error);
         }
+        return results;
     }
-    async getInteractionReport(medications, patientConditions = []) {
-        try {
-            const [interactions, duplications, contraindications] = await Promise.all([
-                this.checkDrugInteractions(medications),
-                this.checkTherapeuticDuplications(medications),
-                this.checkContraindications(medications, patientConditions),
-            ]);
-            const criticalIssues = [
-                ...interactions.filter((i) => i.severity === 'critical'),
-                ...duplications.filter((d) => d.severity === 'major'),
-                ...contraindications.filter((c) => c.severity === 'absolute'),
-            ];
-            const summary = {
-                totalMedications: medications.length,
-                totalInteractions: interactions.length,
-                criticalInteractions: interactions.filter((i) => i.severity === 'critical').length,
-                majorInteractions: interactions.filter((i) => i.severity === 'major')
-                    .length,
-                therapeuticDuplications: duplications.length,
-                contraindications: contraindications.length,
-                overallRiskLevel: this.calculateOverallRisk(interactions, duplications, contraindications),
-            };
-            return {
-                summary,
-                interactions,
-                therapeuticDuplications: duplications,
-                contraindications,
-                criticalIssues,
-                recommendations: this.generateRecommendations(interactions, duplications, contraindications),
-            };
+    determineSeverity(description) {
+        const lowerDesc = description.toLowerCase();
+        if (lowerDesc.includes('contraindicated') || lowerDesc.includes('avoid') || lowerDesc.includes('dangerous')) {
+            return 'contraindicated';
         }
-        catch (error) {
-            logger_1.logger.error('Error generating interaction report:', error);
-            throw error;
-        }
-    }
-    async checkPairwiseInteraction(drug1, drug2) {
-        const interaction = await this.interactionDB.findInteraction(drug1.activeIngredient, drug2.activeIngredient);
-        if (interaction) {
-            return {
-                drug1: drug1.drugName,
-                drug2: drug2.drugName,
-                severity: interaction.severity,
-                mechanism: interaction.mechanism,
-                clinicalEffect: interaction.clinicalEffect,
-                recommendation: interaction.recommendation,
-                monitoringParameters: interaction.monitoringParameters,
-                alternativeTherapies: interaction.alternativeTherapies,
-                onsetTime: interaction.onsetTime,
-                documentation: interaction.documentation,
-                references: interaction.references,
-            };
-        }
-        return null;
-    }
-    async getTherapeuticClass(activeIngredient) {
-        return await this.interactionDB.getTherapeuticClass(activeIngredient);
-    }
-    async evaluateTherapeuticDuplication(therapeuticClass, drugs) {
-        const validCombination = await this.interactionDB.isValidCombination(therapeuticClass, drugs.map((d) => d.activeIngredient));
-        if (validCombination) {
-            return null;
-        }
-        return {
-            drugs: drugs.map((d) => d.drugName),
-            therapeuticClass,
-            severity: this.calculateDuplicationSeverity(therapeuticClass),
-            recommendation: this.getDuplicationRecommendation(therapeuticClass, drugs),
-            clinicalRisk: this.getDuplicationRisk(therapeuticClass),
-        };
-    }
-    async checkDrugConditionContraindication(medication, condition) {
-        const contraindication = await this.interactionDB.findContraindication(medication.activeIngredient, condition);
-        if (contraindication) {
-            return {
-                drug: medication.drugName,
-                contraindication: contraindication.type,
-                condition,
-                severity: contraindication.severity,
-                reason: contraindication.reason,
-            };
-        }
-        return null;
-    }
-    calculateDuplicationSeverity(therapeuticClass) {
-        const highRiskClasses = [
-            'anticoagulants',
-            'antiarrhythmics',
-            'cns_depressants',
-            'cardiovascular',
-        ];
-        if (highRiskClasses.includes(therapeuticClass.toLowerCase())) {
+        if (lowerDesc.includes('major') || lowerDesc.includes('serious') || lowerDesc.includes('severe')) {
             return 'major';
         }
-        return 'moderate';
-    }
-    getDuplicationRecommendation(therapeuticClass, drugs) {
-        const drugNames = drugs.map((d) => d.drugName).join(', ');
-        return (`Multiple ${therapeuticClass} agents detected (${drugNames}). ` +
-            `Consider consolidating therapy or verifying clinical indication for combination.`);
-    }
-    getDuplicationRisk(therapeuticClass) {
-        const riskProfiles = {
-            anticoagulants: 'Increased bleeding risk',
-            antihypertensives: 'Risk of hypotension and electrolyte imbalance',
-            cns_depressants: 'Increased sedation and respiratory depression risk',
-            nsaids: 'Increased GI bleeding and kidney injury risk',
-            default: 'Potential for additive effects and adverse reactions',
-        };
-        return riskProfiles[therapeuticClass.toLowerCase()] || riskProfiles.default;
-    }
-    calculateOverallRisk(interactions, duplications, contraindications) {
-        const criticalCount = interactions.filter((i) => i.severity === 'critical').length +
-            contraindications.filter((c) => c.severity === 'absolute').length;
-        const majorCount = interactions.filter((i) => i.severity === 'major').length +
-            duplications.filter((d) => d.severity === 'major').length;
-        if (criticalCount > 0)
-            return 'critical';
-        if (majorCount >= 2)
-            return 'high';
-        if (majorCount >= 1 || interactions.length >= 3)
+        if (lowerDesc.includes('moderate') || lowerDesc.includes('monitor') || lowerDesc.includes('caution')) {
             return 'moderate';
-        return 'low';
+        }
+        return 'minor';
     }
-    generateRecommendations(interactions, duplications, contraindications) {
-        const recommendations = [];
-        const criticalInteractions = interactions.filter((i) => i.severity === 'critical');
-        if (criticalInteractions.length > 0) {
-            recommendations.push('⚠️ CRITICAL: Immediate review required for critical drug interactions. ' +
-                'Consider discontinuation or alternative therapy.');
+    getManagementRecommendations(severity, description) {
+        switch (severity) {
+            case 'contraindicated':
+                return 'Do not use together. Consider alternative medications.';
+            case 'major':
+                return 'Monitor closely. Consider dose adjustment or alternative therapy.';
+            case 'moderate':
+                return 'Monitor for adverse effects. Consider dose modification if needed.';
+            case 'minor':
+                return 'Monitor patient. Interaction is generally manageable.';
+            default:
+                return 'Monitor patient for any adverse effects.';
         }
-        const absoluteContraindications = contraindications.filter((c) => c.severity === 'absolute');
-        if (absoluteContraindications.length > 0) {
-            recommendations.push('🚫 CONTRAINDICATION: Absolute contraindications detected. ' +
-                'Discontinue contraindicated medications immediately.');
+    }
+    async quickInteractionCheck(drugName) {
+        try {
+            const response = await this.client.get('/interaction.json', {
+                params: { rxcui: drugName }
+            });
+            const hasInteractions = response.data?.interactionTypeGroup && response.data.interactionTypeGroup.length > 0;
+            const count = response.data?.interactionTypeGroup?.reduce((total, group) => {
+                return total + (group.interactionType?.length || 0);
+            }, 0) || 0;
+            return { hasInteractions, count };
         }
-        const majorInteractions = interactions.filter((i) => i.severity === 'major');
-        if (majorInteractions.length > 0) {
-            recommendations.push('⚡ MAJOR INTERACTIONS: Enhanced monitoring and possible dose adjustments required.');
+        catch (error) {
+            logger_1.logger.warn('Quick interaction check failed:', error);
+            return { hasInteractions: false, count: 0 };
         }
-        if (duplications.length > 0) {
-            recommendations.push('🔄 THERAPEUTIC DUPLICATIONS: Review for redundant therapy. ' +
-                'Consider consolidating or verifying clinical need.');
-        }
-        if (interactions.length > 5) {
-            recommendations.push('📊 COMPLEX REGIMEN: Consider medication reconciliation and simplification.');
-        }
-        return recommendations;
     }
 }
 exports.DrugInteractionService = DrugInteractionService;
-exports.drugInteractionService = new DrugInteractionService();
+exports.default = new DrugInteractionService();
 //# sourceMappingURL=drugInteractionService.js.map

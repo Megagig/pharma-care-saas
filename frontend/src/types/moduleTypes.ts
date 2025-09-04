@@ -26,4 +26,5 @@ export interface ModulePageProps {
     moduleInfo: ModuleInfo;
     icon: React.ComponentType<{ sx?: React.CSSProperties; fontSize?: string }>;
     gradient?: string;
+    children?: React.ReactNode;
 }

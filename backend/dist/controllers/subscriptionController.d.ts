@@ -6,6 +6,7 @@ interface AuthRequest extends Request {
 export declare class SubscriptionController {
     getCurrentSubscription(req: AuthRequest, res: Response): Promise<any>;
     getAvailablePlans: (req: AuthRequest, res: Response) => Promise<any>;
+    private getDisplayFeaturesFromConfig;
     private getDisplayFeatures;
     createCheckoutSession(req: AuthRequest, res: Response): Promise<any>;
     verifyPaymentByReference(req: Request, res: Response): Promise<any>;
@@ -13,6 +14,7 @@ export declare class SubscriptionController {
     cancelSubscription(req: AuthRequest, res: Response): Promise<any>;
     upgradeSubscription(req: AuthRequest, res: Response): Promise<any>;
     downgradeSubscription(req: AuthRequest, res: Response): Promise<any>;
+    getSubscriptionStatus(req: AuthRequest, res: Response): Promise<any>;
     getSubscriptionAnalytics(req: AuthRequest, res: Response): Promise<any>;
     handleWebhook(req: Request, res: Response): Promise<any>;
     private handleSubscriptionCreated;

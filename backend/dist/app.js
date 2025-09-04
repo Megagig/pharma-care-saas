@@ -45,6 +45,7 @@ const locationDataRoutes_1 = __importDefault(require("./routes/locationDataRoute
 const legacyApiRoutes_1 = __importDefault(require("./routes/legacyApiRoutes"));
 const migrationDashboardRoutes_1 = __importDefault(require("./routes/migrationDashboardRoutes"));
 const emailWebhookRoutes_1 = __importDefault(require("./routes/emailWebhookRoutes"));
+const drugRoutes_1 = __importDefault(require("./routes/drugRoutes"));
 const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
@@ -107,6 +108,7 @@ app.use('/api', assessmentRoutes_1.default);
 app.use('/api', dtpRoutes_1.default);
 app.use('/api', carePlanRoutes_1.default);
 app.use('/api', visitRoutes_1.default);
+app.use('/api/drugs', drugRoutes_1.default);
 app.use('/api/notes', noteRoutes_1.default);
 app.use('/api/payments', paymentRoutes_1.default);
 app.use('/api/mtr', mtrRoutes_1.default);
