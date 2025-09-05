@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createAuditLog = exports.getRequestContext = exports.respondWithPaginatedResults = exports.respondWithPatient = exports.validateBusinessRules = exports.ensureResourceExists = exports.checkTenantAccess = exports.asyncHandler = exports.patientManagementErrorHandler = exports.createBusinessRuleError = exports.createDuplicateError = exports.createTenantViolationError = exports.createPlanLimitError = exports.createForbiddenError = exports.createValidationError = exports.createNotFoundError = exports.PatientManagementError = exports.createPaginationMeta = exports.sendError = exports.sendSuccess = void 0;
+exports.createAuditLog = exports.getRequestContext = exports.isSuperAdmin = exports.respondWithPaginatedResults = exports.respondWithPatient = exports.validateBusinessRules = exports.ensureResourceExists = exports.checkTenantAccessWithRequest = exports.checkTenantAccess = exports.asyncHandler = exports.patientManagementErrorHandler = exports.createBusinessRuleError = exports.createDuplicateError = exports.createTenantViolationError = exports.createPlanLimitError = exports.createForbiddenError = exports.createValidationError = exports.createNotFoundError = exports.PatientManagementError = exports.createPaginationMeta = exports.sendError = exports.sendSuccess = void 0;
 const zod_1 = require("zod");
 const sendSuccess = (res, data, message, statusCode = 200, meta) => {
     const response = {
@@ -125,12 +125,27 @@ const asyncHandler = (fn) => {
     };
 };
 exports.asyncHandler = asyncHandler;
-const checkTenantAccess = (resourceWorkplaceId, userWorkplaceId, isAdmin = false) => {
+const checkTenantAccess = (resourceWorkplaceId, userWorkplaceId, isAdmin = false, isSuperAdmin = false) => {
+    if (isSuperAdmin) {
+        console.log('Super admin bypassing tenant check for resource');
+        return;
+    }
     if (!isAdmin && resourceWorkplaceId !== userWorkplaceId) {
         throw (0, exports.createTenantViolationError)();
     }
 };
 exports.checkTenantAccess = checkTenantAccess;
+const checkTenantAccessWithRequest = (resourceWorkplaceId, userWorkplaceId, isAdmin = false, req) => {
+    const userIsSuperAdmin = req.user?.role === 'super_admin';
+    if (userIsSuperAdmin) {
+        console.log('Super admin bypassing tenant check for resource');
+        return;
+    }
+    if (!isAdmin && resourceWorkplaceId !== userWorkplaceId) {
+        throw (0, exports.createTenantViolationError)();
+    }
+};
+exports.checkTenantAccessWithRequest = checkTenantAccessWithRequest;
 const ensureResourceExists = (resource, name, id) => {
     if (!resource) {
         throw (0, exports.createNotFoundError)(name, id);
@@ -177,11 +192,16 @@ const respondWithPaginatedResults = (res, results, total, page, limit, message) 
     (0, exports.sendSuccess)(res, { results }, message, 200, meta);
 };
 exports.respondWithPaginatedResults = respondWithPaginatedResults;
+const isSuperAdmin = (req) => {
+    return req.user?.role === 'super_admin';
+};
+exports.isSuperAdmin = isSuperAdmin;
 const getRequestContext = (req) => ({
     userId: req.user?._id,
     userRole: req.user?.role,
     workplaceId: req.user?.workplaceId?.toString() || '',
     isAdmin: req.isAdmin || false,
+    isSuperAdmin: (0, exports.isSuperAdmin)(req),
     canManage: req.canManage || false,
     timestamp: new Date().toISOString(),
 });

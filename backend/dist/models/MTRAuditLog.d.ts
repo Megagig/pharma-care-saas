@@ -28,7 +28,7 @@ export interface IMTRAuditLog extends Document {
     _id: mongoose.Types.ObjectId;
     workplaceId: mongoose.Types.ObjectId;
     action: string;
-    resourceType: 'MedicationTherapyReview' | 'DrugTherapyProblem' | 'MTRIntervention' | 'MTRFollowUp' | 'Patient' | 'User';
+    resourceType: 'MedicationTherapyReview' | 'DrugTherapyProblem' | 'MTRIntervention' | 'MTRFollowUp' | 'Patient' | 'User' | 'ClinicalNote';
     resourceId: mongoose.Types.ObjectId;
     userId: mongoose.Types.ObjectId;
     userRole: string;

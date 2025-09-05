@@ -105,6 +105,39 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
         requiresActiveSubscription: true,
         allowTrialAccess: false,
     },
+    'clinical_notes.confidential_access': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'clinical_notes.bulk_operations': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['bulkOperations'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'clinical_notes.audit_access': {
+        workplaceRoles: ['Owner'],
+        systemRoles: ['super_admin'],
+        features: ['auditLogs'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'clinical_notes.attachment_upload': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['fileAttachments'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'clinical_notes.search_advanced': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
+        features: ['advancedSearch'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
 
     // ========================================
     // MEDICATION MANAGEMENT

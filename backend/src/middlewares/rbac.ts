@@ -22,6 +22,11 @@ export const requirePermission = (action: string) => {
                 return;
             }
 
+            // Super admin bypasses all permission checks
+            if (req.user.role === 'super_admin') {
+                return next();
+            }
+
             if (!req.workspaceContext) {
                 res.status(500).json({
                     success: false,

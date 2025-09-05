@@ -8,8 +8,10 @@ const logger_1 = __importDefault(require("../utils/logger"));
 class AuditService {
     static async logActivity(context, auditData) {
         try {
-            const complianceCategory = auditData.complianceCategory || this.determineComplianceCategory(auditData.action);
-            const riskLevel = auditData.riskLevel || this.determineRiskLevel(auditData.action, auditData.resourceType);
+            const complianceCategory = auditData.complianceCategory ||
+                this.determineComplianceCategory(auditData.action);
+            const riskLevel = auditData.riskLevel ||
+                this.determineRiskLevel(auditData.action, auditData.resourceType);
             const auditLog = new MTRAuditLog_1.default({
                 workplaceId: context.workplaceId,
                 action: auditData.action,
@@ -63,7 +65,9 @@ class AuditService {
         }
     }
     static async logMTRActivity(context, action, session, oldValues, newValues) {
-        const changedFields = oldValues && newValues ? this.getChangedFields(oldValues, newValues) : undefined;
+        const changedFields = oldValues && newValues
+            ? this.getChangedFields(oldValues, newValues)
+            : undefined;
         return this.logActivity(context, {
             action,
             resourceType: 'MedicationTherapyReview',
@@ -160,7 +164,7 @@ class AuditService {
             limit: 10000,
             sort: '-timestamp',
         });
-        const exportData = logs.map(log => {
+        const exportData = logs.map((log) => {
             const baseData = {
                 timestamp: log.timestamp,
                 action: log.action,
@@ -305,10 +309,7 @@ class AuditService {
             },
             {
                 $match: {
-                    $or: [
-                        { actionCount: { $gt: 50 } },
-                        { errorCount: { $gt: 5 } },
-                    ],
+                    $or: [{ actionCount: { $gt: 50 } }, { errorCount: { $gt: 5 } }],
                 },
             },
             {
@@ -360,13 +361,17 @@ class AuditService {
         };
     }
     static determineComplianceCategory(action) {
-        if (action.includes('MTR') || action.includes('PROBLEM') || action.includes('INTERVENTION')) {
+        if (action.includes('MTR') ||
+            action.includes('PROBLEM') ||
+            action.includes('INTERVENTION')) {
             return 'clinical_documentation';
         }
         if (action.includes('PATIENT') || action.includes('ACCESS')) {
             return 'data_access';
         }
-        if (action.includes('LOGIN') || action.includes('LOGOUT') || action.includes('FAILED')) {
+        if (action.includes('LOGIN') ||
+            action.includes('LOGOUT') ||
+            action.includes('FAILED')) {
             return 'system_security';
         }
         if (action.includes('WORKFLOW') || action.includes('STEP')) {
@@ -378,7 +383,9 @@ class AuditService {
         if (action.includes('DELETE') || action.includes('FAILED_LOGIN')) {
             return 'critical';
         }
-        if (action.includes('EXPORT') || action.includes('BULK') || resourceType === 'Patient') {
+        if (action.includes('EXPORT') ||
+            action.includes('BULK') ||
+            resourceType === 'Patient') {
             return 'high';
         }
         if (action.includes('UPDATE') || action.includes('CREATE')) {
@@ -390,7 +397,10 @@ class AuditService {
         const changedFields = [];
         if (!oldValues || !newValues)
             return changedFields;
-        const allKeys = new Set([...Object.keys(oldValues), ...Object.keys(newValues)]);
+        const allKeys = new Set([
+            ...Object.keys(oldValues),
+            ...Object.keys(newValues),
+        ]);
         for (const key of allKeys) {
             if (JSON.stringify(oldValues[key]) !== JSON.stringify(newValues[key])) {
                 changedFields.push(key);
@@ -404,7 +414,7 @@ class AuditService {
         const headers = Object.keys(data[0]);
         const csvRows = [headers.join(',')];
         for (const row of data) {
-            const values = headers.map(header => {
+            const values = headers.map((header) => {
                 const value = row[header];
                 if (value === null || value === undefined)
                     return '';
@@ -419,7 +429,8 @@ class AuditService {
     static calculateComplianceScore(stats) {
         const baseScore = 100;
         const errorPenalty = Math.min(stats.errorRate * 2, 50);
-        const riskPenalty = stats.riskDistribution?.filter((r) => r === 'critical').length * 5;
+        const riskPenalty = stats.riskDistribution?.filter((r) => r === 'critical').length *
+            5;
         return Math.max(0, baseScore - errorPenalty - riskPenalty);
     }
     static generateComplianceRecommendations(summary, metrics) {
@@ -433,8 +444,9 @@ class AuditService {
         if (summary.suspiciousActivitiesCount > 0) {
             recommendations.push('Suspicious activities detected. Investigate user access patterns.');
         }
-        const clinicalMetric = metrics.find(m => m._id === 'clinical_documentation');
-        if (clinicalMetric && clinicalMetric.errorCount > clinicalMetric.count * 0.1) {
+        const clinicalMetric = metrics.find((m) => m._id === 'clinical_documentation');
+        if (clinicalMetric &&
+            clinicalMetric.errorCount > clinicalMetric.count * 0.1) {
             recommendations.push('High error rate in clinical documentation. Review MTR workflow training.');
         }
         if (recommendations.length === 0) {

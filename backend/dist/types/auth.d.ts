@@ -45,6 +45,8 @@ export interface AuthRequest extends Request {
         [resource: string]: UsageLimitResult;
     };
     interventionData?: any;
+    patient?: any;
+    clinicalNotes?: any[];
 }
 export interface UsageLimitResult {
     allowed: boolean;
