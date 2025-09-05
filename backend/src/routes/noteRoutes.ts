@@ -26,6 +26,20 @@ import clinicalNoteRBAC from '../middlewares/clinicalNoteRBAC';
 
 const router = express.Router();
 
+// Debugging middleware to log all requests
+router.use((req, res, next) => {
+  console.log(`
+========== NOTE ROUTE DEBUG ==========
+Request URL: ${req.originalUrl}
+Request method: ${req.method}
+Request params: ${JSON.stringify(req.params)}
+Note ID from params: ${req.params.id}
+Path: ${req.path}
+========== END DEBUG ==========
+  `);
+  next();
+});
+
 // Apply authentication and workspace context to all routes
 router.use(auth);
 router.use(loadWorkspaceContext);

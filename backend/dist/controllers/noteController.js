@@ -8,15 +8,19 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const ClinicalNote_1 = __importDefault(require("../models/ClinicalNote"));
 const Patient_1 = __importDefault(require("../models/Patient"));
 const auditService_1 = __importDefault(require("../services/auditService"));
+const confidentialNoteService_1 = __importDefault(require("../services/confidentialNoteService"));
 const uploadService_1 = require("../utils/uploadService");
+const auditLogging_1 = require("../middlewares/auditLogging");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const getNotes = async (req, res) => {
     try {
-        const { page = 1, limit = 10, type, priority, patientId, clinicianId, dateFrom, dateTo, sortBy = 'createdAt', sortOrder = 'desc', isConfidential } = req.query;
-        const query = {
-            workplaceId: req.user.workplaceId || req.workplace?.id
-        };
+        console.log('=== GET NOTES DEBUG ===');
+        console.log('User role:', req.user?.role);
+        console.log('User workplaceId:', req.user?.workplaceId);
+        console.log('Tenancy filter from middleware:', req.tenancyFilter);
+        const { page = 1, limit = 10, type, priority, patientId, clinicianId, dateFrom, dateTo, sortBy = 'createdAt', sortOrder = 'desc', isConfidential, } = req.query;
+        const query = { ...req.tenancyFilter };
         if (type)
             query.type = type;
         if (priority)
@@ -25,8 +29,28 @@ const getNotes = async (req, res) => {
             query.patient = patientId;
         if (clinicianId)
             query.pharmacist = clinicianId;
-        if (isConfidential !== undefined)
-            query.isConfidential = isConfidential === 'true';
+        if (isConfidential !== undefined) {
+            const canAccessConfidential = ['Owner', 'Pharmacist'].includes(req.user?.workplaceRole || '');
+            if (isConfidential === 'true') {
+                if (!canAccessConfidential) {
+                    res.status(403).json({
+                        success: false,
+                        message: 'Insufficient permissions to access confidential notes',
+                    });
+                    return;
+                }
+                query.isConfidential = true;
+            }
+            else {
+                query.isConfidential = { $ne: true };
+            }
+        }
+        else {
+            const canAccessConfidential = ['Owner', 'Pharmacist'].includes(req.user?.workplaceRole || '');
+            if (!canAccessConfidential) {
+                query.isConfidential = { $ne: true };
+            }
+        }
         if (dateFrom || dateTo) {
             query.createdAt = {};
             if (dateFrom)
@@ -36,6 +60,7 @@ const getNotes = async (req, res) => {
         }
         const sortObj = {};
         sortObj[sortBy] = sortOrder === 'asc' ? 1 : -1;
+        console.log('Final query for getNotes:', JSON.stringify(query, null, 2));
         const notes = await ClinicalNote_1.default.find(query)
             .limit(Number(limit) * 1)
             .skip((Number(page) - 1) * Number(limit))
@@ -44,47 +69,133 @@ const getNotes = async (req, res) => {
             .populate('medications', 'name dosage')
             .sort(sortObj);
         const total = await ClinicalNote_1.default.countDocuments(query);
+        console.log('GetNotes results count:', notes.length);
+        console.log('Total documents matching query:', total);
+        console.log('=== END GET NOTES DEBUG ===');
         const auditContext = auditService_1.default.createAuditContext(req);
         await auditService_1.default.logActivity(auditContext, {
             action: 'LIST_CLINICAL_NOTES',
             resourceType: 'ClinicalNote',
             resourceId: new mongoose_1.default.Types.ObjectId(),
             details: {
-                filters: { type, priority, patientId, clinicianId, dateFrom, dateTo },
+                filters: {
+                    type,
+                    priority,
+                    patientId,
+                    clinicianId,
+                    dateFrom,
+                    dateTo,
+                    isConfidential,
+                },
                 resultCount: notes.length,
                 page: Number(page),
-                limit: Number(limit)
+                limit: Number(limit),
+                confidentialNotesIncluded: query.isConfidential === true,
             },
             complianceCategory: 'data_access',
-            riskLevel: 'low'
+            riskLevel: query.isConfidential === true ? 'high' : 'low',
         });
         res.json({
+            success: true,
             notes,
             totalPages: Math.ceil(total / Number(limit)),
             currentPage: Number(page),
             total,
-            filters: { type, priority, patientId, clinicianId, dateFrom, dateTo }
+            filters: {
+                type,
+                priority,
+                patientId,
+                clinicianId,
+                dateFrom,
+                dateTo,
+                isConfidential,
+            },
         });
     }
     catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 exports.getNotes = getNotes;
 const getNote = async (req, res) => {
     try {
-        const note = await ClinicalNote_1.default.findOne({
-            _id: req.params.id,
-            pharmacist: req.user.id
-        }).populate('patient medications');
-        if (!note) {
-            res.status(404).json({ message: 'Clinical note not found' });
+        console.log(`GET Note controller running for ID: ${req.params.id}`);
+        let note = req.clinicalNote;
+        if (!note && req.params.id) {
+            console.log(`Note not found in request, attempting direct lookup with ID: ${req.params.id}`);
+            const query = { deletedAt: { $exists: false } };
+            if (req.user?.role !== 'super_admin' && req.user?.workplaceId) {
+                query.workplaceId = req.user.workplaceId;
+            }
+            query.$or = [
+                { _id: req.params.id },
+                { customId: req.params.id },
+                { legacyId: req.params.id },
+            ];
+            try {
+                if (mongoose_1.default.Types.ObjectId.isValid(req.params.id)) {
+                    const foundNote = await ClinicalNote_1.default.findById(req.params.id);
+                    if (foundNote) {
+                        console.log(`Found note directly by ID: ${foundNote._id}`);
+                        req.clinicalNote = foundNote;
+                    }
+                }
+                if (!req.clinicalNote) {
+                    const foundNote = await ClinicalNote_1.default.findOne(query);
+                    if (foundNote) {
+                        console.log(`Found note using OR query: ${foundNote._id}`);
+                        req.clinicalNote = foundNote;
+                    }
+                }
+            }
+            catch (lookupErr) {
+                console.error(`Error in direct note lookup: ${lookupErr}`);
+            }
+        }
+        if (!req.clinicalNote) {
+            console.log(`Note still not found for ID: ${req.params.id}`);
+            res.status(404).json({
+                success: false,
+                message: 'Clinical note not found',
+            });
             return;
         }
-        res.json({ note });
+        note = req.clinicalNote;
+        await note.populate([
+            { path: 'patient', select: 'firstName lastName mrn dateOfBirth' },
+            { path: 'pharmacist', select: 'firstName lastName role' },
+            { path: 'medications', select: 'name dosage strength' },
+        ]);
+        if (note.isConfidential) {
+            const auditContext = auditService_1.default.createAuditContext(req);
+            await auditService_1.default.logActivity(auditContext, {
+                action: 'VIEW_CONFIDENTIAL_NOTE',
+                resourceType: 'ClinicalNote',
+                resourceId: note._id,
+                patientId: note.patient._id || note.patient,
+                details: {
+                    noteTitle: note.title,
+                    noteType: note.type,
+                    confidentialityLevel: 'high',
+                    accessJustification: 'Clinical care review',
+                },
+                complianceCategory: 'data_access',
+                riskLevel: 'critical',
+            });
+        }
+        res.json({
+            success: true,
+            note,
+        });
     }
     catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 exports.getNote = getNote;
@@ -93,26 +204,34 @@ const createNote = async (req, res) => {
         const { patient: patientId, type, title, content } = req.body;
         if (!patientId || !type || !title) {
             res.status(400).json({
-                message: 'Missing required fields: patient, type, and title are required'
+                success: false,
+                message: 'Missing required fields: patient, type, and title are required',
             });
             return;
         }
-        const patient = await Patient_1.default.findOne({
-            _id: patientId,
-            workplaceId: req.user.workplaceId || req.workplace?.id
-        });
-        if (!patient) {
-            res.status(404).json({ message: 'Patient not found or access denied' });
-            return;
+        const patient = req.patient;
+        let workplaceId = req.workspaceContext?.workspace?._id;
+        if (!workplaceId && req.user?.role === 'super_admin' && patient) {
+            workplaceId = patient.workplaceId;
+        }
+        if (req.body.isConfidential) {
+            const canCreateConfidential = ['Owner', 'Pharmacist'].includes(req.user?.workplaceRole || '');
+            if (!canCreateConfidential) {
+                res.status(403).json({
+                    success: false,
+                    message: 'Insufficient permissions to create confidential notes',
+                    requiredRoles: ['Owner', 'Pharmacist'],
+                });
+                return;
+            }
         }
         const noteData = {
             ...req.body,
             patient: patientId,
-            pharmacist: req.user.id,
-            workplaceId: req.user.workplaceId || req.workplace?.id,
-            locationId: req.user.locationId,
-            createdBy: req.user.id,
-            lastModifiedBy: req.user.id
+            pharmacist: req.user?.id,
+            workplaceId: workplaceId,
+            createdBy: req.user?.id,
+            lastModifiedBy: req.user?.id,
         };
         const note = await ClinicalNote_1.default.create(noteData);
         const populatedNote = await ClinicalNote_1.default.findById(note._id)
@@ -121,48 +240,98 @@ const createNote = async (req, res) => {
             .populate('medications', 'name dosage');
         const auditContext = auditService_1.default.createAuditContext(req);
         await auditService_1.default.logActivity(auditContext, {
-            action: 'CREATE_CLINICAL_NOTE',
+            action: req.body.isConfidential
+                ? 'CREATE_CONFIDENTIAL_NOTE'
+                : 'CREATE_CLINICAL_NOTE',
             resourceType: 'ClinicalNote',
             resourceId: note._id,
             patientId: new mongoose_1.default.Types.ObjectId(patientId),
-            newValues: noteData,
+            newValues: {
+                ...noteData,
+                content: req.body.isConfidential
+                    ? '[CONFIDENTIAL_CONTENT]'
+                    : noteData.content,
+            },
             details: {
                 noteType: type,
                 title,
                 priority: req.body.priority || 'medium',
-                isConfidential: req.body.isConfidential || false
+                isConfidential: req.body.isConfidential || false,
+                patientMrn: patient.mrn,
+                attachmentCount: req.body.attachments?.length || 0,
             },
             complianceCategory: 'clinical_documentation',
-            riskLevel: req.body.isConfidential ? 'high' : 'medium'
+            riskLevel: req.body.isConfidential ? 'critical' : 'medium',
         });
-        res.status(201).json({ note: populatedNote });
+        res.status(201).json({
+            success: true,
+            note: populatedNote,
+            message: 'Clinical note created successfully',
+        });
     }
     catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 exports.createNote = createNote;
 const updateNote = async (req, res) => {
     try {
-        const existingNote = await ClinicalNote_1.default.findOne({
-            _id: req.params.id,
-            workplaceId: req.user.workplaceId || req.workplace?.id
-        });
+        console.log(`UPDATE Note controller running for ID: ${req.params.id}`);
+        const existingNote = req.clinicalNote;
         if (!existingNote) {
+            console.log(`Note not found in request, trying direct lookup with multiple strategies`);
+            const noteId = req.params.id;
+            const query = { deletedAt: { $exists: false } };
+            if (req.user?.role !== 'super_admin') {
+                query.workplaceId =
+                    req.user?.workplaceId || req.workspaceContext?.workspace?._id;
+            }
+            if (noteId && mongoose_1.default.Types.ObjectId.isValid(noteId)) {
+                const note = await ClinicalNote_1.default.findById(noteId);
+                if (note) {
+                    console.log(`Found note by direct ID: ${note._id}`);
+                    req.clinicalNote = note;
+                }
+            }
+            if (!req.clinicalNote) {
+                query.$or = [
+                    { _id: noteId },
+                    { customId: noteId },
+                    { legacyId: noteId },
+                ];
+                const note = await ClinicalNote_1.default.findOne(query);
+                if (note) {
+                    console.log(`Found note using OR query: ${note._id}`);
+                    req.clinicalNote = note;
+                }
+            }
+        }
+        if (!req.clinicalNote) {
+            console.log(`Note still not found for update, ID: ${req.params.id}`);
             res.status(404).json({ message: 'Clinical note not found' });
             return;
         }
-        const oldValues = existingNote.toObject();
+        const noteToUpdate = req.clinicalNote;
+        const oldValues = noteToUpdate.toObject();
         const updateData = {
             ...req.body,
-            lastModifiedBy: req.user.id,
-            updatedAt: new Date()
+            lastModifiedBy: req.user?.id,
+            updatedAt: new Date(),
         };
-        const note = await ClinicalNote_1.default.findOneAndUpdate({ _id: req.params.id, workplaceId: req.user.workplaceId || req.workplace?.id }, updateData, { new: true, runValidators: true }).populate('patient', 'firstName lastName mrn')
+        const note = await ClinicalNote_1.default.findOneAndUpdate({
+            _id: req.params.id,
+            workplaceId: req.user?.workplaceId || req.workspace?._id,
+        }, updateData, { new: true, runValidators: true })
+            .populate('patient', 'firstName lastName mrn')
             .populate('pharmacist', 'firstName lastName role')
             .populate('medications', 'name dosage');
         if (!note) {
-            res.status(404).json({ message: 'Clinical note not found or access denied' });
+            res
+                .status(404)
+                .json({ message: 'Clinical note not found or access denied' });
             return;
         }
         const auditContext = auditService_1.default.createAuditContext(req);
@@ -178,10 +347,10 @@ const updateNote = async (req, res) => {
                 noteType: note.type,
                 title: note.title,
                 priority: note.priority,
-                isConfidential: note.isConfidential
+                isConfidential: note.isConfidential,
             },
             complianceCategory: 'clinical_documentation',
-            riskLevel: note.isConfidential ? 'high' : 'medium'
+            riskLevel: note.isConfidential ? 'high' : 'medium',
         });
         res.json({ note });
     }
@@ -192,28 +361,59 @@ const updateNote = async (req, res) => {
 exports.updateNote = updateNote;
 const deleteNote = async (req, res) => {
     try {
-        const note = await ClinicalNote_1.default.findOne({
-            _id: req.params.id,
-            workplaceId: req.user.workplaceId || req.workplace?.id
-        });
+        console.log(`DELETE Note controller running for ID: ${req.params.id}`);
+        let note = req.clinicalNote;
         if (!note) {
+            console.log(`Note not found in request for deletion, trying direct lookup`);
+            const noteId = req.params.id;
+            const query = { deletedAt: { $exists: false } };
+            if (req.user?.role !== 'super_admin') {
+                query.workplaceId =
+                    req.user?.workplaceId || req.workspaceContext?.workspace?._id;
+            }
+            if (noteId && mongoose_1.default.Types.ObjectId.isValid(noteId)) {
+                const foundNote = await ClinicalNote_1.default.findById(noteId);
+                if (foundNote) {
+                    console.log(`Found note by direct ID for deletion: ${foundNote._id}`);
+                    note = foundNote;
+                }
+            }
+            if (!note) {
+                query.$or = [
+                    { _id: noteId },
+                    { customId: noteId },
+                    { legacyId: noteId },
+                ];
+                const foundNote = await ClinicalNote_1.default.findOne(query);
+                if (foundNote) {
+                    console.log(`Found note using OR query for deletion: ${foundNote._id}`);
+                    note = foundNote;
+                }
+            }
+        }
+        if (!note) {
+            console.log(`Note still not found for deletion, ID: ${req.params.id}`);
             res.status(404).json({ message: 'Clinical note not found' });
             return;
         }
         const noteData = note.toObject();
-        const deletedNote = await ClinicalNote_1.default.findOneAndUpdate({ _id: req.params.id, workplaceId: req.user.workplaceId || req.workplace?.id }, {
+        const deletedNote = await ClinicalNote_1.default.findOneAndUpdate({
+            _id: note._id,
+        }, {
             deletedAt: new Date(),
-            deletedBy: req.user.id,
-            lastModifiedBy: req.user.id
+            deletedBy: req.user?.id,
+            lastModifiedBy: req.user?.id,
         }, { new: true });
         if (!deletedNote) {
-            res.status(404).json({ message: 'Clinical note not found or access denied' });
+            res
+                .status(404)
+                .json({ message: 'Clinical note not found or access denied' });
             return;
         }
         if (note.attachments && note.attachments.length > 0) {
             for (const attachment of note.attachments) {
                 try {
-                    const filePath = path_1.default.join(process.cwd(), 'uploads', attachment);
+                    const filePath = path_1.default.join(process.cwd(), 'uploads', attachment.fileName);
                     if (fs_1.default.existsSync(filePath)) {
                         await (0, uploadService_1.deleteFile)(filePath);
                     }
@@ -235,10 +435,10 @@ const deleteNote = async (req, res) => {
                 title: note.title,
                 priority: note.priority,
                 isConfidential: note.isConfidential,
-                attachmentCount: note.attachments?.length || 0
+                attachmentCount: note.attachments?.length || 0,
             },
             complianceCategory: 'clinical_documentation',
-            riskLevel: 'critical'
+            riskLevel: 'critical',
         });
         res.json({ message: 'Clinical note deleted successfully' });
     }
@@ -252,7 +452,7 @@ const getPatientNotes = async (req, res) => {
         const { page = 1, limit = 10, type, priority } = req.query;
         const patient = await Patient_1.default.findOne({
             _id: req.params.patientId,
-            workplaceId: req.user.workplaceId || req.workplace?.id
+            workplaceId: req.user?.workplaceId || req.workspace?._id,
         });
         if (!patient) {
             res.status(404).json({ message: 'Patient not found or access denied' });
@@ -260,8 +460,8 @@ const getPatientNotes = async (req, res) => {
         }
         const query = {
             patient: req.params.patientId,
-            workplaceId: req.user.workplaceId || req.workplace?.id,
-            deletedAt: { $exists: false }
+            workplaceId: req.user?.workplaceId || req.workspace?._id,
+            deletedAt: { $exists: false },
         };
         if (type)
             query.type = type;
@@ -278,7 +478,7 @@ const getPatientNotes = async (req, res) => {
         await auditService_1.default.logPatientAccess(auditContext, new mongoose_1.default.Types.ObjectId(req.params.patientId), 'view', {
             accessType: 'clinical_notes',
             noteCount: notes.length,
-            filters: { type, priority }
+            filters: { type, priority },
         });
         res.json({
             notes,
@@ -289,8 +489,8 @@ const getPatientNotes = async (req, res) => {
                 _id: patient._id,
                 firstName: patient.firstName,
                 lastName: patient.lastName,
-                mrn: patient.mrn
-            }
+                mrn: patient.mrn,
+            },
         });
     }
     catch (error) {
@@ -300,15 +500,26 @@ const getPatientNotes = async (req, res) => {
 exports.getPatientNotes = getPatientNotes;
 const searchNotes = async (req, res) => {
     try {
-        const { query: searchQuery, page = 1, limit = 10, type, priority, patientId, dateFrom, dateTo } = req.query;
+        console.log('=== SEARCH NOTES DEBUG ===');
+        console.log('User role:', req.user?.role);
+        console.log('User workplaceId:', req.user?.workplaceId);
+        console.log('Tenancy filter from middleware:', req.tenancyFilter);
+        const { query: searchQuery, page = 1, limit = 10, type, priority, patientId, dateFrom, dateTo, } = req.query;
+        console.log('Search query:', searchQuery);
+        console.log('Search filters:', {
+            page,
+            limit,
+            type,
+            priority,
+            patientId,
+            dateFrom,
+            dateTo,
+        });
         if (!searchQuery) {
             res.status(400).json({ message: 'Search query is required' });
             return;
         }
-        const baseQuery = {
-            workplaceId: req.user.workplaceId || req.workplace?.id,
-            deletedAt: { $exists: false }
-        };
+        const baseQuery = { ...req.tenancyFilter };
         if (type)
             baseQuery.type = type;
         if (priority)
@@ -323,6 +534,7 @@ const searchNotes = async (req, res) => {
                 baseQuery.createdAt.$lte = new Date(dateTo);
         }
         const searchRegex = new RegExp(searchQuery, 'i');
+        console.log('Search regex created:', searchRegex.source, 'flags:', searchRegex.flags);
         const searchConditions = {
             $or: [
                 { title: searchRegex },
@@ -331,10 +543,16 @@ const searchNotes = async (req, res) => {
                 { 'content.assessment': searchRegex },
                 { 'content.plan': searchRegex },
                 { recommendations: { $elemMatch: { $regex: searchRegex } } },
-                { tags: { $elemMatch: { $regex: searchRegex } } }
-            ]
+                { tags: { $elemMatch: { $regex: searchRegex } } },
+            ],
         };
         const finalQuery = { ...baseQuery, ...searchConditions };
+        console.log('Final query for search:', JSON.stringify(finalQuery, (key, value) => {
+            if (value instanceof RegExp) {
+                return { $regex: value.source, $options: value.flags };
+            }
+            return value;
+        }, 2));
         const notes = await ClinicalNote_1.default.find(finalQuery)
             .limit(Number(limit) * 1)
             .skip((Number(page) - 1) * Number(limit))
@@ -343,6 +561,9 @@ const searchNotes = async (req, res) => {
             .populate('medications', 'name dosage')
             .sort({ createdAt: -1 });
         const total = await ClinicalNote_1.default.countDocuments(finalQuery);
+        console.log('Search results count:', notes.length);
+        console.log('Total documents matching query:', total);
+        console.log('=== END SEARCH NOTES DEBUG ===');
         const auditContext = auditService_1.default.createAuditContext(req);
         await auditService_1.default.logActivity(auditContext, {
             action: 'SEARCH_CLINICAL_NOTES',
@@ -353,10 +574,10 @@ const searchNotes = async (req, res) => {
                 filters: { type, priority, patientId, dateFrom, dateTo },
                 resultCount: notes.length,
                 page: Number(page),
-                limit: Number(limit)
+                limit: Number(limit),
             },
             complianceCategory: 'data_access',
-            riskLevel: 'medium'
+            riskLevel: 'medium',
         });
         res.json({
             notes,
@@ -364,7 +585,7 @@ const searchNotes = async (req, res) => {
             currentPage: Number(page),
             total,
             searchQuery,
-            filters: { type, priority, patientId, dateFrom, dateTo }
+            filters: { type, priority, patientId, dateFrom, dateTo },
         });
     }
     catch (error) {
@@ -374,10 +595,10 @@ const searchNotes = async (req, res) => {
 exports.searchNotes = searchNotes;
 const getNotesWithFilters = async (req, res) => {
     try {
-        const { page = 1, limit = 10, type, priority, patientId, clinicianId, dateFrom, dateTo, isConfidential, followUpRequired, tags, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+        const { page = 1, limit = 10, type, priority, patientId, clinicianId, dateFrom, dateTo, isConfidential, followUpRequired, tags, sortBy = 'createdAt', sortOrder = 'desc', } = req.query;
         const query = {
-            workplaceId: req.user.workplaceId || req.workplace?.id,
-            deletedAt: { $exists: false }
+            workplaceId: req.user?.workplaceId || req.workspace?._id,
+            deletedAt: { $exists: false },
         };
         if (type)
             query.type = type;
@@ -419,15 +640,22 @@ const getNotesWithFilters = async (req, res) => {
             resourceId: new mongoose_1.default.Types.ObjectId(),
             details: {
                 filters: {
-                    type, priority, patientId, clinicianId, dateFrom, dateTo,
-                    isConfidential, followUpRequired, tags
+                    type,
+                    priority,
+                    patientId,
+                    clinicianId,
+                    dateFrom,
+                    dateTo,
+                    isConfidential,
+                    followUpRequired,
+                    tags,
                 },
                 resultCount: notes.length,
                 sortBy,
-                sortOrder
+                sortOrder,
             },
             complianceCategory: 'data_access',
-            riskLevel: 'low'
+            riskLevel: 'low',
         });
         res.json({
             notes,
@@ -435,9 +663,16 @@ const getNotesWithFilters = async (req, res) => {
             currentPage: Number(page),
             total,
             appliedFilters: {
-                type, priority, patientId, clinicianId, dateFrom, dateTo,
-                isConfidential, followUpRequired, tags
-            }
+                type,
+                priority,
+                patientId,
+                clinicianId,
+                dateFrom,
+                dateTo,
+                isConfidential,
+                followUpRequired,
+                tags,
+            },
         });
     }
     catch (error) {
@@ -449,64 +684,95 @@ const bulkUpdateNotes = async (req, res) => {
     try {
         const { noteIds, updates } = req.body;
         if (!noteIds || !Array.isArray(noteIds) || noteIds.length === 0) {
-            res.status(400).json({ message: 'Note IDs array is required' });
-            return;
-        }
-        if (!updates || Object.keys(updates).length === 0) {
-            res.status(400).json({ message: 'Updates object is required' });
-            return;
-        }
-        const existingNotes = await ClinicalNote_1.default.find({
-            _id: { $in: noteIds },
-            workplaceId: req.user.workplaceId || req.workplace?.id,
-            deletedAt: { $exists: false }
-        });
-        if (existingNotes.length !== noteIds.length) {
-            res.status(404).json({
-                message: 'Some notes not found or access denied',
-                found: existingNotes.length,
-                requested: noteIds.length
+            res.status(400).json({
+                success: false,
+                message: 'Note IDs array is required',
             });
             return;
         }
+        if (!updates || Object.keys(updates).length === 0) {
+            res.status(400).json({
+                success: false,
+                message: 'Updates object is required',
+            });
+            return;
+        }
+        const existingNotes = req.clinicalNotes;
+        const confidentialNoteService = confidentialNoteService_1.default.getInstance();
+        if (!existingNotes) {
+            res.status(400).json({
+                success: false,
+                message: 'Clinical notes not found',
+            });
+            return;
+        }
+        const confidentialNotes = existingNotes.filter((note) => note.isConfidential);
+        if (confidentialNotes.length > 0) {
+            const canModifyConfidential = confidentialNotes.every((note) => confidentialNoteService.canModifyConfidentialNote(req.user, note));
+            if (!canModifyConfidential) {
+                res.status(403).json({
+                    success: false,
+                    message: 'Insufficient permissions to modify some confidential notes',
+                    confidentialNoteCount: confidentialNotes.length,
+                });
+                return;
+            }
+        }
+        if (updates.isConfidential === true) {
+            if (!confidentialNoteService.canCreateConfidentialNotes(req.user)) {
+                res.status(403).json({
+                    success: false,
+                    message: 'Insufficient permissions to mark notes as confidential',
+                });
+                return;
+            }
+        }
         const updateData = {
             ...updates,
-            lastModifiedBy: req.user.id,
-            updatedAt: new Date()
+            lastModifiedBy: req.user?.id,
+            updatedAt: new Date(),
         };
+        if (updates.isConfidential) {
+            Object.assign(updateData, confidentialNoteService.applyConfidentialSecurity(updateData));
+        }
         const result = await ClinicalNote_1.default.updateMany({
             _id: { $in: noteIds },
-            workplaceId: req.user.workplaceId || req.workplace?.id,
-            deletedAt: { $exists: false }
+            ...req.tenancyFilter,
         }, updateData, { runValidators: true });
         const updatedNotes = await ClinicalNote_1.default.find({
-            _id: { $in: noteIds }
-        }).populate('patient', 'firstName lastName mrn')
+            _id: { $in: noteIds },
+        })
+            .populate('patient', 'firstName lastName mrn')
             .populate('pharmacist', 'firstName lastName role');
-        const auditContext = auditService_1.default.createAuditContext(req);
-        await auditService_1.default.logActivity(auditContext, {
-            action: 'BULK_UPDATE_CLINICAL_NOTES',
-            resourceType: 'ClinicalNote',
-            resourceId: new mongoose_1.default.Types.ObjectId(),
-            newValues: updateData,
-            details: {
-                noteIds,
-                updatedFields: Object.keys(updates),
-                affectedCount: result.modifiedCount,
-                updates
-            },
-            complianceCategory: 'clinical_documentation',
-            riskLevel: 'high'
+        await auditLogging_1.auditOperations.bulkOperation(req, 'UPDATE_NOTES', 'ClinicalNote', noteIds, {
+            updatedFields: Object.keys(updates),
+            affectedCount: result.modifiedCount,
+            confidentialNotesAffected: confidentialNotes.length,
+            updates: confidentialNoteService.sanitizeForAudit(updates),
         });
+        if (confidentialNotes.length > 0) {
+            for (const note of confidentialNotes) {
+                await confidentialNoteService.logConfidentialAccess(req, note._id.toString(), 'BULK_UPDATE', {
+                    noteTitle: note.title,
+                    noteType: note.type,
+                    bulkOperation: true,
+                });
+            }
+        }
         res.json({
+            success: true,
             message: `Successfully updated ${result.modifiedCount} notes`,
             modifiedCount: result.modifiedCount,
             matchedCount: result.matchedCount,
-            notes: updatedNotes
+            notes: updatedNotes,
+            confidentialNotesAffected: confidentialNotes.length,
         });
     }
     catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 exports.bulkUpdateNotes = bulkUpdateNotes;
@@ -514,56 +780,95 @@ const bulkDeleteNotes = async (req, res) => {
     try {
         const { noteIds } = req.body;
         if (!noteIds || !Array.isArray(noteIds) || noteIds.length === 0) {
-            res.status(400).json({ message: 'Note IDs array is required' });
-            return;
-        }
-        const existingNotes = await ClinicalNote_1.default.find({
-            _id: { $in: noteIds },
-            workplaceId: req.user.workplaceId || req.workplace?.id,
-            deletedAt: { $exists: false }
-        });
-        if (existingNotes.length !== noteIds.length) {
-            res.status(404).json({
-                message: 'Some notes not found or access denied',
-                found: existingNotes.length,
-                requested: noteIds.length
+            res.status(400).json({
+                success: false,
+                message: 'Note IDs array is required',
             });
             return;
         }
+        const existingNotes = req.clinicalNotes;
+        const confidentialNoteService = confidentialNoteService_1.default.getInstance();
+        if (!existingNotes) {
+            res.status(400).json({
+                success: false,
+                message: 'Clinical notes not found',
+            });
+            return;
+        }
+        const confidentialNotes = existingNotes.filter((note) => note.isConfidential);
+        if (confidentialNotes.length > 0) {
+            const canDeleteConfidential = confidentialNotes.every((note) => confidentialNoteService.canModifyConfidentialNote(req.user, note));
+            if (!canDeleteConfidential) {
+                res.status(403).json({
+                    success: false,
+                    message: 'Insufficient permissions to delete some confidential notes',
+                    confidentialNoteCount: confidentialNotes.length,
+                });
+                return;
+            }
+        }
+        const noteDetails = existingNotes.map((note) => ({
+            id: note._id,
+            title: note.title,
+            type: note.type,
+            patientId: note.patient,
+            isConfidential: note.isConfidential,
+            attachmentCount: note.attachments?.length || 0,
+        }));
         const result = await ClinicalNote_1.default.updateMany({
             _id: { $in: noteIds },
-            workplaceId: req.user.workplaceId || req.workplace?.id,
-            deletedAt: { $exists: false }
+            ...req.tenancyFilter,
         }, {
             deletedAt: new Date(),
-            deletedBy: req.user.id,
-            lastModifiedBy: req.user.id
+            deletedBy: req.user?.id,
+            lastModifiedBy: req.user?.id,
         });
-        const auditContext = auditService_1.default.createAuditContext(req);
-        await auditService_1.default.logActivity(auditContext, {
-            action: 'BULK_DELETE_CLINICAL_NOTES',
-            resourceType: 'ClinicalNote',
-            resourceId: new mongoose_1.default.Types.ObjectId(),
-            details: {
-                noteIds,
-                deletedCount: result.modifiedCount,
-                noteDetails: existingNotes.map(note => ({
-                    id: note._id,
-                    title: note.title,
-                    type: note.type,
-                    patientId: note.patient
-                }))
-            },
-            complianceCategory: 'clinical_documentation',
-            riskLevel: 'critical'
+        for (const note of existingNotes) {
+            if (note.attachments && note.attachments.length > 0) {
+                for (const attachment of note.attachments) {
+                    try {
+                        const filePath = path_1.default.join(process.cwd(), 'uploads', attachment.fileName);
+                        if (fs_1.default.existsSync(filePath)) {
+                            await (0, uploadService_1.deleteFile)(filePath);
+                        }
+                    }
+                    catch (fileError) {
+                        console.error('Error deleting attachment:', fileError);
+                    }
+                }
+            }
+        }
+        await auditLogging_1.auditOperations.bulkOperation(req, 'DELETE_NOTES', 'ClinicalNote', noteIds, {
+            deletedCount: result.modifiedCount,
+            confidentialNotesDeleted: confidentialNotes.length,
+            noteDetails: noteDetails.map((detail) => detail.isConfidential
+                ? { ...detail, title: '[CONFIDENTIAL_NOTE]' }
+                : detail),
+            totalAttachmentsDeleted: noteDetails.reduce((sum, note) => sum + note.attachmentCount, 0),
         });
+        if (confidentialNotes.length > 0) {
+            for (const note of confidentialNotes) {
+                await confidentialNoteService.logConfidentialAccess(req, note._id.toString(), 'BULK_DELETE', {
+                    noteTitle: note.title,
+                    noteType: note.type,
+                    bulkOperation: true,
+                    permanentDeletion: false,
+                });
+            }
+        }
         res.json({
+            success: true,
             message: `Successfully deleted ${result.modifiedCount} notes`,
-            deletedCount: result.modifiedCount
+            deletedCount: result.modifiedCount,
+            confidentialNotesDeleted: confidentialNotes.length,
+            attachmentsDeleted: noteDetails.reduce((sum, note) => sum + note.attachmentCount, 0),
         });
     }
     catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 exports.bulkDeleteNotes = bulkDeleteNotes;
@@ -572,11 +877,13 @@ const uploadAttachment = async (req, res) => {
         const noteId = req.params.id;
         const note = await ClinicalNote_1.default.findOne({
             _id: noteId,
-            workplaceId: req.user.workplaceId || req.workplace?.id,
-            deletedAt: { $exists: false }
+            workplaceId: req.user?.workplaceId || req.workspace?._id,
+            deletedAt: { $exists: false },
         });
         if (!note) {
-            res.status(404).json({ message: 'Clinical note not found or access denied' });
+            res
+                .status(404)
+                .json({ message: 'Clinical note not found or access denied' });
             return;
         }
         if (!req.files || (Array.isArray(req.files) && req.files.length === 0)) {
@@ -586,7 +893,7 @@ const uploadAttachment = async (req, res) => {
         const uploadedFiles = Array.isArray(req.files) ? req.files : [req.files];
         const attachmentData = [];
         for (const file of uploadedFiles) {
-            if ('filename' in file) {
+            if (file && 'filename' in file && typeof file.filename === 'string') {
                 const attachment = {
                     _id: new mongoose_1.default.Types.ObjectId(),
                     fileName: file.filename,
@@ -595,16 +902,17 @@ const uploadAttachment = async (req, res) => {
                     size: file.size,
                     url: (0, uploadService_1.getFileUrl)(file.filename),
                     uploadedAt: new Date(),
-                    uploadedBy: req.user.id
+                    uploadedBy: req.user?.id,
                 };
                 attachmentData.push(attachment);
             }
         }
         const updatedNote = await ClinicalNote_1.default.findByIdAndUpdate(noteId, {
             $push: { attachments: { $each: attachmentData } },
-            lastModifiedBy: req.user.id,
-            updatedAt: new Date()
-        }, { new: true, runValidators: true }).populate('patient', 'firstName lastName mrn')
+            lastModifiedBy: req.user?.id,
+            updatedAt: new Date(),
+        }, { new: true, runValidators: true })
+            .populate('patient', 'firstName lastName mrn')
             .populate('pharmacist', 'firstName lastName role');
         const auditContext = auditService_1.default.createAuditContext(req);
         await auditService_1.default.logActivity(auditContext, {
@@ -615,20 +923,20 @@ const uploadAttachment = async (req, res) => {
             details: {
                 noteTitle: note.title,
                 attachmentCount: attachmentData.length,
-                attachments: attachmentData.map(att => ({
+                attachments: attachmentData.map((att) => ({
                     fileName: att.fileName,
                     originalName: att.originalName,
                     size: att.size,
-                    mimeType: att.mimeType
-                }))
+                    mimeType: att.mimeType,
+                })),
             },
             complianceCategory: 'clinical_documentation',
-            riskLevel: 'medium'
+            riskLevel: 'medium',
         });
         res.status(201).json({
             message: 'Files uploaded successfully',
             attachments: attachmentData,
-            note: updatedNote
+            note: updatedNote,
         });
     }
     catch (error) {
@@ -641,14 +949,16 @@ const deleteAttachment = async (req, res) => {
         const { id: noteId, attachmentId } = req.params;
         const note = await ClinicalNote_1.default.findOne({
             _id: noteId,
-            workplaceId: req.user.workplaceId || req.workplace?.id,
-            deletedAt: { $exists: false }
+            workplaceId: req.user?.workplaceId || req.workspace?._id,
+            deletedAt: { $exists: false },
         });
         if (!note) {
-            res.status(404).json({ message: 'Clinical note not found or access denied' });
+            res
+                .status(404)
+                .json({ message: 'Clinical note not found or access denied' });
             return;
         }
-        const attachment = note.attachments?.find(att => att._id?.toString() === attachmentId);
+        const attachment = note.attachments?.find((att) => att._id?.toString() === attachmentId);
         if (!attachment) {
             res.status(404).json({ message: 'Attachment not found' });
             return;
@@ -664,9 +974,10 @@ const deleteAttachment = async (req, res) => {
         }
         const updatedNote = await ClinicalNote_1.default.findByIdAndUpdate(noteId, {
             $pull: { attachments: { _id: attachmentId } },
-            lastModifiedBy: req.user.id,
-            updatedAt: new Date()
-        }, { new: true }).populate('patient', 'firstName lastName mrn')
+            lastModifiedBy: req.user?.id,
+            updatedAt: new Date(),
+        }, { new: true })
+            .populate('patient', 'firstName lastName mrn')
             .populate('pharmacist', 'firstName lastName role');
         const auditContext = auditService_1.default.createAuditContext(req);
         await auditService_1.default.logActivity(auditContext, {
@@ -679,15 +990,15 @@ const deleteAttachment = async (req, res) => {
                 deletedAttachment: {
                     fileName: attachment.fileName,
                     originalName: attachment.originalName,
-                    size: attachment.size
-                }
+                    size: attachment.size,
+                },
             },
             complianceCategory: 'clinical_documentation',
-            riskLevel: 'medium'
+            riskLevel: 'medium',
         });
         res.json({
             message: 'Attachment deleted successfully',
-            note: updatedNote
+            note: updatedNote,
         });
     }
     catch (error) {
@@ -700,14 +1011,16 @@ const downloadAttachment = async (req, res) => {
         const { id: noteId, attachmentId } = req.params;
         const note = await ClinicalNote_1.default.findOne({
             _id: noteId,
-            workplaceId: req.user.workplaceId || req.workplace?.id,
-            deletedAt: { $exists: false }
+            workplaceId: req.user?.workplaceId || req.workspace?._id,
+            deletedAt: { $exists: false },
         });
         if (!note) {
-            res.status(404).json({ message: 'Clinical note not found or access denied' });
+            res
+                .status(404)
+                .json({ message: 'Clinical note not found or access denied' });
             return;
         }
-        const attachment = note.attachments?.find(att => att._id?.toString() === attachmentId);
+        const attachment = note.attachments?.find((att) => att._id?.toString() === attachmentId);
         if (!attachment) {
             res.status(404).json({ message: 'Attachment not found' });
             return;
@@ -728,11 +1041,11 @@ const downloadAttachment = async (req, res) => {
                 attachment: {
                     fileName: attachment.fileName,
                     originalName: attachment.originalName,
-                    size: attachment.size
-                }
+                    size: attachment.size,
+                },
             },
             complianceCategory: 'data_access',
-            riskLevel: 'medium'
+            riskLevel: 'medium',
         });
         res.setHeader('Content-Disposition', `attachment; filename="${attachment.originalName}"`);
         res.setHeader('Content-Type', attachment.mimeType);
@@ -745,7 +1058,7 @@ const downloadAttachment = async (req, res) => {
 exports.downloadAttachment = downloadAttachment;
 const getNoteStatistics = async (req, res) => {
     try {
-        const workplaceId = req.user.workplaceId || req.workplace?.id;
+        const workplaceId = req.user?.workplaceId || req.workspace?._id;
         const { dateFrom, dateTo } = req.query;
         const dateFilter = {};
         if (dateFrom || dateTo) {
@@ -760,30 +1073,36 @@ const getNoteStatistics = async (req, res) => {
                 $match: {
                     workplaceId: new mongoose_1.default.Types.ObjectId(workplaceId),
                     deletedAt: { $exists: false },
-                    ...dateFilter
-                }
+                    ...dateFilter,
+                },
             },
             {
                 $group: {
                     _id: null,
                     totalNotes: { $sum: 1 },
                     notesByType: {
-                        $push: '$type'
+                        $push: '$type',
                     },
                     notesByPriority: {
-                        $push: '$priority'
+                        $push: '$priority',
                     },
                     confidentialNotes: {
-                        $sum: { $cond: ['$isConfidential', 1, 0] }
+                        $sum: { $cond: ['$isConfidential', 1, 0] },
                     },
                     notesWithFollowUp: {
-                        $sum: { $cond: ['$followUpRequired', 1, 0] }
+                        $sum: { $cond: ['$followUpRequired', 1, 0] },
                     },
                     notesWithAttachments: {
-                        $sum: { $cond: [{ $gt: [{ $size: { $ifNull: ['$attachments', []] } }, 0] }, 1, 0] }
-                    }
-                }
-            }
+                        $sum: {
+                            $cond: [
+                                { $gt: [{ $size: { $ifNull: ['$attachments', []] } }, 0] },
+                                1,
+                                0,
+                            ],
+                        },
+                    },
+                },
+            },
         ]);
         const result = stats[0] || {
             totalNotes: 0,
@@ -791,7 +1110,7 @@ const getNoteStatistics = async (req, res) => {
             notesByPriority: [],
             confidentialNotes: 0,
             notesWithFollowUp: 0,
-            notesWithAttachments: 0
+            notesWithAttachments: 0,
         };
         const typeCount = result.notesByType.reduce((acc, type) => {
             acc[type] = (acc[type] || 0) + 1;
@@ -808,7 +1127,7 @@ const getNoteStatistics = async (req, res) => {
             confidentialNotes: result.confidentialNotes,
             notesWithFollowUp: result.notesWithFollowUp,
             notesWithAttachments: result.notesWithAttachments,
-            dateRange: { dateFrom, dateTo }
+            dateRange: { dateFrom, dateTo },
         });
     }
     catch (error) {
