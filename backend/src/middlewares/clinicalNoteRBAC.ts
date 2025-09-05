@@ -349,6 +349,15 @@ export const enforceTenancyIsolation = (
   res: Response,
   next: NextFunction
 ): void => {
+  // Super admin can access notes from all workspaces - bypass tenancy isolation
+  if (req.user?.role === 'super_admin') {
+    req.tenancyFilter = {
+      deletedAt: { $exists: false },
+    };
+    next();
+    return;
+  }
+
   const workplaceId =
     req.user?.workplaceId || req.workspaceContext?.workspace?._id;
 

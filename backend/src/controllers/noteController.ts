@@ -17,6 +17,11 @@ export const getNotes = async (
   res: Response
 ): Promise<void> => {
   try {
+    console.log('=== GET NOTES DEBUG ===');
+    console.log('User role:', req.user?.role);
+    console.log('User workplaceId:', req.user?.workplaceId);
+    console.log('Tenancy filter from middleware:', req.tenancyFilter);
+
     const {
       page = 1,
       limit = 10,
@@ -79,6 +84,8 @@ export const getNotes = async (
     const sortObj: any = {};
     sortObj[sortBy as string] = sortOrder === 'asc' ? 1 : -1;
 
+    console.log('Final query for getNotes:', JSON.stringify(query, null, 2));
+
     const notes = await ClinicalNote.find(query)
       .limit(Number(limit) * 1)
       .skip((Number(page) - 1) * Number(limit))
@@ -88,6 +95,10 @@ export const getNotes = async (
       .sort(sortObj);
 
     const total = await ClinicalNote.countDocuments(query);
+
+    console.log('GetNotes results count:', notes.length);
+    console.log('Total documents matching query:', total);
+    console.log('=== END GET NOTES DEBUG ===');
 
     // Log audit trail for data access
     const auditContext = AuditService.createAuditContext(req);
@@ -517,6 +528,11 @@ export const searchNotes = async (
   res: Response
 ): Promise<void> => {
   try {
+    console.log('=== SEARCH NOTES DEBUG ===');
+    console.log('User role:', req.user?.role);
+    console.log('User workplaceId:', req.user?.workplaceId);
+    console.log('Tenancy filter from middleware:', req.tenancyFilter);
+
     const {
       query: searchQuery,
       page = 1,
@@ -528,16 +544,24 @@ export const searchNotes = async (
       dateTo,
     } = req.query;
 
+    console.log('Search query:', searchQuery);
+    console.log('Search filters:', {
+      page,
+      limit,
+      type,
+      priority,
+      patientId,
+      dateFrom,
+      dateTo,
+    });
+
     if (!searchQuery) {
       res.status(400).json({ message: 'Search query is required' });
       return;
     }
 
-    // Build base query with tenancy isolation
-    const baseQuery: any = {
-      workplaceId: req.user?.workplaceId || req.workspace?._id,
-      deletedAt: { $exists: false },
-    };
+    // Build base query with tenancy isolation from middleware
+    const baseQuery: any = { ...req.tenancyFilter };
 
     // Add filters
     if (type) baseQuery.type = type;
@@ -567,6 +591,8 @@ export const searchNotes = async (
 
     const finalQuery = { ...baseQuery, ...searchConditions };
 
+    console.log('Final query for search:', JSON.stringify(finalQuery, null, 2));
+
     const notes = await ClinicalNote.find(finalQuery)
       .limit(Number(limit) * 1)
       .skip((Number(page) - 1) * Number(limit))
@@ -576,6 +602,10 @@ export const searchNotes = async (
       .sort({ createdAt: -1 });
 
     const total = await ClinicalNote.countDocuments(finalQuery);
+
+    console.log('Search results count:', notes.length);
+    console.log('Total documents matching query:', total);
+    console.log('=== END SEARCH NOTES DEBUG ===');
 
     // Log audit trail for search
     const auditContext = AuditService.createAuditContext(req);
