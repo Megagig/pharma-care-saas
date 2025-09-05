@@ -42,21 +42,61 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
   } = useDrugSearch(debouncedSearchTerm, debouncedSearchTerm.length > 2);
   const { setSelectedDrug, setSearchError } = useDrugStore();
 
-  // Report any errors to the global state
+  // Report any errors to the global state and console log for debugging
   useEffect(() => {
     if (error) {
+      console.error('Drug search error:', error);
       setSearchError((error as Error).message || 'Failed to search drugs');
     } else {
       setSearchError(null);
     }
-  }, [error, setSearchError]);
+
+    // Debug: Log search results
+    console.log('Search term:', debouncedSearchTerm);
+    console.log('Search results:', searchResults);
+    console.log('Search results type:', typeof searchResults);
+    if (searchResults && typeof searchResults === 'object') {
+      console.log('Search results keys:', Object.keys(searchResults));
+
+      // Check for success property
+      if ('success' in searchResults) {
+        console.log('Success value:', searchResults.success);
+      }
+
+      // Check for data property
+      if ('data' in searchResults && searchResults.data) {
+        console.log('Data property exists:', typeof searchResults.data);
+        console.log('Data keys:', Object.keys(searchResults.data));
+
+        // Check for drugGroup
+        if (searchResults.data.drugGroup) {
+          console.log('DrugGroup exists:', typeof searchResults.data.drugGroup);
+          console.log(
+            'DrugGroup keys:',
+            Object.keys(searchResults.data.drugGroup)
+          );
+
+          // Check for conceptGroup
+          if (searchResults.data.drugGroup.conceptGroup) {
+            console.log(
+              'ConceptGroup exists:',
+              Array.isArray(searchResults.data.drugGroup.conceptGroup)
+                ? `Array with ${searchResults.data.drugGroup.conceptGroup.length} items`
+                : typeof searchResults.data.drugGroup.conceptGroup
+            );
+          }
+        }
+      }
+    }
+    console.log('Is loading:', isLoading);
+  }, [error, searchResults, isLoading, debouncedSearchTerm, setSearchError]);
 
   // Extract drug concepts from search results
   const drugConcepts = useMemo(() => {
-    if (!searchResults?.drugGroup?.conceptGroup) return [];
+    if (!searchResults?.data?.drugGroup?.conceptGroup) return [];
 
     const concepts: DrugConcept[] = [];
-    searchResults.drugGroup.conceptGroup.forEach((group) => {
+    searchResults.data.drugGroup.conceptGroup.forEach((group) => {
       if (group.conceptProperties) {
         concepts.push(...group.conceptProperties);
       }
@@ -90,6 +130,7 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
 
   return (
     <Box className="drug-search">
+      {/* Debug info */}
       <TextField
         fullWidth
         variant="outlined"
@@ -100,6 +141,11 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
           startAdornment: (
             <InputAdornment position="start">
               <SearchIcon color="primary" />
+            </InputAdornment>
+          ),
+          endAdornment: isLoading && (
+            <InputAdornment position="end">
+              <CircularProgress size={20} color="primary" />
             </InputAdornment>
           ),
         }}
@@ -166,13 +212,13 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
             {drugConcepts.map((drug) => (
               <ListItem
                 key={drug.rxcui}
-                button
                 onClick={() => handleDrugSelect(drug)}
                 sx={{
                   borderBottom: '1px solid #f0f0f0',
                   '&:last-child': { border: 'none' },
                   '&:hover': {
                     bgcolor: '#f5f9ff',
+                    cursor: 'pointer',
                   },
                 }}
               >

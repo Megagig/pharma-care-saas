@@ -7,9 +7,9 @@ const router = Router();
 /**
  * @route GET /api/drugs/search
  * @desc Search for drugs by name
- * @access Private
+ * @access Public (temporarily for debugging)
  */
-router.get('/search', auth, drugController.searchDrugs);
+router.get('/search', drugController.searchDrugs); // Removed auth middleware temporarily
 
 /**
  * @route GET /api/drugs/monograph/:id

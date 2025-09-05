@@ -72,18 +72,71 @@ class OpenFdaService {
    * @param {number} limit - Number of records to return
    * @returns {Promise<OpenFDAEventResult>} - Adverse effects data
    */
-  async getAdverseEffects(drugName: string, limit: number = 10): Promise<OpenFDAEventResult> {
+  async getAdverseEffects(
+    drugName: string,
+    limit: number = 10
+  ): Promise<OpenFDAEventResult> {
     try {
+      // Properly encode the drug name for URL parameters
+      const encodedDrugName = encodeURIComponent(drugName);
       const response = await axios.get(`${OPENFDA_BASE_URL}/event.json`, {
         params: {
-          search: `patient.drug.medicinalproduct:${drugName}`,
-          limit: limit
-        }
+          search: `patient.drug.medicinalproduct:"${encodedDrugName}"`,
+          limit: limit,
+        },
+        headers: {
+          Accept: 'application/json',
+        },
+        timeout: 15000, // 15 second timeout
       });
+
+      logger.info(`Successfully retrieved adverse effects for ${drugName}`);
       return response.data;
     } catch (error: any) {
       logger.error('OpenFDA adverse effects error:', error);
-      throw new Error(`Failed to get adverse effects: ${error.message}`);
+
+      // Try alternative query if the first one fails
+      try {
+        logger.info(`Trying alternative search for ${drugName}`);
+        // Try a broader search using generic name
+        const altResponse = await axios.get(`${OPENFDA_BASE_URL}/event.json`, {
+          params: {
+            search: `patient.drug.openfda.generic_name:"${encodeURIComponent(
+              drugName
+            )}" OR patient.drug.openfda.brand_name:"${encodeURIComponent(
+              drugName
+            )}"`,
+            limit: limit,
+          },
+          headers: {
+            Accept: 'application/json',
+          },
+          timeout: 15000,
+        });
+
+        logger.info(
+          `Successfully retrieved adverse effects with alternative search for ${drugName}`
+        );
+        return altResponse.data;
+      } catch (altError) {
+        logger.error('Alternative OpenFDA search also failed:', altError);
+
+        // Return a minimal structure rather than throwing
+        return {
+          meta: {
+            disclaimer: 'No adverse effects found or API error occurred',
+            terms: 'See OpenFDA for terms of service',
+            license: 'See OpenFDA for license',
+            last_updated: new Date().toISOString(),
+            results: {
+              skip: 0,
+              limit: limit,
+              total: 0,
+            },
+          },
+          results: [],
+        };
+      }
     }
   }
 
@@ -94,15 +147,67 @@ class OpenFdaService {
    */
   async getDrugLabeling(brandName: string): Promise<OpenFDALabelResult> {
     try {
+      // Properly encode the brand name for URL parameters and use quotes for exact matching
+      const encodedBrandName = encodeURIComponent(brandName);
       const response = await axios.get(`${OPENFDA_BASE_URL}/label.json`, {
         params: {
-          search: `openfda.brand_name:${brandName}`
-        }
+          search: `openfda.brand_name:"${encodedBrandName}"`,
+          limit: 10,
+        },
+        headers: {
+          Accept: 'application/json',
+        },
+        timeout: 15000, // 15 second timeout
       });
+
+      logger.info(`Successfully retrieved drug labeling for ${brandName}`);
       return response.data;
     } catch (error: any) {
       logger.error('OpenFDA labeling error:', error);
-      throw new Error(`Failed to get drug labeling: ${error.message}`);
+
+      // Try alternative search methods if the first one fails
+      try {
+        logger.info(`Trying alternative search for ${brandName}`);
+        // Try searching by generic name as well
+        const altResponse = await axios.get(`${OPENFDA_BASE_URL}/label.json`, {
+          params: {
+            search: `openfda.generic_name:"${encodeURIComponent(
+              brandName
+            )}" OR openfda.substance_name:"${encodeURIComponent(brandName)}"`,
+            limit: 10,
+          },
+          headers: {
+            Accept: 'application/json',
+          },
+          timeout: 15000,
+        });
+
+        logger.info(
+          `Successfully retrieved drug labeling with alternative search for ${brandName}`
+        );
+        return altResponse.data;
+      } catch (altError) {
+        logger.error(
+          'Alternative OpenFDA labeling search also failed:',
+          altError
+        );
+
+        // Return a minimal structure rather than throwing
+        return {
+          meta: {
+            disclaimer: 'No drug labeling found or API error occurred',
+            terms: 'See OpenFDA for terms of service',
+            license: 'See OpenFDA for license',
+            last_updated: new Date().toISOString(),
+            results: {
+              skip: 0,
+              limit: 10,
+              total: 0,
+            },
+          },
+          results: [],
+        };
+      }
     }
   }
 }

@@ -1,18 +1,21 @@
 export interface DrugSearchResult {
-  drugGroup?: {
-    name: string;
-    conceptGroup: Array<{
-      tty: string;
-      conceptProperties: Array<{
-        rxcui: string;
-        name: string;
-        synonym: string;
+  success?: boolean;
+  data?: {
+    drugGroup?: {
+      name: string;
+      conceptGroup: Array<{
         tty: string;
-        language: string;
-        suppress: string;
-        umlscui: string;
+        conceptProperties: Array<{
+          rxcui: string;
+          name: string;
+          synonym: string;
+          tty: string;
+          language: string;
+          suppress: string;
+          umlscui: string;
+        }>;
       }>;
-    }>;
+    };
   };
 }
 
