@@ -1,43 +1,85 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
 import { useDrugSearch } from '../queries/drugQueries';
 import { useDrugStore } from '../stores/drugStore';
-import { Box, TextField, CircularProgress, List, ListItem, ListItemText, Typography, Paper, InputAdornment } from '@mui/material';
+import {
+  Box,
+  TextField,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemText,
+  Typography,
+  Paper,
+  InputAdornment,
+  Divider,
+  Chip,
+  Tooltip,
+} from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
 import LoadingSkeleton from './LoadingSkeleton';
 
+interface DrugConcept {
+  rxcui: string;
+  name: string;
+  synonym?: string;
+  tty?: string;
+}
+
 interface DrugSearchProps {
-  onDrugSelect?: (drug: any) => void;
+  onDrugSelect?: () => void;
 }
 
 const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const debouncedSearchTerm = useDebounce<string>(searchTerm, 300);
-  const { data: searchResults, isLoading, error } = useDrugSearch(debouncedSearchTerm, debouncedSearchTerm.length > 2);
-  const { setSelectedDrug } = useDrugStore();
+  const {
+    data: searchResults,
+    isLoading,
+    error,
+    refetch,
+  } = useDrugSearch(debouncedSearchTerm, debouncedSearchTerm.length > 2);
+  const { setSelectedDrug, setSearchError } = useDrugStore();
+
+  // Report any errors to the global state
+  useEffect(() => {
+    if (error) {
+      setSearchError((error as Error).message || 'Failed to search drugs');
+    } else {
+      setSearchError(null);
+    }
+  }, [error, setSearchError]);
 
   // Extract drug concepts from search results
   const drugConcepts = useMemo(() => {
     if (!searchResults?.drugGroup?.conceptGroup) return [];
-    
-    const concepts: any[] = [];
-    searchResults.drugGroup.conceptGroup.forEach(group => {
+
+    const concepts: DrugConcept[] = [];
+    searchResults.drugGroup.conceptGroup.forEach((group) => {
       if (group.conceptProperties) {
         concepts.push(...group.conceptProperties);
       }
     });
-    
+
     return concepts;
   }, [searchResults]);
 
-  const handleDrugSelect = (drug: any) => {
+  const handleDrugSelect = (drug: DrugConcept) => {
     setSelectedDrug({
       rxCui: drug.rxcui,
-      name: drug.name
+      name: drug.name,
     });
-    
+
     if (onDrugSelect) {
-      onDrugSelect(drug);
+      onDrugSelect();
+    }
+  };
+
+  // Handle retry on error
+  const handleRetry = () => {
+    if (debouncedSearchTerm.length > 2) {
+      refetch();
     }
   };
 
@@ -51,50 +93,151 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
       <TextField
         fullWidth
         variant="outlined"
-        placeholder="Search for drugs..."
+        placeholder="Search for medications by name..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <SearchIcon />
+              <SearchIcon color="primary" />
             </InputAdornment>
           ),
         }}
-        className="mb-4"
+        sx={{
+          mb: 2,
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '8px',
+            '&:hover fieldset': {
+              borderColor: '#0047AB',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#0047AB',
+              borderWidth: 2,
+            },
+          },
+        }}
       />
-      
+
       {error && (
-        <Typography color="error" className="mb-4">
-          Error: {(error as any).message || 'Failed to search drugs'}
-        </Typography>
+        <Box
+          sx={{
+            mb: 3,
+            p: 1,
+            borderRadius: '8px',
+            bgcolor: '#fff0f0',
+            border: '1px solid #ffcccc',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Typography color="error">
+            Error: {(error as Error).message || 'Failed to search drugs'}
+          </Typography>
+          <Typography
+            component="button"
+            onClick={handleRetry}
+            sx={{
+              cursor: 'pointer',
+              color: '#0047AB',
+              fontWeight: 500,
+              fontSize: '0.875rem',
+              textDecoration: 'underline',
+              border: 'none',
+              background: 'none',
+              '&:hover': { color: '#002D69' },
+            }}
+          >
+            Retry
+          </Typography>
+        </Box>
       )}
-      
+
       {debouncedSearchTerm.length > 2 && drugConcepts.length > 0 && (
-        <Paper elevation={2}>
-          <List>
+        <Paper
+          elevation={2}
+          sx={{
+            borderRadius: '8px',
+            overflow: 'hidden',
+            border: '1px solid #e0e0e0',
+          }}
+        >
+          <List sx={{ maxHeight: '350px', overflow: 'auto' }}>
             {drugConcepts.map((drug) => (
-              <ListItem 
-                key={drug.rxcui} 
-                button 
+              <ListItem
+                key={drug.rxcui}
+                button
                 onClick={() => handleDrugSelect(drug)}
-                className="border-b last:border-b-0"
+                sx={{
+                  borderBottom: '1px solid #f0f0f0',
+                  '&:last-child': { border: 'none' },
+                  '&:hover': {
+                    bgcolor: '#f5f9ff',
+                  },
+                }}
               >
-                <ListItemText 
-                  primary={drug.name} 
-                  secondary={drug.synonym ? `Also known as: ${drug.synonym}` : ''} 
+                <ListItemText
+                  primary={
+                    <Typography component="span" fontWeight={500}>
+                      {drug.name}
+                    </Typography>
+                  }
+                  secondary={
+                    drug.synonym ? `Also known as: ${drug.synonym}` : ''
+                  }
                 />
+                {drug.tty && (
+                  <Box
+                    component="span"
+                    sx={{
+                      ml: 2,
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: '16px',
+                      fontSize: '0.75rem',
+                      fontWeight: 500,
+                      color: '#0047AB',
+                      bgcolor: '#f0f7ff',
+                      border: '1px solid #d0e4ff',
+                    }}
+                  >
+                    {drug.tty}
+                  </Box>
+                )}
               </ListItem>
             ))}
           </List>
         </Paper>
       )}
-      
-      {debouncedSearchTerm.length > 2 && drugConcepts.length === 0 && !isLoading && (
-        <Typography className="text-center py-4 text-gray-500">
-          No drugs found matching "{debouncedSearchTerm}"
-        </Typography>
-      )}
+
+      {debouncedSearchTerm.length > 2 &&
+        drugConcepts.length === 0 &&
+        !isLoading && (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              py: 4,
+              bgcolor: '#f9fbff',
+              borderRadius: '8px',
+            }}
+          >
+            <SearchIcon sx={{ fontSize: '2rem', color: '#9e9e9e', mb: 1 }} />
+            <Typography color="text.secondary" align="center">
+              No medications found matching "{debouncedSearchTerm}"
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              align="center"
+              sx={{ mt: 1 }}
+            >
+              Try using a different spelling or search term
+            </Typography>
+          </Box>
+        )}
     </Box>
   );
 };
