@@ -103,6 +103,7 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
     toggleNoteSelection,
     clearSelection,
     setFilters,
+    clearFilters,
     setSearchQuery,
     setPage,
     setCreateModalOpen,
@@ -138,27 +139,43 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
     if (patientId) {
       result.patientId = patientId;
     }
+    console.log('Current filters calculated:', result); // Debug log
     return result;
   }, [filters, patientId]);
 
   const { data, isLoading, error } = useClinicalNotes(currentFilters);
 
-  // Handle search - stabilize with useCallback and stable dependencies
+  // Debug effect to log data changes
+  useEffect(() => {
+    console.log('Data updated:', {
+      data: data?.notes?.length || 0,
+      isLoading,
+      error: error?.message,
+    });
+  }, [data, isLoading, error]);
+
+  // Handle search - directly update filters for React Query
   const handleSearch = useCallback(
     (query: string) => {
+      console.log('Search query:', query); // Debug log
       setSearchQuery(query);
-      const filtersToUse = {
-        ...(filters || {}),
+      const newFilters = {
+        ...filters,
         ...(patientId && { patientId }),
+        page: 1, // Reset to first page
       };
 
       if (query.trim()) {
-        searchNotes(query, filtersToUse);
+        newFilters.search = query.trim();
       } else {
-        fetchNotes(filtersToUse);
+        // Remove search parameter when query is empty
+        delete newFilters.search;
       }
+
+      console.log('New filters:', newFilters); // Debug log
+      setFilters(newFilters);
     },
-    [searchNotes, fetchNotes, filters, patientId, setSearchQuery]
+    [filters, patientId, setSearchQuery, setFilters]
   );
 
   // Debounced search - use useRef to maintain stable reference
@@ -187,37 +204,39 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
     debouncedSearch(value);
   };
 
-  // Handle filter changes
+  // Handle filter changes - directly update filters for React Query
   const handleFilterChange = (
     key: keyof ClinicalNoteFilters,
     value: string | undefined
   ) => {
-    const newFilters = { ...filters, [key]: value };
-    setFilters(newFilters);
-    if (searchQuery) {
-      searchNotes(searchQuery, newFilters);
+    console.log('Filter change:', key, value); // Debug log
+    const newFilters = {
+      ...filters,
+      page: 1, // Reset to first page when filters change
+    };
+
+    if (value === undefined || value === '') {
+      delete newFilters[key];
     } else {
-      fetchNotes(newFilters);
+      newFilters[key] = value as any;
     }
+
+    console.log('New filters after change:', newFilters); // Debug log
+    setFilters(newFilters);
   };
 
-  // Clear all filters
+  // Clear all filters - reset to initial state
   const handleClearFilters = () => {
-    setFilters({
-      page: 1,
-      limit: 10,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    });
+    console.log('Clearing filters'); // Debug log
+
+    // Use the store's clearFilters method
+    clearFilters();
+
+    // Reset local state
     setSearchInput('');
     setSearchQuery('');
-    fetchNotes({
-      page: 1,
-      limit: 10,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-      ...(patientId && { patientId }),
-    });
+
+    console.log('Filters cleared successfully'); // Debug log
   };
 
   // Handle row selection with simplified approach
@@ -380,9 +399,11 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
     );
   };
 
-  // Initialize data on component mount
+  // Initialize filters on component mount
   useEffect(() => {
-    if (!data && !isLoading && !error) {
+    console.log('Component mount - current filters:', filters); // Debug log
+    if (!filters || Object.keys(filters).length === 0) {
+      console.log('Initializing filters...'); // Debug log
       const initFilters = {
         page: 1,
         limit: 10,
@@ -390,9 +411,9 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
         sortOrder: 'desc' as const,
         ...(patientId && { patientId }),
       };
-      fetchNotes(initFilters);
+      setFilters(initFilters);
     }
-  }, [data, isLoading, error, fetchNotes, patientId]);
+  }, [filters, setFilters, patientId]);
 
   // Define DataGrid columns
   const columns: GridColDef[] = [
