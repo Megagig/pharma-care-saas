@@ -577,6 +577,13 @@ export const searchNotes = async (
 
     // Full-text search across multiple fields
     const searchRegex = new RegExp(searchQuery as string, 'i');
+    console.log(
+      'Search regex created:',
+      searchRegex.source,
+      'flags:',
+      searchRegex.flags
+    );
+
     const searchConditions = {
       $or: [
         { title: searchRegex },
@@ -591,8 +598,19 @@ export const searchNotes = async (
 
     const finalQuery = { ...baseQuery, ...searchConditions };
 
-    console.log('Final query for search:', JSON.stringify(finalQuery, null, 2));
-
+    console.log(
+      'Final query for search:',
+      JSON.stringify(
+        finalQuery,
+        (key, value) => {
+          if (value instanceof RegExp) {
+            return { $regex: value.source, $options: value.flags };
+          }
+          return value;
+        },
+        2
+      )
+    );
     const notes = await ClinicalNote.find(finalQuery)
       .limit(Number(limit) * 1)
       .skip((Number(page) - 1) * Number(limit))

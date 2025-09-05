@@ -139,25 +139,14 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
     if (patientId) {
       result.patientId = patientId;
     }
-    console.log('Current filters calculated:', result); // Debug log
     return result;
   }, [filters, patientId]);
 
   const { data, isLoading, error } = useClinicalNotes(currentFilters);
 
-  // Debug effect to log data changes
-  useEffect(() => {
-    console.log('Data updated:', {
-      data: data?.notes?.length || 0,
-      isLoading,
-      error: error?.message,
-    });
-  }, [data, isLoading, error]);
-
   // Handle search - directly update filters for React Query
   const handleSearch = useCallback(
     (query: string) => {
-      console.log('Search query:', query); // Debug log
       setSearchQuery(query);
       const newFilters = {
         ...filters,
@@ -172,7 +161,6 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
         delete newFilters.search;
       }
 
-      console.log('New filters:', newFilters); // Debug log
       setFilters(newFilters);
     },
     [filters, patientId, setSearchQuery, setFilters]
@@ -209,37 +197,50 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
     key: keyof ClinicalNoteFilters,
     value: string | undefined
   ) => {
-    console.log('Filter change:', key, value); // Debug log
-    const newFilters = {
-      ...filters,
-      page: 1, // Reset to first page when filters change
-    };
-
     if (value === undefined || value === '') {
-      delete newFilters[key];
+      // Create new filters object without the specified key
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [key]: unused, ...rest } = filters;
+      setFilters({ ...rest, page: 1 });
     } else {
-      newFilters[key] = value as any;
-    }
+      // Type-safe approach with explicit object creation
+      const updatedFilters: ClinicalNoteFilters = { ...filters, page: 1 };
 
-    console.log('New filters after change:', newFilters); // Debug log
-    setFilters(newFilters);
+      // Handle each specific key type-safely
+      if (
+        key === 'search' ||
+        key === 'patientId' ||
+        key === 'type' ||
+        key === 'priority' ||
+        key === 'dateFrom' ||
+        key === 'dateTo'
+      ) {
+        updatedFilters[key] = value;
+      } else if (
+        key === 'sortBy' &&
+        (value === 'title' ||
+          value === 'createdAt' ||
+          value === 'updatedAt' ||
+          value === 'priority')
+      ) {
+        updatedFilters.sortBy = value;
+      } else if (key === 'sortOrder' && (value === 'asc' || value === 'desc')) {
+        updatedFilters.sortOrder = value;
+      }
+
+      setFilters(updatedFilters);
+    }
   };
 
   // Clear all filters - reset to initial state
   const handleClearFilters = () => {
-    console.log('Clearing filters'); // Debug log
-
     // Use the store's clearFilters method
     clearFilters();
 
     // Reset local state
     setSearchInput('');
     setSearchQuery('');
-
-    console.log('Filters cleared successfully'); // Debug log
-  };
-
-  // Handle row selection with simplified approach
+  }; // Handle row selection with simplified approach
   const handleRowSelectionChange = useCallback(
     (selectionModel: GridRowSelectionModel) => {
       try {
