@@ -59,6 +59,24 @@ const loadWorkspaceContext = async (req, res, next) => {
             logger_1.default.warn('loadWorkspaceContext called without authenticated user');
             return next();
         }
+        if (req.user.role === 'super_admin') {
+            req.workspaceContext = {
+                workspace: null,
+                subscription: null,
+                plan: null,
+                permissions: ['*'],
+                limits: {
+                    patients: null,
+                    users: null,
+                    locations: null,
+                    storage: null,
+                    apiCalls: null,
+                },
+                isTrialExpired: false,
+                isSubscriptionActive: true,
+            };
+            return next();
+        }
         const userId = req.user._id.toString();
         const cachedContext = workspaceCache.get(userId);
         if (cachedContext) {

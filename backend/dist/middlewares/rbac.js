@@ -17,6 +17,9 @@ const requirePermission = (action) => {
                 });
                 return;
             }
+            if (req.user.role === 'super_admin') {
+                return next();
+            }
             if (!req.workspaceContext) {
                 res.status(500).json({
                     success: false,

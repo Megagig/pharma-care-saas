@@ -36,7 +36,14 @@ export interface IClinicalNote extends Document {
   pharmacist: mongoose.Types.ObjectId;
   workplaceId: mongoose.Types.ObjectId;
   locationId?: string;
-  type: 'consultation' | 'medication_review' | 'follow_up' | 'adverse_event' | 'other';
+  customId?: string; // Custom ID for external integrations
+  legacyId?: string; // Legacy ID for backward compatibility
+  type:
+    | 'consultation'
+    | 'medication_review'
+    | 'follow_up'
+    | 'adverse_event'
+    | 'other';
   title: string;
   content: {
     subjective?: string;
@@ -69,63 +76,63 @@ export interface IClinicalNote extends Document {
 const attachmentSchema = new Schema({
   fileName: {
     type: String,
-    required: true
+    required: true,
   },
   originalName: {
     type: String,
-    required: true
+    required: true,
   },
   mimeType: {
     type: String,
-    required: true
+    required: true,
   },
   size: {
     type: Number,
-    required: true
+    required: true,
   },
   url: {
     type: String,
-    required: true
+    required: true,
   },
   uploadedAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   uploadedBy: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true
-  }
+    required: true,
+  },
 });
 
 const labResultSchema = new Schema({
   test: {
     type: String,
-    required: true
+    required: true,
   },
   result: {
     type: String,
-    required: true
+    required: true,
   },
   normalRange: {
     type: String,
-    required: true
+    required: true,
   },
   date: {
     type: Date,
-    required: true
+    required: true,
   },
   status: {
     type: String,
     enum: ['normal', 'abnormal', 'critical'],
-    default: 'normal'
-  }
+    default: 'normal',
+  },
 });
 
 const vitalSignsSchema = new Schema({
   bloodPressure: {
     systolic: Number,
-    diastolic: Number
+    diastolic: Number,
   },
   heartRate: Number,
   temperature: Number,
@@ -133,138 +140,149 @@ const vitalSignsSchema = new Schema({
   height: Number,
   recordedAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
-const clinicalNoteSchema = new Schema({
-  patient: {
-    type: Schema.Types.ObjectId,
-    ref: 'Patient',
-    required: true,
-    index: true
-  },
-  pharmacist: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
-  },
-  workplaceId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Workplace',
-    required: true,
-    index: true
-  },
-  locationId: {
-    type: String,
-    index: true,
-    sparse: true
-  },
-  type: {
-    type: String,
-    enum: ['consultation', 'medication_review', 'follow_up', 'adverse_event', 'other'],
-    required: true,
-    index: true
-  },
-  title: {
-    type: String,
-    required: [true, 'Note title is required'],
-    trim: true,
-    index: 'text' // Enable text search
-  },
-  content: {
-    subjective: {
-      type: String,
-      index: 'text'
+const clinicalNoteSchema = new Schema(
+  {
+    patient: {
+      type: Schema.Types.ObjectId,
+      ref: 'Patient',
+      required: true,
+      index: true,
     },
-    objective: {
-      type: String,
-      index: 'text'
+    pharmacist: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
     },
-    assessment: {
-      type: String,
-      index: 'text'
+    workplaceId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Workplace',
+      required: true,
+      index: true,
     },
-    plan: {
+    locationId: {
       type: String,
-      index: 'text'
-    }
-  },
-  medications: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Medication'
-  }],
-  vitalSigns: vitalSignsSchema,
-  laborResults: [labResultSchema],
-  recommendations: {
-    type: [String],
-    index: 'text'
-  },
-  followUpRequired: {
-    type: Boolean,
-    default: false,
-    index: true
-  },
-  followUpDate: {
-    type: Date,
-    index: true
-  },
-  attachments: [attachmentSchema],
-  priority: {
-    type: String,
-    enum: ['low', 'medium', 'high'],
-    default: 'medium',
-    index: true
-  },
-  isConfidential: {
-    type: Boolean,
-    default: false,
-    index: true
-  },
-  tags: {
-    type: [String],
-    index: true
-  },
+      index: true,
+      sparse: true,
+    },
+    type: {
+      type: String,
+      enum: [
+        'consultation',
+        'medication_review',
+        'follow_up',
+        'adverse_event',
+        'other',
+      ],
+      required: true,
+      index: true,
+    },
+    title: {
+      type: String,
+      required: [true, 'Note title is required'],
+      trim: true,
+      index: 'text', // Enable text search
+    },
+    content: {
+      subjective: {
+        type: String,
+        index: 'text',
+      },
+      objective: {
+        type: String,
+        index: 'text',
+      },
+      assessment: {
+        type: String,
+        index: 'text',
+      },
+      plan: {
+        type: String,
+        index: 'text',
+      },
+    },
+    medications: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Medication',
+      },
+    ],
+    vitalSigns: vitalSignsSchema,
+    laborResults: [labResultSchema],
+    recommendations: {
+      type: [String],
+      index: 'text',
+    },
+    followUpRequired: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    followUpDate: {
+      type: Date,
+      index: true,
+    },
+    attachments: [attachmentSchema],
+    priority: {
+      type: String,
+      enum: ['low', 'medium', 'high'],
+      default: 'medium',
+      index: true,
+    },
+    isConfidential: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    tags: {
+      type: [String],
+      index: true,
+    },
 
-  // Audit fields
-  createdBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  lastModifiedBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
+    // Audit fields
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    lastModifiedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
 
-  // Soft deletion fields
-  deletedAt: {
-    type: Date,
-    index: true,
-    sparse: true
+    // Soft deletion fields
+    deletedAt: {
+      type: Date,
+      index: true,
+      sparse: true,
+    },
+    deletedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      sparse: true,
+    },
   },
-  deletedBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    sparse: true
+  {
+    timestamps: true,
+    // Enable text search across multiple fields
+    indexes: [
+      {
+        title: 'text',
+        'content.subjective': 'text',
+        'content.objective': 'text',
+        'content.assessment': 'text',
+        'content.plan': 'text',
+        recommendations: 'text',
+        tags: 'text',
+      },
+    ],
   }
-}, {
-  timestamps: true,
-  // Enable text search across multiple fields
-  indexes: [
-    {
-      'title': 'text',
-      'content.subjective': 'text',
-      'content.objective': 'text',
-      'content.assessment': 'text',
-      'content.plan': 'text',
-      'recommendations': 'text',
-      'tags': 'text'
-    }
-  ]
-});
+);
 
 // Compound indexes for efficient querying
 clinicalNoteSchema.index({ workplaceId: 1, patient: 1, deletedAt: 1 });
@@ -273,13 +291,20 @@ clinicalNoteSchema.index({ workplaceId: 1, type: 1, deletedAt: 1 });
 clinicalNoteSchema.index({ workplaceId: 1, priority: 1, deletedAt: 1 });
 clinicalNoteSchema.index({ workplaceId: 1, isConfidential: 1, deletedAt: 1 });
 clinicalNoteSchema.index({ workplaceId: 1, followUpRequired: 1, deletedAt: 1 });
-clinicalNoteSchema.index({ workplaceId: 1, locationId: 1, deletedAt: 1 }, { sparse: true });
+clinicalNoteSchema.index(
+  { workplaceId: 1, locationId: 1, deletedAt: 1 },
+  { sparse: true }
+);
 clinicalNoteSchema.index({ workplaceId: 1, createdAt: -1, deletedAt: 1 });
 clinicalNoteSchema.index({ workplaceId: 1, updatedAt: -1, deletedAt: 1 });
 
 // Additional indexes for search and filtering
 clinicalNoteSchema.index({ workplaceId: 1, tags: 1, deletedAt: 1 });
-clinicalNoteSchema.index({ workplaceId: 1, 'laborResults.status': 1, deletedAt: 1 });
+clinicalNoteSchema.index({
+  workplaceId: 1,
+  'laborResults.status': 1,
+  deletedAt: 1,
+});
 
 // Pre-save middleware to set audit fields
 clinicalNoteSchema.pre('save', function (next) {
@@ -308,7 +333,9 @@ clinicalNoteSchema.virtual('isDeleted').get(function () {
 });
 
 // Method to soft delete
-clinicalNoteSchema.methods.softDelete = function (deletedBy: mongoose.Types.ObjectId) {
+clinicalNoteSchema.methods.softDelete = function (
+  deletedBy: mongoose.Types.ObjectId
+) {
   this.deletedAt = new Date();
   this.deletedBy = deletedBy;
   this.lastModifiedBy = deletedBy;
@@ -316,7 +343,9 @@ clinicalNoteSchema.methods.softDelete = function (deletedBy: mongoose.Types.Obje
 };
 
 // Method to restore soft deleted note
-clinicalNoteSchema.methods.restore = function (restoredBy: mongoose.Types.ObjectId) {
+clinicalNoteSchema.methods.restore = function (
+  restoredBy: mongoose.Types.ObjectId
+) {
   this.deletedAt = undefined;
   this.deletedBy = undefined;
   this.lastModifiedBy = restoredBy;
@@ -333,4 +362,7 @@ clinicalNoteSchema.statics.findDeleted = function (filter = {}) {
   return this.find({ ...filter, deletedAt: { $exists: true } });
 };
 
-export default mongoose.model<IClinicalNote>('ClinicalNote', clinicalNoteSchema);
+export default mongoose.model<IClinicalNote>(
+  'ClinicalNote',
+  clinicalNoteSchema
+);

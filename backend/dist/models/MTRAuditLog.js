@@ -51,7 +51,15 @@ const mtrAuditLogSchema = new mongoose_1.Schema({
     },
     resourceType: {
         type: String,
-        enum: ['MedicationTherapyReview', 'DrugTherapyProblem', 'MTRIntervention', 'MTRFollowUp', 'Patient', 'User'],
+        enum: [
+            'MedicationTherapyReview',
+            'DrugTherapyProblem',
+            'MTRIntervention',
+            'MTRFollowUp',
+            'Patient',
+            'User',
+            'ClinicalNote',
+        ],
         required: [true, 'Resource type is required'],
         index: true,
     },
@@ -125,7 +133,13 @@ const mtrAuditLogSchema = new mongoose_1.Schema({
     },
     complianceCategory: {
         type: String,
-        enum: ['clinical_documentation', 'patient_safety', 'data_access', 'system_security', 'workflow_compliance'],
+        enum: [
+            'clinical_documentation',
+            'patient_safety',
+            'data_access',
+            'system_security',
+            'workflow_compliance',
+        ],
         required: [true, 'Compliance category is required'],
         index: true,
     },
@@ -168,7 +182,11 @@ mtrAuditLogSchema.index({ workplaceId: 1, timestamp: -1 });
 mtrAuditLogSchema.index({ workplaceId: 1, userId: 1, timestamp: -1 });
 mtrAuditLogSchema.index({ workplaceId: 1, action: 1, timestamp: -1 });
 mtrAuditLogSchema.index({ workplaceId: 1, resourceType: 1, timestamp: -1 });
-mtrAuditLogSchema.index({ workplaceId: 1, complianceCategory: 1, timestamp: -1 });
+mtrAuditLogSchema.index({
+    workplaceId: 1,
+    complianceCategory: 1,
+    timestamp: -1,
+});
 mtrAuditLogSchema.index({ workplaceId: 1, riskLevel: 1, timestamp: -1 });
 mtrAuditLogSchema.index({ workplaceId: 1, patientId: 1, timestamp: -1 });
 mtrAuditLogSchema.index({ workplaceId: 1, reviewId: 1, timestamp: -1 });
@@ -176,34 +194,46 @@ mtrAuditLogSchema.index({ resourceType: 1, resourceId: 1, timestamp: -1 });
 mtrAuditLogSchema.index({ ipAddress: 1, timestamp: -1 });
 mtrAuditLogSchema.index({ sessionId: 1, timestamp: -1 });
 mtrAuditLogSchema.index({ createdAt: -1 });
-mtrAuditLogSchema.index({ workplaceId: 1, action: 1, resourceType: 1, timestamp: -1 });
-mtrAuditLogSchema.index({ workplaceId: 1, userId: 1, complianceCategory: 1, timestamp: -1 });
+mtrAuditLogSchema.index({
+    workplaceId: 1,
+    action: 1,
+    resourceType: 1,
+    timestamp: -1,
+});
+mtrAuditLogSchema.index({
+    workplaceId: 1,
+    userId: 1,
+    complianceCategory: 1,
+    timestamp: -1,
+});
 mtrAuditLogSchema.virtual('actionDisplay').get(function () {
     const actionMap = {
-        'CREATE_MTR_SESSION': 'Created MTR Session',
-        'UPDATE_MTR_SESSION': 'Updated MTR Session',
-        'DELETE_MTR_SESSION': 'Deleted MTR Session',
-        'COMPLETE_MTR_SESSION': 'Completed MTR Session',
-        'CREATE_MTR_PROBLEM': 'Identified Drug Therapy Problem',
-        'UPDATE_MTR_PROBLEM': 'Updated Drug Therapy Problem',
-        'RESOLVE_MTR_PROBLEM': 'Resolved Drug Therapy Problem',
-        'DELETE_MTR_PROBLEM': 'Deleted Drug Therapy Problem',
-        'CREATE_MTR_INTERVENTION': 'Recorded Intervention',
-        'UPDATE_MTR_INTERVENTION': 'Updated Intervention',
-        'DELETE_MTR_INTERVENTION': 'Deleted Intervention',
-        'CREATE_MTR_FOLLOWUP': 'Scheduled Follow-up',
-        'UPDATE_MTR_FOLLOWUP': 'Updated Follow-up',
-        'COMPLETE_MTR_FOLLOWUP': 'Completed Follow-up',
-        'DELETE_MTR_FOLLOWUP': 'Deleted Follow-up',
-        'ACCESS_PATIENT_DATA': 'Accessed Patient Data',
-        'EXPORT_MTR_DATA': 'Exported MTR Data',
-        'LOGIN': 'User Login',
-        'LOGOUT': 'User Logout',
-        'FAILED_LOGIN': 'Failed Login Attempt',
+        CREATE_MTR_SESSION: 'Created MTR Session',
+        UPDATE_MTR_SESSION: 'Updated MTR Session',
+        DELETE_MTR_SESSION: 'Deleted MTR Session',
+        COMPLETE_MTR_SESSION: 'Completed MTR Session',
+        CREATE_MTR_PROBLEM: 'Identified Drug Therapy Problem',
+        UPDATE_MTR_PROBLEM: 'Updated Drug Therapy Problem',
+        RESOLVE_MTR_PROBLEM: 'Resolved Drug Therapy Problem',
+        DELETE_MTR_PROBLEM: 'Deleted Drug Therapy Problem',
+        CREATE_MTR_INTERVENTION: 'Recorded Intervention',
+        UPDATE_MTR_INTERVENTION: 'Updated Intervention',
+        DELETE_MTR_INTERVENTION: 'Deleted Intervention',
+        CREATE_MTR_FOLLOWUP: 'Scheduled Follow-up',
+        UPDATE_MTR_FOLLOWUP: 'Updated Follow-up',
+        COMPLETE_MTR_FOLLOWUP: 'Completed Follow-up',
+        DELETE_MTR_FOLLOWUP: 'Deleted Follow-up',
+        ACCESS_PATIENT_DATA: 'Accessed Patient Data',
+        EXPORT_MTR_DATA: 'Exported MTR Data',
+        LOGIN: 'User Login',
+        LOGOUT: 'User Logout',
+        FAILED_LOGIN: 'Failed Login Attempt',
     };
     return actionMap[this.action] || this.action;
 });
-mtrAuditLogSchema.virtual('riskLevelDisplay').get(function () {
+mtrAuditLogSchema
+    .virtual('riskLevelDisplay')
+    .get(function () {
     const riskMap = {
         low: 'Low Risk',
         medium: 'Medium Risk',
@@ -212,7 +242,9 @@ mtrAuditLogSchema.virtual('riskLevelDisplay').get(function () {
     };
     return riskMap[this.riskLevel];
 });
-mtrAuditLogSchema.virtual('complianceCategoryDisplay').get(function () {
+mtrAuditLogSchema
+    .virtual('complianceCategoryDisplay')
+    .get(function () {
     const categoryMap = {
         clinical_documentation: 'Clinical Documentation',
         patient_safety: 'Patient Safety',

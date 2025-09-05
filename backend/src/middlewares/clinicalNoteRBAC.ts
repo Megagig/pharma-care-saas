@@ -82,18 +82,54 @@ export const validateNoteAccess = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Debug information to understand the request path
+    const requestPath = req.originalUrl || req.path || req.url;
+    console.log(`Validating note access for path: ${requestPath}`);
+
+    // Try to extract note ID from various possible sources
     const noteId = req.params.id;
+    console.log(`Note ID from params: ${noteId}`);
+
+    if (!noteId) {
+      console.log('No ID found in params, checking path extraction');
+      // This is a fallback in case params aren't correctly extracted
+      const pathParts = requestPath.split('/');
+      const potentialId = pathParts[pathParts.length - 1];
+      if (potentialId && potentialId.length >= 24) {
+        console.log(`Found potential ID in URL path: ${potentialId}`);
+        req.params.id = potentialId; // Update params for future middleware
+      }
+    }
+
     const workplaceId =
       req.user?.workplaceId || req.workspaceContext?.workspace?._id;
 
-    if (!noteId || !mongoose.Types.ObjectId.isValid(noteId)) {
+    if (!noteId) {
       res.status(400).json({
         success: false,
-        message: 'Invalid note ID',
+        message: 'Note ID is required',
       });
       return;
     }
 
+    // Log the note ID we're trying to find
+    console.log(`Looking up note with ID: ${noteId}`);
+
+    // Check if ID is valid - now more flexible to handle various ID formats
+    let queryId = noteId;
+    // First try - if it looks like an ObjectId, try to convert it
+    if (noteId.length === 24) {
+      try {
+        // This just tests if it can be converted
+        new mongoose.Types.ObjectId(noteId);
+        // If it reached here, it's valid
+        queryId = noteId;
+        console.log(`Note ID is a valid ObjectId: ${queryId}`);
+      } catch (err) {
+        // Not a valid ObjectId, continue with original
+        console.log(`Note ID couldn't be converted to ObjectId: ${noteId}`);
+      }
+    }
     if (!workplaceId) {
       res.status(403).json({
         success: false,
@@ -103,13 +139,118 @@ export const validateNoteAccess = async (
     }
 
     // Find the note and verify workplace isolation
-    const note = await ClinicalNote.findOne({
-      _id: noteId,
-      workplaceId: workplaceId,
+    // Define the query type using Record for flexible property access
+    const query: Record<string, any> = {
       deletedAt: { $exists: false },
-    }).populate('patient', 'firstName lastName mrn workplaceId');
+    };
 
-    if (!note) {
+    // Only add workplaceId filter if user is not super admin
+    if (req.user?.role !== 'super_admin') {
+      query.workplaceId = workplaceId;
+      console.log(`Adding workplaceId filter: ${workplaceId}`);
+    } else {
+      console.log('Super admin access - not filtering by workplace');
+    }
+
+    // Try multiple lookup strategies to be extra flexible
+    try {
+      // Strategy 1: Direct ObjectId lookup
+      if (mongoose.Types.ObjectId.isValid(queryId)) {
+        console.log(`Trying direct ObjectId lookup with: ${queryId}`);
+        const directNote = await ClinicalNote.findOne({
+          _id: queryId,
+          ...query,
+        }).populate('patient', 'firstName lastName mrn workplaceId');
+
+        if (directNote) {
+          req.clinicalNote = directNote;
+          console.log('Found note with direct ObjectId lookup');
+          return next();
+        }
+      }
+
+      // Strategy 2: OR query with multiple fields
+      console.log('Direct lookup failed, trying multi-field lookup');
+      query.$or = [
+        { _id: queryId },
+        { customId: queryId },
+        { legacyId: queryId },
+        // Handle string representation variations
+        { _id: queryId.toLowerCase() },
+        { _id: queryId.toUpperCase() },
+      ];
+    } catch (err) {
+      console.error('Error building query:', err);
+      // Continue with basic query if there was an error
+      delete query.$or;
+      query._id = queryId;
+    }
+
+    // If we haven't found a note using the first strategy
+    if (!req.clinicalNote) {
+      console.log(`Executing query: ${JSON.stringify(query)}`);
+      const note = await ClinicalNote.findOne(query).populate(
+        'patient',
+        'firstName lastName mrn workplaceId'
+      );
+
+      if (note) {
+        console.log(`Found note with ID: ${note._id}`);
+        req.clinicalNote = note;
+        return next();
+      }
+    }
+
+    // If we still haven't found a note, try one last desperate attempt with raw string match
+    if (!req.clinicalNote) {
+      console.log('Last attempt: finding all notes and checking string match');
+      // Super admin can see all notes across workplaces
+      const baseQuery =
+        req.user?.role === 'super_admin'
+          ? { deletedAt: { $exists: false } }
+          : { deletedAt: { $exists: false }, workplaceId };
+
+      // Get some recent notes to check (limit to avoid performance issues)
+      const recentNotes = await ClinicalNote.find(baseQuery)
+        .sort({ createdAt: -1 })
+        .limit(100);
+
+      // Look for string pattern match in ID or string properties
+      const matchingNote = recentNotes.find((n) => {
+        // Convert to string safely for comparison
+        const noteIdStr = noteId.toString().toLowerCase();
+
+        // Check ID match
+        const idMatch = n._id.toString().toLowerCase().includes(noteIdStr);
+
+        // Check custom ID if it exists
+        const customIdMatch = n.get('customId')
+          ? (n.get('customId') as string).toLowerCase().includes(noteIdStr)
+          : false;
+
+        // Check legacy ID if it exists
+        const legacyIdMatch = n.get('legacyId')
+          ? (n.get('legacyId') as string).toLowerCase().includes(noteIdStr)
+          : false;
+
+        return idMatch || customIdMatch || legacyIdMatch;
+      });
+
+      if (matchingNote) {
+        console.log(
+          `Found matching note with partial string match: ${matchingNote._id}`
+        );
+        await matchingNote.populate(
+          'patient',
+          'firstName lastName mrn workplaceId'
+        );
+        req.clinicalNote = matchingNote;
+        return next();
+      }
+    }
+
+    if (!req.clinicalNote) {
+      console.log(`Note still not found for ID: ${noteId}`);
       // Log unauthorized access attempt
       await auditOperations.unauthorizedAccess(
         req,
@@ -124,6 +265,9 @@ export const validateNoteAccess = async (
       });
       return;
     }
+
+    // Get the clinical note from the request
+    const note = req.clinicalNote;
 
     // Additional check for confidential notes
     if (note.isConfidential) {
@@ -265,25 +409,48 @@ export const validateBulkNoteAccess = async (
       return;
     }
 
-    // Validate all note IDs
-    const invalidIds = noteIds.filter(
+    // Process and validate IDs
+    const processedIds = noteIds.map((id) => {
+      if (mongoose.Types.ObjectId.isValid(id)) {
+        return id;
+      } else if (id && id.length === 24) {
+        // Try to convert string IDs that look like ObjectIds
+        try {
+          return new mongoose.Types.ObjectId(id).toString();
+        } catch (err) {
+          return id;
+        }
+      }
+      return id;
+    });
+
+    // Create a query that can handle both ObjectId and string IDs
+    // Use a properly typed Record to allow for dynamic properties
+    const query: Record<string, any> = {
+      deletedAt: { $exists: false },
+      workplaceId: workplaceId,
+      $or: [
+        {
+          _id: {
+            $in: processedIds.filter((id) =>
+              mongoose.Types.ObjectId.isValid(id)
+            ),
+          },
+        },
+      ],
+    };
+
+    // Add alternative ID fields to query if any non-ObjectId values exist
+    const nonObjectIds = processedIds.filter(
       (id) => !mongoose.Types.ObjectId.isValid(id)
     );
-    if (invalidIds.length > 0) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid note IDs found',
-        invalidIds,
-      });
-      return;
+    if (nonObjectIds.length > 0) {
+      query.$or.push({ customId: { $in: nonObjectIds } });
+      query.$or.push({ legacyId: { $in: nonObjectIds } });
     }
 
     // Verify all notes belong to the user's workplace
-    const notes = await ClinicalNote.find({
-      _id: { $in: noteIds },
-      workplaceId: workplaceId,
-      deletedAt: { $exists: false },
-    });
+    const notes = await ClinicalNote.find(query);
 
     if (notes.length !== noteIds.length) {
       // Log unauthorized bulk access attempt

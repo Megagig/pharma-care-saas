@@ -32,6 +32,8 @@ export interface IClinicalNote extends Document {
     pharmacist: mongoose.Types.ObjectId;
     workplaceId: mongoose.Types.ObjectId;
     locationId?: string;
+    customId?: string;
+    legacyId?: string;
     type: 'consultation' | 'medication_review' | 'follow_up' | 'adverse_event' | 'other';
     title: string;
     content: {

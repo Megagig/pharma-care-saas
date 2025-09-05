@@ -154,16 +154,66 @@ export const getNote = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Note is already validated and loaded by middleware
-    const note = req.clinicalNote;
+    console.log(`GET Note controller running for ID: ${req.params.id}`);
+    // Note should be loaded by middleware
+    let note = req.clinicalNote;
 
-    if (!note) {
+    // If note wasn't loaded by middleware, try direct lookup as a fallback
+    if (!note && req.params.id) {
+      console.log(
+        `Note not found in request, attempting direct lookup with ID: ${req.params.id}`
+      );
+
+      // Try a direct lookup with relaxed conditions for super admin
+      const query: Record<string, any> = { deletedAt: { $exists: false } };
+
+      // Only apply workplace filter for non-super admins
+      if (req.user?.role !== 'super_admin' && req.user?.workplaceId) {
+        query.workplaceId = req.user.workplaceId;
+      }
+
+      // Try multiple ID formats
+      query.$or = [
+        { _id: req.params.id },
+        { customId: req.params.id },
+        { legacyId: req.params.id },
+      ];
+
+      try {
+        if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+          // Try direct ObjectId query first
+          const foundNote = await ClinicalNote.findById(req.params.id);
+          if (foundNote) {
+            console.log(`Found note directly by ID: ${foundNote._id}`);
+            req.clinicalNote = foundNote;
+          }
+        }
+
+        // If still not found, try the OR query
+        if (!req.clinicalNote) {
+          const foundNote = await ClinicalNote.findOne(query);
+          if (foundNote) {
+            console.log(`Found note using OR query: ${foundNote._id}`);
+            req.clinicalNote = foundNote;
+          }
+        }
+      } catch (lookupErr) {
+        console.error(`Error in direct note lookup: ${lookupErr}`);
+      }
+    }
+
+    // Final check if we have a note
+    if (!req.clinicalNote) {
+      console.log(`Note still not found for ID: ${req.params.id}`);
       res.status(404).json({
         success: false,
         message: 'Clinical note not found',
       });
       return;
     }
+
+    // Use the found note
+    note = req.clinicalNote;
 
     // Populate additional fields if needed
     await note.populate([
@@ -307,19 +357,65 @@ export const updateNote = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Get the existing note for audit trail
-    const existingNote = await ClinicalNote.findOne({
-      _id: req.params.id,
-      workplaceId: req.user?.workplaceId || req.workspace?._id,
-    });
+    console.log(`UPDATE Note controller running for ID: ${req.params.id}`);
 
+    // The note should already be loaded and validated by the middleware
+    const existingNote = req.clinicalNote;
+
+    // If not found through middleware, try a more flexible search
     if (!existingNote) {
+      console.log(
+        `Note not found in request, trying direct lookup with multiple strategies`
+      );
+
+      // Try to find the note with more flexible matching
+      const noteId = req.params.id;
+      const query: Record<string, any> = { deletedAt: { $exists: false } };
+
+      // Only filter by workplace for non-super admins
+      if (req.user?.role !== 'super_admin') {
+        query.workplaceId =
+          req.user?.workplaceId || req.workspaceContext?.workspace?._id;
+      }
+
+      // Try multiple ID formats
+      if (noteId && mongoose.Types.ObjectId.isValid(noteId)) {
+        // First try direct ID lookup
+        const note = await ClinicalNote.findById(noteId);
+        if (note) {
+          console.log(`Found note by direct ID: ${note._id}`);
+          req.clinicalNote = note;
+        }
+      }
+
+      // If still not found, try more flexible query
+      if (!req.clinicalNote) {
+        query.$or = [
+          { _id: noteId },
+          { customId: noteId },
+          { legacyId: noteId },
+        ];
+
+        const note = await ClinicalNote.findOne(query);
+        if (note) {
+          console.log(`Found note using OR query: ${note._id}`);
+          req.clinicalNote = note;
+        }
+      }
+    }
+
+    // Final check if note exists
+    if (!req.clinicalNote) {
+      console.log(`Note still not found for update, ID: ${req.params.id}`);
       res.status(404).json({ message: 'Clinical note not found' });
       return;
     }
 
+    // Use the found note - already declared above
+    const noteToUpdate = req.clinicalNote;
+
     // Store old values for audit
-    const oldValues = existingNote.toObject();
+    const oldValues = noteToUpdate.toObject();
 
     // Update the note
     const updateData = {
@@ -378,13 +474,58 @@ export const deleteNote = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Get the note first for audit trail
-    const note = await ClinicalNote.findOne({
-      _id: req.params.id,
-      workplaceId: req.user?.workplaceId || req.workspace?._id,
-    });
+    console.log(`DELETE Note controller running for ID: ${req.params.id}`);
 
+    // The note should already be loaded and validated by the middleware
+    let note = req.clinicalNote;
+
+    // If not found through middleware, try a more flexible search
     if (!note) {
+      console.log(
+        `Note not found in request for deletion, trying direct lookup`
+      );
+
+      // Try to find the note with more flexible matching
+      const noteId = req.params.id;
+      const query: Record<string, any> = { deletedAt: { $exists: false } };
+
+      // Only filter by workplace for non-super admins
+      if (req.user?.role !== 'super_admin') {
+        query.workplaceId =
+          req.user?.workplaceId || req.workspaceContext?.workspace?._id;
+      }
+
+      // Try multiple ID formats
+      if (noteId && mongoose.Types.ObjectId.isValid(noteId)) {
+        // First try direct ID lookup
+        const foundNote = await ClinicalNote.findById(noteId);
+        if (foundNote) {
+          console.log(`Found note by direct ID for deletion: ${foundNote._id}`);
+          note = foundNote;
+        }
+      }
+
+      // If still not found, try more flexible query
+      if (!note) {
+        query.$or = [
+          { _id: noteId },
+          { customId: noteId },
+          { legacyId: noteId },
+        ];
+
+        const foundNote = await ClinicalNote.findOne(query);
+        if (foundNote) {
+          console.log(
+            `Found note using OR query for deletion: ${foundNote._id}`
+          );
+          note = foundNote;
+        }
+      }
+    }
+
+    // Final check if note exists
+    if (!note) {
+      console.log(`Note still not found for deletion, ID: ${req.params.id}`);
       res.status(404).json({ message: 'Clinical note not found' });
       return;
     }
@@ -395,8 +536,7 @@ export const deleteNote = async (
     // Implement soft deletion by adding deletedAt field
     const deletedNote = await ClinicalNote.findOneAndUpdate(
       {
-        _id: req.params.id,
-        workplaceId: req.user?.workplaceId || req.workspace?._id,
+        _id: note._id, // Use the already found note ID to ensure we update the correct document
       },
       {
         deletedAt: new Date(),

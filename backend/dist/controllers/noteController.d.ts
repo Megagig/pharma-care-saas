@@ -1,8 +1,5 @@
-import { Request, Response } from 'express';
-interface AuthRequest extends Request {
-    user?: any;
-    workplace?: any;
-}
+import { Response } from 'express';
+import { AuthRequest } from '../types/auth';
 export declare const getNotes: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const getNote: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const createNote: (req: AuthRequest, res: Response) => Promise<void>;
@@ -17,5 +14,4 @@ export declare const uploadAttachment: (req: AuthRequest, res: Response) => Prom
 export declare const deleteAttachment: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const downloadAttachment: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const getNoteStatistics: (req: AuthRequest, res: Response) => Promise<void>;
-export {};
 //# sourceMappingURL=noteController.d.ts.map

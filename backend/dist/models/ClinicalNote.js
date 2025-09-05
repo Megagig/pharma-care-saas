@@ -37,61 +37,61 @@ const mongoose_1 = __importStar(require("mongoose"));
 const attachmentSchema = new mongoose_1.Schema({
     fileName: {
         type: String,
-        required: true
+        required: true,
     },
     originalName: {
         type: String,
-        required: true
+        required: true,
     },
     mimeType: {
         type: String,
-        required: true
+        required: true,
     },
     size: {
         type: Number,
-        required: true
+        required: true,
     },
     url: {
         type: String,
-        required: true
+        required: true,
     },
     uploadedAt: {
         type: Date,
-        default: Date.now
+        default: Date.now,
     },
     uploadedBy: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
-    }
+        required: true,
+    },
 });
 const labResultSchema = new mongoose_1.Schema({
     test: {
         type: String,
-        required: true
+        required: true,
     },
     result: {
         type: String,
-        required: true
+        required: true,
     },
     normalRange: {
         type: String,
-        required: true
+        required: true,
     },
     date: {
         type: Date,
-        required: true
+        required: true,
     },
     status: {
         type: String,
         enum: ['normal', 'abnormal', 'critical'],
-        default: 'normal'
-    }
+        default: 'normal',
+    },
 });
 const vitalSignsSchema = new mongoose_1.Schema({
     bloodPressure: {
         systolic: Number,
-        diastolic: Number
+        diastolic: Number,
     },
     heartRate: Number,
     temperature: Number,
@@ -99,131 +99,139 @@ const vitalSignsSchema = new mongoose_1.Schema({
     height: Number,
     recordedAt: {
         type: Date,
-        default: Date.now
-    }
+        default: Date.now,
+    },
 });
 const clinicalNoteSchema = new mongoose_1.Schema({
     patient: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Patient',
         required: true,
-        index: true
+        index: true,
     },
     pharmacist: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-        index: true
+        index: true,
     },
     workplaceId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Workplace',
         required: true,
-        index: true
+        index: true,
     },
     locationId: {
         type: String,
         index: true,
-        sparse: true
+        sparse: true,
     },
     type: {
         type: String,
-        enum: ['consultation', 'medication_review', 'follow_up', 'adverse_event', 'other'],
+        enum: [
+            'consultation',
+            'medication_review',
+            'follow_up',
+            'adverse_event',
+            'other',
+        ],
         required: true,
-        index: true
+        index: true,
     },
     title: {
         type: String,
         required: [true, 'Note title is required'],
         trim: true,
-        index: 'text'
+        index: 'text',
     },
     content: {
         subjective: {
             type: String,
-            index: 'text'
+            index: 'text',
         },
         objective: {
             type: String,
-            index: 'text'
+            index: 'text',
         },
         assessment: {
             type: String,
-            index: 'text'
+            index: 'text',
         },
         plan: {
             type: String,
-            index: 'text'
-        }
+            index: 'text',
+        },
     },
-    medications: [{
+    medications: [
+        {
             type: mongoose_1.Schema.Types.ObjectId,
-            ref: 'Medication'
-        }],
+            ref: 'Medication',
+        },
+    ],
     vitalSigns: vitalSignsSchema,
     laborResults: [labResultSchema],
     recommendations: {
         type: [String],
-        index: 'text'
+        index: 'text',
     },
     followUpRequired: {
         type: Boolean,
         default: false,
-        index: true
+        index: true,
     },
     followUpDate: {
         type: Date,
-        index: true
+        index: true,
     },
     attachments: [attachmentSchema],
     priority: {
         type: String,
         enum: ['low', 'medium', 'high'],
         default: 'medium',
-        index: true
+        index: true,
     },
     isConfidential: {
         type: Boolean,
         default: false,
-        index: true
+        index: true,
     },
     tags: {
         type: [String],
-        index: true
+        index: true,
     },
     createdBy: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
     },
     lastModifiedBy: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
     },
     deletedAt: {
         type: Date,
         index: true,
-        sparse: true
+        sparse: true,
     },
     deletedBy: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
-        sparse: true
-    }
+        sparse: true,
+    },
 }, {
     timestamps: true,
     indexes: [
         {
-            'title': 'text',
+            title: 'text',
             'content.subjective': 'text',
             'content.objective': 'text',
             'content.assessment': 'text',
             'content.plan': 'text',
-            'recommendations': 'text',
-            'tags': 'text'
-        }
-    ]
+            recommendations: 'text',
+            tags: 'text',
+        },
+    ],
 });
 clinicalNoteSchema.index({ workplaceId: 1, patient: 1, deletedAt: 1 });
 clinicalNoteSchema.index({ workplaceId: 1, pharmacist: 1, deletedAt: 1 });
@@ -235,7 +243,11 @@ clinicalNoteSchema.index({ workplaceId: 1, locationId: 1, deletedAt: 1 }, { spar
 clinicalNoteSchema.index({ workplaceId: 1, createdAt: -1, deletedAt: 1 });
 clinicalNoteSchema.index({ workplaceId: 1, updatedAt: -1, deletedAt: 1 });
 clinicalNoteSchema.index({ workplaceId: 1, tags: 1, deletedAt: 1 });
-clinicalNoteSchema.index({ workplaceId: 1, 'laborResults.status': 1, deletedAt: 1 });
+clinicalNoteSchema.index({
+    workplaceId: 1,
+    'laborResults.status': 1,
+    deletedAt: 1,
+});
 clinicalNoteSchema.pre('save', function (next) {
     if (this.isNew) {
         this.createdBy = this.createdBy || this.pharmacist;
