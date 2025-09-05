@@ -72,7 +72,12 @@ exports.createMTRSession = (0, responseHelpers_1.asyncHandler)(async (req, res) 
     const { patientId, priority = 'routine', reviewType = 'initial', referralSource, reviewReason, patientConsent = false, confidentialityAgreed = false, } = req.body;
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
-    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
+    if (req.user?.role === 'super_admin') {
+        console.log('Super admin bypassing tenant check for MTR patient access');
+    }
+    else {
+        (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
+    }
     const reviewNumber = await MedicationTherapyReview_1.default.generateNextReviewNumber(context.workplaceId);
     const session = new MedicationTherapyReview_1.default({
         workplaceId: context.workplaceId,
@@ -83,8 +88,8 @@ exports.createMTRSession = (0, responseHelpers_1.asyncHandler)(async (req, res) 
         reviewType,
         referralSource,
         reviewReason,
-        patientConsent,
-        confidentialityAgreed,
+        patientConsent: req.user?.role === 'super_admin' ? true : patientConsent,
+        confidentialityAgreed: req.user?.role === 'super_admin' ? true : confidentialityAgreed,
         createdBy: context.userId,
         clinicalOutcomes: {
             problemsResolved: 0,
@@ -92,7 +97,18 @@ exports.createMTRSession = (0, responseHelpers_1.asyncHandler)(async (req, res) 
             adherenceImproved: false,
             adverseEventsReduced: false,
         },
+        steps: {
+            patientSelection: { completed: false },
+            medicationHistory: { completed: false },
+            therapyAssessment: { completed: false },
+            planDevelopment: { completed: false },
+            interventions: { completed: false },
+            followUp: { completed: false },
+        },
     });
+    if (req.user?.role === 'super_admin') {
+        session.createdByRole = 'super_admin';
+    }
     await session.save();
     session.markStepComplete('patientSelection', {
         patientId,
@@ -448,10 +464,12 @@ exports.updateMTRFollowUp = (0, responseHelpers_1.asyncHandler)(async (req, res)
 exports.getMTRReports = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { startDate, endDate, pharmacistId } = req.query;
     const context = (0, responseHelpers_1.getRequestContext)(req);
-    const dateRange = startDate && endDate ? {
-        start: new Date(startDate),
-        end: new Date(endDate),
-    } : undefined;
+    const dateRange = startDate && endDate
+        ? {
+            start: new Date(startDate),
+            end: new Date(endDate),
+        }
+        : undefined;
     const matchCriteria = {};
     if (!context.isAdmin) {
         matchCriteria.workplaceId = context.workplaceId;
@@ -514,10 +532,12 @@ exports.getMTRReports = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
 exports.getMTROutcomes = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { startDate, endDate } = req.query;
     const context = (0, responseHelpers_1.getRequestContext)(req);
-    const dateRange = startDate && endDate ? {
-        start: new Date(startDate),
-        end: new Date(endDate),
-    } : undefined;
+    const dateRange = startDate && endDate
+        ? {
+            start: new Date(startDate),
+            end: new Date(endDate),
+        }
+        : undefined;
     const matchCriteria = { status: 'completed' };
     if (!context.isAdmin) {
         matchCriteria.workplaceId = context.workplaceId;
@@ -535,7 +555,9 @@ exports.getMTROutcomes = (0, responseHelpers_1.asyncHandler)(async (req, res) =>
                 _id: null,
                 totalCompletedSessions: { $sum: 1 },
                 totalProblemsResolved: { $sum: '$clinicalOutcomes.problemsResolved' },
-                totalMedicationsOptimized: { $sum: '$clinicalOutcomes.medicationsOptimized' },
+                totalMedicationsOptimized: {
+                    $sum: '$clinicalOutcomes.medicationsOptimized',
+                },
                 adherenceImprovedCount: {
                     $sum: { $cond: ['$clinicalOutcomes.adherenceImproved', 1, 0] },
                 },
@@ -629,10 +651,12 @@ exports.checkDuplicateTherapies = (0, responseHelpers_1.asyncHandler)(async (req
         if (drugName.includes('metformin') || drugName.includes('glipizide')) {
             therapeuticClass = 'antidiabetic';
         }
-        else if (drugName.includes('lisinopril') || drugName.includes('amlodipine')) {
+        else if (drugName.includes('lisinopril') ||
+            drugName.includes('amlodipine')) {
             therapeuticClass = 'antihypertensive';
         }
-        else if (drugName.includes('atorvastatin') || drugName.includes('simvastatin')) {
+        else if (drugName.includes('atorvastatin') ||
+            drugName.includes('simvastatin')) {
             therapeuticClass = 'statin';
         }
         if (!therapeuticClasses[therapeuticClass]) {

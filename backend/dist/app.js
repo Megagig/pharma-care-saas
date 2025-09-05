@@ -69,7 +69,7 @@ const limiter = (0, express_rate_limit_1.default)({
             return true;
         }
         return false;
-    }
+    },
 });
 app.use('/api/', limiter);
 app.use(express_1.default.json({ limit: '10mb' }));
@@ -108,6 +108,12 @@ app.use('/api', assessmentRoutes_1.default);
 app.use('/api', dtpRoutes_1.default);
 app.use('/api', carePlanRoutes_1.default);
 app.use('/api', visitRoutes_1.default);
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/notes')) {
+        console.log(`[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`);
+    }
+    next();
+});
 app.use('/api/notes', noteRoutes_1.default);
 app.use('/api/payments', paymentRoutes_1.default);
 app.use('/api/mtr', mtrRoutes_1.default);

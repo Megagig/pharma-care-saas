@@ -61,7 +61,10 @@ app.use(
 );
 
 // Security monitoring middleware
-import { blockSuspiciousIPs, detectAnomalies } from './middlewares/securityMonitoring';
+import {
+  blockSuspiciousIPs,
+  detectAnomalies,
+} from './middlewares/securityMonitoring';
 app.use(blockSuspiciousIPs);
 app.use(detectAnomalies);
 
@@ -72,12 +75,14 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   skip: (req) => {
     // Skip rate limiting for health checks and certain endpoints in development
-    if (process.env.NODE_ENV === 'development' &&
-      (req.path.includes('/health') || req.path.includes('/mtr/summary'))) {
+    if (
+      process.env.NODE_ENV === 'development' &&
+      (req.path.includes('/health') || req.path.includes('/mtr/summary'))
+    ) {
       return true;
     }
     return false;
-  }
+  },
 });
 app.use('/api/', limiter);
 
@@ -133,8 +138,18 @@ app.use('/api', dtpRoutes);
 app.use('/api', carePlanRoutes);
 app.use('/api', visitRoutes);
 
-// Other routes
+// Clinical Notes routes - added special debug log
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/notes')) {
+    console.log(
+      `[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`
+    );
+  }
+  next();
+});
 app.use('/api/notes', noteRoutes);
+
+// Other routes
 app.use('/api/payments', paymentRoutes);
 app.use('/api/mtr', mtrRoutes);
 app.use('/api/mtr/notifications', mtrNotificationRoutes);

@@ -44,7 +44,10 @@
     "validate-deployment": "ts-node scripts/validateDeployment.ts",
     "deploy": "bash scripts/deploy.sh",
     "deploy:staging": "NODE_ENV=staging bash scripts/deploy.sh",
-    "deploy:production": "NODE_ENV=production bash scripts/deploy.sh"
+    "deploy:production": "NODE_ENV=production bash scripts/deploy.sh",
+    "migrate:clinical-notes": "ts-node scripts/migrateClinicalNotes.ts",
+    "migrate:clinical-notes:status": "ts-node scripts/migrateClinicalNotes.ts -- --status",
+    "migrate:clinical-notes:rollback": "ts-node scripts/migrateClinicalNotes.ts -- --rollback"
   },
   "keywords": [
     "pharmacy",

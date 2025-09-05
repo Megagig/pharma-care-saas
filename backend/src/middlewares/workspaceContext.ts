@@ -79,6 +79,26 @@ export const loadWorkspaceContext = async (
             return next();
         }
 
+        // Super admin gets unlimited access context
+        if (req.user.role === 'super_admin') {
+            req.workspaceContext = {
+                workspace: null, // Super admin can access any workspace
+                subscription: null,
+                plan: null,
+                permissions: ['*'], // All permissions
+                limits: {
+                    patients: null, // Unlimited
+                    users: null,
+                    locations: null,
+                    storage: null,
+                    apiCalls: null,
+                },
+                isTrialExpired: false,
+                isSubscriptionActive: true,
+            };
+            return next();
+        }
+
         const userId = req.user._id.toString();
 
         // Try to get from cache first

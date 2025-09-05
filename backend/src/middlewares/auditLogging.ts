@@ -385,6 +385,137 @@ export const auditOperations = {
             },
         });
     },
+
+    // Clinical Notes specific audit operations
+    noteAccess: async (req: AuthRequest, noteId: string, action: string, details?: any) => {
+        await createAuditLog({
+            action: `CLINICAL_NOTE_${action.toUpperCase()}`,
+            category: 'data_access',
+            severity: details?.isConfidential ? 'high' : 'medium',
+            userId: req.user?._id,
+            userEmail: req.user?.email,
+            userRole: req.user?.role,
+            workspaceId: req.workspace?._id,
+            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+            userAgent: req.get('User-Agent') || 'unknown',
+            requestMethod: req.method,
+            requestUrl: req.originalUrl,
+            resourceType: 'ClinicalNote',
+            resourceId: new mongoose.Types.ObjectId(noteId),
+            details: {
+                ...details,
+                timestamp: new Date().toISOString(),
+            },
+            complianceRelevant: true,
+        });
+    },
+
+    // Unauthorized access attempts
+    unauthorizedAccess: async (req: AuthRequest, resourceType: string, resourceId: string, reason: string) => {
+        await createAuditLog({
+            action: 'UNAUTHORIZED_ACCESS_ATTEMPT',
+            category: 'security',
+            severity: 'high',
+            userId: req.user?._id,
+            userEmail: req.user?.email,
+            userRole: req.user?.role,
+            workspaceId: req.workspace?._id,
+            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+            userAgent: req.get('User-Agent') || 'unknown',
+            requestMethod: req.method,
+            requestUrl: req.originalUrl,
+            resourceType,
+            resourceId: new mongoose.Types.ObjectId(resourceId),
+            details: {
+                reason,
+                attemptedAction: `${req.method} ${req.originalUrl}`,
+                timestamp: new Date().toISOString(),
+            },
+            errorMessage: reason,
+            suspicious: true,
+            complianceRelevant: true,
+        });
+    },
+
+    // Confidential data access
+    confidentialDataAccess: async (req: AuthRequest, resourceType: string, resourceId: string, action: string, details?: any) => {
+        await createAuditLog({
+            action: `CONFIDENTIAL_${action.toUpperCase()}`,
+            category: 'data_access',
+            severity: 'critical',
+            userId: req.user?._id,
+            userEmail: req.user?.email,
+            userRole: req.user?.role,
+            workspaceId: req.workspace?._id,
+            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+            userAgent: req.get('User-Agent') || 'unknown',
+            requestMethod: req.method,
+            requestUrl: req.originalUrl,
+            resourceType,
+            resourceId: new mongoose.Types.ObjectId(resourceId),
+            details: {
+                ...details,
+                confidentialityLevel: 'high',
+                accessJustification: details?.justification || 'Clinical care',
+                timestamp: new Date().toISOString(),
+            },
+            complianceRelevant: true,
+        });
+    },
+
+    // Bulk operations
+    bulkOperation: async (req: AuthRequest, action: string, resourceType: string, resourceIds: string[], details?: any) => {
+        await createAuditLog({
+            action: `BULK_${action.toUpperCase()}`,
+            category: 'data_access',
+            severity: 'high',
+            userId: req.user?._id,
+            userEmail: req.user?.email,
+            userRole: req.user?.role,
+            workspaceId: req.workspace?._id,
+            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+            userAgent: req.get('User-Agent') || 'unknown',
+            requestMethod: req.method,
+            requestUrl: req.originalUrl,
+            resourceType,
+            resourceId: new mongoose.Types.ObjectId(), // Placeholder for bulk operations
+            details: {
+                ...details,
+                resourceIds,
+                resourceCount: resourceIds.length,
+                bulkOperation: true,
+                timestamp: new Date().toISOString(),
+            },
+            complianceRelevant: true,
+        });
+    },
+
+    // Data export operations
+    dataExport: async (req: AuthRequest, exportType: string, recordCount: number, details?: any) => {
+        await createAuditLog({
+            action: 'DATA_EXPORT',
+            category: 'data_access',
+            severity: 'high',
+            userId: req.user?._id,
+            userEmail: req.user?.email,
+            userRole: req.user?.role,
+            workspaceId: req.workspace?._id,
+            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+            userAgent: req.get('User-Agent') || 'unknown',
+            requestMethod: req.method,
+            requestUrl: req.originalUrl,
+            resourceType: 'ClinicalNote',
+            details: {
+                ...details,
+                exportType,
+                recordCount,
+                exportFormat: details?.format || 'unknown',
+                filters: details?.filters || {},
+                timestamp: new Date().toISOString(),
+            },
+            complianceRelevant: true,
+        });
+    },
 };
 
 /**
