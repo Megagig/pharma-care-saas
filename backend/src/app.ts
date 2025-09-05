@@ -43,7 +43,9 @@ import locationDataRoutes from './routes/locationDataRoutes';
 import legacyApiRoutes from './routes/legacyApiRoutes';
 import migrationDashboardRoutes from './routes/migrationDashboardRoutes';
 import emailWebhookRoutes from './routes/emailWebhookRoutes';
-import drugRoutes from './routes/drugRoutes';
+import drugRoutes from './modules/drug-info/routes/drugRoutes';
+import publicApiRoutes from './routes/publicApiRoutes';
+import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
 
 const app: Application = express();
 
@@ -54,14 +56,21 @@ app.use(
     origin: [
       'http://localhost:3000', // Create React App dev server
       'http://localhost:5173', // Vite dev server
+      'http://127.0.0.1:5173', // Alternative Vite URL
+      'http://192.168.8.167:5173', // Local network Vite URL
       process.env.FRONTEND_URL || 'http://localhost:3000',
     ],
     credentials: true,
+    exposedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   })
 );
 
 // Security monitoring middleware
-import { blockSuspiciousIPs, detectAnomalies } from './middlewares/securityMonitoring';
+import {
+  blockSuspiciousIPs,
+  detectAnomalies,
+} from './middlewares/securityMonitoring';
 app.use(blockSuspiciousIPs);
 app.use(detectAnomalies);
 
@@ -72,12 +81,14 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   skip: (req) => {
     // Skip rate limiting for health checks and certain endpoints in development
-    if (process.env.NODE_ENV === 'development' &&
-      (req.path.includes('/health') || req.path.includes('/mtr/summary'))) {
+    if (
+      process.env.NODE_ENV === 'development' &&
+      (req.path.includes('/health') || req.path.includes('/mtr/summary'))
+    ) {
       return true;
     }
     return false;
-  }
+  },
 });
 app.use('/api/', limiter);
 
@@ -105,6 +116,10 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 app.use('/api/health/feature-flags', healthRoutes);
+
+// Public API routes (no authentication required)
+app.use('/api/public', publicApiRoutes);
+app.use('/api/public/drugs', publicDrugDetailsRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);
