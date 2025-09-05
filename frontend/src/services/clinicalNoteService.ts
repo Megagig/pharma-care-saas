@@ -1,4 +1,4 @@
-import api from './api';
+import api from '../lib/api';
 import {
   ClinicalNote,
   ClinicalNoteFormData,
@@ -316,7 +316,7 @@ class ClinicalNoteService {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await operation();
-      } catch (error: any) {
+      } catch (error: unknown) {
         lastError = error;
 
         // Don't retry on client errors (4xx)

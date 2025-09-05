@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -61,7 +67,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 
-import { useSearchPatients } from '../queries/usePatients';
+import { useSearchPatients, usePatients } from '../queries/usePatients';
 import {
   useClinicalNote,
   useCreateClinicalNote,
@@ -151,6 +157,7 @@ const ClinicalNoteForm: React.FC<ClinicalNoteFormProps> = ({
   const isEditMode = !!noteId;
   // State management
   const [patientSearchQuery, setPatientSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
@@ -181,12 +188,7 @@ const ClinicalNoteForm: React.FC<ClinicalNoteFormProps> = ({
     noteId || '',
     { enabled: !!noteId }
   );
-  const { data: patientSearchResults, isLoading: patientsLoading } =
-    useSearchPatients(patientSearchQuery);
-  const createNoteMutation = useCreateClinicalNote();
-  const updateNoteMutation = useUpdateClinicalNote();
-
-  // Form setup
+  // Form setup - must be declared before using watch
   const {
     control,
     handleSubmit,
@@ -209,24 +211,78 @@ const ClinicalNoteForm: React.FC<ClinicalNoteFormProps> = ({
   const watchedValues = watch();
   const followUpRequired = watch('followUpRequired');
 
-  // Validate form on change
-  useEffect(() => {
+  // Load all patients initially, then filter by search query
+  // Use a stable empty object to prevent unnecessary re-renders
+  const emptyFilters = useMemo(() => ({}), []);
+  const { data: allPatientsData, isLoading: allPatientsLoading } =
+    usePatients(emptyFilters);
+
+  const { data: patientSearchResults, isLoading: searchLoading } =
+    useSearchPatients(debouncedSearchQuery);
+
+  const patientsLoading = debouncedSearchQuery
+    ? searchLoading
+    : allPatientsLoading;
+  const createNoteMutation = useCreateClinicalNote();
+  const updateNoteMutation = useUpdateClinicalNote();
+
+  // Store previous validation errors to prevent unnecessary updates
+  const previousValidationErrors = useRef<unknown>({});
+
+  // Validate form on change - use a more stable approach to prevent infinite loops
+  const validateFormData = useCallback(() => {
     const formData = getValues();
     const validationErrors = validateForm(formData);
     const hasErrors = Object.keys(validationErrors).length > 0;
 
     setIsValid(!hasErrors);
 
-    // Clear existing errors
-    clearErrors();
+    // Check if errors have actually changed by comparing with previous errors
+    const currentErrorKeys = Object.keys(previousValidationErrors.current);
+    const newErrorKeys = Object.keys(validationErrors);
 
-    // Set new errors
-    Object.entries(validationErrors).forEach(
-      ([field, error]: [string, any]) => {
-        setError(field as any, error);
-      }
-    );
-  }, [watchedValues, getValues, setError, clearErrors]);
+    const errorsChanged =
+      currentErrorKeys.length !== newErrorKeys.length ||
+      currentErrorKeys.some((key) => !validationErrors[key]) ||
+      newErrorKeys.some((key) => {
+        const prevError = previousValidationErrors.current[key];
+        const newError = validationErrors[key];
+        return !prevError || prevError.message !== newError?.message;
+      });
+
+    if (errorsChanged) {
+      // Store current errors for next comparison
+      previousValidationErrors.current = { ...validationErrors };
+
+      // Clear existing errors
+      clearErrors();
+
+      // Set new errors
+      Object.entries(validationErrors).forEach(
+        ([field, error]: [string, unknown]) => {
+          setError(field as unknown, error);
+        }
+      );
+    }
+  }, [getValues, setError, clearErrors]);
+
+  // Debounced validation to prevent excessive calls
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      validateFormData();
+    }, 100); // Small delay to debounce validation
+
+    return () => clearTimeout(timeoutId);
+  }, [watchedValues, validateFormData]);
+
+  // Debounce patient search query
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearchQuery(patientSearchQuery);
+    }, 300); // 300ms delay for search
+
+    return () => clearTimeout(timeoutId);
+  }, [patientSearchQuery]);
 
   // Field arrays for dynamic content
   const {
@@ -307,16 +363,16 @@ const ClinicalNoteForm: React.FC<ClinicalNoteFormProps> = ({
     updateNoteMutation,
   ]);
 
-  // Auto-save timer
+  // Auto-save timer - use isDirty instead of watchedValues to prevent excessive re-renders
   useEffect(() => {
-    if (!autoSaveEnabled || readonly) return;
+    if (!autoSaveEnabled || readonly || !isDirty) return;
 
     const timer = setTimeout(() => {
       autoSave();
     }, 30000); // Auto-save every 30 seconds
 
     return () => clearTimeout(timer);
-  }, [watchedValues, autoSave, autoSaveEnabled, readonly]);
+  }, [isDirty, autoSave, autoSaveEnabled, readonly]);
 
   // Track unsaved changes
   useEffect(() => {
@@ -326,6 +382,10 @@ const ClinicalNoteForm: React.FC<ClinicalNoteFormProps> = ({
   // Handle form submission
   const onSubmit = async (data: ClinicalNoteFormData) => {
     try {
+      console.log('Form submission data:', data);
+      console.log('Patient ID:', data.patient);
+      console.log('Available patients:', patients);
+
       let result;
       if (noteId) {
         result = await updateNoteMutation.mutateAsync({ id: noteId, data });
@@ -403,10 +463,20 @@ const ClinicalNoteForm: React.FC<ClinicalNoteFormProps> = ({
     );
   };
 
-  // Get patients for autocomplete
+  // Get patients for autocomplete - optimize to prevent unnecessary re-renders
   const patients = useMemo(() => {
-    return patientSearchResults?.data?.results || [];
-  }, [patientSearchResults]);
+    // If we have search results and a search query, use search results
+    if (debouncedSearchQuery && patientSearchResults?.data?.results) {
+      return patientSearchResults.data.results;
+    }
+    // Otherwise use all patients data
+    const allPatients = allPatientsData?.data?.results || [];
+    return allPatients;
+  }, [
+    debouncedSearchQuery,
+    patientSearchResults?.data?.results,
+    allPatientsData?.data?.results,
+  ]);
 
   // Loading state
   if (noteLoading) {
@@ -562,12 +632,19 @@ const ClinicalNoteForm: React.FC<ClinicalNoteFormProps> = ({
                                 (p: unknown) => p._id === field.value
                               ) || null
                             }
-                            onChange={(_, value) =>
-                              field.onChange(value?._id || '')
-                            }
-                            onInputChange={(_, value) =>
-                              setPatientSearchQuery(value)
-                            }
+                            onChange={(_, value) => {
+                              field.onChange(value?._id || '');
+                              // Clear search query when a patient is selected to prevent continuous searching
+                              if (value) {
+                                setPatientSearchQuery('');
+                              }
+                            }}
+                            onInputChange={(_, value, reason) => {
+                              // Only set search query when user is typing, not when selecting
+                              if (reason === 'input') {
+                                setPatientSearchQuery(value);
+                              }
+                            }}
                             loading={patientsLoading}
                             disabled={readonly}
                             renderInput={(params) => (

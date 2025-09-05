@@ -161,6 +161,19 @@ export const validatePatientAccess = async (
     next: NextFunction
 ): Promise<void> => {
     try {
+        // Super admin bypasses all patient access validation
+        if (req.user?.role === 'super_admin') {
+            const patientId = req.body.patient || req.params.patientId;
+            if (patientId && mongoose.Types.ObjectId.isValid(patientId)) {
+                // For super admin, just verify patient exists (no workplace restriction)
+                const patient = await Patient.findById(patientId);
+                if (patient) {
+                    req.patient = patient;
+                }
+            }
+            return next();
+        }
+
         const patientId = req.body.patient || req.params.patientId;
         const workplaceId = req.user?.workplaceId || req.workspaceContext?.workspace?._id;
 
