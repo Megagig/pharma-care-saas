@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import ClinicalNote from '../models/ClinicalNote';
 import Patient from '../models/Patient';
+import Medication from '../models/Medication';
 import AuditService from '../services/auditService';
 import ConfidentialNoteService from '../services/confidentialNoteService';
 import { EnhancedTenancyGuard } from '../utils/tenancyGuard';
@@ -210,7 +211,12 @@ export const createNote = async (
 
     // Patient is already validated by middleware
     const patient = req.patient;
-    const workplaceId = req.workspaceContext?.workspace?._id;
+    let workplaceId = req.workspaceContext?.workspace?._id;
+
+    // For super_admin, use the patient's workplaceId if workspace context is null
+    if (!workplaceId && req.user?.role === 'super_admin' && patient) {
+      workplaceId = patient.workplaceId;
+    }
 
     // Validate confidential note creation permissions
     if (req.body.isConfidential) {
