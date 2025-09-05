@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import logger from '../utils/logger';
 import ClinicalNote from '../models/ClinicalNote';
+import Medication from '../models/Medication';
 
 /**
  * Clinical Notes Migration Script
