@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -131,14 +137,15 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
     severity: 'info',
   });
 
-  // React Query for data fetching
-  const currentFilters = useMemo(
-    () => ({
-      ...(filters || {}),
-      ...(patientId && { patientId }),
-    }),
-    [filters, patientId]
-  );
+  // React Query for data fetching - stabilize filters to prevent unnecessary re-renders
+  const currentFilters = useMemo(() => {
+    const baseFilters = filters || {};
+    const result = { ...baseFilters };
+    if (patientId) {
+      result.patientId = patientId;
+    }
+    return result;
+  }, [filters, patientId]);
 
   const { data, isLoading, error } = useClinicalNotes(currentFilters);
 
@@ -175,27 +182,42 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
       console.warn('Error creating rowSelectionModel:', error);
       return { type: 'include', ids: new Set() };
     }
-  }, [selectedNotes]); // Handle search
+  }, [selectedNotes]);
+
+  // Handle search - stabilize with useCallback and stable dependencies
   const handleSearch = useCallback(
     (query: string) => {
       setSearchQuery(query);
+      const filtersToUse = {
+        ...(filters || {}),
+        ...(patientId && { patientId }),
+      };
+
       if (query.trim()) {
-        searchNotes(query, currentFilters);
+        searchNotes(query, filtersToUse);
       } else {
-        fetchNotes(currentFilters);
+        fetchNotes(filtersToUse);
       }
     },
-    [searchNotes, fetchNotes, currentFilters, setSearchQuery]
+    [searchNotes, fetchNotes, filters, patientId, setSearchQuery]
   );
 
-  // Debounced search
-  const debouncedSearch = useMemo(() => {
+  // Debounced search - use useRef to maintain stable reference
+  const debouncedSearchRef = React.useRef<(query: string) => void>();
+
+  React.useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    return (query: string) => {
+    debouncedSearchRef.current = (query: string) => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => handleSearch(query), 300);
     };
+
+    return () => clearTimeout(timeoutId);
   }, [handleSearch]);
+
+  const debouncedSearch = useCallback((query: string) => {
+    debouncedSearchRef.current?.(query);
+  }, []);
 
   // Handle search input change
   const handleSearchInputChange = (
@@ -257,27 +279,24 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
         });
 
         // Only update if the selection actually changed
-        const currentIds = selectedNotes.slice().sort();
-        const newIds = validSelection.slice().sort();
+        const currentIds = [...selectedNotes].sort();
+        const newIds = [...validSelection].sort();
 
-        if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
-          // Clear current selection first
-          clearSelection();
-
-          // Then add new selections
-          validSelection.forEach((noteId) => {
-            if (noteId && typeof noteId === 'string') {
-              toggleNoteSelection(noteId);
-            }
-          });
+        // Use a more efficient comparison
+        if (
+          currentIds.length !== newIds.length ||
+          !currentIds.every((id, index) => id === newIds[index])
+        ) {
+          // Use batch update to prevent multiple re-renders
+          setSelectedNotes(validSelection);
         }
       } catch (error) {
         console.error('Error handling row selection change:', error);
         // Fallback: clear selection on error
-        clearSelection();
+        setSelectedNotes([]);
       }
     },
-    [selectedNotes, clearSelection, toggleNoteSelection]
+    [selectedNotes]
   ); // Handle bulk actions
   const handleBulkDelete = async () => {
     try {

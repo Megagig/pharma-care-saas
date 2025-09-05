@@ -18,8 +18,8 @@ import type {
 // Error type for API calls
 type ApiError =
   | {
-      message?: string;
-    }
+    message?: string;
+  }
   | Error;
 
 // Hook to fetch all patients with optional filters
@@ -27,6 +27,8 @@ export const usePatients = (filters: PatientSearchParams = {}) => {
   return useQuery({
     queryKey: queryKeys.patients.list(filters),
     queryFn: () => patientService.getPatients(filters),
+    staleTime: 30000, // 30 seconds - prevent excessive refetching
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 };
 
@@ -40,86 +42,90 @@ export const usePatient = (patientId: string) => {
   });
 };
 
-// Hook to search patients
-export const useSearchPatients = (searchQuery: string) => {
-  return useQuery({
-    queryKey: queryKeys.patients.search(searchQuery),
-    queryFn: () => patientService.searchPatients(searchQuery),
-    enabled: !!searchQuery && searchQuery.length >= 2, // Only search with 2+ characters
-    select: (data: any) => {
-      console.log('Raw search data:', data);
-
-      // Check for the standard API response format
-      // { success: true, message: string, data: { patients: [...], total, query }, timestamp: string }
-      if (data?.success && data?.data) {
-        if (data.data.patients) {
-          return {
-            data: {
-              results: data.data.patients,
-            },
-            meta: {
-              total: data.data.total || 0,
-              page: 1,
-              limit: data.data.patients?.length || 10,
-              totalPages: 1,
-              hasNext: false,
-              hasPrev: false,
-            },
-          };
-        }
-      }
-
-      // Check for direct response format
-      // { patients: [...], total, query }
-      if (data?.patients) {
-        return {
-          data: {
-            results: data.patients,
-          },
-          meta: {
-            total: data.total || 0,
-            page: 1,
-            limit: data.patients?.length || 10,
-            totalPages: 1,
-            hasNext: false,
-            hasPrev: false,
-          },
-        };
-      }
-
-      // If we receive an array directly
-      if (Array.isArray(data)) {
-        return {
-          data: {
-            results: data,
-          },
-          meta: {
-            total: data.length,
-            page: 1,
-            limit: data.length,
-            totalPages: 1,
-            hasNext: false,
-            hasPrev: false,
-          },
-        };
-      }
-
-      // Last resort fallback
-      console.warn('Unexpected response structure in patient search:', data);
+// Stable select function to prevent re-renders
+const selectPatientSearchData = (data: unknown) => {
+  // Check for the standard API response format
+  // { success: true, message: string, data: { patients: [...], total, query }, timestamp: string }
+  if (data?.success && data?.data) {
+    if (data.data.patients) {
       return {
         data: {
-          results: [],
+          results: data.data.patients,
         },
         meta: {
-          total: 0,
+          total: data.data.total || 0,
           page: 1,
-          limit: 10,
+          limit: data.data.patients?.length || 10,
           totalPages: 1,
           hasNext: false,
           hasPrev: false,
         },
       };
+    }
+  }
+
+  // Check for direct response format
+  // { patients: [...], total, query }
+  if (data?.patients) {
+    return {
+      data: {
+        results: data.patients,
+      },
+      meta: {
+        total: data.total || 0,
+        page: 1,
+        limit: data.patients?.length || 10,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      },
+    };
+  }
+
+  // If we receive an array directly
+  if (Array.isArray(data)) {
+    return {
+      data: {
+        results: data,
+      },
+      meta: {
+        total: data.length,
+        page: 1,
+        limit: data.length,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      },
+    };
+  }
+
+  // Last resort fallback
+  return {
+    data: {
+      results: [],
     },
+    meta: {
+      total: 0,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    },
+  };
+};
+
+// Hook to search patients
+export const useSearchPatients = (searchQuery: string) => {
+  return useQuery({
+    queryKey: queryKeys.patients.search(searchQuery),
+    queryFn: () => patientService.searchPatients(searchQuery),
+    enabled: !!searchQuery && searchQuery.length >= 2 && searchQuery.trim() !== '', // Only search with 2+ characters and non-empty
+    select: selectPatientSearchData,
+    staleTime: 30000, // 30 seconds - prevent excessive refetching
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: false, // Don't refetch on component mount
+    refetchInterval: false, // Don't refetch on interval
   });
 };
 
@@ -144,9 +150,8 @@ export const useCreatePatient = () => {
       addNotification({
         type: 'success',
         title: 'Patient Created',
-        message: `Patient ${patient?.firstName || ''} ${
-          patient?.lastName || ''
-        } has been successfully created.`,
+        message: `Patient ${patient?.firstName || ''} ${patient?.lastName || ''
+          } has been successfully created.`,
         duration: 5000,
       });
     },
