@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-  useEffect,
-} from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -149,41 +143,6 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
 
   const { data, isLoading, error } = useClinicalNotes(currentFilters);
 
-  // Store state validation - ensure all required state is initialized
-  const isStoreReady = useMemo(() => {
-    return (
-      filters !== undefined &&
-      selectedNotes !== undefined &&
-      typeof filters === 'object' &&
-      Array.isArray(selectedNotes)
-    );
-  }, [filters, selectedNotes]);
-
-  // Memoize row selection model with extra safety checks
-  const rowSelectionModel: GridRowSelectionModel = useMemo(() => {
-    try {
-      // Ensure selectedNotes is always a valid array
-      if (!selectedNotes || !Array.isArray(selectedNotes)) {
-        return { type: 'include', ids: new Set() };
-      }
-
-      // Filter out any invalid IDs and ensure strings
-      const validSelection = selectedNotes.filter((id): id is string => {
-        return (
-          id !== null &&
-          id !== undefined &&
-          typeof id === 'string' &&
-          id.trim().length > 0
-        );
-      });
-
-      return { type: 'include', ids: new Set(validSelection) };
-    } catch (error) {
-      console.warn('Error creating rowSelectionModel:', error);
-      return { type: 'include', ids: new Set() };
-    }
-  }, [selectedNotes]);
-
   // Handle search - stabilize with useCallback and stable dependencies
   const handleSearch = useCallback(
     (query: string) => {
@@ -265,38 +224,25 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
   const handleRowSelectionChange = useCallback(
     (selectionModel: GridRowSelectionModel) => {
       try {
-        // Extract IDs from the new GridRowSelectionModel format
-        const selectedIds = Array.from(selectionModel.ids);
+        // Clear current selection first
+        clearSelection();
 
-        // Filter out invalid IDs
-        const validSelection = selectedIds.filter((id): id is string => {
-          return (
-            id !== null &&
-            id !== undefined &&
-            typeof id === 'string' &&
-            id.trim().length > 0
-          );
+        // Add new selections
+        const selectedIds = Array.isArray(selectionModel)
+          ? selectionModel
+          : Array.from(selectionModel.ids || []);
+
+        selectedIds.forEach((id) => {
+          if (typeof id === 'string' && id.trim().length > 0) {
+            toggleNoteSelection(id);
+          }
         });
-
-        // Only update if the selection actually changed
-        const currentIds = [...selectedNotes].sort();
-        const newIds = [...validSelection].sort();
-
-        // Use a more efficient comparison
-        if (
-          currentIds.length !== newIds.length ||
-          !currentIds.every((id, index) => id === newIds[index])
-        ) {
-          // Use batch update to prevent multiple re-renders
-          setSelectedNotes(validSelection);
-        }
       } catch (error) {
         console.error('Error handling row selection change:', error);
-        // Fallback: clear selection on error
-        setSelectedNotes([]);
+        clearSelection();
       }
     },
-    [selectedNotes]
+    [toggleNoteSelection, clearSelection]
   ); // Handle bulk actions
   const handleBulkDelete = async () => {
     try {
@@ -433,6 +379,20 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
       />
     );
   };
+
+  // Initialize data on component mount
+  useEffect(() => {
+    if (!data && !isLoading && !error) {
+      const initFilters = {
+        page: 1,
+        limit: 10,
+        sortBy: 'createdAt' as const,
+        sortOrder: 'desc' as const,
+        ...(patientId && { patientId }),
+      };
+      fetchNotes(initFilters);
+    }
+  }, [data, isLoading, error, fetchNotes, patientId]);
 
   // Define DataGrid columns
   const columns: GridColDef[] = [
@@ -1091,14 +1051,35 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
       ) : (
         // Desktop Table Layout
         <Card>
-          {/* Only render DataGrid when we have a valid state and data */}
-          {isStoreReady &&
-          data &&
-          Array.isArray(data.notes) &&
-          Array.isArray(selectedNotes) &&
-          Array.isArray(rowSelectionModel) &&
-          typeof data.total === 'number' &&
-          typeof data.currentPage === 'number' ? (
+          {/* Render DataGrid with simplified conditions */}
+          {isLoading || loading.fetchNotes ? (
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              minHeight={200}
+              flexDirection="column"
+              gap={2}
+            >
+              <CircularProgress />
+              <Typography variant="body2" color="text.secondary">
+                Loading clinical notes...
+              </Typography>
+            </Box>
+          ) : error ? (
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              minHeight={200}
+              flexDirection="column"
+              gap={2}
+            >
+              <Typography variant="body2" color="error">
+                Error loading notes: {error.message}
+              </Typography>
+            </Box>
+          ) : (
             <>
               {/* DataGrid wrapped in error boundary for additional protection */}
               <ClinicalNotesErrorBoundary>
@@ -1109,9 +1090,12 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                   }))}
                   columns={columns}
                   loading={isLoading || loading.fetchNotes}
-                  checkboxSelection={selectedNotes.length >= 0} // Only enable when we have a valid array
+                  checkboxSelection={Array.isArray(selectedNotes)} // Only enable when we have a valid array
                   disableRowSelectionOnClick
-                  rowSelectionModel={rowSelectionModel}
+                  rowSelectionModel={{
+                    type: 'include',
+                    ids: new Set(selectedNotes),
+                  }}
                   onRowSelectionModelChange={handleRowSelectionChange}
                   paginationMode="client"
                   sortingMode="client"
@@ -1221,46 +1205,6 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                 </Box>
               )}
             </>
-          ) : (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight={200}
-              flexDirection="column"
-              gap={2}
-            >
-              {isLoading || loading.fetchNotes ? (
-                <>
-                  <CircularProgress />
-                  <Typography variant="body2" color="text.secondary">
-                    Loading clinical notes...
-                  </Typography>
-                </>
-              ) : !isStoreReady ? (
-                <>
-                  <CircularProgress />
-                  <Typography variant="body2" color="text.secondary">
-                    Initializing data store...
-                  </Typography>
-                </>
-              ) : !Array.isArray(selectedNotes) ? (
-                <>
-                  <CircularProgress />
-                  <Typography variant="body2" color="text.secondary">
-                    Initializing selection state...
-                  </Typography>
-                </>
-              ) : !data?.notes ? (
-                <Typography variant="body2" color="text.secondary">
-                  No data available
-                </Typography>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Preparing data grid...
-                </Typography>
-              )}
-            </Box>
           )}
         </Card>
       )}
