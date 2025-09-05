@@ -134,16 +134,13 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
   // React Query for data fetching
   const currentFilters = useMemo(
     () => ({
-      ...filters,
+      ...(filters || {}),
       ...(patientId && { patientId }),
     }),
     [filters, patientId]
   );
 
   const { data, isLoading, error } = useClinicalNotes(currentFilters);
-
-  // Memoized static props to prevent unnecessary re-renders
-  const pageSizeOptions = useMemo(() => [10, 25, 50, 100], []);
 
   // Store state validation - ensure all required state is initialized
   const isStoreReady = useMemo(() => {
@@ -155,7 +152,30 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
     );
   }, [filters, selectedNotes]);
 
-  // Handle search
+  // Memoize row selection model with extra safety checks
+  const rowSelectionModel: GridRowSelectionModel = useMemo(() => {
+    try {
+      // Ensure selectedNotes is always a valid array
+      if (!selectedNotes || !Array.isArray(selectedNotes)) {
+        return { type: 'include', ids: new Set() };
+      }
+
+      // Filter out any invalid IDs and ensure strings
+      const validSelection = selectedNotes.filter((id): id is string => {
+        return (
+          id !== null &&
+          id !== undefined &&
+          typeof id === 'string' &&
+          id.trim().length > 0
+        );
+      });
+
+      return { type: 'include', ids: new Set(validSelection) };
+    } catch (error) {
+      console.warn('Error creating rowSelectionModel:', error);
+      return { type: 'include', ids: new Set() };
+    }
+  }, [selectedNotes]); // Handle search
   const handleSearch = useCallback(
     (query: string) => {
       setSearchQuery(query);
@@ -219,77 +239,46 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
     });
   };
 
-  // Handle row selection
-  const handleRowSelectionChange = (selectionModel: GridRowSelectionModel) => {
-    try {
-      // Ensure we have valid state and selection model
-      if (!Array.isArray(selectedNotes)) {
-        console.warn('selectedNotes is not an array:', selectedNotes);
-        return;
-      }
+  // Handle row selection with simplified approach
+  const handleRowSelectionChange = useCallback(
+    (selectionModel: GridRowSelectionModel) => {
+      try {
+        // Extract IDs from the new GridRowSelectionModel format
+        const selectedIds = Array.from(selectionModel.ids);
 
-      if (!selectionModel) {
-        console.warn('selectionModel is null or undefined');
-        return;
-      }
-
-      // Convert selectionModel to array of strings
-      let newSelectionArray: string[] = [];
-
-      if (Array.isArray(selectionModel)) {
-        newSelectionArray = selectionModel.filter(
-          (id): id is string => typeof id === 'string' && id.length > 0
-        );
-      } else if (
-        typeof selectionModel === 'object' &&
-        selectionModel !== null
-      ) {
-        // Handle Set or Map-like objects
-        if ('size' in selectionModel) {
-          // It's a Set or Map
-          const selectionObj = selectionModel as {
-            values?: () => Iterable<unknown>;
-            keys?: () => Iterable<unknown>;
-          };
-          const values =
-            'values' in selectionModel && selectionObj.values
-              ? Array.from(selectionObj.values())
-              : 'keys' in selectionModel && selectionObj.keys
-              ? Array.from(selectionObj.keys())
-              : [];
-          newSelectionArray = values.filter(
-            (id): id is string => typeof id === 'string' && id.length > 0
+        // Filter out invalid IDs
+        const validSelection = selectedIds.filter((id): id is string => {
+          return (
+            id !== null &&
+            id !== undefined &&
+            typeof id === 'string' &&
+            id.trim().length > 0
           );
-        } else if ('ids' in selectionModel) {
-          // Legacy format
-          newSelectionArray = Array.from(selectionModel.ids || []).filter(
-            (id: unknown): id is string =>
-              typeof id === 'string' && id.length > 0
-          );
+        });
+
+        // Only update if the selection actually changed
+        const currentIds = selectedNotes.slice().sort();
+        const newIds = validSelection.slice().sort();
+
+        if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
+          // Clear current selection first
+          clearSelection();
+
+          // Then add new selections
+          validSelection.forEach((noteId) => {
+            if (noteId && typeof noteId === 'string') {
+              toggleNoteSelection(noteId);
+            }
+          });
         }
+      } catch (error) {
+        console.error('Error handling row selection change:', error);
+        // Fallback: clear selection on error
+        clearSelection();
       }
-
-      const currentSelection = new Set(selectedNotes);
-      const newSelection = new Set(newSelectionArray);
-
-      // Find differences
-      const added = [...newSelection].filter((id) => !currentSelection.has(id));
-      const removed = [...currentSelection].filter(
-        (id) => !newSelection.has(id)
-      );
-
-      // Apply changes one by one to prevent state inconsistencies
-      [...added, ...removed].forEach((noteId) => {
-        if (noteId && typeof noteId === 'string') {
-          toggleNoteSelection(noteId);
-        }
-      });
-    } catch (error) {
-      console.error('Error handling row selection change:', error);
-    }
-  };
-
-  // Handle bulk actions
+    },
+    [selectedNotes, clearSelection, toggleNoteSelection]
+  ); // Handle bulk actions
   const handleBulkDelete = async () => {
     try {
       const success = await bulkDeleteNotes(selectedNotes);
@@ -555,10 +544,12 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
 
   // Handle sorting
   const handleSortChange = (model: GridSortModel) => {
-    if (model.length > 0) {
+    if (Array.isArray(model) && model.length > 0) {
       const sort = model[0];
-      handleFilterChange('sortBy', sort.field);
-      handleFilterChange('sortOrder', sort.sort || undefined);
+      if (sort && typeof sort.field === 'string') {
+        handleFilterChange('sortBy', sort.field);
+        handleFilterChange('sortOrder', sort.sort || undefined);
+      }
     }
   };
 
@@ -1082,68 +1073,79 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
         // Desktop Table Layout
         <Card>
           {/* Only render DataGrid when we have a valid state and data */}
-          {isStoreReady && data?.notes && Array.isArray(selectedNotes) ? (
+          {isStoreReady &&
+          data &&
+          Array.isArray(data.notes) &&
+          Array.isArray(selectedNotes) &&
+          Array.isArray(rowSelectionModel) &&
+          typeof data.total === 'number' &&
+          typeof data.currentPage === 'number' ? (
             <>
-              <DataGrid
-                rows={data.notes.map((note) => ({
-                  ...note,
-                  id: note._id, // Ensure id field exists for DataGrid
-                }))}
-                columns={columns}
-                loading={isLoading || loading.fetchNotes}
-                checkboxSelection
-                disableRowSelectionOnClick
-                rowSelectionModel={
-                  Array.isArray(selectedNotes)
-                    ? (selectedNotes as unknown as GridRowSelectionModel)
-                    : ([] as unknown as GridRowSelectionModel)
-                }
-                onRowSelectionModelChange={handleRowSelectionChange}
-                paginationMode="client"
-                sortingMode="client"
-                filterMode="client"
-                pageSizeOptions={pageSizeOptions}
-                disableColumnFilter={false}
-                disableColumnSelector={false}
-                disableDensitySelector={false}
-                getRowId={(row) => row._id || row.id}
-                initialState={{
-                  pagination: {
-                    paginationModel: {
-                      page: 0,
-                      pageSize: 10,
+              {/* DataGrid wrapped in error boundary for additional protection */}
+              <ClinicalNotesErrorBoundary>
+                <DataGrid
+                  rows={(data?.notes || []).map((note) => ({
+                    ...note,
+                    id: note._id, // Ensure id field exists for DataGrid
+                  }))}
+                  columns={columns}
+                  loading={isLoading || loading.fetchNotes}
+                  checkboxSelection={selectedNotes.length >= 0} // Only enable when we have a valid array
+                  disableRowSelectionOnClick
+                  rowSelectionModel={rowSelectionModel}
+                  onRowSelectionModelChange={handleRowSelectionChange}
+                  paginationMode="client"
+                  sortingMode="client"
+                  filterMode="client"
+                  pageSizeOptions={[10, 25, 50]}
+                  initialState={{
+                    pagination: {
+                      paginationModel: {
+                        page: 0,
+                        pageSize: 10,
+                      },
                     },
-                  },
-                }}
-                onSortModelChange={handleSortChange}
-                slots={{
-                  toolbar: GridToolbar,
-                  footer: () => null, // Completely disable footer to prevent GridFooter errors
-                }}
-                slotProps={{
-                  toolbar: {
-                    showQuickFilter: false,
-                    printOptions: { disableToolbarButton: true },
-                  },
-                }}
-                sx={{
-                  border: 'none',
-                  '& .MuiDataGrid-cell': {
-                    borderBottom: '1px solid #f0f0f0',
-                  },
-                  '& .MuiDataGrid-columnHeaders': {
-                    backgroundColor: '#fafafa',
-                    borderBottom: '2px solid #e0e0e0',
-                  },
-                  '& .MuiDataGrid-row:hover': {
-                    backgroundColor: '#f5f5f5',
-                  },
-                  '& .MuiDataGrid-footerContainer': {
-                    display: 'none', // Hide footer to prevent GridFooter errors
-                  },
-                }}
-              />
-              {data?.notes && data.notes.length > 0 && (
+                  }}
+                  getRowId={(row) => row._id || row.id}
+                  onSortModelChange={handleSortChange}
+                  slots={{
+                    toolbar: GridToolbar,
+                    footer: () => null,
+                  }}
+                  slotProps={{
+                    toolbar: {
+                      showQuickFilter: false,
+                      printOptions: { disableToolbarButton: true },
+                    },
+                  }}
+                  sx={{
+                    border: 'none',
+                    '& .MuiDataGrid-cell': {
+                      borderBottom: '1px solid #f0f0f0',
+                    },
+                    '& .MuiDataGrid-columnHeaders': {
+                      backgroundColor: '#fafafa',
+                      borderBottom: '2px solid #e0e0e0',
+                    },
+                    '& .MuiDataGrid-row:hover': {
+                      backgroundColor: '#f5f5f5',
+                    },
+                    // Additional CSS to prevent size property issues
+                    '& .MuiDataGrid-columnHeader .MuiCheckbox-root': {
+                      '& .MuiSvgIcon-root': {
+                        fontSize: '1.25rem',
+                      },
+                    },
+                    '& .MuiDataGrid-row .MuiCheckbox-root': {
+                      '& .MuiSvgIcon-root': {
+                        fontSize: '1.25rem',
+                      },
+                    },
+                  }}
+                />
+              </ClinicalNotesErrorBoundary>
+              {/* Custom Pagination Controls */}
+              {data && data.totalPages > 1 && (
                 <Box
                   sx={{
                     p: 2,
@@ -1154,11 +1156,49 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                   }}
                 >
                   <Typography variant="body2" color="text.secondary">
-                    {data.notes.length} row{data.notes.length !== 1 ? 's' : ''}
+                    Showing {data.notes.length} of {data.total} total rows
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Client-side pagination active
-                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Button
+                      size="small"
+                      disabled={data.currentPage <= 1}
+                      onClick={() => {
+                        const newFilters = {
+                          ...filters,
+                          page: data.currentPage - 1,
+                        };
+                        setFilters(newFilters);
+                        if (searchQuery) {
+                          searchNotes(searchQuery, newFilters);
+                        } else {
+                          fetchNotes(newFilters);
+                        }
+                      }}
+                    >
+                      Previous
+                    </Button>
+                    <Typography variant="body2" color="text.secondary">
+                      Page {data.currentPage} of {data.totalPages}
+                    </Typography>
+                    <Button
+                      size="small"
+                      disabled={data.currentPage >= data.totalPages}
+                      onClick={() => {
+                        const newFilters = {
+                          ...filters,
+                          page: data.currentPage + 1,
+                        };
+                        setFilters(newFilters);
+                        if (searchQuery) {
+                          searchNotes(searchQuery, newFilters);
+                        } else {
+                          fetchNotes(newFilters);
+                        }
+                      }}
+                    >
+                      Next
+                    </Button>
+                  </Stack>
                 </Box>
               )}
             </>
