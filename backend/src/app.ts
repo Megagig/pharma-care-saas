@@ -44,6 +44,9 @@ import locationDataRoutes from './routes/locationDataRoutes';
 import legacyApiRoutes from './routes/legacyApiRoutes';
 import migrationDashboardRoutes from './routes/migrationDashboardRoutes';
 import emailWebhookRoutes from './routes/emailWebhookRoutes';
+import drugRoutes from './modules/drug-info/routes/drugRoutes';
+import publicApiRoutes from './routes/publicApiRoutes';
+import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
 
 const app: Application = express();
 
@@ -54,9 +57,13 @@ app.use(
     origin: [
       'http://localhost:3000', // Create React App dev server
       'http://localhost:5173', // Vite dev server
+      'http://127.0.0.1:5173', // Alternative Vite URL
+      'http://192.168.8.167:5173', // Local network Vite URL
       process.env.FRONTEND_URL || 'http://localhost:3000',
     ],
     credentials: true,
+    exposedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   })
 );
 
@@ -111,6 +118,10 @@ app.get('/api/health', (req: Request, res: Response) => {
 });
 app.use('/api/health/feature-flags', healthRoutes);
 
+// Public API routes (no authentication required)
+app.use('/api/public', publicApiRoutes);
+app.use('/api/public/drugs', publicDrugDetailsRoutes);
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
@@ -137,6 +148,9 @@ app.use('/api', assessmentRoutes);
 app.use('/api', dtpRoutes);
 app.use('/api', carePlanRoutes);
 app.use('/api', visitRoutes);
+
+// Drug Information Center routes
+app.use('/api/drugs', drugRoutes);
 
 // Clinical Notes routes - added special debug log
 app.use((req, res, next) => {
@@ -172,7 +186,7 @@ app.use('/api/email', emailWebhookRoutes);
 // RBAC and enhanced features
 app.use('/api/admin', adminRoutes);
 app.use('/api/license', licenseRoutes);
-app.use('/api/subscription-management', subAnalyticsRoutes); // Using correct subscriptionManagement routes
+app.use('/api/subscription-management', subAnalyticsRoutes); // Using correct subscription Management routes
 app.use('/api/subscription', subscriptionManagementRoutes); // Old routes at /api/subscription
 app.use('/api/workspace-subscription', workspaceSubscriptionRoutes); // New workspace subscription routes
 app.use('/api/feature-flags', featureFlagRoutes);
