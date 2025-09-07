@@ -83,6 +83,44 @@ router.get('/drug-monograph/:id', async (req: any, res: any) => {
 });
 
 /**
+ * @route GET /api/public/drug-indications/:id
+ * @desc Public endpoint to get drug indications from OpenFDA
+ * @access Public
+ */
+router.get('/drug-indications/:id', async (req: any, res: any) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Drug id is required',
+      });
+    }
+
+    const indications = await openfdaService.getDrugIndications(id);
+
+    // Set response headers explicitly
+    res.setHeader('Content-Type', 'application/json');
+
+    return res.json({
+      success: true,
+      data: indications,
+    });
+  } catch (error: any) {
+    logger.error('Public drug indications error:', error);
+
+    // Set response headers explicitly
+    res.setHeader('Content-Type', 'application/json');
+
+    return res.status(500).json({
+      success: false,
+      error: 'Error retrieving drug indications',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * @route POST /api/public/drug-interactions
  * @desc Public endpoint to check drug interactions
  * @access Public
