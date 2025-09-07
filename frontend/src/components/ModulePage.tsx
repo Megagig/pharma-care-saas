@@ -1,29 +1,18 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
   Card,
   CardContent,
-  Button,
   Container,
-  Paper,
-  Stack,
-  Chip,
-  Divider,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
-  Breadcrumbs,
-  Link,
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import DashboardIcon from '@mui/icons-material/Dashboard';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ScheduleIcon from '@mui/icons-material/Schedule';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import type { ModuleInfo, ModulePageProps } from '../types/moduleTypes';
+import type { ModulePageProps } from '../types/moduleTypes';
 
 const ModulePage: React.FC<ModulePageProps> = ({
   moduleInfo,
@@ -32,35 +21,7 @@ const ModulePage: React.FC<ModulePageProps> = ({
   children,
   hideModuleInfo = false,
 }) => {
-  const navigate = useNavigate();
-
-  const handleBackToDashboard = () => {
-    navigate('/dashboard');
-  };
-
-  const getStatusColor = (status: ModuleInfo['status']) => {
-    switch (status) {
-      case 'active':
-        return 'success';
-      case 'in_development':
-        return 'warning';
-      case 'placeholder':
-      default:
-        return 'info';
-    }
-  };
-
-  const getStatusLabel = (status: ModuleInfo['status']) => {
-    switch (status) {
-      case 'active':
-        return 'Active';
-      case 'in_development':
-        return 'In Development';
-      case 'placeholder':
-      default:
-        return 'Coming Soon';
-    }
-  };
+  // No need for navigation function since we're not using it
 
   return (
     <Container maxWidth="lg" sx={{ my: 4 }}>
@@ -111,198 +72,196 @@ const ModulePage: React.FC<ModulePageProps> = ({
 
       {/* Module Information Section */}
       {!hideModuleInfo && (
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Box
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          <Box
+            sx={{
+              flex: '1 1 45%',
+              minWidth: '300px',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Workflow Section */}
+            <Card
               sx={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
+                height: 'fit-content',
+                background: 'rgba(255,255,255,0.95)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: 4,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
               }}
             >
-              {/* Workflow Section */}
-              <Card
-                sx={{
-                  height: 'fit-content',
-                  background: 'rgba(255,255,255,0.95)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255,255,255,0.3)',
-                  borderRadius: 4,
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                }}
-              >
-                <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: 4 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    mb: 3,
+                  }}
+                >
                   <Box
                     sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 3,
+                      background:
+                        'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 2,
-                      mb: 3,
+                      justifyContent: 'center',
                     }}
                   >
-                    <Box
+                    <ScheduleIcon sx={{ color: 'white', fontSize: 24 }} />
+                  </Box>
+                  <Typography
+                    variant="h5"
+                    component="h2"
+                    sx={{ fontWeight: 600, color: 'text.primary' }}
+                  >
+                    Workflow
+                  </Typography>
+                </Box>
+
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ mb: 3, lineHeight: 1.6 }}
+                >
+                  {moduleInfo.workflow.description}
+                </Typography>
+
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 600,
+                    mb: 2,
+                    color: 'text.primary',
+                  }}
+                >
+                  Process Steps:
+                </Typography>
+
+                <List sx={{ mb: 0, p: 0 }}>
+                  {moduleInfo.workflow.steps.map((step, index) => (
+                    <ListItem
+                      key={index}
                       sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 3,
-                        background:
-                          'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        p: 0,
+                        '& + &': { mt: 2 },
                       }}
                     >
-                      <ScheduleIcon sx={{ color: 'white', fontSize: 24 }} />
-                    </Box>
-                    <Typography
-                      variant="h5"
-                      component="h2"
-                      sx={{ fontWeight: 600, color: 'text.primary' }}
-                    >
-                      Workflow
-                    </Typography>
-                  </Box>
-
-                  <Typography
-                    variant="body1"
-                    color="text.secondary"
-                    sx={{ mb: 3, lineHeight: 1.6 }}
-                  >
-                    {moduleInfo.workflow.description}
-                  </Typography>
-
-                  <Typography
-                    variant="subtitle1"
-                    sx={{
-                      fontWeight: 600,
-                      mb: 2,
-                      color: 'text.primary',
-                    }}
-                  >
-                    Process Steps:
-                  </Typography>
-
-                  <List sx={{ mb: 0, p: 0 }}>
-                    {moduleInfo.workflow.steps.map((step, index) => (
-                      <ListItem
-                        key={index}
+                      <ListItemIcon
                         sx={{
-                          p: 0,
-                          '& + &': { mt: 2 },
+                          minWidth: 36,
                         }}
                       >
-                        <ListItemIcon
+                        <Box
                           sx={{
-                            minWidth: 36,
+                            width: 24,
+                            height: 24,
+                            borderRadius: '50%',
+                            bgcolor: 'primary.main',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
                           }}
                         >
-                          <Box
-                            sx={{
-                              width: 24,
-                              height: 24,
-                              borderRadius: '50%',
-                              bgcolor: 'primary.main',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: 'white',
-                              fontWeight: 600,
-                              fontSize: '0.75rem',
-                            }}
-                          >
-                            {index + 1}
-                          </Box>
-                        </ListItemIcon>
-                        <ListItemText primary={step} />
-                      </ListItem>
-                    ))}
-                  </List>
-                </CardContent>
-              </Card>
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Box
+                          {index + 1}
+                        </Box>
+                      </ListItemIcon>
+                      <ListItemText primary={step} />
+                    </ListItem>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+          </Box>
+          
+          <Box
+            sx={{
+              flex: '1 1 45%',
+              minWidth: '300px',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Key Features Section */}
+            <Card
               sx={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
+                height: 'fit-content',
+                background: 'rgba(255,255,255,0.95)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: 4,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
               }}
             >
-              {/* Key Features Section */}
-              <Card
-                sx={{
-                  height: 'fit-content',
-                  background: 'rgba(255,255,255,0.95)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255,255,255,0.3)',
-                  borderRadius: 4,
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                }}
-              >
-                <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: 4 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    mb: 3,
+                  }}
+                >
                   <Box
                     sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 3,
+                      background:
+                        'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 2,
-                      mb: 3,
+                      justifyContent: 'center',
                     }}
                   >
-                    <Box
+                    <CheckCircleIcon sx={{ color: 'white', fontSize: 24 }} />
+                  </Box>
+                  <Typography
+                    variant="h5"
+                    component="h2"
+                    sx={{ fontWeight: 600, color: 'text.primary' }}
+                  >
+                    Key Features
+                  </Typography>
+                </Box>
+
+                <List sx={{ p: 0 }}>
+                  {moduleInfo.keyFeatures.map((feature, index) => (
+                    <ListItem
+                      key={index}
                       sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 3,
-                        background:
-                          'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        p: 0,
+                        mb: 2,
                       }}
                     >
-                      <CheckCircleIcon sx={{ color: 'white', fontSize: 24 }} />
-                    </Box>
-                    <Typography
-                      variant="h5"
-                      component="h2"
-                      sx={{ fontWeight: 600, color: 'text.primary' }}
-                    >
-                      Key Features
-                    </Typography>
-                  </Box>
-
-                  <List sx={{ p: 0 }}>
-                    {moduleInfo.keyFeatures.map((feature, index) => (
-                      <ListItem
-                        key={index}
+                      <ListItemIcon
                         sx={{
-                          p: 0,
-                          mb: 2,
+                          minWidth: 36,
+                          mt: 0,
                         }}
                       >
-                        <ListItemIcon
-                          sx={{
-                            minWidth: 36,
-                            mt: 0,
-                          }}
-                        >
-                          <CheckCircleIcon
-                            color="success"
-                            fontSize="small"
-                            sx={{ mt: 0.25 }}
-                          />
-                        </ListItemIcon>
-                        <ListItemText primary={feature} />
-                      </ListItem>
-                    ))}
-                  </List>
-                </CardContent>
-              </Card>
-            </Box>
-          </Grid>
-        </Grid>
+                        <CheckCircleIcon
+                          color="success"
+                          fontSize="small"
+                          sx={{ mt: 0.25 }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText primary={feature} />
+                    </ListItem>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+          </Box>
+        </Box>
       )}
 
       {/* Main Content Section */}
