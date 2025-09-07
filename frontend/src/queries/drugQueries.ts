@@ -13,6 +13,7 @@ import {
   AdverseEffect,
   FormularyInfo,
   TherapyPlan,
+  DrugIndication,
 } from '../types/drugTypes';
 
 // Query keys for drug information
@@ -22,6 +23,8 @@ export const drugQueryKeys = {
   monograph: (id: string) => [...drugQueryKeys.all, 'monograph', id] as const,
   interactions: (rxcui?: string, rxcuis?: string[]) =>
     [...drugQueryKeys.all, 'interactions', rxcui, rxcuis] as const,
+  indications: (id: string | null) =>
+    [...drugQueryKeys.all, 'indications', id] as const,
   adverseEffects: (id: string, limit?: number) =>
     [...drugQueryKeys.all, 'adverseEffects', id, limit] as const,
   formulary: (id: string) => [...drugQueryKeys.all, 'formulary', id] as const,
@@ -78,6 +81,19 @@ export const useDrugInteractions = (
   });
 };
 
+// Drug indications hook
+export const useDrugIndications = (
+  drugId: string | null
+): UseQueryResult<DrugIndication, Error> => {
+  return useQuery<DrugIndication, Error>({
+    queryKey: drugQueryKeys.indications(drugId),
+    queryFn: () => drugInfoApi.getIndications(drugId!),
+    enabled: !!drugId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1,
+  });
+};
+
 // Adverse effects hook
 export const useAdverseEffects = (
   id: string,
@@ -98,7 +114,7 @@ export const useFormularyInfo = (
 ): UseQueryResult<FormularyInfo, Error> => {
   return useQuery<FormularyInfo, Error>({
     queryKey: drugQueryKeys.formulary(id),
-    queryFn: () => drugInfoApi.getFormulary(id),
+    queryFn: () => drugInfoApi.getFormularyInfo(id),
     enabled: enabled && !!id,
     staleTime: 1000 * 60 * 60, // 1 hour
   });
@@ -118,7 +134,7 @@ export const useTherapyPlan = (
 ): UseQueryResult<TherapyPlan, Error> => {
   return useQuery<TherapyPlan, Error>({
     queryKey: drugQueryKeys.therapyPlan(id),
-    queryFn: () => drugInfoApi.getTherapyPlanById(id),
+    queryFn: () => drugInfoApi.getTherapyPlan(id),
     enabled: !!id,
   });
 };

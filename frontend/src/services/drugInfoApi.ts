@@ -6,6 +6,7 @@ import {
   AdverseEffect,
   FormularyInfo,
   TherapyPlan,
+  DrugIndication,
 } from '../types/drugTypes';
 
 // Use direct connection to backend during development
@@ -19,7 +20,7 @@ const apiClient = axios.create({
 });
 
 // Create public axios instance that doesn't need auth
-const publicApiClient = axios.create({
+export const publicApiClient = axios.create({
   baseURL: PUBLIC_API_BASE_URL,
   withCredentials: false,
   headers: {
@@ -80,7 +81,8 @@ export const drugInfoApi = {
             parsedData
           );
           return parsedData;
-        } catch (e) {
+        } catch {
+          // Catch parse error without using the error variable
           console.error('Failed to parse response as JSON');
           throw new Error('Invalid response format received from server');
         }
@@ -91,10 +93,10 @@ export const drugInfoApi = {
       const error = e as Error & {
         response?: {
           status?: number;
-          data?: any;
-          headers?: any;
+          data?: Record<string, unknown>;
+          headers?: Record<string, string>;
         };
-        request?: any;
+        request?: unknown;
       };
 
       console.error('API error in searchDrugs:', error);
@@ -142,7 +144,7 @@ export const drugInfoApi = {
       const error = e as Error & {
         response?: {
           status?: number;
-          data?: any;
+          data?: Record<string, Record<string, unknown>>;
         };
       };
 
@@ -195,7 +197,7 @@ export const drugInfoApi = {
       const error = e as Error & {
         response?: {
           status?: number;
-          data?: any;
+          data?: Record<string, Record<string, unknown>>;
         };
       };
 
@@ -213,34 +215,68 @@ export const drugInfoApi = {
     }
   },
 
-  // Get adverse effects for a drug
-  getAdverseEffects: async (
-    id: string,
-    limit?: number
-  ): Promise<AdverseEffect> => {
+  // Get drug indications
+  getIndications: async (drugId: string): Promise<DrugIndication> => {
     try {
-      const params = limit ? { limit } : {};
-      console.log(`Getting adverse effects for id: ${id}, limit: ${limit}`);
+      console.log(`Getting drug indications for id: ${drugId}`);
       console.log(
-        `Using direct API endpoint: ${PUBLIC_API_BASE_URL}/drug-adverse-effects/${id}`
+        `Using direct API endpoint: ${PUBLIC_API_BASE_URL}/drug-indications/${drugId}`
       );
 
       const response = await axios.get(
-        `${PUBLIC_API_BASE_URL}/drug-adverse-effects/${id}`,
+        `${PUBLIC_API_BASE_URL}/drug-indications/${drugId}`,
         {
-          params,
           headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
-          timeout: 15000, // Increased timeout for potentially large responses
+          timeout: 10000,
         }
       );
 
-      console.log('Adverse effects API response status:', response.status);
-      console.log(
-        'Adverse effects API response data type:',
-        typeof response.data
+      console.log('Indications API response status:', response.status);
+      console.log('Indications API response data type:', typeof response.data);
+
+      return response.data.data;
+    } catch (e) {
+      const error = e as Error & {
+        response?: {
+          status?: number;
+          data?: Record<string, unknown>;
+        };
+      };
+
+      console.error('API error in getIndications:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response
+          ? {
+              status: error.response.status,
+              data: error.response.data,
+            }
+          : 'No response',
+      });
+      throw error;
+    }
+  },
+
+  // Get adverse effects for drug
+  getAdverseEffects: async (
+    drugId: string,
+    limit = 10
+  ): Promise<AdverseEffect> => {
+    try {
+      console.log(`Getting adverse effects for drug id: ${drugId}`);
+      const response = await axios.get(
+        `${PUBLIC_API_BASE_URL}/drug-adverse-effects/${drugId}`,
+        {
+          params: { limit },
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          timeout: 15000, // Extended timeout for this endpoint
+        }
       );
 
       return response.data.data;
@@ -248,7 +284,7 @@ export const drugInfoApi = {
       const error = e as Error & {
         response?: {
           status?: number;
-          data?: any;
+          data?: Record<string, unknown>;
         };
       };
 
@@ -266,78 +302,88 @@ export const drugInfoApi = {
     }
   },
 
-  // Get formulary and therapeutic equivalents
-  getFormulary: async (id: string): Promise<FormularyInfo> => {
+  // Get formulary information for drug
+  getFormularyInfo: async (rxCui: string): Promise<FormularyInfo> => {
     try {
-      console.log(`Getting formulary info for id: ${id}`);
-      console.log(
-        `Using direct API endpoint: ${PUBLIC_API_BASE_URL}/drug-formulary/${id}`
-      );
-
-      const response = await axios.get(
-        `${PUBLIC_API_BASE_URL}/drug-formulary/${id}`,
-        {
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-          timeout: 10000,
-        }
-      );
-
-      console.log('Formulary API response status:', response.status);
-      console.log('Formulary API response data type:', typeof response.data);
-
-      return response.data.data;
-    } catch (e) {
-      const error = e as Error & {
-        response?: {
-          status?: number;
-          data?: any;
-        };
-      };
-
-      console.error('API error in getFormulary:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response
-          ? {
-              status: error.response.status,
-              data: error.response.data,
-            }
-          : 'No response',
-      });
+      const response = await apiClient.get(`/formulary/${rxCui}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching formulary info:', error);
       throw error;
     }
   },
 
-  // Therapy Plan APIs
+  // Save a therapy plan
+  saveTherapyPlan: async (plan: TherapyPlan): Promise<TherapyPlan> => {
+    try {
+      const response = await apiClient.post('/therapy-plans', plan);
+      return response.data;
+    } catch (error) {
+      console.error('Error saving therapy plan:', error);
+      throw error;
+    }
+  },
+
+  // Get user's therapy plans
+  getTherapyPlans: async (): Promise<TherapyPlan[]> => {
+    try {
+      const response = await apiClient.get('/therapy-plans');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching therapy plans:', error);
+      throw error;
+    }
+  },
+
+  // Get a therapy plan by ID
+  getTherapyPlan: async (id: string): Promise<TherapyPlan> => {
+    try {
+      const response = await apiClient.get(`/therapy-plans/${id}`);
+      return response.data;
+    } catch (error: unknown) {
+      const typedError = error as Error;
+      console.error('Error fetching therapy plan:', typedError);
+      throw typedError;
+    }
+  },
+
+  // Update a therapy plan
+  // Create a therapy plan
   createTherapyPlan: async (
     plan: Omit<TherapyPlan, '_id' | 'createdAt' | 'updatedAt'>
   ): Promise<TherapyPlan> => {
-    const response = await apiClient.post('/therapy-plans', plan);
-    return response.data;
-  },
-
-  getTherapyPlans: async (): Promise<TherapyPlan[]> => {
-    const response = await apiClient.get('/therapy-plans');
-    return response.data;
-  },
-
-  getTherapyPlanById: async (id: string): Promise<TherapyPlan> => {
-    const response = await apiClient.get(`/therapy-plans/${id}`);
-    return response.data;
+    try {
+      const response = await apiClient.post('/therapy-plans', plan);
+      return response.data;
+    } catch (error: unknown) {
+      const typedError = error as Error;
+      console.error('Error creating therapy plan:', typedError);
+      throw typedError;
+    }
   },
 
   updateTherapyPlan: async (
     id: string,
     plan: Partial<TherapyPlan>
   ): Promise<TherapyPlan> => {
-    const response = await apiClient.put(`/therapy-plans/${id}`, plan);
-    return response.data;
+    try {
+      const response = await apiClient.put(`/therapy-plans/${id}`, plan);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating therapy plan:', error);
+      throw error;
+    }
   },
 
+  // Delete a therapy plan
   deleteTherapyPlan: async (id: string): Promise<void> => {
-    await apiClient.delete(`/therapy-plans/${id}`);
+    try {
+      await apiClient.delete(`/therapy-plans/${id}`);
+      return;
+    } catch (error: unknown) {
+      const typedError = error as Error;
+      console.error('Error deleting therapy plan:', typedError);
+      throw typedError;
+    }
   },
 };
