@@ -24,6 +24,7 @@ import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import WarningIcon from '@mui/icons-material/Warning';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditNoteIcon from '@mui/icons-material/EditNote';
+import DescriptionIcon from '@mui/icons-material/Description';
 
 // Import existing components
 import PatientDashboard from './PatientDashboard';
@@ -36,6 +37,7 @@ import DTPManagement from './DTPManagement';
 import CarePlanManagement from './CarePlanManagement';
 import VisitManagement from './VisitManagement';
 import PatientMTRWidget from './PatientMTRWidget';
+import PatientClinicalNotes from './PatientClinicalNotes';
 
 import { usePatient } from '../queries/usePatients';
 import { useRBAC } from '../hooks/useRBAC';
@@ -168,6 +170,7 @@ const PatientManagement = () => {
   const getTabIcon = (index: number) => {
     const icons = [
       <DashboardIcon />,
+      <DescriptionIcon />,
       <PersonIcon />,
       <LocalHospitalIcon />,
       <MedicationIcon />,
@@ -182,6 +185,7 @@ const PatientManagement = () => {
 
   const tabLabels = [
     'Dashboard',
+    'Clinical Notes',
     'Allergies',
     'Conditions',
     'Medications',
@@ -297,47 +301,60 @@ const PatientManagement = () => {
 
         <TabPanel value={currentTab} index={1}>
           <Box sx={{ p: 3 }}>
-            <AllergyManagement patientId={patientId || ''} />
+            <PatientClinicalNotes
+              patientId={patientId || ''}
+              maxNotes={10}
+              showCreateButton={true}
+              onCreateNote={() => navigate(`/notes/new?patientId=${patientId}`)}
+              onViewNote={(noteId) => navigate(`/notes/${noteId}`)}
+              onEditNote={(noteId) => navigate(`/notes/${noteId}/edit`)}
+            />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={2}>
           <Box sx={{ p: 3 }}>
-            <ConditionManagement patientId={patientId || ''} />
+            <AllergyManagement patientId={patientId || ''} />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={3}>
           <Box sx={{ p: 3 }}>
-            <MedicationManagement patientId={patientId || ''} />
+            <ConditionManagement patientId={patientId || ''} />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={4}>
           <Box sx={{ p: 3 }}>
-            <ClinicalAssessment patientId={patientId || ''} />
+            <MedicationManagement patientId={patientId || ''} />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={5}>
           <Box sx={{ p: 3 }}>
-            <DTPManagement patientId={patientId || ''} />
+            <ClinicalAssessment patientId={patientId || ''} />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={6}>
           <Box sx={{ p: 3 }}>
-            <CarePlanManagement patientId={patientId || ''} />
+            <DTPManagement patientId={patientId || ''} />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={7}>
           <Box sx={{ p: 3 }}>
-            <VisitManagement patientId={patientId || ''} />
+            <CarePlanManagement patientId={patientId || ''} />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={8}>
+          <Box sx={{ p: 3 }}>
+            <VisitManagement patientId={patientId || ''} />
+          </Box>
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={9}>
           <Box sx={{ p: 3 }}>
             <PatientMTRWidget patientId={patientId || ''} />
           </Box>

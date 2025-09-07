@@ -12,22 +12,33 @@ const logger_1 = __importDefault(require("../utils/logger"));
 class DrugInformationController {
     async searchDrugs(req, res, next) {
         try {
+            console.log('User authentication state:', req.user ? 'Authenticated' : 'Not authenticated');
             const { name } = req.query;
+            console.log('Search query:', name);
             if (!name || typeof name !== 'string') {
+                console.log('Invalid search query - name is required');
                 res.status(400).json({ error: 'Drug name is required' });
                 return;
             }
+            console.log(`Calling RxNorm service to search for: ${name}`);
             const results = await rxnormService_1.default.searchDrugs(name);
+            console.log('RxNorm search results:', results);
             if (req.user && req.user._id) {
+                console.log('Saving search history for user:', req.user._id);
                 await drugCacheModel_1.DrugSearchHistory.create({
                     userId: req.user._id,
                     searchTerm: name,
-                    searchResults: results
+                    searchResults: results,
                 });
             }
+            else {
+                console.log('Not saving search history - user not authenticated');
+            }
+            console.log('Sending successful response');
             res.json(results);
         }
         catch (error) {
+            console.error('Drug search error:', error);
             logger_1.default.error('Drug search error:', error);
             next(error);
         }
@@ -58,7 +69,9 @@ class DrugInformationController {
                 results = await interactionService_1.default.getInteractionsForMultipleDrugs(rxcuis);
             }
             else {
-                res.status(400).json({ error: 'Either rxcui or rxcuis array is required' });
+                res
+                    .status(400)
+                    .json({ error: 'Either rxcui or rxcuis array is required' });
                 return;
             }
             res.json(results);
@@ -79,7 +92,10 @@ class DrugInformationController {
             let drugName = id;
             try {
                 const rxCuiData = await rxnormService_1.default.getRxCuiByName(id);
-                if (rxCuiData && rxCuiData.idGroup && rxCuiData.idGroup.rxnormId && rxCuiData.idGroup.rxnormId.length > 0) {
+                if (rxCuiData &&
+                    rxCuiData.idGroup &&
+                    rxCuiData.idGroup.rxnormId &&
+                    rxCuiData.idGroup.rxnormId.length > 0) {
                     const firstRxCui = rxCuiData.idGroup.rxnormId[0];
                     if (firstRxCui) {
                         drugName = firstRxCui;
@@ -124,7 +140,7 @@ class DrugInformationController {
                 userId: req.user?._id,
                 planName,
                 drugs,
-                guidelines
+                guidelines,
             });
             res.status(201).json(therapyPlan);
         }
@@ -135,8 +151,9 @@ class DrugInformationController {
     }
     async getTherapyPlans(req, res, next) {
         try {
-            const therapyPlans = await drugCacheModel_1.TherapyPlan.find({ userId: req.user?._id })
-                .sort({ createdAt: -1 });
+            const therapyPlans = await drugCacheModel_1.TherapyPlan.find({
+                userId: req.user?._id,
+            }).sort({ createdAt: -1 });
             res.json(therapyPlans);
         }
         catch (error) {
@@ -149,7 +166,7 @@ class DrugInformationController {
             const { id } = req.params;
             const therapyPlan = await drugCacheModel_1.TherapyPlan.findOne({
                 _id: id,
-                userId: req.user?._id
+                userId: req.user?._id,
             });
             if (!therapyPlan) {
                 res.status(404).json({ error: 'Therapy plan not found' });
@@ -168,12 +185,12 @@ class DrugInformationController {
             const { planName, drugs, guidelines } = req.body;
             const therapyPlan = await drugCacheModel_1.TherapyPlan.findOneAndUpdate({
                 _id: id,
-                userId: req.user?._id
+                userId: req.user?._id,
             }, {
                 planName,
                 drugs,
                 guidelines,
-                updatedAt: new Date()
+                updatedAt: new Date(),
             }, { new: true });
             if (!therapyPlan) {
                 res.status(404).json({ error: 'Therapy plan not found' });
@@ -191,7 +208,7 @@ class DrugInformationController {
             const { id } = req.params;
             const therapyPlan = await drugCacheModel_1.TherapyPlan.findOneAndDelete({
                 _id: id,
-                userId: req.user?._id
+                userId: req.user?._id,
             });
             if (!therapyPlan) {
                 res.status(404).json({ error: 'Therapy plan not found' });

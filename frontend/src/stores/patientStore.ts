@@ -1,7 +1,18 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Patient, PatientFormData, PatientFilters, LoadingState, ErrorState } from './types';
+import {
+  Patient,
+  PatientFormData,
+  PatientFilters,
+  LoadingState,
+  ErrorState,
+} from './types';
 import { patientService } from '../services/patientService';
+import {
+  apiToStorePatients,
+  apiResponseToStorePatient,
+  storeFormToApiCreateData,
+} from '../utils/patientAdapter';
 
 interface PatientStore {
   // State
@@ -21,7 +32,10 @@ interface PatientStore {
   // CRUD operations
   fetchPatients: (filters?: PatientFilters) => Promise<void>;
   createPatient: (patientData: PatientFormData) => Promise<Patient | null>;
-  updatePatient: (id: string, patientData: Partial<PatientFormData>) => Promise<Patient | null>;
+  updatePatient: (
+    id: string,
+    patientData: Partial<PatientFormData>
+  ) => Promise<Patient | null>;
   deletePatient: (id: string) => Promise<boolean>;
   getPatientById: (id: string) => Promise<Patient | null>;
 
@@ -32,7 +46,10 @@ interface PatientStore {
   setFilters: (filters: Partial<PatientFilters>) => void;
   clearFilters: () => void;
   searchPatients: (searchTerm: string) => void;
-  sortPatients: (sortBy: 'firstName' | 'lastName' | 'createdAt' | 'updatedAt', sortOrder: 'asc' | 'desc') => void;
+  sortPatients: (
+    sortBy: 'firstName' | 'lastName' | 'createdAt' | 'updatedAt',
+    sortOrder: 'asc' | 'desc'
+  ) => void;
 
   // Pagination actions
   setPage: (page: number) => void;
@@ -80,7 +97,9 @@ export const usePatientStore = create<PatientStore>()(
         const isProduction = import.meta.env.PROD;
 
         if (!isProduction) {
-          console.warn('Skipping API call - no token found in development mode');
+          console.warn(
+            'Skipping API call - no token found in development mode'
+          );
           return;
         }
 
@@ -93,20 +112,34 @@ export const usePatientStore = create<PatientStore>()(
           const response = await patientService.getPatients(currentFilters);
 
           if (response.success && response.data) {
+            // Convert API patients to store patient format
+            const apiPatients = response.data.results || [];
+            const storePatients = apiToStorePatients(apiPatients);
+
             set({
-              patients: response.data,
-              pagination: response.pagination || {
-                page: currentFilters.page || 1,
-                limit: currentFilters.limit || 10,
-                total: response.data.length,
-                pages: Math.ceil(response.data.length / (currentFilters.limit || 10)),
+              patients: storePatients,
+              pagination: {
+                page: response.meta?.page || currentFilters.page || 1,
+                limit: response.meta?.limit || currentFilters.limit || 10,
+                total: response.meta?.total || apiPatients.length,
+                pages:
+                  response.meta?.totalPages ||
+                  Math.ceil(apiPatients.length / (currentFilters.limit || 10)),
               },
             });
           } else {
-            setError('fetchPatients', response.message || 'Failed to fetch patients');
+            setError(
+              'fetchPatients',
+              response.message || 'Failed to fetch patients'
+            );
           }
         } catch (error) {
-          setError('fetchPatients', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'fetchPatients',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
         } finally {
           setLoading('fetchPatients', false);
         }
@@ -118,17 +151,29 @@ export const usePatientStore = create<PatientStore>()(
         setError('createPatient', null);
 
         try {
-          const response = await patientService.createPatient(patientData);
+          // Convert store form data to API format
+          const apiPatientData = storeFormToApiCreateData(patientData);
+          const response = await patientService.createPatient(apiPatientData);
 
           if (response.success && response.data) {
-            addPatientToState(response.data);
-            return response.data;
+            // Convert API response to store format
+            const storePatient = apiResponseToStorePatient(response.data);
+            addPatientToState(storePatient);
+            return storePatient;
           } else {
-            setError('createPatient', response.message || 'Failed to create patient');
+            setError(
+              'createPatient',
+              response.message || 'Failed to create patient'
+            );
             return null;
           }
         } catch (error) {
-          setError('createPatient', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'createPatient',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return null;
         } finally {
           setLoading('createPatient', false);
@@ -141,24 +186,41 @@ export const usePatientStore = create<PatientStore>()(
         setError('updatePatient', null);
 
         try {
-          const response = await patientService.updatePatient(id, patientData);
+          // Convert store form data to API format
+          const apiUpdateData = storeFormToApiCreateData(
+            patientData as PatientFormData
+          );
+          const response = await patientService.updatePatient(
+            id,
+            apiUpdateData
+          );
 
           if (response.success && response.data) {
-            updatePatientInState(id, response.data);
+            // Convert API response to store format
+            const storePatient = apiResponseToStorePatient(response.data);
+            updatePatientInState(id, storePatient);
 
             // Update selected patient if it's the one being updated
             const { selectedPatient } = get();
             if (selectedPatient && selectedPatient._id === id) {
-              set({ selectedPatient: response.data });
+              set({ selectedPatient: storePatient });
             }
 
-            return response.data;
+            return storePatient;
           } else {
-            setError('updatePatient', response.message || 'Failed to update patient');
+            setError(
+              'updatePatient',
+              response.message || 'Failed to update patient'
+            );
             return null;
           }
         } catch (error) {
-          setError('updatePatient', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'updatePatient',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return null;
         } finally {
           setLoading('updatePatient', false);
@@ -184,11 +246,19 @@ export const usePatientStore = create<PatientStore>()(
 
             return true;
           } else {
-            setError('deletePatient', response.message || 'Failed to delete patient');
+            setError(
+              'deletePatient',
+              response.message || 'Failed to delete patient'
+            );
             return false;
           }
         } catch (error) {
-          setError('deletePatient', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'deletePatient',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return false;
         } finally {
           setLoading('deletePatient', false);
@@ -201,16 +271,26 @@ export const usePatientStore = create<PatientStore>()(
         setError('getPatientById', null);
 
         try {
-          const response = await patientService.getPatientById(id);
+          // Fix: Use getPatient instead of getPatientById
+          const response = await patientService.getPatient(id);
 
           if (response.success && response.data) {
-            return response.data;
+            // Convert API response to store format
+            return apiResponseToStorePatient(response.data);
           } else {
-            setError('getPatientById', response.message || 'Failed to fetch patient');
+            setError(
+              'getPatientById',
+              response.message || 'Failed to fetch patient'
+            );
             return null;
           }
         } catch (error) {
-          setError('getPatientById', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'getPatientById',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return null;
         } finally {
           setLoading('getPatientById', false);
@@ -282,26 +362,35 @@ export const usePatientStore = create<PatientStore>()(
         setError('deleteMultiple', null);
 
         try {
-          const promises = ids.map(id => patientService.deletePatient(id));
+          const promises = ids.map((id) => patientService.deletePatient(id));
           const results = await Promise.all(promises);
 
-          const successful = results.filter(r => r.success);
+          const successful = results.filter((r) => r.success);
 
           if (successful.length === ids.length) {
             // Remove all successfully deleted patients from state
             set((state) => ({
-              patients: state.patients.filter(p => !ids.includes(p._id)),
-              selectedPatient: state.selectedPatient && ids.includes(state.selectedPatient._id)
-                ? null
-                : state.selectedPatient,
+              patients: state.patients.filter((p) => !ids.includes(p._id)),
+              selectedPatient:
+                state.selectedPatient && ids.includes(state.selectedPatient._id)
+                  ? null
+                  : state.selectedPatient,
             }));
             return true;
           } else {
-            setError('deleteMultiple', `Only ${successful.length} of ${ids.length} patients were deleted`);
+            setError(
+              'deleteMultiple',
+              `Only ${successful.length} of ${ids.length} patients were deleted`
+            );
             return false;
           }
         } catch (error) {
-          setError('deleteMultiple', error instanceof Error ? error.message : 'An unexpected error occurred');
+          setError(
+            'deleteMultiple',
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred'
+          );
           return false;
         } finally {
           setLoading('deleteMultiple', false);
@@ -320,14 +409,14 @@ export const usePatientStore = create<PatientStore>()(
 
       updatePatientInState: (id, updates) =>
         set((state) => ({
-          patients: state.patients.map(p =>
+          patients: state.patients.map((p) =>
             p._id === id ? { ...p, ...updates } : p
           ),
         })),
 
       removePatientFromState: (id) =>
         set((state) => ({
-          patients: state.patients.filter(p => p._id !== id),
+          patients: state.patients.filter((p) => p._id !== id),
           pagination: {
             ...state.pagination,
             total: Math.max(0, state.pagination.total - 1),
@@ -345,46 +434,50 @@ export const usePatientStore = create<PatientStore>()(
 );
 
 // Utility hooks for easier access to specific patient states
-export const usePatients = () => usePatientStore((state) => ({
-  patients: state.patients,
-  loading: state.loading.fetchPatients || false,
-  error: state.errors.fetchPatients || null,
-  pagination: state.pagination,
-  fetchPatients: state.fetchPatients,
-}));
+export const usePatients = () =>
+  usePatientStore((state) => ({
+    patients: state.patients,
+    loading: state.loading.fetchPatients || false,
+    error: state.errors.fetchPatients || null,
+    pagination: state.pagination,
+    fetchPatients: state.fetchPatients,
+  }));
 
-export const useSelectedPatient = () => usePatientStore((state) => ({
-  selectedPatient: state.selectedPatient,
-  selectPatient: state.selectPatient,
-  loading: state.loading.getPatientById || false,
-  error: state.errors.getPatientById || null,
-  getPatientById: state.getPatientById,
-}));
+export const useSelectedPatient = () =>
+  usePatientStore((state) => ({
+    selectedPatient: state.selectedPatient,
+    selectPatient: state.selectPatient,
+    loading: state.loading.getPatientById || false,
+    error: state.errors.getPatientById || null,
+    getPatientById: state.getPatientById,
+  }));
 
-export const usePatientFilters = () => usePatientStore((state) => ({
-  filters: state.filters,
-  setFilters: state.setFilters,
-  clearFilters: state.clearFilters,
-  searchPatients: state.searchPatients,
-  sortPatients: state.sortPatients,
-}));
+export const usePatientFilters = () =>
+  usePatientStore((state) => ({
+    filters: state.filters,
+    setFilters: state.setFilters,
+    clearFilters: state.clearFilters,
+    searchPatients: state.searchPatients,
+    sortPatients: state.sortPatients,
+  }));
 
-export const usePatientActions = () => usePatientStore((state) => ({
-  createPatient: state.createPatient,
-  updatePatient: state.updatePatient,
-  deletePatient: state.deletePatient,
-  deleteMultiplePatients: state.deleteMultiplePatients,
-  loading: {
-    create: state.loading.createPatient || false,
-    update: state.loading.updatePatient || false,
-    delete: state.loading.deletePatient || false,
-    deleteMultiple: state.loading.deleteMultiple || false,
-  },
-  errors: {
-    create: state.errors.createPatient || null,
-    update: state.errors.updatePatient || null,
-    delete: state.errors.deletePatient || null,
-    deleteMultiple: state.errors.deleteMultiple || null,
-  },
-  clearErrors: state.clearErrors,
-}));
+export const usePatientActions = () =>
+  usePatientStore((state) => ({
+    createPatient: state.createPatient,
+    updatePatient: state.updatePatient,
+    deletePatient: state.deletePatient,
+    deleteMultiplePatients: state.deleteMultiplePatients,
+    loading: {
+      create: state.loading.createPatient || false,
+      update: state.loading.updatePatient || false,
+      delete: state.loading.deletePatient || false,
+      deleteMultiple: state.loading.deleteMultiple || false,
+    },
+    errors: {
+      create: state.errors.createPatient || null,
+      update: state.errors.updatePatient || null,
+      delete: state.errors.deletePatient || null,
+      deleteMultiple: state.errors.deleteMultiple || null,
+    },
+    clearErrors: state.clearErrors,
+  }));

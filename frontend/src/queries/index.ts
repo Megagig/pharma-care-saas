@@ -3,6 +3,7 @@ export * from './usePatients';
 export * from './useMedications';
 export * from './useClinicalNotes';
 export * from './useMTRQueries';
+export * from './useClinicalInterventions';
 
 // Query client and keys
 export { queryClient, queryKeys } from '../lib/queryClient';

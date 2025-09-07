@@ -7,6 +7,8 @@ import {
   deletePatient,
   searchPatients,
   getPatientSummary,
+  getPatientInterventions,
+  searchPatientsWithInterventions,
 } from '../controllers/patientController';
 import { auth } from '../middlewares/auth';
 import {
@@ -43,6 +45,9 @@ router.get(
 // GET /api/patients/search - Search patients
 router.get('/search', requirePatientRead, searchPatients);
 
+// GET /api/patients/search-with-interventions - Search patients with intervention context
+router.get('/search-with-interventions', requirePatientRead, searchPatientsWithInterventions);
+
 // POST /api/patients - Create new patient
 router.post(
   '/',
@@ -66,6 +71,14 @@ router.get(
   requirePatientRead,
   validateRequest(patientParamsSchema, 'params'),
   getPatientSummary
+);
+
+// GET /api/patients/:id/interventions - Get patient interventions
+router.get(
+  '/:id/interventions',
+  requirePatientRead,
+  validateRequest(patientParamsSchema, 'params'),
+  getPatientInterventions
 );
 
 // PATCH /api/patients/:id - Update patient

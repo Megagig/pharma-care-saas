@@ -6,6 +6,9 @@ import WorkspaceStatsCronService from './services/WorkspaceStatsCronService';
 import UsageAlertCronService from './services/UsageAlertCronService';
 import { emailDeliveryCronService } from './services/EmailDeliveryCronService';
 
+// Import models to ensure they are registered with Mongoose
+import './models/Medication';
+
 // Load environment variables
 config();
 
@@ -15,7 +18,9 @@ connectDB();
 const PORT: number = parseInt(process.env.PORT || '5000', 10);
 
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+  console.log(
+    `🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`
+  );
 
   // Start cron services
   if (process.env.NODE_ENV !== 'test') {

@@ -1,8 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RxNormService = void 0;
 const apiClient_1 = require("../utils/apiClient");
-const logger_1 = require("../utils/logger");
+const logger_1 = __importDefault(require("../utils/logger"));
 class RxNormService {
     constructor() {
         this.client = new apiClient_1.ApiClient({
@@ -27,11 +30,11 @@ class RxNormService {
                     drugs.push(...group.conceptProperties);
                 }
             });
-            logger_1.logger.info(`RxNorm search found ${drugs.length} drugs for "${drugName}"`);
+            logger_1.default.info(`RxNorm search found ${drugs.length} drugs for "${drugName}"`);
             return drugs;
         }
         catch (error) {
-            logger_1.logger.error('RxNorm drug search failed:', error);
+            logger_1.default.error('RxNorm drug search failed:', error);
             throw new Error(`Failed to search drugs: ${error}`);
         }
     }
@@ -43,11 +46,11 @@ class RxNormService {
                 }
             });
             const rxcuis = response.data?.idGroup?.rxnormId || [];
-            logger_1.logger.info(`Found ${rxcuis.length} RxCUIs for "${drugName}"`);
+            logger_1.default.info(`Found ${rxcuis.length} RxCUIs for "${drugName}"`);
             return rxcuis;
         }
         catch (error) {
-            logger_1.logger.error('RxNorm RxCUI lookup failed:', error);
+            logger_1.default.error('RxNorm RxCUI lookup failed:', error);
             throw new Error(`Failed to get RxCUI: ${error}`);
         }
     }
@@ -66,11 +69,11 @@ class RxNormService {
                     equivalents.push(...group.conceptProperties);
                 }
             });
-            logger_1.logger.info(`Found ${equivalents.length} therapeutic equivalents for RxCUI ${rxcui}`);
+            logger_1.default.info(`Found ${equivalents.length} therapeutic equivalents for RxCUI ${rxcui}`);
             return equivalents;
         }
         catch (error) {
-            logger_1.logger.error('RxNorm therapeutic equivalents lookup failed:', error);
+            logger_1.default.error('RxNorm therapeutic equivalents lookup failed:', error);
             throw new Error(`Failed to get therapeutic equivalents: ${error}`);
         }
     }
@@ -88,11 +91,11 @@ class RxNormService {
                     related.push(...group.conceptProperties);
                 }
             });
-            logger_1.logger.info(`Found ${related.length} related drugs for RxCUI ${rxcui}`);
+            logger_1.default.info(`Found ${related.length} related drugs for RxCUI ${rxcui}`);
             return related;
         }
         catch (error) {
-            logger_1.logger.error('RxNorm related drugs lookup failed:', error);
+            logger_1.default.error('RxNorm related drugs lookup failed:', error);
             throw new Error(`Failed to get related drugs: ${error}`);
         }
     }
@@ -106,7 +109,7 @@ class RxNormService {
             };
         }
         catch (error) {
-            logger_1.logger.error('RxNorm drug details lookup failed:', error);
+            logger_1.default.error('RxNorm drug details lookup failed:', error);
             throw new Error(`Failed to get drug details: ${error}`);
         }
     }
@@ -118,11 +121,11 @@ class RxNormService {
                 }
             });
             const suggestions = response.data?.suggestionGroup?.suggestionList?.suggestion || [];
-            logger_1.logger.info(`Found ${suggestions.length} spelling suggestions for "${drugName}"`);
+            logger_1.default.info(`Found ${suggestions.length} spelling suggestions for "${drugName}"`);
             return suggestions;
         }
         catch (error) {
-            logger_1.logger.error('RxNorm spelling suggestions failed:', error);
+            logger_1.default.error('RxNorm spelling suggestions failed:', error);
             return [];
         }
     }

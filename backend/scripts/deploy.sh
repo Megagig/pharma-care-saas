@@ -1,16 +1,17 @@
 #!/bin/bash
 
-# Pharmacare Workspace Subscription RBAC Enhancement Deployment Script
-# This script handles the deployment of the new workspace subscription features
+# Clinical Interventions Module - Production Deployment Script
+# This script handles the complete deployment process for the Clinical Interventions module
 
 set -e  # Exit on any error
 
 # Configuration
-ENVIRONMENT=${1:-production}
-BACKUP_DIR="/var/backups/pharmacare"
-LOG_FILE="/var/log/pharmacare/deployment.log"
-APP_DIR="/opt/pharmacare"
-SERVICE_NAME="pharmacare-api"
+APP_NAME="pharmatech-api"
+APP_DIR="/var/www/pharmatech-api"
+BACKUP_DIR="/backup"
+LOG_FILE="/var/log/deployment.log"
+NODE_ENV="${NODE_ENV:-production}"
+DEPLOYMENT_VERSION="${DEPLOYMENT_VERSION:-$(date +%Y%m%d_%H%M%S)}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -21,7 +22,7 @@ NC='\033[0m' # No Color
 
 # Logging function
 log() {
-    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1" | tee -a "$LOG_FILE"
+    echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')]${NC} $1" | tee -a "$LOG_FILE"
 }
 
 error() {
@@ -29,438 +30,348 @@ error() {
     exit 1
 }
 
-success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1" | tee -a "$LOG_FILE"
-}
-
 warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1" | tee -a "$LOG_FILE"
 }
 
-# Pre-deployment checks
-pre_deployment_checks() {
-    log "Starting pre-deployment checks..."
-    
-    # Check if running as root or with sudo
+success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1" | tee -a "$LOG_FILE"
+}
+
+# Check if running as root
+check_permissions() {
     if [[ $EUID -eq 0 ]]; then
-        error "This script should not be run as root. Use a user with sudo privileges."
+        error "This script should not be run as root for security reasons"
+    fi
+}
+
+# Validate environment
+validate_environment() {
+    log "Validating deployment environment..."
+    
+    # Check Node.js version
+    NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
+    if [[ $NODE_VERSION -lt 18 ]]; then
+        error "Node.js version 18 or higher is required. Current version: $(node --version)"
     fi
     
-    # Check required commands
-    local required_commands=("node" "npm" "pm2" "mongo" "git")
-    for cmd in "${required_commands[@]}"; do
-        if ! command -v "$cmd" &> /dev/null; then
-            error "Required command '$cmd' is not installed"
+    # Check if PM2 is installed
+    if ! command -v pm2 &> /dev/null; then
+        error "PM2 is not installed. Please install PM2: npm install -g pm2"
+    fi
+    
+    # Check if MongoDB is accessible
+    if ! npm run db:health-check &> /dev/null; then
+        error "Cannot connect to MongoDB. Please check database configuration."
+    fi
+    
+    # Check required environment variables
+    required_vars=("NODE_ENV" "MONGODB_URI" "JWT_SECRET")
+    for var in "${required_vars[@]}"; do
+        if [[ -z "${!var}" ]]; then
+            error "Required environment variable $var is not set"
         fi
     done
     
-    # Check Node.js version
-    local node_version=$(node --version | cut -d'v' -f2)
-    local required_version="18.0.0"
-    if ! node -e "process.exit(require('semver').gte('$node_version', '$required_version') ? 0 : 1)" 2>/dev/null; then
-        error "Node.js version $required_version or higher is required. Current: $node_version"
-    fi
-    
-    # Check MongoDB connection
-    if ! mongo --eval "db.runCommand('ping')" --quiet; then
-        error "Cannot connect to MongoDB"
-    fi
-    
-    # Check disk space (require at least 1GB free)
-    local available_space=$(df / | awk 'NR==2 {print $4}')
-    if [[ $available_space -lt 1048576 ]]; then
-        error "Insufficient disk space. At least 1GB required."
-    fi
-    
-    # Check if backup directory exists
-    if [[ ! -d "$BACKUP_DIR" ]]; then
-        log "Creating backup directory: $BACKUP_DIR"
-        sudo mkdir -p "$BACKUP_DIR"
-        sudo chown $(whoami):$(whoami) "$BACKUP_DIR"
-    fi
-    
-    success "Pre-deployment checks completed"
+    success "Environment validation completed"
 }
 
-# Create database backup
+# Create backup
 create_backup() {
-    log "Creating database backup..."
+    log "Creating backup before deployment..."
     
-    local backup_name="pharmacare_backup_$(date +%Y%m%d_%H%M%S)"
-    local backup_path="$BACKUP_DIR/$backup_name"
+    # Create backup directory with timestamp
+    BACKUP_PATH="$BACKUP_DIR/deployment_backup_$DEPLOYMENT_VERSION"
+    mkdir -p "$BACKUP_PATH"
     
-    # Create MongoDB backup
-    mongodump --db pharmacare --out "$backup_path" --quiet
-    
-    if [[ $? -eq 0 ]]; then
-        # Compress backup
-        tar -czf "$backup_path.tar.gz" -C "$BACKUP_DIR" "$backup_name"
-        rm -rf "$backup_path"
-        
-        # Keep only last 5 backups
-        ls -t "$BACKUP_DIR"/*.tar.gz | tail -n +6 | xargs -r rm
-        
-        success "Database backup created: $backup_path.tar.gz"
-        echo "$backup_path.tar.gz" > /tmp/pharmacare_backup_path
-    else
+    # Backup database
+    log "Backing up database..."
+    if ! mongodump --uri="$MONGODB_URI" --out="$BACKUP_PATH/database" &> /dev/null; then
         error "Database backup failed"
     fi
+    
+    # Backup application files
+    log "Backing up application files..."
+    if [[ -d "$APP_DIR" ]]; then
+        tar -czf "$BACKUP_PATH/application.tar.gz" -C "$APP_DIR" . 2> /dev/null || true
+    fi
+    
+    # Backup PM2 configuration
+    log "Backing up PM2 configuration..."
+    pm2 save &> /dev/null || true
+    cp ~/.pm2/dump.pm2 "$BACKUP_PATH/pm2_dump.pm2" 2> /dev/null || true
+    
+    success "Backup created at $BACKUP_PATH"
+}
+
+# Stop application
+stop_application() {
+    log "Stopping application..."
+    
+    if pm2 list | grep -q "$APP_NAME"; then
+        pm2 stop "$APP_NAME" &> /dev/null || true
+        log "Application stopped"
+    else
+        log "Application is not running"
+    fi
+}
+
+# Deploy application code
+deploy_code() {
+    log "Deploying application code..."
+    
+    # Navigate to application directory
+    cd "$APP_DIR" || error "Cannot access application directory: $APP_DIR"
+    
+    # Pull latest code
+    log "Pulling latest code from repository..."
+    git fetch origin
+    git checkout main
+    git pull origin main
+    
+    # Install dependencies
+    log "Installing dependencies..."
+    npm ci --production --silent
+    
+    # Build application
+    log "Building application..."
+    npm run build --silent
+    
+    success "Code deployment completed"
 }
 
 # Run database migrations
 run_migrations() {
     log "Running database migrations..."
     
-    cd "$APP_DIR/backend"
+    cd "$APP_DIR" || error "Cannot access application directory"
     
-    # Run workspace subscription migration
-    log "Running workspace subscription migration..."
-    if node src/scripts/migrateToWorkspaceSubscriptions.js --environment="$ENVIRONMENT"; then
-        success "Workspace subscription migration completed"
-    else
-        error "Workspace subscription migration failed"
+    # Check migration status
+    log "Checking migration status..."
+    npm run migration:status
+    
+    # Apply pending migrations
+    log "Applying pending migrations..."
+    if ! npm run migration:up; then
+        error "Database migration failed"
     fi
     
-    # Seed subscription plans
-    log "Seeding subscription plans..."
-    if node src/scripts/seedPlansFromConfig.js --environment="$ENVIRONMENT"; then
-        success "Subscription plans seeded"
-    else
-        warning "Subscription plans seeding failed - may already exist"
-    fi
-    
-    # Seed feature flags
-    log "Seeding feature flags..."
-    if node src/scripts/seedFeatureFlags.js --environment="$ENVIRONMENT"; then
-        success "Feature flags seeded"
-    else
-        warning "Feature flags seeding failed - may already exist"
+    # Validate migration integrity
+    log "Validating migration integrity..."
+    if ! npm run migration:validate; then
+        error "Migration validation failed"
     fi
     
     success "Database migrations completed"
 }
 
-# Update application code
-update_application() {
-    log "Updating application code..."
+# Initialize feature flags
+initialize_feature_flags() {
+    log "Initializing feature flags..."
     
-    cd "$APP_DIR"
+    cd "$APP_DIR" || error "Cannot access application directory"
     
-    # Stash any local changes
-    git stash push -m "Pre-deployment stash $(date)"
-    
-    # Pull latest changes
-    git fetch origin
-    git checkout main
-    git pull origin main
-    
-    # Install backend dependencies
-    cd backend
-    npm ci --production
-    
-    # Build application
-    npm run build
-    
-    # Install frontend dependencies and build
-    cd ../frontend
-    npm ci --production
-    npm run build
-    
-    success "Application code updated"
-}
-
-# Update environment configuration
-update_environment() {
-    log "Updating environment configuration..."
-    
-    cd "$APP_DIR/backend"
-    
-    # Backup current .env
-    if [[ -f .env ]]; then
-        cp .env ".env.backup.$(date +%Y%m%d_%H%M%S)"
+    # Initialize default feature flags
+    if ! npm run feature-flags:init; then
+        warning "Feature flags initialization failed, continuing with deployment"
     fi
     
-    # Add new environment variables if they don't exist
-    local new_vars=(
-        "ENABLE_WORKSPACE_SUBSCRIPTIONS=true"
-        "ENABLE_INVITATIONS=true"
-        "ENABLE_USAGE_MONITORING=true"
-        "INVITATION_EXPIRY_HOURS=24"
-        "MAX_PENDING_INVITATIONS=20"
-        "PLAN_CACHE_TTL=300"
-        "USAGE_STATS_UPDATE_INTERVAL=3600"
-    )
+    # Configure gradual rollout for new features
+    log "Configuring gradual rollout..."
+    npm run feature-flags:set clinical_interventions_enabled --rollout 10 || true
+    npm run feature-flags:set advanced_reporting_enabled --rollout 5 || true
+    npm run feature-flags:set bulk_operations_enabled --rollout 0 || true
     
-    for var in "${new_vars[@]}"; do
-        local key=$(echo "$var" | cut -d'=' -f1)
-        if ! grep -q "^$key=" .env 2>/dev/null; then
-            echo "$var" >> .env
-            log "Added environment variable: $key"
-        fi
-    done
-    
-    success "Environment configuration updated"
+    success "Feature flags initialized"
 }
 
-# Update database indexes
-update_indexes() {
-    log "Updating database indexes..."
+# Setup performance monitoring
+setup_monitoring() {
+    log "Setting up performance monitoring..."
     
-    # Create indexes for new collections and fields
-    mongo pharmacare --eval "
-        // Workspace indexes
-        db.workplaces.createIndex({ currentSubscriptionId: 1 });
-        db.workplaces.createIndex({ subscriptionStatus: 1 });
-        db.workplaces.createIndex({ trialEndDate: 1 });
-        db.workplaces.createIndex({ 'stats.lastUpdated': 1 });
-        
-        // Invitation indexes
-        db.invitations.createIndex({ code: 1 }, { unique: true });
-        db.invitations.createIndex({ email: 1, workspaceId: 1 });
-        db.invitations.createIndex({ workspaceId: 1, status: 1 });
-        db.invitations.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-        db.invitations.createIndex({ status: 1, createdAt: 1 });
-        
-        // Subscription indexes
-        db.subscriptions.createIndex({ workspaceId: 1, status: 1 });
-        db.subscriptions.createIndex({ workspaceId: 1 }, { unique: true });
-        db.subscriptions.createIndex({ status: 1, endDate: 1 });
-        
-        // User indexes
-        db.users.createIndex({ email: 1, status: 1 });
-        db.users.createIndex({ workspaceId: 1 });
-        
-        // Email delivery indexes
-        db.emaildeliveries.createIndex({ status: 1, createdAt: 1 });
-        db.emaildeliveries.createIndex({ type: 1, recipientEmail: 1 });
-        
-        // Audit log indexes
-        db.auditlogs.createIndex({ workspaceId: 1, createdAt: -1 });
-        db.auditlogs.createIndex({ userId: 1, createdAt: -1 });
-        db.auditlogs.createIndex({ action: 1, createdAt: -1 });
-        
-        print('Database indexes updated successfully');
-    " --quiet
+    cd "$APP_DIR" || error "Cannot access application directory"
     
-    if [[ $? -eq 0 ]]; then
-        success "Database indexes updated"
+    # Initialize performance monitoring
+    npm run performance:init || warning "Performance monitoring initialization failed"
+    
+    # Create database indexes
+    npm run db:optimize-indexes || warning "Database index optimization failed"
+    
+    # Initialize caching
+    npm run cache:init || warning "Cache initialization failed"
+    
+    success "Performance monitoring setup completed"
+}
+
+# Start application
+start_application() {
+    log "Starting application..."
+    
+    cd "$APP_DIR" || error "Cannot access application directory"
+    
+    # Start application with PM2
+    if pm2 list | grep -q "$APP_NAME"; then
+        pm2 restart "$APP_NAME"
     else
-        error "Failed to update database indexes"
+        pm2 start ecosystem.config.js --env "$NODE_ENV"
     fi
-}
-
-# Start services
-start_services() {
-    log "Starting services..."
-    
-    cd "$APP_DIR/backend"
-    
-    # Stop existing services
-    pm2 stop "$SERVICE_NAME" 2>/dev/null || true
-    pm2 delete "$SERVICE_NAME" 2>/dev/null || true
-    
-    # Start main API service
-    pm2 start ecosystem.config.js --env "$ENVIRONMENT"
-    
-    # Start cron services
-    pm2 start src/services/InvitationCronService.js --name "invitation-cron"
-    pm2 start src/services/WorkspaceStatsCronService.js --name "workspace-stats-cron"
-    pm2 start src/services/EmailDeliveryCronService.js --name "email-delivery-cron"
-    pm2 start src/services/UsageAlertCronService.js --name "usage-alert-cron"
     
     # Save PM2 configuration
     pm2 save
     
-    # Wait for services to start
+    # Wait for application to start
     sleep 10
     
-    # Check service health
-    if pm2 list | grep -q "online"; then
-        success "Services started successfully"
-    else
-        error "Failed to start services"
-    fi
+    success "Application started"
 }
 
-# Run health checks
-health_checks() {
+# Health checks
+run_health_checks() {
     log "Running health checks..."
     
-    local api_url="http://localhost:5000"
     local max_attempts=30
     local attempt=1
     
-    # Wait for API to be ready
     while [[ $attempt -le $max_attempts ]]; do
-        if curl -s "$api_url/api/health" > /dev/null; then
+        log "Health check attempt $attempt/$max_attempts"
+        
+        # Check application health
+        if curl -f -s "http://localhost:${PORT:-5000}/api/health" > /dev/null; then
+            success "Application health check passed"
             break
         fi
-        log "Waiting for API to be ready... (attempt $attempt/$max_attempts)"
-        sleep 2
+        
+        if [[ $attempt -eq $max_attempts ]]; then
+            error "Application health check failed after $max_attempts attempts"
+        fi
+        
+        sleep 5
         ((attempt++))
     done
     
-    if [[ $attempt -gt $max_attempts ]]; then
-        error "API health check failed after $max_attempts attempts"
+    # Additional health checks
+    log "Running additional health checks..."
+    
+    # Database connectivity
+    if ! curl -f -s "http://localhost:${PORT:-5000}/api/health/database" > /dev/null; then
+        error "Database health check failed"
     fi
     
-    # Test critical endpoints
-    local endpoints=(
-        "/api/health"
-        "/api/auth/profile"
-        "/api/subscription-plans"
-    )
-    
-    for endpoint in "${endpoints[@]}"; do
-        local status_code=$(curl -s -o /dev/null -w "%{http_code}" "$api_url$endpoint")
-        if [[ $status_code -eq 200 || $status_code -eq 401 ]]; then
-            log "✓ $endpoint - OK"
-        else
-            warning "✗ $endpoint - Status: $status_code"
-        fi
-    done
-    
-    # Test database connectivity
-    if mongo pharmacare --eval "db.runCommand('ping')" --quiet; then
-        log "✓ Database connectivity - OK"
-    else
-        error "✗ Database connectivity - FAILED"
+    # Clinical Interventions module
+    if ! curl -f -s "http://localhost:${PORT:-5000}/api/clinical-interventions/health" > /dev/null; then
+        error "Clinical Interventions health check failed"
     fi
     
-    # Check PM2 processes
-    local running_processes=$(pm2 jlist | jq -r '.[] | select(.pm2_env.status == "online") | .name' | wc -l)
-    if [[ $running_processes -ge 4 ]]; then
-        log "✓ PM2 processes - OK ($running_processes running)"
-    else
-        warning "✗ PM2 processes - Only $running_processes running"
+    success "All health checks passed"
+}
+
+# Smoke tests
+run_smoke_tests() {
+    log "Running smoke tests..."
+    
+    cd "$APP_DIR" || error "Cannot access application directory"
+    
+    # Run smoke tests
+    if ! npm run test:smoke; then
+        error "Smoke tests failed"
     fi
     
-    success "Health checks completed"
+    success "Smoke tests passed"
+}
+
+# Cleanup old backups
+cleanup_old_backups() {
+    log "Cleaning up old backups..."
+    
+    # Keep only last 10 backups
+    if [[ -d "$BACKUP_DIR" ]]; then
+        find "$BACKUP_DIR" -name "deployment_backup_*" -type d | sort -r | tail -n +11 | xargs rm -rf 2> /dev/null || true
+    fi
+    
+    success "Old backups cleaned up"
 }
 
 # Rollback function
 rollback() {
-    log "Starting rollback procedure..."
+    local backup_path="$1"
     
-    # Stop current services
-    pm2 stop all
+    error "Deployment failed. Starting rollback..."
     
-    # Restore database backup
-    local backup_path=$(cat /tmp/pharmacare_backup_path 2>/dev/null)
-    if [[ -n "$backup_path" && -f "$backup_path" ]]; then
-        log "Restoring database from backup: $backup_path"
-        
-        # Extract backup
-        local temp_dir=$(mktemp -d)
-        tar -xzf "$backup_path" -C "$temp_dir"
-        
-        # Restore database
-        mongorestore --db pharmacare --drop "$temp_dir"/*/pharmacare/
-        
-        # Cleanup
-        rm -rf "$temp_dir"
-        
-        success "Database restored from backup"
-    else
-        warning "No backup found for rollback"
+    if [[ -z "$backup_path" ]]; then
+        error "No backup path provided for rollback"
     fi
     
-    # Restore previous code version
-    cd "$APP_DIR"
-    git stash pop 2>/dev/null || true
+    log "Rolling back to backup: $backup_path"
     
-    # Restart services
-    pm2 start ecosystem.config.js --env "$ENVIRONMENT"
+    # Stop application
+    pm2 stop "$APP_NAME" &> /dev/null || true
     
-    success "Rollback completed"
-}
-
-# Cleanup function
-cleanup() {
-    log "Performing cleanup..."
+    # Restore application files
+    if [[ -f "$backup_path/application.tar.gz" ]]; then
+        log "Restoring application files..."
+        cd "$APP_DIR" || error "Cannot access application directory"
+        tar -xzf "$backup_path/application.tar.gz" 2> /dev/null || true
+    fi
     
-    # Remove temporary files
-    rm -f /tmp/pharmacare_backup_path
+    # Restore database (if needed)
+    if [[ -d "$backup_path/database" ]]; then
+        log "Database rollback may be needed. Please restore manually if required."
+        warning "Database backup location: $backup_path/database"
+    fi
     
-    # Clean up old log files (keep last 30 days)
-    find /var/log/pharmacare -name "*.log" -mtime +30 -delete 2>/dev/null || true
+    # Restore PM2 configuration
+    if [[ -f "$backup_path/pm2_dump.pm2" ]]; then
+        log "Restoring PM2 configuration..."
+        cp "$backup_path/pm2_dump.pm2" ~/.pm2/dump.pm2 2> /dev/null || true
+        pm2 resurrect &> /dev/null || true
+    fi
     
-    # Clean up old backups (keep last 10)
-    ls -t "$BACKUP_DIR"/*.tar.gz 2>/dev/null | tail -n +11 | xargs -r rm
+    # Start application
+    pm2 start "$APP_NAME" &> /dev/null || true
     
-    success "Cleanup completed"
+    error "Rollback completed. Please investigate the deployment failure."
 }
 
 # Main deployment function
 main() {
-    log "Starting Pharmacare Workspace Subscription RBAC Enhancement deployment"
-    log "Environment: $ENVIRONMENT"
-    log "Timestamp: $(date)"
+    log "Starting Clinical Interventions Module deployment (Version: $DEPLOYMENT_VERSION)"
     
-    # Trap for cleanup on exit
-    trap cleanup EXIT
+    # Set trap for rollback on error
+    BACKUP_PATH="$BACKUP_DIR/deployment_backup_$DEPLOYMENT_VERSION"
+    trap "rollback $BACKUP_PATH" ERR
     
-    # Trap for rollback on error
-    trap 'error "Deployment failed. Starting rollback..."; rollback; exit 1' ERR
-    
-    # Run deployment steps
-    pre_deployment_checks
+    # Deployment steps
+    check_permissions
+    validate_environment
     create_backup
-    update_application
-    update_environment
+    stop_application
+    deploy_code
     run_migrations
-    update_indexes
-    start_services
-    health_checks
+    initialize_feature_flags
+    setup_monitoring
+    start_application
+    run_health_checks
+    run_smoke_tests
+    cleanup_old_backups
+    
+    # Clear trap
+    trap - ERR
     
     success "Deployment completed successfully!"
-    log "Deployment finished at: $(date)"
+    log "Deployment version: $DEPLOYMENT_VERSION"
+    log "Backup location: $BACKUP_PATH"
+    log "Application status: $(pm2 list | grep $APP_NAME || echo 'Not found')"
     
-    # Display summary
-    echo
-    echo "=== Deployment Summary ==="
-    echo "Environment: $ENVIRONMENT"
-    echo "Backup created: $(cat /tmp/pharmacare_backup_path 2>/dev/null || echo 'N/A')"
-    echo "Services running: $(pm2 jlist | jq -r '.[] | select(.pm2_env.status == "online") | .name' | wc -l)"
-    echo "API Health: $(curl -s http://localhost:5000/api/health | jq -r '.status' 2>/dev/null || echo 'Unknown')"
-    echo "=========================="
+    # Display next steps
+    echo ""
+    echo "Next steps:"
+    echo "1. Monitor application logs: pm2 logs $APP_NAME"
+    echo "2. Check feature flag status: npm run feature-flags:status"
+    echo "3. Monitor performance: npm run performance:check"
+    echo "4. Gradually increase feature rollout percentages"
 }
 
-# Script usage
-usage() {
-    echo "Usage: $0 [environment]"
-    echo "  environment: production, staging, development (default: production)"
-    echo
-    echo "Options:"
-    echo "  --rollback    Rollback to previous version"
-    echo "  --help        Show this help message"
-    echo
-    echo "Examples:"
-    echo "  $0 production"
-    echo "  $0 staging"
-    echo "  $0 --rollback"
-}
-
-# Handle command line arguments
-case "${1:-}" in
-    --rollback)
-        rollback
-        exit 0
-        ;;
-    --help)
-        usage
-        exit 0
-        ;;
-    "")
-        main
-        ;;
-    *)
-        if [[ "$1" =~ ^(production|staging|development)$ ]]; then
-            main
-        else
-            echo "Invalid environment: $1"
-            usage
-            exit 1
-        fi
-        ;;
-esac
+# Script execution
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

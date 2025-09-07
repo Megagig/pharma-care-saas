@@ -25,7 +25,25 @@ interface UseRBACReturn {
 export const useRBAC = (): UseRBACReturn => {
   // Get current user role from auth context
   const { user } = useAuth();
-  const role = (user?.role as UserRole) || 'technician';
+
+  // Map backend system roles to frontend RBAC roles
+  const mapSystemRoleToRBAC = (systemRole: string): UserRole => {
+    switch (systemRole) {
+      case 'super_admin':
+        return 'admin';
+      case 'pharmacy_outlet':
+        return 'owner';
+      case 'pharmacy_team':
+      case 'pharmacist':
+        return 'pharmacist';
+      case 'intern_pharmacist':
+        return 'technician';
+      default:
+        return 'technician'; // Default to most restrictive
+    }
+  };
+
+  const role = mapSystemRoleToRBAC(user?.role || 'technician');
 
   // Define permissions based on role
   const permissions = useMemo((): RBACPermissions => {
@@ -53,8 +71,8 @@ export const useRBAC = (): UseRBACReturn => {
           canCreate: true,
           canRead: true,
           canUpdate: true,
-          canDelete: false, // Pharmacists cannot delete records
-          canManage: false, // Cannot manage system settings
+          canDelete: true, // Pharmacists can delete records (matches backend permissions)
+          canManage: true, // Pharmacists can manage patient data (matches backend permissions)
         };
 
       case 'technician':
@@ -144,7 +162,7 @@ export const useRBAC = (): UseRBACReturn => {
     isPharmacist: role === 'pharmacist',
     isTechnician: role === 'technician',
     isAdmin: role === 'admin',
-    isSuperAdmin: user?.role === 'super_admin',
+    isSuperAdmin: user?.role === 'super_admin', // Check actual system role for super admin
     hasRole,
     hasPermission,
     hasFeature,

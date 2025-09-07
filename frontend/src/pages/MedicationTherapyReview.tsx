@@ -180,7 +180,7 @@ const MedicationTherapyReview: React.FC = () => {
               Back to Overview
             </Button>
 
-            {currentReview && (
+            {currentReview && currentReview.status && (
               <Chip
                 label={`Status: ${currentReview.status
                   .replace('_', ' ')

@@ -1,15 +1,15 @@
-import api from './api';
+import api from '../lib/api';
 
 // Security Dashboard Types
 export interface SecurityThreat {
   _id: string;
   timestamp: string;
   type:
-    | 'suspicious_login'
-    | 'data_breach_attempt'
-    | 'unauthorized_access'
-    | 'malware_detection'
-    | 'ddos_attack';
+  | 'suspicious_login'
+  | 'data_breach_attempt'
+  | 'unauthorized_access'
+  | 'malware_detection'
+  | 'ddos_attack';
   severity: 'low' | 'medium' | 'high' | 'critical';
   source: string;
   ipAddress: string;
@@ -64,10 +64,10 @@ export interface SecurityDashboardStats {
 export interface SecurityAlert {
   _id: string;
   type:
-    | 'threat_detected'
-    | 'system_breach'
-    | 'unusual_activity'
-    | 'policy_violation';
+  | 'threat_detected'
+  | 'system_breach'
+  | 'unusual_activity'
+  | 'policy_violation';
   title: string;
   description: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
@@ -172,10 +172,10 @@ class SecurityService {
       status,
       mitigation: mitigation
         ? {
-            action: mitigation,
-            timestamp: new Date().toISOString(),
-            performedBy: 'current_user', // This should be populated from auth context
-          }
+          action: mitigation,
+          timestamp: new Date().toISOString(),
+          performedBy: 'current_user', // This should be populated from auth context
+        }
         : undefined,
     });
     return response.data;

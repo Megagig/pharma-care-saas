@@ -1,4 +1,14 @@
-import api from './api';
+import axios, { AxiosError } from 'axios';
+
+// Create axios instance with base configuration similar to api.ts
+const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  timeout: 30000,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 export interface SubscriptionPlan {
   _id: string;
@@ -18,278 +28,323 @@ export interface SubscriptionPlan {
     multiUserSupport: boolean;
     teamSize: number | null;
     apiAccess: boolean;
-    customIntegrations: boolean;
-    prioritySupport: boolean;
-    // New features for Pharmily and Network plans
-    adrReporting: boolean;
-    drugInteractionChecker: boolean;
-    doseCalculator: boolean;
-    multiLocationDashboard: boolean;
-    sharedPatientRecords: boolean;
-    groupAnalytics: boolean;
-    cdss: boolean;
+    mtpLimit: number | null;
+    mtrLimit: number | null;
+    datastoreLimit: number | null;
+    additionalSupport: string[];
+    clinicalToolsAccess: string[];
   };
-  isActive: boolean;
-  stripePriceId?: string;
-  description: string;
-  popularPlan: boolean;
+  displayedFeatures: string[];
+  metadata?: {
+    mostPopular?: boolean;
+    highlight?: boolean;
+    recommended?: boolean;
+    hidden?: boolean;
+  };
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface Subscription {
-  _id: string;
-  userId: string;
-  planId: string;
-  status:
-  | 'active'
-  | 'inactive'
-  | 'cancelled'
-  | 'expired'
-  | 'trial'
-  | 'grace_period'
-  | 'suspended';
-  tier: 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
-  startDate: string;
-  endDate: string;
-  priceAtPurchase: number;
-  autoRenew: boolean;
-  trialEnd?: string;
-  gracePeriodEnd?: string;
-  stripeSubscriptionId?: string;
-  stripeCustomerId?: string;
-  features: string[];
-  customFeatures: string[];
-  usageMetrics: {
-    feature: string;
-    count: number;
-    lastUpdated: string;
-  }[];
-  createdAt: string;
-  updatedAt: string;
+// Interface for API response
+interface ApiResponse<T = unknown> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  error?: string;
 }
 
-export interface CheckoutSession {
-  sessionId: string;
-  url: string;
-  planId: string;
-  priceId: string;
-}
-
+// Subscription Service
 export const subscriptionService = {
-  // Get available plans
-  async getPlans(billingInterval: 'monthly' | 'yearly' = 'monthly') {
-    const response = await api.get('/subscription/plans', {
-      params: { billingInterval },
-    });
-    return response.data;
-  },
-
-  // Get current user's subscription
-  async getCurrentSubscription() {
-    const response = await api.get('/subscription/current');
-    return response.data;
-  },
-
-  // Create checkout session with Paystack
-  async createCheckoutSession(
-    planId: string,
-    billingInterval: 'monthly' | 'yearly'
-  ) {
+  // Fetch all subscription plans
+  async fetchPlans(options: { sortBy?: string } = {}): Promise<SubscriptionPlan[]> {
     try {
-      const callbackUrl = `${window.location.origin}/subscription/success`;
-      console.log('Creating checkout session with:', {
-        planId,
-        billingInterval,
-        callbackUrl,
+      const response = await apiClient.get('/subscription/plans', {
+        params: { sortBy: options.sortBy },
       });
-
-      const response = await api.post('/subscription/checkout', {
-        planId,
-        billingInterval,
-        callbackUrl,
-      });
-
-      return response.data;
+      return response.data.data || [];
     } catch (error: unknown) {
-      console.error('Error creating checkout session:', {
-        message: (error as Error).message,
-        responseData: (error as { response?: { data?: unknown; status?: number } }).response?.data,
-        status: (error as { response?: { data?: unknown; status?: number } }).response?.status,
+      console.error('Failed to fetch subscription plans', error);
+      return [];
+    }
+  },
+
+  // Fetch current subscription details
+  async fetchCurrentSubscription() {
+    try {
+      const response = await apiClient.get('/subscription/current');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch current subscription', error);
+      return null;
+    }
+  },
+
+  // Create a checkout session for a plan
+  async createCheckoutSession({
+    planId,
+    interval,
+    successUrl,
+    cancelUrl,
+    couponCode,
+  }: {
+    planId: string;
+    interval: 'monthly' | 'yearly';
+    successUrl: string;
+    cancelUrl: string;
+    couponCode?: string;
+  }) {
+    try {
+      const response = await apiClient.post('/subscription/checkout', {
+        planId,
+        interval,
+        successUrl,
+        cancelUrl,
+        couponCode,
       });
 
+      return {
+        success: true,
+        sessionUrl: response.data.data?.sessionUrl,
+        sessionId: response.data.data?.sessionId,
+      };
+    } catch (error: unknown) {
       return {
         success: false,
         message:
-          error.response?.data?.message || 'Failed to create checkout session',
-        error: error.message,
+          (error as AxiosError<{ message: string }>)?.response?.data?.message || 'Failed to create checkout session',
+        error: (error as Error)?.message || 'Unknown error',
       };
     }
   },
 
-  // Verify payment after Paystack redirect
-  async verifyPayment(paymentReference: string) {
+  // Handle checkout success
+  async handleCheckoutSuccess({
+    sessionId,
+    planId,
+  }: {
+    sessionId: string;
+    planId: string;
+  }) {
     try {
-      const response = await api.get(
-        `/subscription/verify?reference=${paymentReference}`
+      const response = await apiClient.get(
+        `/subscription/checkout-success?session_id=${sessionId}&plan_id=${planId}`
       );
       return response.data;
-    } catch (error: unknown) {
-      console.error('Error verifying payment:', error);
-      return {
-        success: false,
-        message: (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to verify payment',
-      };
+    } catch (error) {
+      console.error('Failed to process checkout success', error);
+      return null;
     }
   },
 
-  // Handle successful payment (for both simulation and real payments)
-  async handleSuccessfulPayment(paymentReference: string) {
-    const response = await api.post('/subscription/payment-success', {
-      paymentReference,
-    });
-    return response.data;
+  // Process payment success
+  async processPaymentSuccess(sessionId: string) {
+    try {
+      const response = await apiClient.post('/subscription/payment-success', {
+        sessionId,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to process payment', error);
+      return null;
+    }
   },
 
   // Cancel subscription
-  async cancelSubscription(reason?: string) {
-    const response = await api.post('/subscription/cancel', {
-      reason,
-    });
-    return response.data;
+  async cancelSubscription(subscriptionId: string) {
+    try {
+      const response = await apiClient.post('/subscription/cancel', {
+        subscriptionId,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to cancel subscription', error);
+      return null;
+    }
   },
 
   // Reactivate subscription
   async reactivateSubscription() {
-    const response = await api.post('/subscription/reactivate');
-    return response.data;
+    try {
+      const response = await apiClient.post('/subscription/reactivate');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to reactivate subscription', error);
+      return null;
+    }
   },
 
   // Update subscription
-  async updateSubscription(
-    planId: string,
-    billingInterval: 'monthly' | 'yearly'
-  ) {
-    const response = await api.put('/subscription/update', {
-      planId,
-      billingInterval,
-    });
-    return response.data;
+  async updateSubscription(planId: string, interval: 'monthly' | 'yearly') {
+    try {
+      const response = await apiClient.put('/subscription/update', {
+        planId,
+        interval,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update subscription', error);
+      return null;
+    }
   },
 
   // Get billing history
   async getBillingHistory() {
-    const response = await api.get('/subscription/billing-history');
-    return response.data;
+    try {
+      const response = await apiClient.get('/subscription/billing-history');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch billing history', error);
+      return [];
+    }
   },
 
-  // Download invoice
-  async downloadInvoice(invoiceId: string) {
-    const response = await api.get(`/subscription/invoice/${invoiceId}`, {
-      responseType: 'blob',
-    });
-    return response.data;
+  // Get invoice
+  async getInvoice(invoiceId: string) {
+    try {
+      const response = await apiClient.get(`/subscription/invoice/${invoiceId}`, {
+        responseType: 'blob',
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch invoice', error);
+      return null;
+    }
   },
 
-  // Get usage metrics
-  async getUsageMetrics() {
-    const response = await api.get('/subscription/usage');
-    return response.data;
+  // Get usage statistics
+  async getUsageStatistics() {
+    try {
+      const response = await apiClient.get('/subscription/usage');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch usage statistics', error);
+      return null;
+    }
   },
 
-  // Check feature access
-  async checkFeatureAccess(featureKey: string) {
-    const response = await api.get(
-      `/subscription/features/${featureKey}/check`
-    );
-    return response.data;
+  // Get feature limits
+  async getFeatureLimits(feature: string) {
+    try {
+      const response = await apiClient.get(
+        `/subscription/feature-limit?feature=${feature}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch feature limits', error);
+      return null;
+    }
   },
 
   // Get subscription status
-  async getSubscriptionStatus() {
-    const response = await api.get('/subscription/status');
-    return response.data;
+  async getStatus() {
+    try {
+      const response = await apiClient.get('/subscription/status');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch subscription status', error);
+      return null;
+    }
   },
 
   // Update payment method
   async updatePaymentMethod() {
-    const response = await api.post('/subscription/payment-method/update');
-    return response.data;
+    try {
+      const response = await apiClient.post('/subscription/payment-method/update');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update payment method', error);
+      return null;
+    }
   },
 
   // Get upcoming invoice
   async getUpcomingInvoice() {
-    const response = await api.get('/subscription/upcoming-invoice');
-    return response.data;
+    try {
+      const response = await apiClient.get('/subscription/upcoming-invoice');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch upcoming invoice', error);
+      return null;
+    }
   },
 
   // Apply coupon
   async applyCoupon(couponCode: string) {
-    const response = await api.post('/subscription/coupon/apply', {
-      couponCode,
-    });
-    return response.data;
+    try {
+      const response = await apiClient.post('/subscription/coupon/apply', {
+        couponCode,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to apply coupon', error);
+      return null;
+    }
   },
 
   // Remove coupon
   async removeCoupon() {
-    const response = await api.post('/subscription/coupon/remove');
-    return response.data;
+    try {
+      const response = await apiClient.post('/subscription/coupon/remove');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to remove coupon', error);
+      return null;
+    }
   },
 
-  // Get plan comparison
-  async getPlanComparison() {
-    const response = await api.get('/subscription/plans/compare');
-    return response.data;
+  // Compare plans
+  async comparePlans() {
+    try {
+      const response = await apiClient.get('/subscription/plans/compare');
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Failed to fetch plan comparison', error);
+      return [];
+    }
   },
 
-  // Request custom plan
-  async requestCustomPlan(requirements: {
-    userCount: number;
-    features: string[];
-    businessSize: string;
-    industry: string;
-    contactInfo: {
-      name: string;
-      email: string;
-      phone: string;
-      company: string;
-    };
-    additionalRequirements?: string;
+  // Generate comparison table data
+  generateComparisonTable(plans: SubscriptionPlan[]) {
+    // Implementation details
+    return plans.map((plan) => ({
+      name: plan.name,
+      features: plan.features,
+      price: plan.priceUSD,
+      tier: plan.tier,
+    }));
+  },
+
+  // Request custom quote
+  async requestCustomQuote({
+    name,
+    email,
+    phone,
+    companySize,
+    message,
+  }: {
+    name: string;
+    email: string;
+    phone: string;
+    companySize: string;
+    message: string;
   }) {
-    const response = await api.post(
-      '/subscription/custom-plan/request',
-      requirements
-    );
-    return response.data;
-  },
-
-  // Get feature usage analytics
-  async getFeatureUsageAnalytics(
-    period: 'week' | 'month' | 'quarter' | 'year' = 'month'
-  ) {
-    const response = await api.get(
-      `/subscription/analytics/usage?period=${period}`
-    );
-    return response.data;
-  },
-
-  // Extend trial
-  async extendTrial(days: number, reason: string) {
-    const response = await api.post('/subscription/trial/extend', {
-      days,
-      reason,
-    });
-    return response.data;
-  },
-
-  // Convert trial to paid
-  async convertTrialToPaid(
-    planId: string,
-    billingInterval: 'monthly' | 'yearly'
-  ) {
-    const response = await api.post('/subscription/trial/convert', {
-      planId,
-      billingInterval,
-    });
-    return response.data;
+    try {
+      const response = await apiClient.post(
+        '/subscription/request-quote',
+        {
+          name,
+          email,
+          phone,
+          companySize,
+          message,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Failed to request custom quote', error);
+      return null;
+    }
   },
 };
+
+export default subscriptionService;

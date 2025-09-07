@@ -4,7 +4,7 @@ import {
   type SubscriptionPlan,
 } from '../services/subscriptionService';
 import { paymentService } from '../services/paymentService';
-import { useUIStore } from '../stores';
+import { useNotifications } from '../context/NotificationContext';
 
 // Query Keys
 export const subscriptionKeys = {
@@ -100,7 +100,7 @@ export const useBillingHistoryQuery = () => {
 
 // Checkout Session Mutation
 export const useCreateCheckoutSessionMutation = () => {
-  const addNotification = useUIStore((state) => state.addNotification);
+  const { addNotification } = useNotifications();
 
   return useMutation({
     mutationFn: async ({
@@ -135,7 +135,7 @@ export const useCreateCheckoutSessionMutation = () => {
 // Cancel Subscription Mutation
 export const useCancelSubscriptionMutation = () => {
   const queryClient = useQueryClient();
-  const addNotification = useUIStore((state) => state.addNotification);
+  const { addNotification } = useNotifications();
 
   return useMutation({
     mutationFn: (reason?: string) =>
@@ -164,7 +164,7 @@ export const useCancelSubscriptionMutation = () => {
 // Reactivate Subscription Mutation
 export const useReactivateSubscriptionMutation = () => {
   const queryClient = useQueryClient();
-  const addNotification = useUIStore((state) => state.addNotification);
+  const { addNotification } = useNotifications();
 
   return useMutation({
     mutationFn: () => subscriptionService.reactivateSubscription(),
@@ -192,7 +192,7 @@ export const useReactivateSubscriptionMutation = () => {
 // Update Subscription Mutation
 export const useUpdateSubscriptionMutation = () => {
   const queryClient = useQueryClient();
-  const addNotification = useUIStore((state) => state.addNotification);
+  const { addNotification } = useNotifications();
 
   return useMutation({
     mutationFn: ({
@@ -226,7 +226,7 @@ export const useUpdateSubscriptionMutation = () => {
 // Add Payment Method Mutation
 export const useAddPaymentMethodMutation = () => {
   const queryClient = useQueryClient();
-  const addNotification = useUIStore((state) => state.addNotification);
+  const { addNotification } = useNotifications();
 
   return useMutation({
     mutationFn: ({
@@ -262,7 +262,7 @@ export const useAddPaymentMethodMutation = () => {
 // Remove Payment Method Mutation
 export const useRemovePaymentMethodMutation = () => {
   const queryClient = useQueryClient();
-  const addNotification = useUIStore((state) => state.addNotification);
+  const { addNotification } = useNotifications();
 
   return useMutation({
     mutationFn: (paymentMethodId: string) =>
@@ -293,7 +293,7 @@ export const useRemovePaymentMethodMutation = () => {
 // Set Default Payment Method Mutation
 export const useSetDefaultPaymentMethodMutation = () => {
   const queryClient = useQueryClient();
-  const addNotification = useUIStore((state) => state.addNotification);
+  const { addNotification } = useNotifications();
 
   return useMutation({
     mutationFn: (paymentMethodId: string) =>
@@ -323,7 +323,7 @@ export const useSetDefaultPaymentMethodMutation = () => {
 
 // Download Invoice Mutation
 export const useDownloadInvoiceMutation = () => {
-  const addNotification = useUIStore((state) => state.addNotification);
+  const { addNotification } = useNotifications();
 
   return useMutation({
     mutationFn: (paymentId: string) =>

@@ -31,6 +31,7 @@ export interface PlanLimits {
     locations: number | null;
     storage: number | null;
     apiCalls: number | null;
+    interventions?: number | null;
 }
 export interface AuthRequest extends Request {
     user?: IUser & {
@@ -43,6 +44,9 @@ export interface AuthRequest extends Request {
     usageInfo?: UsageLimitResult | {
         [resource: string]: UsageLimitResult;
     };
+    interventionData?: any;
+    patient?: any;
+    clinicalNotes?: any[];
 }
 export interface UsageLimitResult {
     allowed: boolean;

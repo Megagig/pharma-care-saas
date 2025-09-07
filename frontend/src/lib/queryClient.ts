@@ -25,195 +25,125 @@ export const queryClient = new QueryClient({
 });
 
 // Query Keys Factory - Centralized query key management for Patient Management
+// Using a functional approach to avoid circular references
+
+// Base query key generators
+const createBaseKeys = (entity: string) => ({
+  all: [entity] as const,
+  lists: () => [entity, 'list'] as const,
+  list: (filters: Record<string, unknown>) => [entity, 'list', { filters }] as const,
+  details: () => [entity, 'detail'] as const,
+  detail: (id: string) => [entity, 'detail', id] as const,
+});
+
+const createPatientRelatedKeys = (entity: string) => ({
+  ...createBaseKeys(entity),
+  byPatient: (patientId: string) => [entity, 'patient', patientId] as const,
+});
+
 export const queryKeys = {
   // Patient queries
   patients: {
-    all: ['patients'] as const,
-    lists: () => [...queryKeys.patients.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.patients.lists(), { filters }] as const,
-    details: () => [...queryKeys.patients.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.patients.details(), id] as const,
-    search: (query: string) =>
-      [...queryKeys.patients.all, 'search', query] as const,
-    summary: (id: string) =>
-      [...queryKeys.patients.all, 'summary', id] as const,
+    ...createBaseKeys('patients'),
+    search: (query: string) => ['patients', 'search', query] as const,
+    summary: (id: string) => ['patients', 'summary', id] as const,
   },
 
   // Allergy queries
-  allergies: {
-    all: ['allergies'] as const,
-    lists: () => [...queryKeys.allergies.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.allergies.lists(), { filters }] as const,
-    details: () => [...queryKeys.allergies.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.allergies.details(), id] as const,
-    byPatient: (patientId: string) =>
-      [...queryKeys.allergies.all, 'patient', patientId] as const,
-  },
+  allergies: createPatientRelatedKeys('allergies'),
 
   // Condition queries
-  conditions: {
-    all: ['conditions'] as const,
-    lists: () => [...queryKeys.conditions.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.conditions.lists(), { filters }] as const,
-    details: () => [...queryKeys.conditions.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.conditions.details(), id] as const,
-    byPatient: (patientId: string) =>
-      [...queryKeys.conditions.all, 'patient', patientId] as const,
-  },
+  conditions: createPatientRelatedKeys('conditions'),
 
   // Medication queries
   medications: {
-    all: ['medications'] as const,
-    lists: () => [...queryKeys.medications.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.medications.lists(), { filters }] as const,
-    details: () => [...queryKeys.medications.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.medications.details(), id] as const,
-    byPatient: (patientId: string) =>
-      [...queryKeys.medications.all, 'patient', patientId] as const,
-    current: (patientId: string) =>
-      [...queryKeys.medications.byPatient(patientId), 'current'] as const,
-    past: (patientId: string) =>
-      [...queryKeys.medications.byPatient(patientId), 'past'] as const,
+    ...createPatientRelatedKeys('medications'),
+    current: (patientId: string) => ['medications', 'patient', patientId, 'current'] as const,
+    past: (patientId: string) => ['medications', 'patient', patientId, 'past'] as const,
   },
 
   // Clinical Assessment queries
   assessments: {
-    all: ['assessments'] as const,
-    lists: () => [...queryKeys.assessments.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.assessments.lists(), { filters }] as const,
-    details: () => [...queryKeys.assessments.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.assessments.details(), id] as const,
-    byPatient: (patientId: string) =>
-      [...queryKeys.assessments.all, 'patient', patientId] as const,
-    latest: (patientId: string) =>
-      [...queryKeys.assessments.byPatient(patientId), 'latest'] as const,
+    ...createPatientRelatedKeys('assessments'),
+    latest: (patientId: string) => ['assessments', 'patient', patientId, 'latest'] as const,
   },
 
   // Drug Therapy Problem queries
   dtps: {
-    all: ['dtps'] as const,
-    lists: () => [...queryKeys.dtps.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.dtps.lists(), { filters }] as const,
-    details: () => [...queryKeys.dtps.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.dtps.details(), id] as const,
-    byPatient: (patientId: string) =>
-      [...queryKeys.dtps.all, 'patient', patientId] as const,
-    active: (patientId: string) =>
-      [...queryKeys.dtps.byPatient(patientId), 'active'] as const,
+    ...createPatientRelatedKeys('dtps'),
+    active: (patientId: string) => ['dtps', 'patient', patientId, 'active'] as const,
   },
 
   // Care Plan queries
   carePlans: {
-    all: ['carePlans'] as const,
-    lists: () => [...queryKeys.carePlans.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.carePlans.lists(), { filters }] as const,
-    details: () => [...queryKeys.carePlans.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.carePlans.details(), id] as const,
-    byPatient: (patientId: string) =>
-      [...queryKeys.carePlans.all, 'patient', patientId] as const,
-    latest: (patientId: string) =>
-      [...queryKeys.carePlans.byPatient(patientId), 'latest'] as const,
+    ...createPatientRelatedKeys('carePlans'),
+    latest: (patientId: string) => ['carePlans', 'patient', patientId, 'latest'] as const,
   },
 
   // Visit queries
   visits: {
-    all: ['visits'] as const,
-    lists: () => [...queryKeys.visits.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.visits.lists(), { filters }] as const,
-    details: () => [...queryKeys.visits.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.visits.details(), id] as const,
-    byPatient: (patientId: string) =>
-      [...queryKeys.visits.all, 'patient', patientId] as const,
-    attachments: (visitId: string) =>
-      [...queryKeys.visits.detail(visitId), 'attachments'] as const,
+    ...createPatientRelatedKeys('visits'),
+    attachments: (visitId: string) => ['visits', 'detail', visitId, 'attachments'] as const,
   },
 
   // Clinical Notes queries (legacy support)
-  clinicalNotes: {
-    all: ['clinicalNotes'] as const,
-    lists: () => [...queryKeys.clinicalNotes.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.clinicalNotes.lists(), { filters }] as const,
-    details: () => [...queryKeys.clinicalNotes.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.clinicalNotes.details(), id] as const,
-    byPatient: (patientId: string) =>
-      [...queryKeys.clinicalNotes.all, 'patient', patientId] as const,
-  },
+  clinicalNotes: createPatientRelatedKeys('clinicalNotes'),
 
   // MTR (Medication Therapy Review) queries
   mtr: {
-    all: ['mtr'] as const,
-    lists: () => [...queryKeys.mtr.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.mtr.lists(), { filters }] as const,
-    details: () => [...queryKeys.mtr.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.mtr.details(), id] as const,
-    byPatient: (patientId: string) =>
-      [...queryKeys.mtr.all, 'patient', patientId] as const,
-    active: () => [...queryKeys.mtr.all, 'active'] as const,
-    overdue: () => [...queryKeys.mtr.all, 'overdue'] as const,
+    ...createPatientRelatedKeys('mtr'),
+    active: () => ['mtr', 'active'] as const,
+    overdue: () => ['mtr', 'overdue'] as const,
     statistics: (dateRange?: { start: string; end: string }) =>
-      [...queryKeys.mtr.all, 'statistics', dateRange] as const,
-    workflowSteps: () => [...queryKeys.mtr.all, 'workflow', 'steps'] as const,
+      ['mtr', 'statistics', dateRange] as const,
+    workflowSteps: () => ['mtr', 'workflow', 'steps'] as const,
   },
 
   // Drug Therapy Problems queries
   drugTherapyProblems: {
-    all: ['drugTherapyProblems'] as const,
-    lists: () => [...queryKeys.drugTherapyProblems.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.drugTherapyProblems.lists(), { filters }] as const,
-    details: () => [...queryKeys.drugTherapyProblems.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.drugTherapyProblems.details(), id] as const,
-    byPatient: (patientId: string) =>
-      [...queryKeys.drugTherapyProblems.all, 'patient', patientId] as const,
-    byReview: (reviewId: string) =>
-      [...queryKeys.drugTherapyProblems.all, 'review', reviewId] as const,
-    active: () => [...queryKeys.drugTherapyProblems.all, 'active'] as const,
+    ...createPatientRelatedKeys('drugTherapyProblems'),
+    byReview: (reviewId: string) => ['drugTherapyProblems', 'review', reviewId] as const,
+    active: () => ['drugTherapyProblems', 'active'] as const,
     statistics: (dateRange?: { start: string; end: string }) =>
-      [...queryKeys.drugTherapyProblems.all, 'statistics', dateRange] as const,
+      ['drugTherapyProblems', 'statistics', dateRange] as const,
   },
 
   // MTR Interventions queries
   mtrInterventions: {
-    all: ['mtrInterventions'] as const,
-    lists: () => [...queryKeys.mtrInterventions.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.mtrInterventions.lists(), { filters }] as const,
-    details: () => [...queryKeys.mtrInterventions.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.mtrInterventions.details(), id] as const,
-    byReview: (reviewId: string) =>
-      [...queryKeys.mtrInterventions.all, 'review', reviewId] as const,
-    byPatient: (patientId: string) =>
-      [...queryKeys.mtrInterventions.all, 'patient', patientId] as const,
-    pending: () => [...queryKeys.mtrInterventions.all, 'pending'] as const,
+    ...createPatientRelatedKeys('mtrInterventions'),
+    byReview: (reviewId: string) => ['mtrInterventions', 'review', reviewId] as const,
+    pending: () => ['mtrInterventions', 'pending'] as const,
     statistics: (dateRange?: { start: string; end: string }) =>
-      [...queryKeys.mtrInterventions.all, 'statistics', dateRange] as const,
+      ['mtrInterventions', 'statistics', dateRange] as const,
   },
 
   // MTR Follow-ups queries
   mtrFollowUps: {
-    all: ['mtrFollowUps'] as const,
-    lists: () => [...queryKeys.mtrFollowUps.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.mtrFollowUps.lists(), { filters }] as const,
-    details: () => [...queryKeys.mtrFollowUps.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.mtrFollowUps.details(), id] as const,
-    byReview: (reviewId: string) =>
-      [...queryKeys.mtrFollowUps.all, 'review', reviewId] as const,
-    byPatient: (patientId: string) =>
-      [...queryKeys.mtrFollowUps.all, 'patient', patientId] as const,
-    scheduled: () => [...queryKeys.mtrFollowUps.all, 'scheduled'] as const,
-    overdue: () => [...queryKeys.mtrFollowUps.all, 'overdue'] as const,
+    ...createPatientRelatedKeys('mtrFollowUps'),
+    byReview: (reviewId: string) => ['mtrFollowUps', 'review', reviewId] as const,
+    scheduled: () => ['mtrFollowUps', 'scheduled'] as const,
+    overdue: () => ['mtrFollowUps', 'overdue'] as const,
     statistics: (dateRange?: { start: string; end: string }) =>
-      [...queryKeys.mtrFollowUps.all, 'statistics', dateRange] as const,
+      ['mtrFollowUps', 'statistics', dateRange] as const,
   },
-} as const;
+
+  // Clinical Interventions queries
+  clinicalInterventions: {
+    ...createPatientRelatedKeys('clinicalInterventions'),
+    assignedToMe: () => ['clinicalInterventions', 'assigned-to-me'] as const,
+    search: (query: string) => ['clinicalInterventions', 'search', query] as const,
+    analytics: {
+      all: ['clinicalInterventions', 'analytics'] as const,
+      dashboard: (dateRange?: { start: string; end: string }) =>
+        ['clinicalInterventions', 'analytics', 'dashboard', dateRange] as const,
+      trends: (dateRange?: { start: string; end: string }) =>
+        ['clinicalInterventions', 'analytics', 'trends', dateRange] as const,
+      categories: () => ['clinicalInterventions', 'analytics', 'categories'] as const,
+      priorities: () => ['clinicalInterventions', 'analytics', 'priorities'] as const,
+    },
+    recommendations: (category: string) =>
+      ['clinicalInterventions', 'recommendations', category] as const,
+    duplicates: (patientId: string, category: string) =>
+      ['clinicalInterventions', 'duplicates', patientId, category] as const,
+  },
+};

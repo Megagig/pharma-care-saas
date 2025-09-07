@@ -4,29 +4,32 @@ import { UIState, Notification } from './types';
 
 interface UIStore extends UIState {
   // Notification actions
-  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
+  addNotification: (
+    notification: Omit<Notification, 'id' | 'timestamp' | 'read'>
+  ) => void;
   removeNotification: (id: string) => void;
   markNotificationAsRead: (id: string) => void;
   clearAllNotifications: () => void;
-  
+
   // Modal actions
   openModal: (modalKey: string) => void;
   closeModal: (modalKey: string) => void;
   toggleModal: (modalKey: string) => void;
   closeAllModals: () => void;
-  
+
   // Loading state actions
   setLoading: (loading: boolean) => void;
-  
+
   // Sidebar actions
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
-  
+
   // Theme actions
   toggleTheme: () => void;
   setTheme: (theme: 'light' | 'dark') => void;
 }
 
+// Create the main UI store with persistence
 export const useUIStore = create<UIStore>()(
   persist(
     (set, get) => ({
@@ -39,7 +42,8 @@ export const useUIStore = create<UIStore>()(
 
       // Notification actions
       addNotification: (notification) => {
-        const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+        const id =
+          Date.now().toString() + Math.random().toString(36).substr(2, 9);
         const newNotification: Notification = {
           ...notification,
           id,
@@ -71,8 +75,7 @@ export const useUIStore = create<UIStore>()(
           ),
         })),
 
-      clearAllNotifications: () =>
-        set({ notifications: [] }),
+      clearAllNotifications: () => set({ notifications: [] }),
 
       // Modal actions
       openModal: (modalKey) =>
@@ -90,8 +93,7 @@ export const useUIStore = create<UIStore>()(
           modals: { ...state.modals, [modalKey]: !state.modals[modalKey] },
         })),
 
-      closeAllModals: () =>
-        set({ modals: {} }),
+      closeAllModals: () => set({ modals: {} }),
 
       // Loading state actions
       setLoading: (loading) => set({ loading }),
@@ -121,35 +123,40 @@ export const useUIStore = create<UIStore>()(
 );
 
 // Utility hooks for easier access to specific UI states
-export const useNotifications = () => useUIStore((state) => ({
-  notifications: state.notifications,
-  addNotification: state.addNotification,
-  removeNotification: state.removeNotification,
-  markNotificationAsRead: state.markNotificationAsRead,
-  clearAllNotifications: state.clearAllNotifications,
-}));
+export const useNotifications = () =>
+  useUIStore((state) => ({
+    notifications: state.notifications,
+    addNotification: state.addNotification,
+    removeNotification: state.removeNotification,
+    markNotificationAsRead: state.markNotificationAsRead,
+    clearAllNotifications: state.clearAllNotifications,
+  }));
 
-export const useModals = () => useUIStore((state) => ({
-  modals: state.modals,
-  openModal: state.openModal,
-  closeModal: state.closeModal,
-  toggleModal: state.toggleModal,
-  closeAllModals: state.closeAllModals,
-}));
+export const useModals = () =>
+  useUIStore((state) => ({
+    modals: state.modals,
+    openModal: state.openModal,
+    closeModal: state.closeModal,
+    toggleModal: state.toggleModal,
+    closeAllModals: state.closeAllModals,
+  }));
 
-export const useLoading = () => useUIStore((state) => ({
-  loading: state.loading,
-  setLoading: state.setLoading,
-}));
+export const useLoading = () =>
+  useUIStore((state) => ({
+    loading: state.loading,
+    setLoading: state.setLoading,
+  }));
 
-export const useSidebar = () => useUIStore((state) => ({
-  sidebarOpen: state.sidebarOpen,
-  toggleSidebar: state.toggleSidebar,
-  setSidebarOpen: state.setSidebarOpen,
-}));
+export const useSidebar = () =>
+  useUIStore((state) => ({
+    sidebarOpen: state.sidebarOpen,
+    toggleSidebar: state.toggleSidebar,
+    setSidebarOpen: state.setSidebarOpen,
+  }));
 
-export const useTheme = () => useUIStore((state) => ({
-  theme: state.theme,
-  toggleTheme: state.toggleTheme,
-  setTheme: state.setTheme,
-}));
+export const useTheme = () =>
+  useUIStore((state) => ({
+    theme: state.theme,
+    toggleTheme: state.toggleTheme,
+    setTheme: state.setTheme,
+  }));

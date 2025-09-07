@@ -58,13 +58,5 @@ export declare class DailyMedService {
     searchDrugs(drugName: string, page?: number, pageSize?: number): Promise<DailyMedSearchResult>;
     getMonograph(setid: string): Promise<DailyMedMonograph>;
     searchByNDC(ndc: string): Promise<DailyMedSearchResult>;
-    searchByTherapeuticClass(therapeuticClass: string, page?: number, pageSize?: number): Promise<DailyMedSearchResult>;
-    getDrugLabeling(setid: string): Promise<any>;
-    getDrugMedia(setid: string): Promise<any>;
-    extractSafetyInfo(monograph: DailyMedMonograph): any;
-    extractDosingInfo(monograph: DailyMedMonograph): any;
-    extractPatientCounselingInfo(monograph: DailyMedMonograph): string[];
 }
-declare const _default: DailyMedService;
-export default _default;
 //# sourceMappingURL=dailymedService.d.ts.map

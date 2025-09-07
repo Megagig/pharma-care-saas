@@ -36,6 +36,7 @@ const healthRoutes_1 = __importDefault(require("./routes/healthRoutes"));
 const mtrRoutes_1 = __importDefault(require("./routes/mtrRoutes"));
 const mtrNotificationRoutes_1 = __importDefault(require("./routes/mtrNotificationRoutes"));
 const patientMTRIntegrationRoutes_1 = __importDefault(require("./routes/patientMTRIntegrationRoutes"));
+const clinicalInterventionRoutes_1 = __importDefault(require("./routes/clinicalInterventionRoutes"));
 const auditRoutes_1 = __importDefault(require("./routes/auditRoutes"));
 const securityRoutes_1 = __importDefault(require("./routes/securityRoutes"));
 const invitationRoutes_1 = __importDefault(require("./routes/invitationRoutes"));
@@ -45,16 +46,22 @@ const locationDataRoutes_1 = __importDefault(require("./routes/locationDataRoute
 const legacyApiRoutes_1 = __importDefault(require("./routes/legacyApiRoutes"));
 const migrationDashboardRoutes_1 = __importDefault(require("./routes/migrationDashboardRoutes"));
 const emailWebhookRoutes_1 = __importDefault(require("./routes/emailWebhookRoutes"));
-const drugRoutes_1 = __importDefault(require("./routes/drugRoutes"));
+const drugRoutes_1 = __importDefault(require("./modules/drug-info/routes/drugRoutes"));
+const publicApiRoutes_1 = __importDefault(require("./routes/publicApiRoutes"));
+const publicDrugDetailsRoutes_1 = __importDefault(require("./routes/publicDrugDetailsRoutes"));
 const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
     origin: [
         'http://localhost:3000',
         'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://192.168.8.167:5173',
         process.env.FRONTEND_URL || 'http://localhost:3000',
     ],
     credentials: true,
+    exposedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }));
 const securityMonitoring_1 = require("./middlewares/securityMonitoring");
 app.use(securityMonitoring_1.blockSuspiciousIPs);
@@ -69,7 +76,7 @@ const limiter = (0, express_rate_limit_1.default)({
             return true;
         }
         return false;
-    }
+    },
 });
 app.use('/api/', limiter);
 app.use(express_1.default.json({ limit: '10mb' }));
@@ -89,6 +96,8 @@ app.get('/api/health', (req, res) => {
     });
 });
 app.use('/api/health/feature-flags', healthRoutes_1.default);
+app.use('/api/public', publicApiRoutes_1.default);
+app.use('/api/public/drugs', publicDrugDetailsRoutes_1.default);
 app.use('/api/auth', authRoutes_1.default);
 app.use('/api/subscriptions', subscriptionRoutes_1.default);
 app.use('/api/patients', patientRoutes_1.default);
@@ -109,10 +118,17 @@ app.use('/api', dtpRoutes_1.default);
 app.use('/api', carePlanRoutes_1.default);
 app.use('/api', visitRoutes_1.default);
 app.use('/api/drugs', drugRoutes_1.default);
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/notes')) {
+        console.log(`[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`);
+    }
+    next();
+});
 app.use('/api/notes', noteRoutes_1.default);
 app.use('/api/payments', paymentRoutes_1.default);
 app.use('/api/mtr', mtrRoutes_1.default);
 app.use('/api/mtr/notifications', mtrNotificationRoutes_1.default);
+app.use('/api/clinical-interventions', clinicalInterventionRoutes_1.default);
 app.use('/api/audit', auditRoutes_1.default);
 app.use('/api/security', securityRoutes_1.default);
 app.use('/api/usage', usageMonitoringRoutes_1.default);

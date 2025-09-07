@@ -32,7 +32,18 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
+// Lazy load Clinical Notes components for better performance
+import {
+  LazyClinicalNotesDashboard,
+  LazyClinicalNoteDetail,
+  LazyClinicalNoteForm,
+  preloadClinicalNotesComponents,
+} from './components/ClinicalNotesLazy';
+
+// Keep original imports as fallback
 import ClinicalNotes from './pages/ClinicalNotes';
+import ClinicalNoteDetailPage from './pages/ClinicalNoteDetailPage';
+import ClinicalNoteFormPage from './pages/ClinicalNoteFormPage';
 import Medications from './pages/Medications';
 import Subscriptions from './pages/Subscriptions';
 import Reports from './pages/Reports';
@@ -44,7 +55,7 @@ import MTRHelp from './pages/MTRHelp';
 
 // Pharmacy Module Components
 import MedicationTherapyReview from './pages/MedicationTherapyReview';
-import ClinicalInterventions from './pages/ClinicalInterventions';
+import ClinicalInterventionsLayout from './components/ClinicalInterventionsLayout';
 import LabResultIntegration from './pages/LabResultIntegration';
 import CommunicationHub from './pages/CommunicationHub';
 import DrugInformationCenter from './pages/DrugInformationCenter';
@@ -206,6 +217,48 @@ function App(): JSX.Element {
                           }
                         />
                         <Route
+                          path="/notes/new"
+                          element={
+                            <ProtectedRoute
+                              requiredFeature="clinical_notes"
+                              requiresLicense
+                              requiresActiveSubscription
+                            >
+                              <AppLayout>
+                                <ClinicalNoteFormPage />
+                              </AppLayout>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/notes/:id"
+                          element={
+                            <ProtectedRoute
+                              requiredFeature="clinical_notes"
+                              requiresLicense
+                              requiresActiveSubscription
+                            >
+                              <AppLayout>
+                                <ClinicalNoteDetailPage />
+                              </AppLayout>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/notes/:id/edit"
+                          element={
+                            <ProtectedRoute
+                              requiredFeature="clinical_notes"
+                              requiresLicense
+                              requiresActiveSubscription
+                            >
+                              <AppLayout>
+                                <ClinicalNoteFormPage />
+                              </AppLayout>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
                           path="/medications"
                           element={
                             <ProtectedRoute
@@ -304,11 +357,11 @@ function App(): JSX.Element {
                           }
                         />
                         <Route
-                          path="/pharmacy/clinical-interventions"
+                          path="/pharmacy/clinical-interventions/*"
                           element={
                             <ProtectedRoute requiresActiveSubscription>
                               <AppLayout>
-                                <ClinicalInterventions />
+                                <ClinicalInterventionsLayout />
                               </AppLayout>
                             </ProtectedRoute>
                           }

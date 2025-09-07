@@ -54,16 +54,14 @@ const PsychologyIcon = Psychology;
 const AnalyticsIcon = Analytics;
 const SupervisorAccountIcon = SupervisorAccount;
 const TuneIcon = Tune;
-import { useUIStore } from '../stores';
+import { useSidebarControls } from '../stores/sidebarHooks';
 import { useRBAC } from '../hooks/useRBAC';
 import { ConditionalRender } from './AccessControl';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
 
 const Sidebar = () => {
   const location = useLocation();
-  const sidebarOpen = useUIStore((state) => state.sidebarOpen);
-  const toggleSidebar = useUIStore((state) => state.toggleSidebar);
-  // Removed unused variable: setSidebarOpen
+  const { sidebarOpen, toggleSidebar, setSidebarOpen } = useSidebarControls();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { hasFeature, hasRole, requiresLicense, getLicenseStatus } = useRBAC();
@@ -72,9 +70,9 @@ const Sidebar = () => {
   // Auto-close sidebar on mobile when route changes - using useCallback for stable reference
   const handleMobileClose = React.useCallback(() => {
     if (isMobile) {
-      useUIStore.getState().setSidebarOpen(false);
+      setSidebarOpen(false);
     }
-  }, [isMobile]);
+  }, [isMobile, setSidebarOpen]);
 
   React.useEffect(() => {
     handleMobileClose();
@@ -138,7 +136,7 @@ const Sidebar = () => {
     },
     {
       name: 'Clinical Interventions',
-      path: '/pharmacy/clinical-interventions',
+      path: '/pharmacy/clinical-interventions/dashboard',
       icon: MedicalServicesIcon,
       show: true,
     },

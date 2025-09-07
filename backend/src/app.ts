@@ -34,6 +34,7 @@ import healthRoutes from './routes/healthRoutes';
 import mtrRoutes from './routes/mtrRoutes';
 import mtrNotificationRoutes from './routes/mtrNotificationRoutes';
 import patientMTRIntegrationRoutes from './routes/patientMTRIntegrationRoutes';
+import clinicalInterventionRoutes from './routes/clinicalInterventionRoutes';
 import auditRoutes from './routes/auditRoutes';
 import securityRoutes from './routes/securityRoutes';
 import invitationRoutes from './routes/invitationRoutes';
@@ -151,11 +152,22 @@ app.use('/api', visitRoutes);
 // Drug Information Center routes
 app.use('/api/drugs', drugRoutes);
 
-// Other routes
+// Clinical Notes routes - added special debug log
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/notes')) {
+    console.log(
+      `[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`
+    );
+  }
+  next();
+});
 app.use('/api/notes', noteRoutes);
+
+// Other routes
 app.use('/api/payments', paymentRoutes);
 app.use('/api/mtr', mtrRoutes);
 app.use('/api/mtr/notifications', mtrNotificationRoutes);
+app.use('/api/clinical-interventions', clinicalInterventionRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/usage', usageMonitoringRoutes);
@@ -174,7 +186,7 @@ app.use('/api/email', emailWebhookRoutes);
 // RBAC and enhanced features
 app.use('/api/admin', adminRoutes);
 app.use('/api/license', licenseRoutes);
-app.use('/api/subscription-management', subAnalyticsRoutes); // Using correct subscriptionManagement routes
+app.use('/api/subscription-management', subAnalyticsRoutes); // Using correct subscription Management routes
 app.use('/api/subscription', subscriptionManagementRoutes); // Old routes at /api/subscription
 app.use('/api/workspace-subscription', workspaceSubscriptionRoutes); // New workspace subscription routes
 app.use('/api/feature-flags', featureFlagRoutes);
