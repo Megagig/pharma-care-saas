@@ -59,7 +59,7 @@ app.get('/api/drugs/search', (req, res) => {
   console.log(`Received drug search request for: ${name}`);
 
   // Return mock data
-  res.json(mockDrugData);
+  return res.json(mockDrugData);
 });
 
 // Start server on a different port
@@ -103,8 +103,16 @@ async function testAPIClient() {
 
     console.log('Fetch response status:', fetchResponse.status);
     const fetchData = await fetchResponse.json();
-    console.log('Fetch data structure:', Object.keys(fetchData));
-    console.log('Response has drugGroup:', !!fetchData.data?.drugGroup);
+    if (fetchData && typeof fetchData === 'object') {
+      console.log(
+        'Fetch data structure:',
+        Object.keys(fetchData as Record<string, unknown>)
+      );
+      console.log(
+        'Response has drugGroup:',
+        !!(fetchData as any).data?.drugGroup
+      );
+    }
 
     // Shut down the test server after tests complete
     server.close(() => {

@@ -12,12 +12,8 @@ import {
   Typography,
   Paper,
   InputAdornment,
-  Divider,
-  Chip,
-  Tooltip,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
 import LoadingSkeleton from './LoadingSkeleton';
 
 interface DrugConcept {

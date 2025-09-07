@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ModulePage from '../components/ModulePage';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import InfoIcon from '@mui/icons-material/Info';
-import { Box, Tabs, Tab, Typography, Paper, Grid, Alert } from '@mui/material';
+import { Box, Tabs, Tab, Typography, Paper, Alert } from '@mui/material';
 import DrugSearch from '../components/DrugSearch';
 import DrugDetails from '../components/DrugDetails';
 import DrugInteractions from '../components/DrugInteractions';
@@ -54,7 +54,7 @@ const DrugInformationCenter: React.FC = () => {
     estimatedRelease: 'Available now',
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
@@ -65,7 +65,12 @@ const DrugInformationCenter: React.FC = () => {
   return (
     <ModulePage
       moduleInfo={moduleInfo}
-      icon={MenuBookIcon}
+      icon={
+        MenuBookIcon as React.ComponentType<{
+          sx?: React.CSSProperties;
+          fontSize?: string;
+        }>
+      }
       gradient="linear-gradient(135deg, #0047AB 0%, #87CEEB 100%)"
       hideModuleInfo={true}
     >
@@ -168,40 +173,50 @@ const DrugInformationCenter: React.FC = () => {
                       {selectedDrug.name}
                     </Typography>
 
-                    <Grid container spacing={3} sx={{ mb: 3 }}>
-                      <Grid item xs={12} md={6}>
-                        <Paper
-                          sx={{ p: 2, bgcolor: '#f0f7ff', borderRadius: '8px' }}
+                    <Box
+                      sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}
+                    >
+                      <Paper
+                        sx={{
+                          p: 2,
+                          bgcolor: '#f0f7ff',
+                          borderRadius: '8px',
+                          flex: '1 1 45%',
+                          minWidth: '250px',
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          color="text.secondary"
+                          gutterBottom
                         >
-                          <Typography
-                            variant="subtitle2"
-                            color="text.secondary"
-                            gutterBottom
-                          >
-                            Drug Identifier (RxCUI)
-                          </Typography>
-                          <Typography variant="body1" fontWeight={500}>
-                            {selectedDrug.rxCui}
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Paper
-                          sx={{ p: 2, bgcolor: '#f0f7ff', borderRadius: '8px' }}
+                          Drug Identifier (RxCUI)
+                        </Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {selectedDrug.rxCui}
+                        </Typography>
+                      </Paper>
+                      <Paper
+                        sx={{
+                          p: 2,
+                          bgcolor: '#f0f7ff',
+                          borderRadius: '8px',
+                          flex: '1 1 45%',
+                          minWidth: '250px',
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          color="text.secondary"
+                          gutterBottom
                         >
-                          <Typography
-                            variant="subtitle2"
-                            color="text.secondary"
-                            gutterBottom
-                          >
-                            Available Information
-                          </Typography>
-                          <Typography variant="body1">
-                            Monograph, Interactions, Side Effects, Alternatives
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                    </Grid>
+                          Available Information
+                        </Typography>
+                        <Typography variant="body1">
+                          Monograph, Interactions, Side Effects, Alternatives
+                        </Typography>
+                      </Paper>
+                    </Box>
 
                     <Alert
                       severity="info"

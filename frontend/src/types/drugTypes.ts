@@ -19,12 +19,20 @@ export interface DrugSearchResult {
   };
 }
 
+interface DrugMonographContent {
+  section_id: string;
+  section_name?: string;
+  content_type: string;
+  text?: string;
+  subsections?: DrugMonographContent[];
+}
+
 export interface DrugMonograph {
   SPL?: {
     set_id: string;
     title: string;
     published_date: string;
-    content: any[];
+    content: DrugMonographContent[];
   };
 }
 
@@ -122,6 +130,17 @@ export interface Drug {
   interactions?: DrugInteraction;
   adverseEffects?: AdverseEffect;
   formularyInfo?: FormularyInfo;
+}
+
+export interface DrugIndication {
+  results: Array<{
+    indication: string;
+    purpose: string;
+    patientPopulation?: string;
+    usageGuidelines?: string;
+  }>;
+  source?: string;
+  lastUpdated?: string;
 }
 
 export interface TherapyPlan {
