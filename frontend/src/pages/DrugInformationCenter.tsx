@@ -6,6 +6,7 @@ import { Box, Tabs, Tab, Typography, Paper, Alert } from '@mui/material';
 import DrugSearch from '../components/DrugSearch';
 import DrugDetails from '../components/DrugDetails';
 import DrugInteractions from '../components/DrugInteractions';
+import DrugIndications from '../components/DrugIndications';
 import AdverseEffects from '../components/AdverseEffects';
 import Formulary from '../components/Formulary';
 import TherapyPlanManager from '../components/TherapyPlan';
@@ -148,6 +149,7 @@ const DrugInformationCenter: React.FC = () => {
                 >
                   <Tab label="Overview" />
                   <Tab label="Monograph" />
+                  <Tab label="Indications" />
                   <Tab label="Interactions" />
                   <Tab label="Adverse Effects" />
                   <Tab label="Formulary" />
@@ -231,24 +233,30 @@ const DrugInformationCenter: React.FC = () => {
 
                 {activeTab === 1 && <DrugDetails drugId={selectedDrug.rxCui} />}
                 {activeTab === 2 && (
+                  <DrugIndications
+                    drugId={selectedDrug.rxCui}
+                    drugName={selectedDrug.name}
+                  />
+                )}
+                {activeTab === 3 && (
                   <DrugInteractions
                     rxcui={selectedDrug.rxCui}
                     drugName={selectedDrug.name}
                   />
                 )}
-                {activeTab === 3 && (
+                {activeTab === 4 && (
                   <AdverseEffects
                     drugId={selectedDrug.rxCui}
                     drugName={selectedDrug.name}
                   />
                 )}
-                {activeTab === 4 && (
+                {activeTab === 5 && (
                   <Formulary
                     drugId={selectedDrug.rxCui}
                     drugName={selectedDrug.name}
                   />
                 )}
-                {activeTab === 5 && <TherapyPlanManager />}
+                {activeTab === 6 && <TherapyPlanManager />}
               </Box>
             </>
           ) : (

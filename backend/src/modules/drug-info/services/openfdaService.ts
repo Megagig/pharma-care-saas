@@ -145,6 +145,78 @@ class OpenFdaService {
    * @param {string} brandName - Brand name of the drug
    * @returns {Promise<OpenFDALabelResult>} - Drug labeling data
    */
+  /**
+   * Get drug indications information
+   * @param {string} drugId - RxCUI or drug identifier
+   * @returns {Promise<OpenFDALabelResult>} - Drug indications data
+   */
+  async getDrugIndications(drugId: string): Promise<OpenFDALabelResult> {
+    try {
+      // First, try to get the drug name from RxNorm if drugId is an RxCUI
+      let drugName = drugId;
+
+      // If it appears to be an RxCUI (numeric), try to get the name
+      if (/^\d+$/.test(drugId)) {
+        try {
+          const rxNormInfo = await axios.get(
+            `https://rxnav.nlm.nih.gov/REST/rxcui/${drugId}/property.json?propName=name`
+          );
+
+          if (rxNormInfo.data?.propConceptGroup?.propConcept?.[0]?.propValue) {
+            drugName =
+              rxNormInfo.data.propConceptGroup.propConcept[0].propValue;
+            logger.info(`Converted RxCUI ${drugId} to drug name: ${drugName}`);
+          }
+        } catch (rxError) {
+          logger.warn(
+            `Could not convert RxCUI ${drugId} to drug name:`,
+            rxError
+          );
+          // Continue with the original ID
+        }
+      }
+
+      // Properly encode the drug name for URL parameters
+      const encodedDrugName = encodeURIComponent(drugName);
+
+      // Search for indications using the drug name
+      const response = await axios.get(`${OPENFDA_BASE_URL}/label.json`, {
+        params: {
+          search: `openfda.brand_name:"${encodedDrugName}" OR openfda.generic_name:"${encodedDrugName}"`,
+          limit: 5,
+          // Only return the fields we need for indications
+          fields:
+            'openfda.brand_name,openfda.generic_name,openfda.manufacturer_name,indications_and_usage',
+        },
+        headers: {
+          Accept: 'application/json',
+        },
+        timeout: 15000, // 15 second timeout
+      });
+
+      logger.info(`Successfully retrieved drug indications for ${drugName}`);
+      return response.data;
+    } catch (error: any) {
+      logger.error('OpenFDA indications search error:', error);
+
+      // Return a minimal structure rather than throwing
+      return {
+        meta: {
+          disclaimer: 'No drug indications found or API error occurred',
+          terms: 'See OpenFDA for terms of service',
+          license: 'See OpenFDA for license',
+          last_updated: new Date().toISOString(),
+          results: {
+            skip: 0,
+            limit: 5,
+            total: 0,
+          },
+        },
+        results: [],
+      };
+    }
+  }
+
   async getDrugLabeling(brandName: string): Promise<OpenFDALabelResult> {
     try {
       // Properly encode the brand name for URL parameters and use quotes for exact matching
