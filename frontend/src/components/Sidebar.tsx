@@ -12,8 +12,6 @@ import {
   Typography,
   useMediaQuery,
   useTheme,
-  Badge,
-  Chip,
   Tooltip,
 } from '@mui/material';
 import {
@@ -137,28 +135,24 @@ const Sidebar = () => {
       path: '/pharmacy/medication-therapy',
       icon: ReviewsIcon,
       show: true,
-      badge: 'Coming Soon',
     },
     {
       name: 'Clinical Interventions',
       path: '/pharmacy/clinical-interventions',
       icon: MedicalServicesIcon,
       show: true,
-      badge: 'Coming Soon',
     },
     {
       name: 'Lab Result Integration',
       path: '/pharmacy/lab-integration',
       icon: ScienceIcon,
       show: true,
-      badge: 'Coming Soon',
     },
     {
       name: 'Communication Hub',
       path: '/pharmacy/communication',
       icon: ForumIcon,
       show: true,
-      badge: 'Coming Soon',
     },
     {
       name: 'Drug Information Center',
@@ -171,28 +165,24 @@ const Sidebar = () => {
       path: '/pharmacy/decision-support',
       icon: PsychologyIcon,
       show: true,
-      badge: 'Coming Soon',
     },
     {
       name: 'Reports & Analytics',
       path: '/pharmacy/reports',
       icon: AnalyticsIcon,
       show: true,
-      badge: 'Coming Soon',
     },
     {
       name: 'User Management',
       path: '/pharmacy/user-management',
       icon: SupervisorAccountIcon,
       show: true,
-      badge: 'Coming Soon',
     },
     {
       name: 'Settings & Config',
       path: '/pharmacy/settings',
       icon: TuneIcon,
       show: true,
-      badge: 'Coming Soon',
     },
   ];
 
@@ -270,8 +260,18 @@ const Sidebar = () => {
                 px: sidebarOpen ? 2 : 1,
                 backgroundColor: isActive ? 'primary.main' : 'transparent',
                 color: isActive ? 'white' : 'text.primary',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: isActive
+                  ? '0 4px 12px rgba(25, 118, 210, 0.2)'
+                  : 'none',
                 '&:hover': {
-                  backgroundColor: isActive ? 'primary.dark' : 'action.hover',
+                  backgroundColor: isActive
+                    ? 'primary.dark'
+                    : 'rgba(25, 118, 210, 0.08)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                 },
                 '&.Mui-selected': {
                   backgroundColor: 'primary.main',
@@ -279,6 +279,17 @@ const Sidebar = () => {
                   '&:hover': {
                     backgroundColor: 'primary.dark',
                   },
+                },
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  width: '100%',
+                  height: '3px',
+                  bottom: 0,
+                  left: 0,
+                  backgroundColor: isActive
+                    ? 'rgba(255,255,255,0.5)'
+                    : 'transparent',
                 },
               }}
               selected={isActive}
@@ -289,30 +300,19 @@ const Sidebar = () => {
                   minWidth: sidebarOpen ? 40 : 0,
                   mr: sidebarOpen ? 2 : 0,
                   justifyContent: 'center',
+                  transition: 'all 0.3s ease',
+                  transform: isActive ? 'scale(1.1)' : 'scale(1)',
                 }}
               >
-                {item.badge ? (
-                  <Badge
-                    badgeContent={
-                      item.badge === 'Premium' ||
-                      item.badge === 'Pro' ||
-                      item.badge === 'Coming Soon'
-                        ? '!'
-                        : '•'
-                    }
-                    color={
-                      item.badge === 'Rejected'
-                        ? 'error'
-                        : item.badge === 'Coming Soon'
-                        ? 'info'
-                        : 'warning'
-                    }
-                  >
-                    <IconComponent fontSize="small" />
-                  </Badge>
-                ) : (
-                  <IconComponent fontSize="small" />
-                )}
+                <IconComponent
+                  fontSize="small"
+                  sx={{
+                    filter: isActive
+                      ? 'drop-shadow(0 0 2px rgba(255,255,255,0.6))'
+                      : 'none',
+                    transition: 'all 0.3s ease',
+                  }}
+                />
               </ListItemIcon>
               {sidebarOpen && (
                 <Box display="flex" alignItems="center" width="100%">
@@ -321,34 +321,21 @@ const Sidebar = () => {
                     primaryTypographyProps={{
                       fontSize: '0.875rem',
                       fontWeight: isActive ? 600 : 400,
+                      sx: {
+                        transition: 'all 0.2s ease',
+                        textShadow: isActive
+                          ? '0 0 1px rgba(255,255,255,0.5)'
+                          : 'none',
+                      },
                     }}
                   />
-                  {item.badge && (
-                    <Chip
-                      label={item.badge}
-                      size="small"
-                      color={
-                        item.badge === 'Rejected'
-                          ? 'error'
-                          : item.badge === 'Coming Soon'
-                          ? 'info'
-                          : 'warning'
-                      }
-                      variant="outlined"
-                      sx={{
-                        height: 20,
-                        fontSize: '0.6rem',
-                        ml: 1,
-                      }}
-                    />
-                  )}
                 </Box>
               )}
             </ListItemButton>
           );
 
           return (
-            <ListItem key={item.name} disablePadding sx={{ mb: 0.5 }}>
+            <ListItem key={item.name} disablePadding sx={{ mb: 0.8 }}>
               {!sidebarOpen ? (
                 <Tooltip title={item.name} placement="right">
                   {listItemButton}
@@ -375,19 +362,38 @@ const Sidebar = () => {
           boxSizing: 'border-box',
           position: 'fixed',
           height: '100vh',
-          backgroundColor: theme.palette.background.default,
-          borderRight: `1px solid ${theme.palette.divider}`,
+          background:
+            'linear-gradient(180deg, rgba(245,247,250,1) 0%, rgba(255,255,255,1) 100%)',
+          borderRight: `1px solid rgba(200, 210, 225, 0.5)`,
           transition: theme.transitions.create(['width', 'margin'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.standard,
           }),
           overflowX: 'hidden',
-          boxShadow: theme.shadows[3],
+          boxShadow: '0 0 20px rgba(0, 0, 0, 0.08)',
           zIndex: theme.zIndex.drawer,
         },
       }}
     >
-      <Box sx={{ overflow: 'auto', height: '100%' }}>
+      <Box
+        sx={{
+          overflow: 'auto',
+          height: '100%',
+          '&::-webkit-scrollbar': {
+            width: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: 'rgba(0, 0, 0, 0.1)',
+            borderRadius: '10px',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            background: 'rgba(0, 0, 0, 0.2)',
+          },
+        }}
+      >
         {/* Sidebar Header with Toggle */}
         <Box
           sx={{
@@ -400,16 +406,38 @@ const Sidebar = () => {
           }}
         >
           {sidebarOpen && (
-            <Typography
-              variant="h6"
-              sx={{
-                color: 'primary.main',
-                fontWeight: 700,
-                fontSize: '1.1rem',
-              }}
-            >
-              PharmaCare
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '8px',
+                  background:
+                    'linear-gradient(135deg, #1976d2 0%, #2196f3 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(25, 118, 210, 0.25)',
+                }}
+              >
+                <MedicationIcon sx={{ color: '#fff', fontSize: '1.4rem' }} />
+              </Box>
+              <Typography
+                variant="h6"
+                sx={{
+                  background:
+                    'linear-gradient(135deg, #1565c0 0%, #2196f3 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 800,
+                  fontSize: '1.2rem',
+                  letterSpacing: '0.02em',
+                  textShadow: '0 2px 4px rgba(33, 150, 243, 0.1)',
+                }}
+              >
+                PharmaCare
+              </Typography>
+            </Box>
           )}
 
           {/* HIGHLY VISIBLE Toggle Button */}
@@ -487,7 +515,14 @@ const Sidebar = () => {
           </Tooltip>
         </Box>
 
-        <Divider sx={{ mx: sidebarOpen ? 2 : 1 }} />
+        <Divider
+          sx={{
+            mx: sidebarOpen ? 3 : 1.5,
+            opacity: 0.6,
+            borderColor: 'rgba(25, 118, 210, 0.12)',
+            my: 1,
+          }}
+        />
         {/* Main Navigation */}
         <Box sx={{ pt: 2, pb: 2 }}>
           {sidebarOpen && (
@@ -497,21 +532,25 @@ const Sidebar = () => {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 px: 3,
-                mb: 1,
+                mb: 1.5,
               }}
             >
               <Typography
                 variant="overline"
                 sx={{
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  letterSpacing: '0.1em',
+                  color: 'primary.main',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  letterSpacing: '0.12em',
+                  textShadow: '0 0 1px rgba(25, 118, 210, 0.2)',
+                  display: 'inline-block',
+                  borderBottom: '2px solid',
+                  borderColor: 'primary.main',
+                  paddingBottom: '4px',
                 }}
               >
                 MAIN MENU
-              </Typography>
-
+              </Typography>{' '}
               {/* Toggle Button next to MAIN MENU */}
               <Tooltip title="Collapse sidebar" placement="top">
                 <Box
@@ -639,66 +678,105 @@ const Sidebar = () => {
           {renderNavItems(navItems)}
         </Box>
 
-        <Divider sx={{ mx: sidebarOpen ? 2 : 1 }} />
+        <Divider
+          sx={{
+            mx: sidebarOpen ? 3 : 1.5,
+            opacity: 0.6,
+            borderColor: 'rgba(25, 118, 210, 0.12)',
+            my: 1,
+          }}
+        />
 
         {/* Pharmacy Tools Section */}
         <Box sx={{ pt: 2, pb: 2 }}>
           {sidebarOpen && (
-            <Typography
-              variant="overline"
-              sx={{
-                px: 3,
-                color: 'text.secondary',
-                fontWeight: 600,
-                fontSize: '0.75rem',
-                letterSpacing: '0.1em',
-              }}
-            >
-              PHARMACY TOOLS
-            </Typography>
+            <Box sx={{ px: 3, mb: 1.5 }}>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: 'primary.main',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  letterSpacing: '0.12em',
+                  textShadow: '0 0 1px rgba(25, 118, 210, 0.2)',
+                  display: 'inline-block',
+                  borderBottom: '2px solid',
+                  borderColor: 'primary.main',
+                  paddingBottom: '4px',
+                }}
+              >
+                PHARMACY TOOLS
+              </Typography>
+            </Box>
           )}
           {renderNavItems(pharmacyModules)}
         </Box>
 
-        <Divider sx={{ mx: sidebarOpen ? 2 : 1 }} />
+        <Divider
+          sx={{
+            mx: sidebarOpen ? 3 : 1.5,
+            opacity: 0.6,
+            borderColor: 'rgba(25, 118, 210, 0.12)',
+            my: 1,
+          }}
+        />
 
         {/* Admin Section */}
         <ConditionalRender requiredRole="super_admin">
           <Box sx={{ pt: 2, pb: 2 }}>
             {sidebarOpen && (
-              <Typography
-                variant="overline"
-                sx={{
-                  px: 3,
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  letterSpacing: '0.1em',
-                }}
-              >
-                ADMINISTRATION
-              </Typography>
+              <Box sx={{ px: 3, mb: 1.5 }}>
+                <Typography
+                  variant="overline"
+                  sx={{
+                    color: 'primary.main',
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                    letterSpacing: '0.12em',
+                    textShadow: '0 0 1px rgba(25, 118, 210, 0.2)',
+                    display: 'inline-block',
+                    borderBottom: '2px solid',
+                    borderColor: 'primary.main',
+                    paddingBottom: '4px',
+                  }}
+                >
+                  ADMINISTRATION
+                </Typography>
+              </Box>
             )}
             {renderNavItems(adminItems)}
           </Box>
-          <Divider sx={{ mx: sidebarOpen ? 2 : 1 }} />
+          <Divider
+            sx={{
+              mx: sidebarOpen ? 3 : 1.5,
+              opacity: 0.6,
+              borderColor: 'rgba(25, 118, 210, 0.12)',
+              my: 1,
+            }}
+          />
         </ConditionalRender>
 
         {/* Settings & Help */}
         <Box sx={{ pt: 2, pb: 2 }}>
           {sidebarOpen && (
-            <Typography
-              variant="overline"
-              sx={{
-                px: 3,
-                color: 'text.secondary',
-                fontWeight: 600,
-                fontSize: '0.75rem',
-                letterSpacing: '0.1em',
-              }}
-            >
-              ACCOUNT
-            </Typography>
+            <Box sx={{ px: 3, mb: 1.5 }}>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: 'primary.main',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  letterSpacing: '0.12em',
+                  textShadow: '0 0 1px rgba(25, 118, 210, 0.2)',
+                  display: 'inline-block',
+                  borderBottom: '2px solid',
+                  borderColor: 'primary.main',
+                  paddingBottom: '4px',
+                }}
+              >
+                ACCOUNT
+              </Typography>
+            </Box>
           )}
           {renderNavItems(settingsItems)}
         </Box>
@@ -708,23 +786,36 @@ const Sidebar = () => {
 
         {/* Version Info and Subscription Status */}
         {sidebarOpen && (
-          <Box sx={{ p: 2, mt: 'auto' }}>
+          <Box sx={{ p: 3, mt: 'auto' }}>
             {/* Subscription Status */}
             <Box
               sx={{
                 p: 2,
                 borderRadius: 2,
-                bgcolor: subscriptionStatus?.isActive
-                  ? 'success.light'
-                  : 'warning.light',
+                background: subscriptionStatus?.isActive
+                  ? 'linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(39, 174, 96, 0.2) 100%)'
+                  : 'linear-gradient(135deg, rgba(241, 196, 15, 0.1) 0%, rgba(243, 156, 18, 0.2) 100%)',
                 textAlign: 'center',
                 mb: 2,
+                border: '1px solid',
+                borderColor: subscriptionStatus?.isActive
+                  ? 'rgba(46, 204, 113, 0.3)'
+                  : 'rgba(243, 156, 18, 0.3)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                  transform: 'translateY(-2px)',
+                },
               }}
             >
               <Typography
                 variant="caption"
-                color="text.primary"
-                fontWeight={600}
+                color={
+                  subscriptionStatus?.isActive ? 'success.dark' : 'warning.dark'
+                }
+                fontWeight={700}
+                sx={{ letterSpacing: '0.05em' }}
               >
                 {subscriptionStatus?.tier?.toUpperCase() || 'FREE'} PLAN
               </Typography>
@@ -733,6 +824,7 @@ const Sidebar = () => {
                   variant="caption"
                   display="block"
                   color="warning.dark"
+                  sx={{ mt: 0.5, fontWeight: 500 }}
                 >
                   Subscription Expired
                 </Typography>
@@ -744,6 +836,7 @@ const Sidebar = () => {
                     variant="caption"
                     display="block"
                     color="warning.dark"
+                    sx={{ mt: 0.5, fontWeight: 500 }}
                   >
                     {subscriptionStatus?.daysRemaining} days left
                   </Typography>
@@ -753,13 +846,19 @@ const Sidebar = () => {
             {/* Version Info */}
             <Box
               sx={{
-                p: 2,
+                p: 1.5,
                 borderRadius: 2,
-                bgcolor: 'grey.50',
+                background:
+                  'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(66, 165, 245, 0.1) 100%)',
                 textAlign: 'center',
+                border: '1px solid rgba(25, 118, 210, 0.15)',
               }}
             >
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                color="primary.dark"
+                sx={{ fontWeight: 500, letterSpacing: '0.03em' }}
+              >
                 PharmaCare v2.1.0
               </Typography>
             </Box>
