@@ -46,15 +46,22 @@ const locationDataRoutes_1 = __importDefault(require("./routes/locationDataRoute
 const legacyApiRoutes_1 = __importDefault(require("./routes/legacyApiRoutes"));
 const migrationDashboardRoutes_1 = __importDefault(require("./routes/migrationDashboardRoutes"));
 const emailWebhookRoutes_1 = __importDefault(require("./routes/emailWebhookRoutes"));
+const drugRoutes_1 = __importDefault(require("./modules/drug-info/routes/drugRoutes"));
+const publicApiRoutes_1 = __importDefault(require("./routes/publicApiRoutes"));
+const publicDrugDetailsRoutes_1 = __importDefault(require("./routes/publicDrugDetailsRoutes"));
 const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
     origin: [
         'http://localhost:3000',
         'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://192.168.8.167:5173',
         process.env.FRONTEND_URL || 'http://localhost:3000',
     ],
     credentials: true,
+    exposedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }));
 const securityMonitoring_1 = require("./middlewares/securityMonitoring");
 app.use(securityMonitoring_1.blockSuspiciousIPs);
@@ -89,6 +96,8 @@ app.get('/api/health', (req, res) => {
     });
 });
 app.use('/api/health/feature-flags', healthRoutes_1.default);
+app.use('/api/public', publicApiRoutes_1.default);
+app.use('/api/public/drugs', publicDrugDetailsRoutes_1.default);
 app.use('/api/auth', authRoutes_1.default);
 app.use('/api/subscriptions', subscriptionRoutes_1.default);
 app.use('/api/patients', patientRoutes_1.default);
@@ -108,6 +117,7 @@ app.use('/api', assessmentRoutes_1.default);
 app.use('/api', dtpRoutes_1.default);
 app.use('/api', carePlanRoutes_1.default);
 app.use('/api', visitRoutes_1.default);
+app.use('/api/drugs', drugRoutes_1.default);
 app.use((req, res, next) => {
     if (req.path.startsWith('/api/notes')) {
         console.log(`[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`);
