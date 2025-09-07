@@ -212,3 +212,180 @@ export const EVIDENCE_LEVELS = [
   'possible',
   'unlikely',
 ];
+
+/**
+ * Enhanced Tenancy Guard for Clinical Notes Security
+ */
+import { AuthRequest } from '../types/auth';
+import logger from './logger';
+
+interface TenancyContext {
+  workplaceId: string;
+  userId: string;
+  userRole: string;
+  workplaceRole?: string;
+}
+
+export class EnhancedTenancyGuard {
+  /**
+   * Create tenancy context from authenticated request
+   */
+  static createContext(req: AuthRequest): TenancyContext | null {
+    if (!req.user || !req.workspaceContext?.workspace) {
+      return null;
+    }
+
+    return {
+      workplaceId: req.workspaceContext.workspace._id.toString(),
+      userId: req.user._id.toString(),
+      userRole: req.user.role,
+      workplaceRole: req.user.workplaceRole,
+    };
+  }
+
+  /**
+   * Apply tenancy filter to MongoDB query
+   */
+  static applyTenancyFilter(query: any, context: TenancyContext): any {
+    return {
+      ...query,
+      workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
+      // Exclude soft-deleted records
+      deletedAt: { $exists: false }
+    };
+  }
+
+  /**
+   * Validate that a resource belongs to the user's workplace
+   */
+  static validateResourceAccess(
+    resource: any,
+    context: TenancyContext,
+    resourceType: string = 'resource'
+  ): boolean {
+    if (!resource) {
+      logger.warn(`Tenancy validation failed: ${resourceType} not found`, {
+        workplaceId: context.workplaceId,
+        userId: context.userId,
+      });
+      return false;
+    }
+
+    const resourceWorkplaceId = resource.workplaceId?.toString();
+    if (resourceWorkplaceId !== context.workplaceId) {
+      logger.warn(`Tenancy violation detected: ${resourceType} access across workplaces`, {
+        userWorkplaceId: context.workplaceId,
+        resourceWorkplaceId,
+        userId: context.userId,
+        resourceId: resource._id?.toString(),
+        resourceType,
+      });
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Validate clinical note specific tenancy rules
+   */
+  static validateClinicalNoteAccess(
+    note: any,
+    patient: any,
+    context: TenancyContext
+  ): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    // Validate note belongs to workplace
+    if (!this.validateResourceAccess(note, context, 'clinical note')) {
+      errors.push('Clinical note does not belong to your workplace');
+    }
+
+    // Validate patient belongs to workplace
+    if (!this.validateResourceAccess(patient, context, 'patient')) {
+      errors.push('Patient does not belong to your workplace');
+    }
+
+    // Validate note-patient relationship
+    if (note.patient.toString() !== patient._id.toString()) {
+      errors.push('Clinical note does not belong to the specified patient');
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
+   * Create secure clinical note query with tenancy and confidentiality filters
+   */
+  static createSecureClinicalNoteQuery(
+    context: TenancyContext,
+    baseQuery: any = {},
+    includeConfidential: boolean = false
+  ): any {
+    const secureQuery = this.applyTenancyFilter(baseQuery, context);
+
+    // Apply confidentiality filter based on user permissions
+    const canAccessConfidential = ['Owner', 'Pharmacist'].includes(context.workplaceRole || '');
+
+    if (!includeConfidential || !canAccessConfidential) {
+      secureQuery.isConfidential = { $ne: true };
+    }
+
+    return secureQuery;
+  }
+
+  /**
+   * Validate file attachment access within tenancy
+   */
+  static validateAttachmentAccess(
+    note: any,
+    attachment: any,
+    context: TenancyContext
+  ): boolean {
+    // Validate note access first
+    if (!this.validateResourceAccess(note, context, 'clinical note')) {
+      return false;
+    }
+
+    // Validate attachment belongs to the note
+    const attachmentExists = note.attachments?.some(
+      (att: any) => att._id?.toString() === attachment._id?.toString()
+    );
+
+    if (!attachmentExists) {
+      logger.warn('Attachment access violation: attachment does not belong to note', {
+        workplaceId: context.workplaceId,
+        userId: context.userId,
+        noteId: note._id?.toString(),
+        attachmentId: attachment._id?.toString(),
+      });
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Log tenancy violation for security monitoring
+   */
+  static logTenancyViolation(
+    context: TenancyContext,
+    violationType: string,
+    details: any = {}
+  ): void {
+    logger.error('Tenancy violation detected', {
+      violationType,
+      workplaceId: context.workplaceId,
+      userId: context.userId,
+      userRole: context.userRole,
+      workplaceRole: context.workplaceRole,
+      timestamp: new Date().toISOString(),
+      ...details,
+      severity: 'high',
+      category: 'security',
+    });
+  }
+}

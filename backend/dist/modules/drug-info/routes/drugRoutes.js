@@ -7,7 +7,7 @@ const express_1 = require("express");
 const drugController_1 = __importDefault(require("../controllers/drugController"));
 const auth_1 = require("../../../middlewares/auth");
 const router = (0, express_1.Router)();
-router.get('/search', auth_1.auth, drugController_1.default.searchDrugs);
+router.get('/search', drugController_1.default.searchDrugs);
 router.get('/monograph/:id', auth_1.auth, drugController_1.default.getMonograph);
 router.post('/interactions', auth_1.auth, drugController_1.default.checkInteractions);
 router.get('/adverse-effects/:id', auth_1.auth, drugController_1.default.getAdverseEffects);

@@ -23,7 +23,7 @@ interface RxNormRxCuiResult {
     };
 }
 interface RxNormRelatedGroup {
-    rxCui: string;
+    rxcui: string;
     termType: string;
     conceptGroup: Array<{
         tty: string;

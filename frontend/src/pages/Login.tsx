@@ -76,8 +76,26 @@ const Login = () => {
       }
     } catch (error: unknown) {
       console.error('Login error:', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'Invalid email or password';
+
+      let errorMessage = 'Invalid email or password';
+
+      if (error instanceof Error) {
+        if (
+          error.message.includes('429') ||
+          error.message.includes('Too Many Requests')
+        ) {
+          errorMessage =
+            'Too many login attempts. Please wait a few minutes before trying again.';
+        } else if (
+          error.message.includes('Request failed with status code 429')
+        ) {
+          errorMessage =
+            'Rate limit exceeded. Please wait a few minutes and try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

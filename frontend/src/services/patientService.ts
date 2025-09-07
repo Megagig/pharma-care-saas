@@ -160,10 +160,26 @@ class PatientService {
    */
   async searchPatients(query: string): Promise<unknown> {
     try {
+      if (!query || query.trim().length < 2) {
+        return { patients: [], total: 0, query: '' };
+      }
+
+      // Log the search request
+      console.log('Searching for patients with query:', query);
+
       const result = await this.makeRequest<unknown>(
         `/patients/search?q=${encodeURIComponent(query)}`
       );
-      console.log('Search result:', result);
+
+      // Debug the response structure
+      console.log('Search response structure:', {
+        result,
+        hasPatients: result?.data?.patients || result?.patients,
+        responseType: typeof result,
+        isArray: Array.isArray(result),
+        keys: result ? Object.keys(result) : [],
+      });
+
       return result;
     } catch (error) {
       console.error('Search error:', error);
@@ -716,6 +732,77 @@ class PatientService {
   // UTILITY METHODS
   // =============================================
 
+  // =============================================
+  // CLINICAL INTERVENTION INTEGRATION
+  // =============================================
+
+  /**
+   * Get patient interventions
+   */
+  async getPatientInterventions(
+    patientId: string,
+    params: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      category?: string;
+    } = {}
+  ): Promise<PaginatedResponse<any>> {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<PaginatedResponse<any>>(
+      `/patients/${patientId}/interventions?${searchParams.toString()}`
+    );
+  }
+
+  /**
+   * Search patients with intervention context
+   */
+  async searchPatientsWithInterventions(
+    query: string,
+    limit = 10
+  ): Promise<
+    ApiResponse<{
+      patients: Array<{
+        _id: string;
+        firstName: string;
+        lastName: string;
+        mrn: string;
+        displayName: string;
+        age?: number;
+        interventionCount: number;
+        activeInterventionCount: number;
+        lastInterventionDate?: string;
+      }>;
+    }>
+  > {
+    return this.makeRequest<
+      ApiResponse<{
+        patients: Array<{
+          _id: string;
+          firstName: string;
+          lastName: string;
+          mrn: string;
+          displayName: string;
+          age?: number;
+          interventionCount: number;
+          activeInterventionCount: number;
+          lastInterventionDate?: string;
+        }>;
+      }>
+    >(
+      `/patients/search-with-interventions?q=${encodeURIComponent(
+        query
+      )}&limit=${limit}`
+    );
+  }
+
   /**
    * Upload file and return URL (for attachments, etc.)
    */
@@ -746,4 +833,11 @@ class PatientService {
   }
 }
 
-export const patientService = new PatientService();
+// Create a singleton instance
+const patientServiceInstance = new PatientService();
+
+// Export as a named export
+export const patientService = patientServiceInstance;
+
+// Also export as default
+export default patientServiceInstance;

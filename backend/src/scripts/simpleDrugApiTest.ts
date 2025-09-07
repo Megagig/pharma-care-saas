@@ -30,7 +30,7 @@ async function testDrugAPI() {
         // Count results
         const conceptGroups = drugGroup.conceptGroup || [];
         let totalConcepts = 0;
-        conceptGroups.forEach((group) => {
+        conceptGroups.forEach((group: any) => {
           const conceptCount = group.conceptProperties?.length || 0;
           totalConcepts += conceptCount;
           console.log(

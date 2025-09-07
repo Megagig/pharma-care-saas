@@ -91,6 +91,39 @@ exports.PERMISSION_MATRIX = {
         requiresActiveSubscription: true,
         allowTrialAccess: false,
     },
+    'clinical_notes.confidential_access': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'clinical_notes.bulk_operations': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['bulkOperations'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'clinical_notes.audit_access': {
+        workplaceRoles: ['Owner'],
+        systemRoles: ['super_admin'],
+        features: ['auditLogs'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'clinical_notes.attachment_upload': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['fileAttachments'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'clinical_notes.search_advanced': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
+        features: ['advancedSearch'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
     'medication.create': {
         workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
         requiresActiveSubscription: true,
@@ -108,6 +141,50 @@ exports.PERMISSION_MATRIX = {
     },
     'medication.delete': {
         workplaceRoles: ['Owner', 'Pharmacist'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'clinical_intervention.create': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['clinicalInterventions'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'clinical_intervention.read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
+        features: ['clinicalInterventions'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'clinical_intervention.update': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['clinicalInterventions'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'clinical_intervention.delete': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['clinicalInterventions'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'clinical_intervention.assign': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['clinicalInterventions', 'teamManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'clinical_intervention.reports': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['clinicalInterventions', 'advancedReports'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'clinical_intervention.export': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['clinicalInterventions', 'dataExport'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
         allowTrialAccess: false,
     },
@@ -440,6 +517,7 @@ exports.TIER_FEATURES = {
         'patientLimit',
         'basicReports',
         'emailReminders',
+        'clinicalInterventions',
     ],
     pro: [
         'dashboard',
@@ -451,6 +529,7 @@ exports.TIER_FEATURES = {
         'apiAccess',
         'auditLogs',
         'integrations',
+        'clinicalInterventions',
     ],
     pharmily: [
         'dashboard',
@@ -467,6 +546,7 @@ exports.TIER_FEATURES = {
         'adrReporting',
         'scheduledReports',
         'dataBackup',
+        'clinicalInterventions',
     ],
     network: [
         'dashboard',
@@ -487,6 +567,7 @@ exports.TIER_FEATURES = {
         'multiLocationDashboard',
         'teamManagement',
         'multiUserSupport',
+        'clinicalInterventions',
     ],
     enterprise: [
         'dashboard',
@@ -510,6 +591,7 @@ exports.TIER_FEATURES = {
         'customIntegrations',
         'prioritySupport',
         'dedicatedManager',
+        'clinicalInterventions',
     ],
 };
 //# sourceMappingURL=permissionMatrix.js.map

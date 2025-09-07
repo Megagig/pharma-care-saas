@@ -49,6 +49,11 @@ export declare const auditOperations: {
     subscriptionChanged: (req: AuthRequest, oldSubscription: any, newSubscription: any) => Promise<void>;
     permissionDenied: (req: AuthRequest, requiredPermission: string, reason: string) => Promise<void>;
     dataAccess: (req: AuthRequest, resourceType: string, resourceId: string, action: string) => Promise<void>;
+    noteAccess: (req: AuthRequest, noteId: string, action: string, details?: any) => Promise<void>;
+    unauthorizedAccess: (req: AuthRequest, resourceType: string, resourceId: string, reason: string) => Promise<void>;
+    confidentialDataAccess: (req: AuthRequest, resourceType: string, resourceId: string, action: string, details?: any) => Promise<void>;
+    bulkOperation: (req: AuthRequest, action: string, resourceType: string, resourceIds: string[], details?: any) => Promise<void>;
+    dataExport: (req: AuthRequest, exportType: string, recordCount: number, details?: any) => Promise<void>;
 };
 export declare const getAuditLogs: (filters: {
     userId?: string;
@@ -78,6 +83,11 @@ declare const _default: {
         subscriptionChanged: (req: AuthRequest, oldSubscription: any, newSubscription: any) => Promise<void>;
         permissionDenied: (req: AuthRequest, requiredPermission: string, reason: string) => Promise<void>;
         dataAccess: (req: AuthRequest, resourceType: string, resourceId: string, action: string) => Promise<void>;
+        noteAccess: (req: AuthRequest, noteId: string, action: string, details?: any) => Promise<void>;
+        unauthorizedAccess: (req: AuthRequest, resourceType: string, resourceId: string, reason: string) => Promise<void>;
+        confidentialDataAccess: (req: AuthRequest, resourceType: string, resourceId: string, action: string, details?: any) => Promise<void>;
+        bulkOperation: (req: AuthRequest, action: string, resourceType: string, resourceIds: string[], details?: any) => Promise<void>;
+        dataExport: (req: AuthRequest, exportType: string, recordCount: number, details?: any) => Promise<void>;
     };
     getAuditLogs: (filters: {
         userId?: string;

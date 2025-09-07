@@ -60,6 +60,7 @@ interface OpenFDALabelResult {
 }
 declare class OpenFdaService {
     getAdverseEffects(drugName: string, limit?: number): Promise<OpenFDAEventResult>;
+    getDrugIndications(drugId: string): Promise<OpenFDALabelResult>;
     getDrugLabeling(brandName: string): Promise<OpenFDALabelResult>;
 }
 declare const _default: OpenFdaService;

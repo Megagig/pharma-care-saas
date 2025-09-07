@@ -12,26 +12,27 @@ class LocationFilterService {
     buildLocationFilter(options) {
         const filter = {
             workspaceId: options.workspaceId,
-            isDeleted: { $ne: true }
+            isDeleted: { $ne: true },
         };
         if (options.locationId) {
             if (options.includeShared) {
                 filter.$or = [
                     { locationId: options.locationId },
                     { locationId: { $exists: false } },
-                    { locationId: null }
+                    { locationId: null },
                 ];
             }
             else {
                 filter.locationId = options.locationId;
             }
         }
-        else if (options.userLocationAccess && options.userLocationAccess.length > 0) {
+        else if (options.userLocationAccess &&
+            options.userLocationAccess.length > 0) {
             if (options.includeShared) {
                 filter.$or = [
                     { locationId: { $in: options.userLocationAccess } },
                     { locationId: { $exists: false } },
-                    { locationId: null }
+                    { locationId: null },
                 ];
             }
             else {
@@ -93,7 +94,7 @@ class LocationFilterService {
             const filter = {
                 workspaceId,
                 locationId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             };
             const totalPatients = await Patient_1.default.countDocuments(filter);
             const visitFilter = { workspaceId, locationId };
@@ -105,15 +106,15 @@ class LocationFilterService {
             startOfMonth.setHours(0, 0, 0, 0);
             const newPatientsThisMonth = await Patient_1.default.countDocuments({
                 ...filter,
-                createdAt: { $gte: startOfMonth }
+                createdAt: { $gte: startOfMonth },
             });
             const visitsThisMonth = await Visit_1.default.countDocuments({
                 ...visitFilter,
-                createdAt: { $gte: startOfMonth }
+                createdAt: { $gte: startOfMonth },
             });
             const clinicalNotesThisMonth = await ClinicalNote_1.default.countDocuments({
                 ...clinicalNotesFilter,
-                createdAt: { $gte: startOfMonth }
+                createdAt: { $gte: startOfMonth },
             });
             const lastPatient = await Patient_1.default.findOne(filter)
                 .sort({ createdAt: -1 })
@@ -130,10 +131,10 @@ class LocationFilterService {
             const activities = [
                 lastPatient?.createdAt,
                 lastVisit?.createdAt,
-                lastClinicalNote?.createdAt
+                lastClinicalNote?.createdAt,
             ].filter(Boolean);
             const lastActivity = activities.length > 0
-                ? new Date(Math.max(...activities.map(date => date.getTime())))
+                ? new Date(Math.max(...activities.map((date) => date.getTime())))
                 : null;
             return {
                 locationId,
@@ -146,8 +147,8 @@ class LocationFilterService {
                     totalClinicalNotes,
                     visitsThisMonth,
                     clinicalNotesThisMonth,
-                    lastActivity
-                }
+                    lastActivity,
+                },
             };
         }
         catch (error) {
@@ -177,7 +178,7 @@ class LocationFilterService {
             const result = await Patient_1.default.findOneAndUpdate({
                 _id: patientId,
                 workspaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             }, { locationId }, { new: true });
             if (!result) {
                 throw new Error('Patient not found or access denied');
@@ -195,12 +196,12 @@ class LocationFilterService {
             const result = await Patient_1.default.updateMany({
                 _id: { $in: patientIds },
                 workspaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             }, { locationId });
             logger_1.default.info(`Bulk assigned ${result.modifiedCount} patients to location ${locationId}`);
             return {
                 success: result.modifiedCount,
-                failed: patientIds.length - result.modifiedCount
+                failed: patientIds.length - result.modifiedCount,
             };
         }
         catch (error) {
@@ -213,12 +214,12 @@ class LocationFilterService {
             const result = await Patient_1.default.updateMany({
                 _id: { $in: patientIds },
                 workspaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             }, { $unset: { locationId: 1 } });
             logger_1.default.info(`Removed location assignment from ${result.modifiedCount} patients`);
             return {
                 success: result.modifiedCount,
-                failed: patientIds.length - result.modifiedCount
+                failed: patientIds.length - result.modifiedCount,
             };
         }
         catch (error) {
@@ -232,12 +233,12 @@ class LocationFilterService {
                 _id: { $in: patientIds },
                 workspaceId,
                 locationId: fromLocationId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             }, { locationId: toLocationId });
             logger_1.default.info(`Transferred ${result.modifiedCount} patients from ${fromLocationId} to ${toLocationId}`);
             return {
                 success: result.modifiedCount,
-                failed: patientIds.length - result.modifiedCount
+                failed: patientIds.length - result.modifiedCount,
             };
         }
         catch (error) {
@@ -250,7 +251,7 @@ class LocationFilterService {
             const result = await Visit_1.default.findOneAndUpdate({
                 _id: visitId,
                 workspaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             }, { locationId }, { new: true });
             if (!result) {
                 throw new Error('Visit not found or access denied');
@@ -267,7 +268,7 @@ class LocationFilterService {
         try {
             const result = await ClinicalNote_1.default.findOneAndUpdate({
                 _id: clinicalNoteId,
-                workspaceId
+                workspaceId,
             }, { locationId }, { new: true });
             if (!result) {
                 throw new Error('Clinical note not found or access denied');
@@ -285,10 +286,7 @@ class LocationFilterService {
             const filter = {
                 workspaceId,
                 isDeleted: { $ne: true },
-                $or: [
-                    { locationId: { $exists: false } },
-                    { locationId: null }
-                ]
+                $or: [{ locationId: { $exists: false } }, { locationId: null }],
             };
             const patients = await Patient_1.default.find(filter)
                 .select('_id firstName lastName mrn createdAt')
@@ -311,34 +309,36 @@ class LocationFilterService {
         try {
             const totalPatients = await Patient_1.default.countDocuments({
                 workspaceId,
-                isDeleted: { $ne: true }
+                isDeleted: { $ne: true },
             });
             const distribution = await Patient_1.default.aggregate([
                 {
                     $match: {
                         workspaceId,
-                        isDeleted: { $ne: true }
-                    }
+                        isDeleted: { $ne: true },
+                    },
                 },
                 {
                     $group: {
                         _id: '$locationId',
-                        count: { $sum: 1 }
-                    }
-                }
+                        count: { $sum: 1 },
+                    },
+                },
             ]);
             const locationDistribution = distribution
-                .filter(item => item._id)
-                .map(item => ({
+                .filter((item) => item._id)
+                .map((item) => ({
                 locationId: item._id,
                 count: item.count,
-                percentage: totalPatients > 0 ? Math.round((item.count / totalPatients) * 100) : 0
+                percentage: totalPatients > 0
+                    ? Math.round((item.count / totalPatients) * 100)
+                    : 0,
             }));
-            const sharedPatients = distribution.find(item => !item._id)?.count || 0;
+            const sharedPatients = distribution.find((item) => !item._id)?.count || 0;
             return {
                 totalPatients,
                 locationDistribution,
-                sharedPatients
+                sharedPatients,
             };
         }
         catch (error) {

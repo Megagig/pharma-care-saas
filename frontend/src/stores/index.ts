@@ -5,16 +5,24 @@ export * from './patientStore';
 export * from './medicationStore';
 export * from './clinicalNoteStore';
 export * from './mtrStore';
+export * from './clinicalInterventionStore';
+export * from './sidebarHooks';
 
-// Re-export all store hooks for easier importing
+// UI Store hooks now come from dedicated files
 export {
-  // UI Store hooks
+  // Sidebar hooks
+  useSidebarControls,
+} from './sidebarHooks';
+
+// UI Store exports
+export {
+  // Main UI Store hook
   useUIStore,
+  // UI Store hooks
   useNotifications,
-  useModals,
   useLoading,
-  useSidebar,
   useTheme,
+  useModals,
 } from './uiStore';
 
 export {
@@ -58,6 +66,18 @@ export {
   useMTRInterventions,
   useMTRFollowUps,
 } from './mtrStore';
+
+export {
+  // Clinical Intervention Store hooks
+  useClinicalInterventionStore,
+  useInterventions,
+  useSelectedIntervention,
+  useInterventionFilters,
+  useInterventionActions,
+  useInterventionWorkflow,
+  useInterventionUI,
+  useInterventionAnalytics,
+} from './clinicalInterventionStore';
 
 // Store reset function for clearing all stores (useful for logout)
 export const resetAllStores = () => {

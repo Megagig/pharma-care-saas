@@ -1,8 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OpenFDAService = void 0;
 const apiClient_1 = require("../utils/apiClient");
-const logger_1 = require("../utils/logger");
+const logger_1 = __importDefault(require("../utils/logger"));
 class OpenFDAService {
     constructor() {
         this.client = new apiClient_1.ApiClient({
@@ -22,11 +25,11 @@ class OpenFDAService {
                     skip
                 }
             });
-            logger_1.logger.info(`OpenFDA adverse events found ${response.data.meta.results.total} results for "${drugName}"`);
+            logger_1.default.info(`OpenFDA adverse events found ${response.data.meta.results.total} results for "${drugName}"`);
             return response.data;
         }
         catch (error) {
-            logger_1.logger.error('OpenFDA adverse events search failed:', error);
+            logger_1.default.error('OpenFDA adverse events search failed:', error);
             throw new Error(`Failed to get adverse events: ${error}`);
         }
     }
@@ -49,14 +52,14 @@ class OpenFDAService {
                         skip
                     }
                 });
-                logger_1.logger.info(`OpenFDA drug labeling found ${genericResponse.data.meta.results.total} results for generic "${drugName}"`);
+                logger_1.default.info(`OpenFDA drug labeling found ${genericResponse.data.meta.results.total} results for generic "${drugName}"`);
                 return genericResponse.data;
             }
-            logger_1.logger.info(`OpenFDA drug labeling found ${response.data.meta.results.total} results for brand "${drugName}"`);
+            logger_1.default.info(`OpenFDA drug labeling found ${response.data.meta.results.total} results for brand "${drugName}"`);
             return response.data;
         }
         catch (error) {
-            logger_1.logger.error('OpenFDA drug labeling search failed:', error);
+            logger_1.default.error('OpenFDA drug labeling search failed:', error);
             throw new Error(`Failed to get drug labeling: ${error}`);
         }
     }
@@ -70,11 +73,11 @@ class OpenFDAService {
                     limit: 100
                 }
             });
-            logger_1.logger.info(`OpenFDA serious adverse events found ${response.data.meta.results.total} results for "${drugName}"`);
+            logger_1.default.info(`OpenFDA serious adverse events found ${response.data.meta.results.total} results for "${drugName}"`);
             return response.data;
         }
         catch (error) {
-            logger_1.logger.error('OpenFDA serious adverse events search failed:', error);
+            logger_1.default.error('OpenFDA serious adverse events search failed:', error);
             throw new Error(`Failed to get serious adverse events: ${error}`);
         }
     }

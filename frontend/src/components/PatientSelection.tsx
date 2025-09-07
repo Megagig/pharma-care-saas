@@ -378,8 +378,33 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
     // setFilters({ search: '' });
   };
 
-  // Get search results
-  const patients = searchResults?.data?.results || [];
+  // Enhanced debug logging
+  React.useEffect(() => {
+    if (searchQuery.length >= 2) {
+      console.log('Search Query Debug:', {
+        query: searchQuery,
+        isLoading: searchLoading,
+        error: searchError,
+        rawResults: searchResults,
+      });
+    }
+  }, [searchQuery, searchLoading, searchError, searchResults]);
+
+  // Get search results with better error handling
+  const patients = useMemo(() => {
+    // Debug the search results structure
+    if (searchResults) {
+      console.log('Processing search results:', {
+        hasData: !!searchResults.data,
+        hasResults: !!searchResults?.data?.results,
+        resultsLength: searchResults?.data?.results?.length || 0,
+        searchResultsKeys: Object.keys(searchResults || {}),
+      });
+    }
+
+    return searchResults?.data?.results || [];
+  }, [searchResults]);
+
   const hasSearchResults = searchQuery.length >= 2 && patients.length > 0;
   const showNoResults =
     searchQuery.length >= 2 && patients.length === 0 && !searchLoading;

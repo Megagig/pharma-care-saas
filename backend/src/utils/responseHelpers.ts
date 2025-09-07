@@ -273,14 +273,42 @@ export const asyncHandler = (fn: Function) => {
 export const checkTenantAccess = (
   resourceWorkplaceId: string,
   userWorkplaceId: string,
-  isAdmin: boolean = false
+  isAdmin: boolean = false,
+  isSuperAdmin: boolean = false
 ): void => {
+  // Skip tenant access check for super_admin (highest privilege level)
+  if (isSuperAdmin) {
+    console.log('Super admin bypassing tenant check for resource');
+    return;
+  }
+
+  // Standard tenant access check for other roles
   if (!isAdmin && resourceWorkplaceId !== userWorkplaceId) {
     throw createTenantViolationError();
   }
 };
 
-// Resource existence checker
+// Enhanced version that directly takes the request to check for super_admin
+export const checkTenantAccessWithRequest = (
+  resourceWorkplaceId: string,
+  userWorkplaceId: string,
+  isAdmin: boolean = false,
+  req: AuthRequest
+): void => {
+  // Check if user is super_admin
+  const userIsSuperAdmin = req.user?.role === 'super_admin';
+
+  // Skip tenant access check for super_admin
+  if (userIsSuperAdmin) {
+    console.log('Super admin bypassing tenant check for resource');
+    return;
+  }
+
+  // Standard tenant access check
+  if (!isAdmin && resourceWorkplaceId !== userWorkplaceId) {
+    throw createTenantViolationError();
+  }
+}; // Resource existence checker
 export const ensureResourceExists = <T>(
   resource: T | null,
   name: string,
@@ -361,12 +389,18 @@ export const respondWithPaginatedResults = <T>(
   sendSuccess(res, { results }, message, 200, meta);
 };
 
+// Helper to check if user is super_admin
+export const isSuperAdmin = (req: AuthRequest): boolean => {
+  return req.user?.role === 'super_admin';
+};
+
 // Request context helpers
 export const getRequestContext = (req: AuthRequest) => ({
   userId: req.user?._id,
   userRole: req.user?.role,
   workplaceId: req.user?.workplaceId?.toString() || '',
   isAdmin: (req as any).isAdmin || false,
+  isSuperAdmin: isSuperAdmin(req),
   canManage: (req as any).canManage || false,
   timestamp: new Date().toISOString(),
 });

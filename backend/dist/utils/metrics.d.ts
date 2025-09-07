@@ -12,8 +12,8 @@ export declare const invitationsSentTotal: promClient.Counter<"role" | "workspac
 export declare const invitationsAcceptedTotal: promClient.Counter<"role" | "workspace_id">;
 export declare const invitationsFailedTotal: promClient.Counter<"reason">;
 export declare const invitationsPendingTotal: promClient.Gauge<string>;
-export declare const usageLimitViolationsTotal: promClient.Counter<"tier" | "workspace_id" | "resource">;
-export declare const usageStatsGauge: promClient.Gauge<"tier" | "workspace_id" | "resource">;
+export declare const usageLimitViolationsTotal: promClient.Counter<"tier" | "resource" | "workspace_id">;
+export declare const usageStatsGauge: promClient.Gauge<"tier" | "resource" | "workspace_id">;
 export declare const emailsSentTotal: promClient.Counter<"type" | "status">;
 export declare const emailsFailedTotal: promClient.Counter<"type" | "reason">;
 export declare const emailQueueSize: promClient.Gauge<string>;

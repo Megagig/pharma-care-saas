@@ -1,4 +1,4 @@
-import api from './api';
+import api from '../lib/api';
 
 // Usage Monitoring Types
 export interface UsageStats {
@@ -75,10 +75,10 @@ export interface UsageAnalytics {
 export interface UsageAlert {
   _id: string;
   type:
-    | 'limit_approaching'
-    | 'limit_exceeded'
-    | 'unusual_activity'
-    | 'performance_issue';
+  | 'limit_approaching'
+  | 'limit_exceeded'
+  | 'unusual_activity'
+  | 'performance_issue';
   title: string;
   description: string;
   severity: 'info' | 'warning' | 'error' | 'critical';

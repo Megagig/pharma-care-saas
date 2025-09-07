@@ -197,11 +197,31 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
 
   // Auto-save functionality
   const autoSave = useCallback(async () => {
-    if (!autoSaveEnabled || !currentReview || loading.saveReview) return;
+    if (!autoSaveEnabled) {
+      console.log('Auto-save disabled');
+      return;
+    }
+
+    if (!currentReview) {
+      console.error('Auto-save skipped: No current review');
+      return;
+    }
+
+    if (loading.saveReview) {
+      console.log('Auto-save skipped: Save already in progress');
+      return;
+    }
+
+    if (!currentReview._id) {
+      console.error('Auto-save skipped: Review ID is missing', currentReview);
+      return;
+    }
 
     try {
+      console.log('Auto-saving review with ID:', currentReview._id);
       await saveReview();
       setLastSaved(new Date());
+      console.log('Auto-save completed successfully');
     } catch (error) {
       console.error('Auto-save failed:', error);
     }
@@ -259,17 +279,62 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         return; // Don't proceed if no permissions
       }
 
-      if (reviewId) {
-        await loadReview(reviewId);
-      } else if (patientId) {
-        // First, check if there's an in-progress review for this patient
-        const inProgressReview = await loadInProgressReview(patientId);
+      try {
+        if (reviewId) {
+          console.log('Loading existing review with ID:', reviewId);
+          await loadReview(reviewId);
 
-        if (!inProgressReview) {
-          // No in-progress review found, create new one
-          await createReview(patientId);
+          // Verify we have a valid review with ID after loading
+          const { currentReview } = useMTRStore.getState();
+          console.log(
+            'Loaded review:',
+            currentReview?._id ? 'ID present' : 'ID missing',
+            currentReview
+              ? JSON.stringify({ id: currentReview._id })
+              : 'No review'
+          );
+        } else if (patientId) {
+          console.log(
+            'Checking for in-progress review for patient:',
+            patientId
+          );
+          // First, check if there's an in-progress review for this patient
+          const inProgressReview = await loadInProgressReview(patientId);
+
+          if (!inProgressReview) {
+            console.log(
+              'No in-progress review found, creating new one for patient:',
+              patientId
+            );
+            // No in-progress review found, create new one
+            await createReview(patientId);
+
+            // Verify we have a valid review with ID after creation
+            const { currentReview } = useMTRStore.getState();
+            console.log(
+              'Created review:',
+              currentReview?._id ? 'ID present' : 'ID missing',
+              currentReview
+                ? JSON.stringify({ id: currentReview._id })
+                : 'No review'
+            );
+          } else {
+            console.log(
+              'In-progress review found with ID:',
+              inProgressReview._id
+            );
+          }
+          // If in-progress review found, it's already loaded by loadInProgressReview
         }
-        // If in-progress review found, it's already loaded by loadInProgressReview
+      } catch (error) {
+        console.error('Error initializing MTR session:', error);
+        setSnackbarMessage(
+          `Failed to initialize MTR session: ${
+            error instanceof Error ? error.message : 'Unknown error'
+          }`
+        );
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
       }
     };
 
@@ -308,10 +373,40 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
 
   // Auto-save functionality
   useEffect(() => {
-    if (!currentReview || currentReview.status === 'completed') return;
+    if (!currentReview) {
+      console.log('Auto-save skipped: No current review');
+      return;
+    }
+
+    if (currentReview.status === 'completed') {
+      console.log('Auto-save skipped: Review already completed');
+      return;
+    }
+
+    console.log(
+      'Setting up auto-save for review:',
+      JSON.stringify({
+        id: currentReview._id,
+        status: currentReview.status,
+      })
+    );
 
     const autoSaveInterval = setInterval(async () => {
       try {
+        // Always re-check if currentReview is available and has ID
+        const { currentReview } = useMTRStore.getState();
+
+        if (!currentReview) {
+          console.error('Auto-save skipped: No current review available');
+          return;
+        }
+
+        if (!currentReview._id) {
+          console.error('Auto-save skipped: Review ID is missing');
+          return;
+        }
+
+        console.log('Auto-saving review with ID:', currentReview._id);
         await saveReview();
         console.log('Auto-save completed');
       } catch (error) {
@@ -325,16 +420,33 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
   // Session state persistence
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (currentReview && autoSaveEnabled) {
-        // Trigger auto-save before page unload
-        autoSave();
-
-        // Show confirmation dialog if there are unsaved changes
-        const message =
-          'You have unsaved changes. Are you sure you want to leave?';
-        event.returnValue = message;
-        return message;
+      if (!currentReview) {
+        console.log('No review to save before unload');
+        return;
       }
+
+      if (!autoSaveEnabled) {
+        console.log('Auto-save disabled, skipping save before unload');
+        return;
+      }
+
+      if (!currentReview._id) {
+        console.error('Cannot save before unload - Review ID is missing');
+        return;
+      }
+
+      // Trigger auto-save before page unload
+      console.log(
+        'Attempting to save review before unload:',
+        currentReview._id
+      );
+      autoSave();
+
+      // Show confirmation dialog if there are unsaved changes
+      const message =
+        'You have unsaved changes. Are you sure you want to leave?';
+      event.returnValue = message;
+      return message;
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -416,13 +528,34 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
 
   const handleSave = async () => {
     try {
+      // Check if currentReview exists and has an ID before saving
+      if (!currentReview) {
+        setSnackbarMessage('Cannot save - No active review');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        return;
+      }
+
+      if (!currentReview._id) {
+        setSnackbarMessage('Cannot save - Review ID is missing');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        console.error('Cannot save review - ID is missing', currentReview);
+        return;
+      }
+
       await saveReview();
       setLastSaved(new Date());
       setSnackbarMessage('Review saved successfully');
       setSnackbarSeverity('success');
       setSnackbarOpen(true);
-    } catch {
-      setSnackbarMessage('Failed to save review');
+    } catch (error) {
+      console.error('Save error:', error);
+      setSnackbarMessage(
+        `Failed to save review: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     }
@@ -438,17 +571,153 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       return;
     }
 
-    try {
-      await completeReview();
-      setSnackbarMessage('MTR completed successfully');
-      setSnackbarSeverity('success');
+    // Check if currentReview exists and has an ID before completing
+    if (!currentReview) {
+      setSnackbarMessage('Cannot complete - No active review');
+      setSnackbarSeverity('error');
       setSnackbarOpen(true);
+      return;
+    }
 
-      if (onComplete && currentReview?._id) {
-        onComplete(currentReview._id);
+    // Create a local variable for the review we'll complete - initialized with the current review
+    let reviewToComplete = currentReview;
+
+    // Log detailed information about the current review
+    console.log('Current review for completion:', {
+      hasReview: !!currentReview,
+      reviewId: currentReview?._id,
+      steps: !!currentReview?.steps,
+      urlReviewId: reviewId,
+    });
+
+    // Check if we're missing an ID but have a review with steps and other data
+    if (
+      (!currentReview._id || currentReview._id === '') &&
+      currentReview.steps
+    ) {
+      setSnackbarMessage('Attempting to recover review ID...');
+      setSnackbarSeverity('info');
+      setSnackbarOpen(true);
+      console.warn(
+        'Review missing ID but has data - attempting recovery',
+        currentReview
+      );
+
+      // First try to get the latest review from the store
+      try {
+        const { currentReview: latestReview } = useMTRStore.getState();
+
+        // If the store has a review with ID, use that
+        if (latestReview && latestReview._id) {
+          console.log('Found review ID in store:', latestReview._id);
+
+          // Update our local reference to use this review with ID
+          reviewToComplete = latestReview;
+        } else if (reviewId) {
+          // If we have a reviewId from URL params, try to reload the review
+          console.log('Attempting to reload review using URL ID:', reviewId);
+
+          try {
+            await loadReview(reviewId);
+            const { currentReview: reloadedReview } = useMTRStore.getState();
+
+            if (reloadedReview && reloadedReview._id) {
+              console.log(
+                'Successfully reloaded review with ID:',
+                reloadedReview._id
+              );
+              reviewToComplete = reloadedReview;
+            } else {
+              console.error('Failed to reload review with valid ID');
+              setSnackbarMessage(
+                'Cannot complete - Unable to recover review ID'
+              );
+              setSnackbarSeverity('error');
+              setSnackbarOpen(true);
+              return;
+            }
+          } catch (loadError) {
+            console.error('Error reloading review:', loadError);
+            setSnackbarMessage('Cannot complete - Failed to reload review');
+            setSnackbarSeverity('error');
+            setSnackbarOpen(true);
+            return;
+          }
+        } else {
+          console.error('Could not recover review ID from store or URL');
+          setSnackbarMessage(
+            'Cannot complete - Review ID is missing and cannot be recovered'
+          );
+          setSnackbarSeverity('error');
+          setSnackbarOpen(true);
+          return;
+        }
+      } catch (error) {
+        console.error('Error trying to recover review ID:', error);
+        setSnackbarMessage('Cannot complete - Error during recovery attempt');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        return;
       }
-    } catch {
-      setSnackbarMessage('Failed to complete review');
+    }
+
+    try {
+      // First check if our reviewToComplete has an ID
+      if (!reviewToComplete._id) {
+        console.error(
+          'Cannot complete review - ID is missing',
+          reviewToComplete
+        );
+
+        // Last resort attempt - if we have a reviewId from URL params
+        if (reviewId) {
+          console.log(
+            'Last resort recovery: Using reviewId from URL params:',
+            reviewId
+          );
+          reviewToComplete._id = reviewId;
+          console.log(
+            'Updated reviewToComplete with URL ID:',
+            reviewToComplete
+          );
+        } else {
+          setSnackbarMessage(
+            'Cannot complete - Review ID is still missing after recovery attempts'
+          );
+          setSnackbarSeverity('error');
+          setSnackbarOpen(true);
+          return;
+        }
+      }
+
+      // Save the review to ensure all data is up to date
+      console.log(
+        'Saving review before completing with ID:',
+        reviewToComplete._id
+      );
+      await saveReview();
+
+      // Then complete it
+      console.log('Completing review with ID:', reviewToComplete._id);
+      const result = await completeReview(reviewToComplete._id);
+
+      if (result) {
+        setSnackbarMessage('MTR completed successfully');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
+        if (onComplete) {
+          onComplete(reviewToComplete._id);
+        }
+      } else {
+        throw new Error('Complete operation did not return expected result');
+      }
+    } catch (error) {
+      console.error('Failed to complete review:', error);
+      setSnackbarMessage(
+        `Failed to complete review: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     }
@@ -595,6 +864,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
   // Get step status
   const getStepStatus = (stepIndex: number) => {
     if (!currentReview) return 'pending';
+    if (!currentReview.steps) return 'pending';
 
     const stepNames = [
       'patientSelection',
@@ -605,13 +875,18 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       'followUp',
     ];
 
-    const stepName = stepNames[stepIndex] as keyof typeof currentReview.steps;
-    const step = currentReview.steps[stepName];
+    try {
+      const stepName = stepNames[stepIndex] as keyof typeof currentReview.steps;
+      const step = currentReview.steps[stepName];
 
-    if (step?.completed) return 'completed';
-    if (stepIndex === currentStep) return 'active';
-    if (stepIndex < currentStep) return 'completed';
-    return 'pending';
+      if (step?.completed) return 'completed';
+      if (stepIndex === currentStep) return 'active';
+      if (stepIndex < currentStep) return 'completed';
+      return 'pending';
+    } catch (error) {
+      console.error('Error determining step status:', error);
+      return 'pending';
+    }
   };
 
   // Calculate completion percentage
@@ -893,13 +1168,17 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                   color={completionPercentage === 100 ? 'success' : 'primary'}
                   variant="outlined"
                 />
-                <Chip
-                  label={currentReview.status.replace('_', ' ').toUpperCase()}
-                  color={
-                    currentReview.status === 'completed' ? 'success' : 'default'
-                  }
-                  size="small"
-                />
+                {currentReview && currentReview.status && (
+                  <Chip
+                    label={currentReview.status.replace('_', ' ').toUpperCase()}
+                    color={
+                      currentReview.status === 'completed'
+                        ? 'success'
+                        : 'default'
+                    }
+                    size="small"
+                  />
+                )}
               </Box>
             </Box>
 

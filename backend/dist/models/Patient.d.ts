@@ -58,6 +58,7 @@ export interface IPatient extends Document {
         };
     };
     hasActiveDTP?: boolean;
+    hasActiveInterventions?: boolean;
     isDeleted: boolean;
     createdBy: mongoose.Types.ObjectId;
     updatedBy?: mongoose.Types.ObjectId;
@@ -66,6 +67,9 @@ export interface IPatient extends Document {
     getAge(): number;
     getDisplayName(): string;
     updateLatestVitals(vitals: IPatientVitals): void;
+    getInterventionCount(): Promise<number>;
+    getActiveInterventionCount(): Promise<number>;
+    updateInterventionFlags(): Promise<void>;
 }
 declare const _default: mongoose.Model<IPatient, {}, {}, {}, mongoose.Document<unknown, {}, IPatient> & IPatient & Required<{
     _id: mongoose.Types.ObjectId;
