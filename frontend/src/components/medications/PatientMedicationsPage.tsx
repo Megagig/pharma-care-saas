@@ -27,6 +27,7 @@ import {
   Switch,
   Alert,
   AlertTitle,
+  Avatar,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -34,6 +35,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import HistoryIcon from '@mui/icons-material/History';
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PersonIcon from '@mui/icons-material/Person';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import {
   useAdherenceLogs,
@@ -43,6 +45,7 @@ import {
   useArchiveMedication,
   useLogAdherence,
 } from '../../queries/medicationManagementQueries';
+import { usePatient } from '../../queries/usePatients';
 import dayjs from 'dayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -200,6 +203,13 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
   >([]);
   const [interactionCheckEnabled, setInteractionCheckEnabled] = useState(true);
   const [interactions, setInteractions] = useState<string[]>([]);
+
+  // Fetch patient data
+  const {
+    data: patientData,
+    isLoading: isLoadingPatient,
+    error: patientError,
+  } = usePatient(patientId || '');
 
   // Fetch medications
   const { data: medicationsData, isLoading } = useMedicationsByPatient(
@@ -540,6 +550,74 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
 
   return (
     <Box sx={{ p: 2 }}>
+      {/* Patient Information Card */}
+      {isLoadingPatient ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+          <CircularProgress />
+        </Box>
+      ) : patientError ? (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          Error loading patient information. Please try refreshing the page.
+        </Alert>
+      ) : patientData?.data?.patient ? (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            mb: 3,
+            backgroundColor: 'primary.light',
+            color: 'primary.contrastText',
+            borderRadius: 2,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar
+              sx={{
+                bgcolor: 'primary.main',
+                width: 48,
+                height: 48,
+                mr: 2,
+              }}
+            >
+              <PersonIcon />
+            </Avatar>
+            <Box>
+              <Typography variant="h6">
+                {patientData.data.patient.firstName}{' '}
+                {patientData.data.patient.lastName}
+                {patientData.data.patient.otherNames
+                  ? ` ${patientData.data.patient.otherNames}`
+                  : ''}
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mt: 0.5 }}>
+                <Typography variant="body2">
+                  <strong>MRN:</strong>{' '}
+                  {patientData.data.patient.mrn || patientData.data.patient._id}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>DOB:</strong>{' '}
+                  {patientData.data.patient.dob
+                    ? new Date(
+                        patientData.data.patient.dob
+                      ).toLocaleDateString()
+                    : 'N/A'}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Gender:</strong>{' '}
+                  {patientData.data.patient.gender || 'N/A'}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Contact:</strong>{' '}
+                  {patientData.data.patient.phone ||
+                    patientData.data.patient.email ||
+                    'None'}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        </Paper>
+      ) : null}
+
       <Box
         sx={{
           display: 'flex',
