@@ -28,6 +28,7 @@ import {
   Alert,
   AlertTitle,
   Avatar,
+  IconButton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -36,6 +37,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PersonIcon from '@mui/icons-material/Person';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import {
   useAdherenceLogs,
@@ -66,6 +68,7 @@ interface Medication {
   };
   status: 'active' | 'archived' | 'cancelled';
   patientId: string;
+  reminders?: MedicationReminder[];
 }
 
 interface MedicationData {
@@ -84,6 +87,7 @@ interface MedicationData {
   };
   status: 'active' | 'archived' | 'cancelled';
   patientId: string;
+  reminders?: MedicationReminder[];
 }
 
 interface MedicationFormValues {
@@ -100,6 +104,15 @@ interface MedicationFormValues {
     details: string;
   };
   status: 'active' | 'archived' | 'cancelled';
+  reminders?: MedicationReminder[];
+}
+
+interface MedicationReminder {
+  id?: string;
+  time: string; // format: HH:MM
+  days: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
+  enabled: boolean;
+  notes?: string;
 }
 
 interface MedicationListProps {
@@ -183,6 +196,8 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
   const patientId = propPatientId || paramPatientId;
   const [tabValue, setTabValue] = useState(0);
   const [medicationDialogOpen, setMedicationDialogOpen] = useState(false);
+  const [medicationDialogTab, setMedicationDialogTab] = useState(0);
+  const [reminders, setReminders] = useState<MedicationReminder[]>([]);
   const [adherenceDialogOpen, setAdherenceDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
@@ -355,9 +370,60 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
     }
   };
 
+  // Handle reminder changes
+  const handleAddReminder = () => {
+    const newReminder: MedicationReminder = {
+      time: '09:00',
+      days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+      enabled: true,
+    };
+    setReminders([...reminders, newReminder]);
+  };
+
+  const handleReminderChange = (
+    index: number,
+    field: keyof MedicationReminder,
+    value:
+      | string
+      | boolean
+      | string[]
+      | ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[]
+  ) => {
+    const updatedReminders = [...reminders];
+    if (field === 'days') {
+      // Handle special case for days array
+      updatedReminders[index] = {
+        ...updatedReminders[index],
+        [field]: value as (
+          | 'mon'
+          | 'tue'
+          | 'wed'
+          | 'thu'
+          | 'fri'
+          | 'sat'
+          | 'sun'
+        )[],
+      };
+    } else {
+      updatedReminders[index] = {
+        ...updatedReminders[index],
+        [field]: value,
+      };
+    }
+    setReminders(updatedReminders);
+  };
+
+  const handleDeleteReminder = (index: number) => {
+    const updatedReminders = [...reminders];
+    updatedReminders.splice(index, 1);
+    setReminders(updatedReminders);
+  };
+
   const handleOpenMedicationDialog = () => {
     setCurrentMedicationId(null);
     setFormValues(initialFormValues);
+    setReminders([]);
+    setMedicationDialogTab(0);
     setMedicationDialogOpen(true);
   };
 
@@ -376,7 +442,13 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
       prescriber: medication.prescriber,
       allergyCheck: medication.allergyCheck,
       status: medication.status,
+      reminders: medication.reminders || [],
     });
+
+    // Set reminders if they exist
+    setReminders(medication.reminders || []);
+
+    setMedicationDialogTab(0);
     setMedicationDialogOpen(true);
   };
 
@@ -434,24 +506,25 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
         }
       }
 
+      // Include reminders in the submission
+      const submissionData = {
+        ...formValues,
+        startDate: formValues.startDate ? formValues.startDate : undefined,
+        endDate: formValues.endDate ? formValues.endDate : undefined,
+        reminders: reminders,
+      };
+
       if (currentMedicationId) {
         // Update existing medication
-        const updateData = {
-          ...formValues,
-          startDate: formValues.startDate ? formValues.startDate : undefined,
-          endDate: formValues.endDate ? formValues.endDate : undefined,
-        };
         await updateMutation.mutateAsync({
           id: currentMedicationId,
-          data: updateData as Partial<MedicationData>,
+          data: submissionData as Partial<MedicationData>,
         });
       } else {
         // Create new medication
         const createData = {
-          ...formValues,
+          ...submissionData,
           patientId,
-          startDate: formValues.startDate ? formValues.startDate : undefined,
-          endDate: formValues.endDate ? formValues.endDate : undefined,
         };
         await createMutation.mutateAsync(createData as MedicationCreateData);
       }
@@ -641,7 +714,7 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
 
       <Grid container spacing={3}>
         {/* Adherence Chart */}
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 4' } }}>
           <Card>
             <CardContent>
               <Typography variant="h6" component="div">
@@ -680,7 +753,7 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 4' } }}>
           <Card>
             <CardContent>
               <Typography variant="h6" component="div">
@@ -694,7 +767,7 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 4' } }}>
           <Card>
             <CardContent>
               <Typography variant="h6" component="div">
@@ -793,194 +866,343 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
           {currentMedicationId ? 'Edit Medication' : 'Add New Medication'}
         </DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                name="name"
-                label="Medication Name"
-                value={formValues.name}
-                onChange={handleInputChange}
-                fullWidth
-                required
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                name="dosage"
-                label="Dosage"
-                value={formValues.dosage}
-                onChange={handleInputChange}
-                fullWidth
-                required
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel id="frequency-label">Frequency</InputLabel>
-                <Select
-                  labelId="frequency-label"
-                  id="frequency"
-                  name="frequency"
-                  value={formValues.frequency}
-                  onChange={handleFrequencyChange}
-                  label="Frequency"
-                  required
-                >
-                  {frequencyOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel id="route-label">Route</InputLabel>
-                <Select
-                  labelId="route-label"
-                  id="route"
-                  name="route"
-                  value={formValues.route}
-                  onChange={handleRouteChange}
-                  label="Route"
-                  required
-                >
-                  {routeOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="Start Date"
-                  value={
-                    formValues.startDate ? dayjs(formValues.startDate) : null
-                  }
-                  onChange={(date) =>
-                    handleDateChange(
-                      'startDate',
-                      date ? new Date(date.toString()) : null
-                    )
-                  }
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </LocalizationProvider>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="End Date (Optional)"
-                  value={formValues.endDate ? dayjs(formValues.endDate) : null}
-                  onChange={(date) =>
-                    handleDateChange(
-                      'endDate',
-                      date ? new Date(date.toString()) : null
-                    )
-                  }
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </LocalizationProvider>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                name="indication"
-                label="Indication"
-                value={formValues.indication}
-                onChange={handleInputChange}
-                fullWidth
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                name="prescriber"
-                label="Prescriber"
-                value={formValues.prescriber}
-                onChange={handleInputChange}
-                fullWidth
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formValues.allergyCheck.status}
-                    onChange={handleSwitchChange}
-                    name="allergyCheck.status"
-                    color="primary"
-                  />
-                }
-                label="Patient has allergies related to this medication"
-              />
-              {formValues.allergyCheck.status && (
+          <Tabs
+            value={medicationDialogTab}
+            onChange={(_, newValue) => setMedicationDialogTab(newValue)}
+            sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
+          >
+            <Tab label="Medication Details" />
+            <Tab label="Reminders & Schedule" />
+          </Tabs>
+
+          {medicationDialogTab === 0 && (
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
                 <TextField
-                  name="allergyCheck.details"
-                  label="Allergy Details"
-                  value={formValues.allergyCheck.details}
+                  name="name"
+                  label="Medication Name"
+                  value={formValues.name}
                   onChange={handleInputChange}
                   fullWidth
-                  margin="normal"
+                  required
                 />
-              )}
-            </Grid>
-
-            {/* Interaction check toggle */}
-            <Grid size={{ xs: 12 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={interactionCheckEnabled}
-                    onChange={handleSwitchChange}
-                    name="interactionCheck"
-                    color="primary"
-                  />
-                }
-                label="Check for drug interactions before saving"
-              />
-            </Grid>
-
-            {/* Status field for edit mode */}
-            {currentMedicationId && (
-              <Grid size={{ xs: 12 }}>
+              </Grid>
+              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
+                <TextField
+                  name="dosage"
+                  label="Dosage"
+                  value={formValues.dosage}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                />
+              </Grid>
+              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
                 <FormControl fullWidth>
-                  <InputLabel id="status-label">Status</InputLabel>
+                  <InputLabel id="frequency-label">Frequency</InputLabel>
                   <Select
-                    labelId="status-label"
-                    id="status"
-                    name="status"
-                    value={formValues.status}
-                    onChange={handleStatusChange}
-                    label="Status"
+                    labelId="frequency-label"
+                    id="frequency"
+                    name="frequency"
+                    value={formValues.frequency}
+                    onChange={handleFrequencyChange}
+                    label="Frequency"
+                    required
                   >
-                    <MenuItem value="active">Active</MenuItem>
-                    <MenuItem value="archived">Archived</MenuItem>
-                    <MenuItem value="cancelled">Cancelled</MenuItem>
+                    {frequencyOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
-            )}
-
-            {/* Show interactions if any */}
-            {interactions.length > 0 && (
-              <Grid size={{ xs: 12 }}>
-                <Alert severity="warning" sx={{ mt: 2 }}>
-                  <AlertTitle>Potential Interactions Detected</AlertTitle>
-                  <ul>
-                    {interactions.map((interaction, index) => (
-                      <li key={index}>{interaction}</li>
+              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
+                <FormControl fullWidth>
+                  <InputLabel id="route-label">Route</InputLabel>
+                  <Select
+                    labelId="route-label"
+                    id="route"
+                    name="route"
+                    value={formValues.route}
+                    onChange={handleRouteChange}
+                    label="Route"
+                    required
+                  >
+                    {routeOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
                     ))}
-                  </ul>
-                  <Box sx={{ mt: 1 }}>
-                    Override and continue? Check with prescriber first.
-                  </Box>
-                </Alert>
+                  </Select>
+                </FormControl>
               </Grid>
-            )}
-          </Grid>
+              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Start Date"
+                    value={
+                      formValues.startDate ? dayjs(formValues.startDate) : null
+                    }
+                    onChange={(date) =>
+                      handleDateChange(
+                        'startDate',
+                        date ? new Date(date.toString()) : null
+                      )
+                    }
+                    slotProps={{ textField: { fullWidth: true } }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="End Date (Optional)"
+                    value={
+                      formValues.endDate ? dayjs(formValues.endDate) : null
+                    }
+                    onChange={(date) =>
+                      handleDateChange(
+                        'endDate',
+                        date ? new Date(date.toString()) : null
+                      )
+                    }
+                    slotProps={{ textField: { fullWidth: true } }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+              <Grid sx={{ gridColumn: 'span 12' }}>
+                <TextField
+                  name="indication"
+                  label="Indication"
+                  value={formValues.indication}
+                  onChange={handleInputChange}
+                  fullWidth
+                />
+              </Grid>
+              <Grid sx={{ gridColumn: 'span 12' }}>
+                <TextField
+                  name="prescriber"
+                  label="Prescriber"
+                  value={formValues.prescriber}
+                  onChange={handleInputChange}
+                  fullWidth
+                />
+              </Grid>
+              <Grid sx={{ gridColumn: 'span 12' }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formValues.allergyCheck.status}
+                      onChange={handleSwitchChange}
+                      name="allergyCheck.status"
+                      color="primary"
+                    />
+                  }
+                  label="Patient has allergies related to this medication"
+                />
+                {formValues.allergyCheck.status && (
+                  <TextField
+                    name="allergyCheck.details"
+                    label="Allergy Details"
+                    value={formValues.allergyCheck.details}
+                    onChange={handleInputChange}
+                    fullWidth
+                    margin="normal"
+                  />
+                )}
+              </Grid>
+
+              {/* Interaction check toggle */}
+              <Grid sx={{ gridColumn: 'span 12' }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={interactionCheckEnabled}
+                      onChange={handleSwitchChange}
+                      name="interactionCheck"
+                      color="primary"
+                    />
+                  }
+                  label="Check for drug interactions before saving"
+                />
+              </Grid>
+
+              {/* Status field for edit mode */}
+              {currentMedicationId && (
+                <Grid sx={{ gridColumn: 'span 12' }}>
+                  <FormControl fullWidth>
+                    <InputLabel id="status-label">Status</InputLabel>
+                    <Select
+                      labelId="status-label"
+                      id="status"
+                      name="status"
+                      value={formValues.status}
+                      onChange={handleStatusChange}
+                      label="Status"
+                    >
+                      <MenuItem value="active">Active</MenuItem>
+                      <MenuItem value="archived">Archived</MenuItem>
+                      <MenuItem value="cancelled">Cancelled</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
+
+              {/* Show interactions if any */}
+              {interactions.length > 0 && (
+                <Grid sx={{ gridColumn: 'span 12' }}>
+                  <Alert severity="warning" sx={{ mt: 2 }}>
+                    <AlertTitle>Potential Interactions Detected</AlertTitle>
+                    <ul>
+                      {interactions.map((interaction, index) => (
+                        <li key={index}>{interaction}</li>
+                      ))}
+                    </ul>
+                    <Box sx={{ mt: 1 }}>
+                      Override and continue? Check with prescriber first.
+                    </Box>
+                  </Alert>
+                </Grid>
+              )}
+            </Grid>
+          )}
+
+          {medicationDialogTab === 1 && (
+            <Box sx={{ p: 1 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  mb: 2,
+                  alignItems: 'center',
+                }}
+              >
+                <Typography variant="h6">Medication Reminders</Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddReminder}
+                >
+                  Add Reminder
+                </Button>
+              </Box>
+
+              {reminders.length === 0 ? (
+                <Alert severity="info" sx={{ my: 2 }}>
+                  No reminders set for this medication. Add a reminder to help
+                  the patient stay on schedule.
+                </Alert>
+              ) : (
+                reminders.map((reminder, index) => (
+                  <Paper
+                    key={index}
+                    sx={{
+                      p: 2,
+                      mb: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Grid container spacing={2} alignItems="center">
+                      <Grid
+                        sx={{ gridColumn: { xs: 'span 12', sm: 'span 3' } }}
+                      >
+                        <TextField
+                          label="Time"
+                          type="time"
+                          fullWidth
+                          value={reminder.time}
+                          onChange={(e) =>
+                            handleReminderChange(index, 'time', e.target.value)
+                          }
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      </Grid>
+                      <Grid
+                        sx={{ gridColumn: { xs: 'span 12', sm: 'span 5' } }}
+                      >
+                        <FormControl fullWidth>
+                          <InputLabel id={`days-label-${index}`}>
+                            Days
+                          </InputLabel>
+                          <Select
+                            labelId={`days-label-${index}`}
+                            multiple
+                            value={reminder.days}
+                            onChange={(e) =>
+                              handleReminderChange(
+                                index,
+                                'days',
+                                e.target.value as (
+                                  | 'mon'
+                                  | 'tue'
+                                  | 'wed'
+                                  | 'thu'
+                                  | 'fri'
+                                  | 'sat'
+                                  | 'sun'
+                                )[]
+                              )
+                            }
+                            renderValue={(selected) =>
+                              selected
+                                .map((day) => day.toUpperCase())
+                                .join(', ')
+                            }
+                          >
+                            <MenuItem value="mon">Monday</MenuItem>
+                            <MenuItem value="tue">Tuesday</MenuItem>
+                            <MenuItem value="wed">Wednesday</MenuItem>
+                            <MenuItem value="thu">Thursday</MenuItem>
+                            <MenuItem value="fri">Friday</MenuItem>
+                            <MenuItem value="sat">Saturday</MenuItem>
+                            <MenuItem value="sun">Sunday</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                      <Grid sx={{ gridColumn: { xs: 'span 6', sm: 'span 3' } }}>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={reminder.enabled}
+                              onChange={(e) =>
+                                handleReminderChange(
+                                  index,
+                                  'enabled',
+                                  e.target.checked
+                                )
+                              }
+                            />
+                          }
+                          label="Enabled"
+                        />
+                      </Grid>
+                      <Grid sx={{ gridColumn: { xs: 'span 6', sm: 'span 1' } }}>
+                        <IconButton
+                          color="error"
+                          onClick={() => handleDeleteReminder(index)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Grid>
+                      <Grid sx={{ gridColumn: 'span 12' }}>
+                        <TextField
+                          label="Notes"
+                          fullWidth
+                          placeholder="Additional instructions for this reminder..."
+                          value={reminder.notes || ''}
+                          onChange={(e) =>
+                            handleReminderChange(index, 'notes', e.target.value)
+                          }
+                        />
+                      </Grid>
+                    </Grid>
+                  </Paper>
+                ))
+              )}
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setMedicationDialogOpen(false)}>Cancel</Button>
@@ -1004,7 +1226,7 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
         <DialogTitle>Record Medication Adherence</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid size={{ xs: 12 }}>
+            <Grid sx={{ gridColumn: 'span 12' }}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
                   label="Refill Date"
@@ -1198,6 +1420,22 @@ const MedicationList: React.FC<MedicationListProps> = ({
                   End Date: {new Date(medication.endDate).toLocaleDateString()}
                 </Typography>
               )}
+
+              {/* Display reminders summary if they exist */}
+              {medication.reminders && medication.reminders.length > 0 && (
+                <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                  <ScheduleIcon
+                    color="info"
+                    fontSize="small"
+                    sx={{ mr: 0.5 }}
+                  />
+                  <Typography variant="body2" color="info.main">
+                    {medication.reminders!.length} Reminder
+                    {medication.reminders!.length > 1 ? 's' : ''} set
+                  </Typography>
+                </Box>
+              )}
+
               {showStatus && (
                 <Chip
                   label={medication.status.toUpperCase()}
