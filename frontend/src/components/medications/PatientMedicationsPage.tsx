@@ -35,7 +35,14 @@ import HistoryIcon from '@mui/icons-material/History';
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { useAdherenceLogs } from '../../queries/medicationManagementQueries';
+import {
+  useAdherenceLogs,
+  useMedicationsByPatient,
+  useCreateMedication,
+  useUpdateMedication,
+  useArchiveMedication,
+  useLogAdherence,
+} from '../../queries/medicationManagementQueries';
 import dayjs from 'dayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -195,54 +202,38 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
   const [interactions, setInteractions] = useState<string[]>([]);
 
   // Fetch medications
-  // Fetch adherence logs but we need to treat them as medications for the UI
-  const { data: adherenceLogsAsMedications, isLoading } = useAdherenceLogs(
+  const { data: medicationsData, isLoading } = useMedicationsByPatient(
     patientId || ''
   );
 
-  // Convert adherence logs to a format compatible with medications
+  // Convert medication data to the expected format
   const medications: (Medication | MedicationData)[] = React.useMemo(() => {
-    if (!adherenceLogsAsMedications) return [];
-    return adherenceLogsAsMedications.map(
-      (log) =>
+    if (!medicationsData) return [];
+    return medicationsData.map(
+      (med) =>
         ({
-          id: log._id,
-          name: `Medication ${log._id.substring(0, 5)}`, // Placeholder since logs don't have names
-          dosage: 'Unknown',
-          frequency: 'Unknown',
-          route: 'Unknown',
-          startDate: log.refillDate,
-          endDate: null,
-          indication: '',
-          prescriber: '',
-          allergyCheck: { status: false, details: '' },
-          status: 'active', // Default status
-          patientId: log.patientId,
+          id: med._id,
+          name: med.name,
+          dosage: med.dosage,
+          frequency: med.frequency,
+          route: med.route,
+          startDate: med.startDate,
+          endDate: med.endDate,
+          indication: med.indication || '',
+          prescriber: med.prescriber || '',
+          allergyCheck: med.allergyCheck,
+          status: med.status,
+          patientId: med.patientId,
         } as Medication)
     );
-  }, [adherenceLogsAsMedications]);
+  }, [medicationsData]);
   const { data: adherenceLogs } = useAdherenceLogs(patientId || '');
 
-  // Mock mutations for demo
-  const createMutation = {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    mutateAsync: async (_: MedicationCreateData) => ({}),
-  };
-  const updateMutation = {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    mutateAsync: async (_: {
-      id: string;
-      data: Partial<MedicationData>;
-    }) => ({}),
-  };
-  const archiveMutation = {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    mutateAsync: async (_: { id: string; status: string }) => ({}),
-  };
-  const createAdherenceMutation = {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    mutateAsync: async (_: Partial<AdherenceLogData>) => ({}),
-  };
+  // Use real mutations from React Query
+  const createMutation = useCreateMedication();
+  const updateMutation = useUpdateMedication();
+  const archiveMutation = useArchiveMedication();
+  const createAdherenceMutation = useLogAdherence();
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
@@ -468,7 +459,10 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
     try {
       await createAdherenceMutation.mutateAsync({
         ...adherenceValues,
-      } as Partial<AdherenceLogData>);
+        medicationId: adherenceValues.medicationId || '',
+        patientId: patientId || '',
+        adherenceScore: adherenceValues.adherenceScore || 100,
+      });
       setAdherenceDialogOpen(false);
       setAdherenceValues({
         medicationId: '',
@@ -488,7 +482,7 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
     try {
       await archiveMutation.mutateAsync({
         id: currentMedicationId,
-        status: 'archived',
+        reason: 'Medication archived by user',
       });
       setArchiveDialogOpen(false);
       setCurrentMedicationId(null);

@@ -115,10 +115,7 @@ const medicationManagementService = {
   createMedication: async (
     medicationData: MedicationCreateData
   ): Promise<MedicationData> => {
-    const response = await api.post(
-      '/api/medication-management',
-      medicationData
-    );
+    const response = await api.post('/medication-management', medicationData);
     return response.data.data;
   },
 
@@ -127,7 +124,7 @@ const medicationManagementService = {
     status = 'active'
   ): Promise<MedicationData[]> => {
     const response = await api.get(
-      `/api/medication-management/patient/${patientId}`,
+      `/medication-management/patient/${patientId}`,
       {
         params: { status },
       }
@@ -136,7 +133,7 @@ const medicationManagementService = {
   },
 
   getMedicationById: async (id: string): Promise<MedicationData> => {
-    const response = await api.get(`/api/medication-management/${id}`);
+    const response = await api.get(`/medication-management/${id}`);
     return response.data.data;
   },
 
@@ -145,7 +142,7 @@ const medicationManagementService = {
     medicationData: MedicationUpdateData
   ): Promise<MedicationData> => {
     const response = await api.put(
-      `/api/medication-management/${id}`,
+      `/medication-management/${id}`,
       medicationData
     );
     return response.data.data;
@@ -155,10 +152,9 @@ const medicationManagementService = {
     id: string,
     reason?: string
   ): Promise<MedicationData> => {
-    const response = await api.patch(
-      `/api/medication-management/${id}/archive`,
-      { reason }
-    );
+    const response = await api.patch(`/medication-management/${id}/archive`, {
+      reason,
+    });
     return response.data.data;
   },
 
@@ -167,7 +163,7 @@ const medicationManagementService = {
     adherenceData: AdherenceLogCreateData
   ): Promise<AdherenceLogData> => {
     const response = await api.post(
-      '/api/medication-management/adherence',
+      '/medication-management/adherence',
       adherenceData
     );
     return response.data.data;
@@ -192,7 +188,7 @@ const medicationManagementService = {
     medications: InteractionCheckItem[]
   ): Promise<InteractionResult[]> => {
     const response = await api.post(
-      '/api/medication-management/check-interactions',
+      '/medication-management/check-interactions',
       {
         medications,
       }
