@@ -12,8 +12,8 @@ import {
 import { Link } from 'react-router-dom';
 import { People as PeopleIcon } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import MedicationChart from './MedicationChart';
+import medicationManagementService from '../../services/medicationManagementService';
 
 interface DashboardStats {
   activeMedications: number;
@@ -41,12 +41,18 @@ const MedicationsManagementDashboard = () => {
     error: statsError,
   } = useQuery({
     queryKey: ['medicationDashboardStats'],
-    queryFn: async () => {
-      const response = await axios.get<{
-        success: boolean;
-        data: DashboardStats;
-      }>('/api/medication-management/dashboard/stats');
-      return response.data.data;
+    queryFn: async (): Promise<DashboardStats> => {
+      try {
+        return await medicationManagementService.getDashboardStats();
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        // Return default data to prevent undefined errors
+        return {
+          activeMedications: 0,
+          averageAdherence: 0,
+          interactionAlerts: 0,
+        };
+      }
     },
   });
 
@@ -57,12 +63,14 @@ const MedicationsManagementDashboard = () => {
     error: patientsError,
   } = useQuery({
     queryKey: ['recentPatientsWithMedications'],
-    queryFn: async () => {
-      const response = await axios.get<{
-        success: boolean;
-        data: RecentPatient[];
-      }>('/api/medication-management/dashboard/recent-patients');
-      return response.data.data;
+    queryFn: async (): Promise<RecentPatient[]> => {
+      try {
+        return await medicationManagementService.getRecentPatientsWithMedications();
+      } catch (error) {
+        console.error('Error fetching recent patients:', error);
+        // Return empty array to prevent undefined errors
+        return [];
+      }
     },
   });
 
@@ -73,12 +81,14 @@ const MedicationsManagementDashboard = () => {
     error: trendsError,
   } = useQuery({
     queryKey: ['medicationAdherenceTrends'],
-    queryFn: async () => {
-      const response = await axios.get<{
-        success: boolean;
-        data: AdherenceTrend[];
-      }>('/api/medication-management/dashboard/adherence-trends');
-      return response.data.data;
+    queryFn: async (): Promise<AdherenceTrend[]> => {
+      try {
+        return await medicationManagementService.getAdherenceTrends();
+      } catch (error) {
+        console.error('Error fetching adherence trends:', error);
+        // Return empty array to prevent undefined errors
+        return [];
+      }
     },
   });
 
