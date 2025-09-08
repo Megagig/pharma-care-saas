@@ -1,0 +1,1198 @@
+import * as React from 'react';
+import { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import {
+  Box,
+  Typography,
+  Button,
+  Paper,
+  Grid,
+  Card,
+  CardContent,
+  Tabs,
+  Tab,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  FormHelperText,
+  FormControlLabel,
+  Switch,
+  Alert,
+  AlertTitle,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import HistoryIcon from '@mui/icons-material/History';
+import WarningIcon from '@mui/icons-material/Warning';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { useAdherenceLogs } from '../../queries/medicationManagementQueries';
+import dayjs from 'dayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+
+interface Medication {
+  id: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  route: string;
+  startDate: string | null | undefined;
+  endDate: string | null | undefined;
+  indication: string;
+  prescriber: string;
+  allergyCheck: {
+    status: boolean;
+    details: string;
+  };
+  status: 'active' | 'archived' | 'cancelled';
+  patientId: string;
+}
+
+interface MedicationData {
+  id: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  route: string;
+  startDate: string | Date | undefined;
+  endDate: string | Date | undefined;
+  indication: string;
+  prescriber: string;
+  allergyCheck: {
+    status: boolean;
+    details: string;
+  };
+  status: 'active' | 'archived' | 'cancelled';
+  patientId: string;
+}
+
+interface MedicationFormValues {
+  name: string;
+  dosage: string;
+  frequency: string;
+  route: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  indication: string;
+  prescriber: string;
+  allergyCheck: {
+    status: boolean;
+    details: string;
+  };
+  status: 'active' | 'archived' | 'cancelled';
+}
+
+interface MedicationListProps {
+  medications: (Medication | MedicationData)[];
+  onEdit: (medication: Medication | MedicationData) => void;
+  onArchive: (medicationId: string) => void;
+  onAddAdherence: (medicationId: string) => void;
+  onViewHistory: (medicationId: string) => void;
+  isArchived?: boolean;
+  showStatus?: boolean;
+}
+
+interface AdherenceRecord {
+  id: string;
+  medicationId: string;
+  refillDate: string | Date;
+  adherenceScore: number;
+  pillCount: number;
+  notes: string;
+  createdAt: string | Date;
+}
+
+// Import types from services
+import {
+  AdherenceLogData,
+  MedicationCreateData,
+} from '../../services/medicationManagementService';
+
+const initialFormValues: MedicationFormValues = {
+  name: '',
+  dosage: '',
+  frequency: '',
+  route: 'oral',
+  startDate: new Date(),
+  endDate: null,
+  indication: '',
+  prescriber: '',
+  allergyCheck: {
+    status: false,
+    details: '',
+  },
+  status: 'active',
+};
+
+const routeOptions = [
+  { value: 'oral', label: 'Oral' },
+  { value: 'topical', label: 'Topical' },
+  { value: 'inhalation', label: 'Inhalation' },
+  { value: 'injection', label: 'Injection' },
+  { value: 'sublingual', label: 'Sublingual' },
+  { value: 'rectal', label: 'Rectal' },
+  { value: 'vaginal', label: 'Vaginal' },
+  { value: 'ophthalmic', label: 'Ophthalmic' },
+  { value: 'otic', label: 'Otic' },
+  { value: 'nasal', label: 'Nasal' },
+  { value: 'transdermal', label: 'Transdermal' },
+  { value: 'other', label: 'Other' },
+];
+
+const frequencyOptions = [
+  { value: 'once daily', label: 'Once Daily' },
+  { value: 'twice daily', label: 'Twice Daily' },
+  { value: 'three times daily', label: 'Three Times Daily' },
+  { value: 'four times daily', label: 'Four Times Daily' },
+  { value: 'every morning', label: 'Every Morning' },
+  { value: 'every night', label: 'Every Night' },
+  { value: 'as needed', label: 'As Needed (PRN)' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'other', label: 'Other' },
+];
+
+interface PatientMedicationsPageProps {
+  patientId?: string;
+}
+
+const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
+  patientId: propPatientId,
+}) => {
+  const { patientId: paramPatientId } = useParams<{ patientId: string }>();
+  const patientId = propPatientId || paramPatientId;
+  const [tabValue, setTabValue] = useState(0);
+  const [medicationDialogOpen, setMedicationDialogOpen] = useState(false);
+  const [adherenceDialogOpen, setAdherenceDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [formValues, setFormValues] =
+    useState<MedicationFormValues>(initialFormValues);
+  const [adherenceValues, setAdherenceValues] = useState({
+    medicationId: '',
+    refillDate: new Date(),
+    adherenceScore: 100,
+    pillCount: 0,
+    notes: '',
+  });
+  const [currentMedicationId, setCurrentMedicationId] = useState<string | null>(
+    null
+  );
+  const [selectedMedicationHistory, setSelectedMedicationHistory] = useState<
+    AdherenceRecord[]
+  >([]);
+  const [interactionCheckEnabled, setInteractionCheckEnabled] = useState(true);
+  const [interactions, setInteractions] = useState<string[]>([]);
+
+  // Fetch medications
+  // Fetch adherence logs but we need to treat them as medications for the UI
+  const { data: adherenceLogsAsMedications, isLoading } = useAdherenceLogs(
+    patientId || ''
+  );
+
+  // Convert adherence logs to a format compatible with medications
+  const medications: (Medication | MedicationData)[] = React.useMemo(() => {
+    if (!adherenceLogsAsMedications) return [];
+    return adherenceLogsAsMedications.map(
+      (log) =>
+        ({
+          id: log._id,
+          name: `Medication ${log._id.substring(0, 5)}`, // Placeholder since logs don't have names
+          dosage: 'Unknown',
+          frequency: 'Unknown',
+          route: 'Unknown',
+          startDate: log.refillDate,
+          endDate: null,
+          indication: '',
+          prescriber: '',
+          allergyCheck: { status: false, details: '' },
+          status: 'active', // Default status
+          patientId: log.patientId,
+        } as Medication)
+    );
+  }, [adherenceLogsAsMedications]);
+  const { data: adherenceLogs } = useAdherenceLogs(patientId || '');
+
+  // Mock mutations for demo
+  const createMutation = {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    mutateAsync: async (_: MedicationCreateData) => ({}),
+  };
+  const updateMutation = {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    mutateAsync: async (_: {
+      id: string;
+      data: Partial<MedicationData>;
+    }) => ({}),
+  };
+  const archiveMutation = {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    mutateAsync: async (_: { id: string; status: string }) => ({}),
+  };
+  const createAdherenceMutation = {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    mutateAsync: async (_: Partial<AdherenceLogData>) => ({}),
+  };
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      if (parent === 'allergyCheck') {
+        setFormValues({
+          ...formValues,
+          allergyCheck: {
+            ...formValues.allergyCheck,
+            [child]: value,
+          },
+        });
+      }
+    } else {
+      setFormValues({
+        ...formValues,
+        [name]: value,
+      });
+    }
+  };
+
+  const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    if (name === 'allergyCheck.status') {
+      setFormValues({
+        ...formValues,
+        allergyCheck: {
+          ...formValues.allergyCheck,
+          status: checked,
+        },
+      });
+    } else if (name === 'interactionCheck') {
+      setInteractionCheckEnabled(checked);
+    }
+  };
+
+  // Handler for MUI Select components
+  const handleStatusChange = (
+    event:
+      | React.ChangeEvent<HTMLInputElement>
+      | {
+          target: { value: string; name: string };
+        }
+  ) => {
+    setFormValues({
+      ...formValues,
+      status: event.target.value as 'active' | 'archived' | 'cancelled',
+    });
+  };
+
+  // Handler for MUI Select components
+  const handleRouteChange = (
+    event:
+      | React.ChangeEvent<HTMLInputElement>
+      | {
+          target: { value: string; name: string };
+        }
+  ) => {
+    setFormValues({
+      ...formValues,
+      route: event.target.value as string,
+    });
+  };
+
+  // Handler for MUI Select components
+  const handleFrequencyChange = (
+    event:
+      | React.ChangeEvent<HTMLInputElement>
+      | {
+          target: { value: string; name: string };
+        }
+  ) => {
+    setFormValues({
+      ...formValues,
+      frequency: event.target.value as string,
+    });
+  };
+
+  const handleDateChange = (name: string, date: Date | null) => {
+    setFormValues({
+      ...formValues,
+      [name]: date,
+    });
+  };
+
+  const handleAdherenceValueChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, value } = e.target;
+    setAdherenceValues({
+      ...adherenceValues,
+      [name]:
+        name === 'adherenceScore' || name === 'pillCount'
+          ? parseInt(value, 10) || 0
+          : value,
+    });
+  };
+
+  const handleAdherenceDateChange = (date: Date | null) => {
+    if (date) {
+      setAdherenceValues({
+        ...adherenceValues,
+        refillDate: date,
+      });
+    }
+  };
+
+  const handleOpenMedicationDialog = () => {
+    setCurrentMedicationId(null);
+    setFormValues(initialFormValues);
+    setMedicationDialogOpen(true);
+  };
+
+  const handleOpenEditMedicationDialog = (
+    medication: Medication | MedicationData
+  ) => {
+    setCurrentMedicationId(medication.id);
+    setFormValues({
+      name: medication.name,
+      dosage: medication.dosage,
+      frequency: medication.frequency,
+      route: medication.route,
+      startDate: medication.startDate ? new Date(medication.startDate) : null,
+      endDate: medication.endDate ? new Date(medication.endDate) : null,
+      indication: medication.indication,
+      prescriber: medication.prescriber,
+      allergyCheck: medication.allergyCheck,
+      status: medication.status,
+    });
+    setMedicationDialogOpen(true);
+  };
+
+  const handleOpenAdherenceDialog = (medicationId: string) => {
+    setAdherenceValues({
+      ...adherenceValues,
+      medicationId,
+    });
+    setAdherenceDialogOpen(true);
+  };
+
+  const handleOpenHistoryDialog = (medicationId: string) => {
+    if (adherenceLogs) {
+      const filteredLogs = adherenceLogs.filter(
+        (log) => log.medicationId === medicationId
+      );
+      // Convert AdherenceLogData to AdherenceRecord format
+      setSelectedMedicationHistory(
+        filteredLogs.map((log: AdherenceLogData) => ({
+          id: log._id,
+          medicationId: log.medicationId,
+          refillDate: log.refillDate,
+          adherenceScore: log.adherenceScore,
+          pillCount: log.pillCount ?? 0, // Provide default value for optional field
+          notes: log.notes ?? '', // Provide default value for optional field
+          createdAt: log.createdAt,
+        }))
+      );
+      setHistoryDialogOpen(true);
+    }
+  };
+
+  const handleOpenArchiveDialog = (medicationId: string) => {
+    setCurrentMedicationId(medicationId);
+    setArchiveDialogOpen(true);
+  };
+
+  const handleSubmitMedication = async () => {
+    try {
+      // Check for interactions if enabled
+      if (interactionCheckEnabled && medications && medications.length > 0) {
+        // This would be a real API call in production
+        // For demo, we'll just simulate an interaction check
+        // Map medications to their names
+        const drugNames = medications.map((med) => med.name);
+        if (
+          !currentMedicationId &&
+          drugNames.includes('Warfarin') &&
+          formValues.name.includes('Aspirin')
+        ) {
+          setInteractions([
+            'Potential interaction detected: Warfarin + Aspirin may increase bleeding risk',
+          ]);
+          return; // Prevent submission if interactions found
+        }
+      }
+
+      if (currentMedicationId) {
+        // Update existing medication
+        const updateData = {
+          ...formValues,
+          startDate: formValues.startDate ? formValues.startDate : undefined,
+          endDate: formValues.endDate ? formValues.endDate : undefined,
+        };
+        await updateMutation.mutateAsync({
+          id: currentMedicationId,
+          data: updateData as Partial<MedicationData>,
+        });
+      } else {
+        // Create new medication
+        const createData = {
+          ...formValues,
+          patientId,
+          startDate: formValues.startDate ? formValues.startDate : undefined,
+          endDate: formValues.endDate ? formValues.endDate : undefined,
+        };
+        await createMutation.mutateAsync(createData as MedicationCreateData);
+      }
+
+      setMedicationDialogOpen(false);
+      setFormValues(initialFormValues);
+      setInteractions([]);
+      setCurrentMedicationId(null);
+    } catch (error) {
+      console.error('Error saving medication:', error);
+    }
+  };
+
+  const handleSubmitAdherence = async () => {
+    try {
+      await createAdherenceMutation.mutateAsync({
+        ...adherenceValues,
+      } as Partial<AdherenceLogData>);
+      setAdherenceDialogOpen(false);
+      setAdherenceValues({
+        medicationId: '',
+        refillDate: new Date(),
+        adherenceScore: 100,
+        pillCount: 0,
+        notes: '',
+      });
+    } catch (error) {
+      console.error('Error saving adherence record:', error);
+    }
+  };
+
+  const handleArchiveMedication = async () => {
+    if (!currentMedicationId) return;
+
+    try {
+      await archiveMutation.mutateAsync({
+        id: currentMedicationId,
+        status: 'archived',
+      });
+      setArchiveDialogOpen(false);
+      setCurrentMedicationId(null);
+    } catch (error) {
+      console.error('Error archiving medication:', error);
+    }
+  };
+
+  if (!patientId) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="warning">
+          <AlertTitle>No Patient Selected</AlertTitle>
+          Please select a patient to manage medications.
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '50vh',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Filter medications by status
+  const activeMedications =
+    medications?.filter((med) => med.status === 'active') || [];
+  const archivedMedications =
+    medications?.filter((med) => med.status === 'archived') || [];
+  const cancelledMedications =
+    medications?.filter((med) => med.status === 'cancelled') || [];
+
+  // Overall adherence calculation (simplified for demo)
+  const calculateOverallAdherence = (): number => {
+    if (!adherenceLogs || adherenceLogs.length === 0) return 0;
+
+    const totalScore = adherenceLogs.reduce(
+      (sum, log) => sum + log.adherenceScore,
+      0
+    );
+    return Math.round(totalScore / adherenceLogs.length);
+  };
+
+  const overallAdherence = calculateOverallAdherence();
+
+  return (
+    <Box sx={{ p: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3,
+        }}
+      >
+        <Typography variant="h5" component="h1">
+          Medication Management
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={handleOpenMedicationDialog}
+        >
+          Add Medication
+        </Button>
+      </Box>
+
+      <Grid container spacing={3}>
+        {/* Adherence Chart */}
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" component="div">
+                Average Adherence Score
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
+                <CircularProgress
+                  variant="determinate"
+                  value={overallAdherence}
+                  size={80}
+                  thickness={5}
+                  sx={{
+                    color:
+                      overallAdherence > 80
+                        ? 'success.main'
+                        : overallAdherence > 50
+                        ? 'warning.main'
+                        : 'error.main',
+                  }}
+                />
+                <Typography
+                  variant="h4"
+                  sx={{ ml: 2 }}
+                  color={
+                    overallAdherence > 80
+                      ? 'success.main'
+                      : overallAdherence > 50
+                      ? 'warning.main'
+                      : 'error.main'
+                  }
+                >
+                  {overallAdherence}%
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" component="div">
+                Active Medications
+              </Typography>
+              <Typography variant="h4">{activeMedications.length}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {archivedMedications.length} archived
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" component="div">
+                Last Adherence Check
+              </Typography>
+              <Typography variant="h6">
+                {adherenceLogs && adherenceLogs.length > 0
+                  ? new Date(
+                      adherenceLogs[adherenceLogs.length - 1].createdAt
+                    ).toLocaleDateString()
+                  : 'No records'}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <Paper sx={{ mt: 3 }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={tabValue} onChange={handleTabChange}>
+            <Tab label="Active Medications" />
+            <Tab label="Archived" />
+            <Tab label="Cancelled" />
+          </Tabs>
+        </Box>
+
+        {/* Active Medications */}
+        {tabValue === 0 && (
+          <Box sx={{ p: 2 }}>
+            {activeMedications.length === 0 ? (
+              <Typography variant="body1" sx={{ py: 2 }}>
+                No active medications found. Click "Add Medication" to get
+                started.
+              </Typography>
+            ) : (
+              <MedicationList
+                medications={activeMedications}
+                onEdit={handleOpenEditMedicationDialog}
+                onArchive={handleOpenArchiveDialog}
+                onAddAdherence={handleOpenAdherenceDialog}
+                onViewHistory={handleOpenHistoryDialog}
+              />
+            )}
+          </Box>
+        )}
+
+        {/* Archived Medications */}
+        {tabValue === 1 && (
+          <Box sx={{ p: 2 }}>
+            {archivedMedications.length === 0 ? (
+              <Typography variant="body1" sx={{ py: 2 }}>
+                No archived medications found.
+              </Typography>
+            ) : (
+              <MedicationList
+                medications={archivedMedications}
+                onEdit={handleOpenEditMedicationDialog}
+                onArchive={handleOpenArchiveDialog}
+                onAddAdherence={handleOpenAdherenceDialog}
+                onViewHistory={handleOpenHistoryDialog}
+                isArchived={true}
+              />
+            )}
+          </Box>
+        )}
+
+        {/* Cancelled Medications */}
+        {tabValue === 2 && (
+          <Box sx={{ p: 2 }}>
+            {cancelledMedications.length === 0 ? (
+              <Typography variant="body1" sx={{ py: 2 }}>
+                No cancelled medications found.
+              </Typography>
+            ) : (
+              <MedicationList
+                medications={cancelledMedications}
+                onEdit={handleOpenEditMedicationDialog}
+                onArchive={handleOpenArchiveDialog}
+                onAddAdherence={handleOpenAdherenceDialog}
+                onViewHistory={handleOpenHistoryDialog}
+                isArchived={true}
+              />
+            )}
+          </Box>
+        )}
+      </Paper>
+
+      {/* Medication Dialog */}
+      <Dialog
+        open={medicationDialogOpen}
+        onClose={() => setMedicationDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          {currentMedicationId ? 'Edit Medication' : 'Add New Medication'}
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                name="name"
+                label="Medication Name"
+                value={formValues.name}
+                onChange={handleInputChange}
+                fullWidth
+                required
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                name="dosage"
+                label="Dosage"
+                value={formValues.dosage}
+                onChange={handleInputChange}
+                fullWidth
+                required
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth>
+                <InputLabel id="frequency-label">Frequency</InputLabel>
+                <Select
+                  labelId="frequency-label"
+                  id="frequency"
+                  name="frequency"
+                  value={formValues.frequency}
+                  onChange={handleFrequencyChange}
+                  label="Frequency"
+                  required
+                >
+                  {frequencyOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth>
+                <InputLabel id="route-label">Route</InputLabel>
+                <Select
+                  labelId="route-label"
+                  id="route"
+                  name="route"
+                  value={formValues.route}
+                  onChange={handleRouteChange}
+                  label="Route"
+                  required
+                >
+                  {routeOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="Start Date"
+                  value={
+                    formValues.startDate ? dayjs(formValues.startDate) : null
+                  }
+                  onChange={(date) =>
+                    handleDateChange(
+                      'startDate',
+                      date ? new Date(date.toString()) : null
+                    )
+                  }
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </LocalizationProvider>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="End Date (Optional)"
+                  value={formValues.endDate ? dayjs(formValues.endDate) : null}
+                  onChange={(date) =>
+                    handleDateChange(
+                      'endDate',
+                      date ? new Date(date.toString()) : null
+                    )
+                  }
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </LocalizationProvider>
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                name="indication"
+                label="Indication"
+                value={formValues.indication}
+                onChange={handleInputChange}
+                fullWidth
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                name="prescriber"
+                label="Prescriber"
+                value={formValues.prescriber}
+                onChange={handleInputChange}
+                fullWidth
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formValues.allergyCheck.status}
+                    onChange={handleSwitchChange}
+                    name="allergyCheck.status"
+                    color="primary"
+                  />
+                }
+                label="Patient has allergies related to this medication"
+              />
+              {formValues.allergyCheck.status && (
+                <TextField
+                  name="allergyCheck.details"
+                  label="Allergy Details"
+                  value={formValues.allergyCheck.details}
+                  onChange={handleInputChange}
+                  fullWidth
+                  margin="normal"
+                />
+              )}
+            </Grid>
+
+            {/* Interaction check toggle */}
+            <Grid size={{ xs: 12 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={interactionCheckEnabled}
+                    onChange={handleSwitchChange}
+                    name="interactionCheck"
+                    color="primary"
+                  />
+                }
+                label="Check for drug interactions before saving"
+              />
+            </Grid>
+
+            {/* Status field for edit mode */}
+            {currentMedicationId && (
+              <Grid size={{ xs: 12 }}>
+                <FormControl fullWidth>
+                  <InputLabel id="status-label">Status</InputLabel>
+                  <Select
+                    labelId="status-label"
+                    id="status"
+                    name="status"
+                    value={formValues.status}
+                    onChange={handleStatusChange}
+                    label="Status"
+                  >
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="archived">Archived</MenuItem>
+                    <MenuItem value="cancelled">Cancelled</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
+
+            {/* Show interactions if any */}
+            {interactions.length > 0 && (
+              <Grid size={{ xs: 12 }}>
+                <Alert severity="warning" sx={{ mt: 2 }}>
+                  <AlertTitle>Potential Interactions Detected</AlertTitle>
+                  <ul>
+                    {interactions.map((interaction, index) => (
+                      <li key={index}>{interaction}</li>
+                    ))}
+                  </ul>
+                  <Box sx={{ mt: 1 }}>
+                    Override and continue? Check with prescriber first.
+                  </Box>
+                </Alert>
+              </Grid>
+            )}
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMedicationDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleSubmitMedication}
+            variant="contained"
+            color="primary"
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Adherence Dialog */}
+      <Dialog
+        open={adherenceDialogOpen}
+        onClose={() => setAdherenceDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Record Medication Adherence</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid size={{ xs: 12 }}>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="Refill Date"
+                  value={dayjs(adherenceValues.refillDate)}
+                  onChange={(date) =>
+                    handleAdherenceDateChange(
+                      date ? new Date(date.toString()) : null
+                    )
+                  }
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </LocalizationProvider>
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                name="adherenceScore"
+                label="Adherence Score (%)"
+                type="number"
+                value={adherenceValues.adherenceScore}
+                onChange={handleAdherenceValueChange}
+                fullWidth
+                inputProps={{ min: 0, max: 100 }}
+              />
+              <FormHelperText>
+                0% = No adherence, 100% = Perfect adherence
+              </FormHelperText>
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                name="pillCount"
+                label="Remaining Pill Count"
+                type="number"
+                value={adherenceValues.pillCount}
+                onChange={handleAdherenceValueChange}
+                fullWidth
+                inputProps={{ min: 0 }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                name="notes"
+                label="Notes"
+                value={adherenceValues.notes}
+                onChange={handleAdherenceValueChange}
+                fullWidth
+                multiline
+                rows={3}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAdherenceDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleSubmitAdherence}
+            variant="contained"
+            color="primary"
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Medication History Dialog */}
+      <Dialog
+        open={historyDialogOpen}
+        onClose={() => setHistoryDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Medication Adherence History</DialogTitle>
+        <DialogContent>
+          {selectedMedicationHistory.length === 0 ? (
+            <Typography>
+              No adherence records found for this medication.
+            </Typography>
+          ) : (
+            <Box>
+              {selectedMedicationHistory.map((record) => (
+                <Paper key={record.id} sx={{ p: 2, my: 1 }}>
+                  <Typography variant="subtitle1">
+                    {new Date(record.refillDate).toLocaleDateString()}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                    <Typography variant="body2" sx={{ mr: 1 }}>
+                      Adherence Score:
+                    </Typography>
+                    <Chip
+                      icon={
+                        record.adherenceScore > 80 ? (
+                          <CheckCircleIcon />
+                        ) : record.adherenceScore > 50 ? (
+                          <WarningIcon />
+                        ) : (
+                          <WarningIcon color="error" />
+                        )
+                      }
+                      label={`${record.adherenceScore}%`}
+                      color={
+                        record.adherenceScore > 80
+                          ? 'success'
+                          : record.adherenceScore > 50
+                          ? 'warning'
+                          : 'error'
+                      }
+                    />
+                  </Box>
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    Pill Count: {record.pillCount}
+                  </Typography>
+                  {record.notes && (
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      Notes: {record.notes}
+                    </Typography>
+                  )}
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHistoryDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Archive Confirmation Dialog */}
+      <Dialog
+        open={archiveDialogOpen}
+        onClose={() => setArchiveDialogOpen(false)}
+      >
+        <DialogTitle>Archive Medication</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to archive this medication? This will mark it
+            as no longer active, but the record will be preserved for historical
+            purposes.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setArchiveDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleArchiveMedication}
+            variant="contained"
+            color="primary"
+          >
+            Archive
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+// Medication List Component
+const MedicationList: React.FC<MedicationListProps> = ({
+  medications,
+  onEdit,
+  onArchive,
+  onAddAdherence,
+  onViewHistory,
+  isArchived = false,
+  showStatus = false,
+}) => {
+  return (
+    <Box>
+      {medications.map((medication) => (
+        <Paper key={medication.id} sx={{ p: 2, mb: 2 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+            }}
+          >
+            <Box>
+              <Typography variant="h6" component="div">
+                {medication.name}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                {medication.dosage} - {medication.frequency} ({medication.route}
+                )
+              </Typography>
+              <Typography variant="body2">
+                Start Date:{' '}
+                {medication.startDate
+                  ? new Date(medication.startDate).toLocaleDateString()
+                  : 'Not specified'}
+              </Typography>
+              {medication.endDate && (
+                <Typography variant="body2">
+                  End Date: {new Date(medication.endDate).toLocaleDateString()}
+                </Typography>
+              )}
+              {showStatus && (
+                <Chip
+                  label={medication.status.toUpperCase()}
+                  color={
+                    medication.status === 'active'
+                      ? 'success'
+                      : medication.status === 'archived'
+                      ? 'default'
+                      : 'error'
+                  }
+                  size="small"
+                  sx={{ mt: 1 }}
+                />
+              )}
+              {medication.allergyCheck.status && (
+                <Chip
+                  icon={<WarningIcon />}
+                  label="Allergy Alert"
+                  color="warning"
+                  size="small"
+                  sx={{ mt: 1, ml: showStatus ? 1 : 0 }}
+                />
+              )}
+            </Box>
+            <Box>
+              <Button
+                startIcon={<EditIcon />}
+                onClick={() => onEdit(medication)}
+                size="small"
+                sx={{ mr: 1 }}
+              >
+                Edit
+              </Button>
+              {!isArchived && (
+                <>
+                  <Button
+                    startIcon={<HistoryIcon />}
+                    onClick={() => onViewHistory(medication.id)}
+                    size="small"
+                    sx={{ mr: 1 }}
+                  >
+                    History
+                  </Button>
+                  <Button
+                    startIcon={<AddIcon />}
+                    onClick={() => onAddAdherence(medication.id)}
+                    size="small"
+                    sx={{ mr: 1 }}
+                  >
+                    Add Adherence
+                  </Button>
+                  <Button
+                    startIcon={<DeleteIcon />}
+                    onClick={() => onArchive(medication.id)}
+                    size="small"
+                    color="error"
+                  >
+                    Archive
+                  </Button>
+                </>
+              )}
+            </Box>
+          </Box>
+        </Paper>
+      ))}
+    </Box>
+  );
+};
+
+export default PatientMedicationsPage;
