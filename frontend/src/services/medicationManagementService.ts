@@ -179,7 +179,7 @@ const medicationManagementService = {
     endDate?: string | Date
   ): Promise<AdherenceLogData[]> => {
     const response = await api.get(
-      `/api/medication-management/adherence/patient/${patientId}`,
+      `/medication-management/adherence/patient/${patientId}`,
       {
         params: { startDate, endDate },
       }
@@ -195,6 +195,47 @@ const medicationManagementService = {
       '/api/medication-management/check-interactions',
       {
         medications,
+      }
+    );
+    return response.data.data;
+  },
+
+  // Dashboard endpoints
+  getDashboardStats: async (): Promise<{
+    activeMedications: number;
+    averageAdherence: number;
+    interactionAlerts: number;
+  }> => {
+    const response = await api.get('/medication-management/dashboard/stats');
+    return response.data.data;
+  },
+
+  getAdherenceTrends: async (
+    period?: string
+  ): Promise<{ name: string; adherence: number }[]> => {
+    const response = await api.get(
+      '/medication-management/dashboard/adherence-trends',
+      {
+        params: { period },
+      }
+    );
+    return response.data.data;
+  },
+
+  getRecentPatientsWithMedications: async (
+    limit?: number
+  ): Promise<
+    {
+      id: string;
+      name: string;
+      medicationCount: number;
+      lastUpdate: string;
+    }[]
+  > => {
+    const response = await api.get(
+      '/medication-management/dashboard/recent-patients',
+      {
+        params: { limit },
       }
     );
     return response.data.data;
