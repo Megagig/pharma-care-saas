@@ -8,6 +8,9 @@ import {
   logAdherence,
   getAdherenceLogs,
   checkInteractions,
+  getMedicationDashboardStats,
+  getMedicationAdherenceTrends,
+  getRecentPatientsWithMedications,
 } from '../controllers/medicationManagementController';
 import {
   createMedicationSchema,
@@ -74,5 +77,15 @@ router.post(
   validate,
   checkInteractions
 );
+
+// Dashboard Routes
+// GET /api/medication-management/dashboard/stats - Get medication dashboard statistics
+router.get('/dashboard/stats', getMedicationDashboardStats);
+
+// GET /api/medication-management/dashboard/adherence-trends - Get medication adherence trends for chart
+router.get('/dashboard/adherence-trends', getMedicationAdherenceTrends);
+
+// GET /api/medication-management/dashboard/recent-patients - Get recent patients with medications
+router.get('/dashboard/recent-patients', getRecentPatientsWithMedications);
 
 export default router;
