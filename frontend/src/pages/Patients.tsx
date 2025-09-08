@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -104,6 +104,8 @@ const GENOTYPES: Genotype[] = ['AA', 'AS', 'SS', 'AC', 'SC', 'CC'];
 
 const Patients = () => {
   const navigate = useNavigate();
+  const [urlParams] = useSearchParams();
+  const isForMedications = urlParams.get('for') === 'medications';
 
   // RBAC permissions
   const { permissions } = useRBAC();
@@ -205,7 +207,12 @@ const Patients = () => {
   };
 
   const handleViewPatient = (patientId: string) => {
-    navigate(`/patients/${patientId}`);
+    // If we're selecting a patient for medications, navigate to the medications page
+    if (isForMedications) {
+      navigate(`/patients/${patientId}/medications`);
+    } else {
+      navigate(`/patients/${patientId}`);
+    }
     handleMenuClose();
   };
 
