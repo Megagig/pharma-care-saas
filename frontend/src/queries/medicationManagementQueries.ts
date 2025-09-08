@@ -4,6 +4,9 @@ import medicationManagementService, {
   MedicationUpdateData,
   AdherenceLogCreateData,
   InteractionCheckItem,
+  // Removing unused types
+  // MedicationReminderSettings,
+  // MedicationMonitoringSettings,
 } from '../services/medicationManagementService';
 
 // Query Keys
@@ -21,6 +24,18 @@ export const medicationKeys = {
     endDate?: string;
   }) => [...medicationKeys.adherence(), filters] as const,
   interactions: () => [...medicationKeys.all, 'interactions'] as const,
+  analytics: () => [...medicationKeys.all, 'analytics'] as const,
+  adherenceAnalytics: (patientId: string, period: string) =>
+    [...medicationKeys.analytics(), 'adherence', patientId, period] as const,
+  prescriptionPatternAnalytics: (patientId: string) =>
+    [...medicationKeys.analytics(), 'prescriptionPatterns', patientId] as const,
+  interactionAnalytics: (patientId: string) =>
+    [...medicationKeys.analytics(), 'interactions', patientId] as const,
+  medicationSummary: (patientId: string) =>
+    [...medicationKeys.analytics(), 'summary', patientId] as const,
+  settings: () => [...medicationKeys.all, 'settings'] as const,
+  patientSettings: (patientId: string) =>
+    [...medicationKeys.settings(), patientId] as const,
 };
 
 // Medication Hooks
@@ -170,5 +185,131 @@ export const useCheckInteractions = () => {
   return useMutation({
     mutationFn: (medications: InteractionCheckItem[]) =>
       medicationManagementService.checkInteractions(medications),
+  });
+};
+
+/**
+ * Hook for getting patient medication settings
+ */
+export const usePatientMedicationSettings = (patientId: string) => {
+  return useQuery({
+    queryKey: medicationKeys.patientSettings(patientId),
+    queryFn: () =>
+      medicationManagementService.getPatientMedicationSettings(patientId),
+    enabled: !!patientId,
+  });
+};
+
+/**
+ * Hook for updating patient medication settings
+ */
+export const useUpdatePatientMedicationSettings = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      patientId,
+      settings,
+    }: {
+      patientId: string;
+      settings: {
+        reminderSettings?: {
+          enabled?: boolean;
+          defaultReminderTimes?: string[];
+          reminderMethod?: 'email' | 'sms' | 'both';
+          defaultNotificationLeadTime?: number;
+        };
+        monitoringSettings?: {
+          adherenceMonitoring?: boolean;
+          refillReminders?: boolean;
+          interactionChecking?: boolean;
+        };
+      };
+    }) =>
+      medicationManagementService.updatePatientMedicationSettings(
+        patientId,
+        settings
+      ),
+    onSuccess: (_, variables) => {
+      // Invalidate patient settings
+      queryClient.invalidateQueries({
+        queryKey: medicationKeys.patientSettings(variables.patientId),
+      });
+    },
+  });
+};
+
+/**
+ * Hook for testing notifications
+ */
+export const useTestNotification = () => {
+  return useMutation({
+    mutationFn: ({
+      patientId,
+      type,
+      contact,
+    }: {
+      patientId: string;
+      type: 'email' | 'sms';
+      contact: string;
+    }) =>
+      medicationManagementService.testNotification(patientId, type, contact),
+  });
+};
+
+// Analytics Hooks
+
+/**
+ * Hook to get adherence analytics for a patient
+ */
+export const useAdherenceAnalytics = (
+  patientId: string,
+  period: string = '6months'
+) => {
+  return useQuery({
+    queryKey: medicationKeys.adherenceAnalytics(patientId, period),
+    queryFn: () =>
+      medicationManagementService.getAdherenceAnalytics(patientId, period),
+    enabled: !!patientId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * Hook to get prescription pattern analytics for a patient
+ */
+export const usePrescriptionPatternAnalytics = (patientId: string) => {
+  return useQuery({
+    queryKey: medicationKeys.prescriptionPatternAnalytics(patientId),
+    queryFn: () =>
+      medicationManagementService.getPrescriptionPatternAnalytics(patientId),
+    enabled: !!patientId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * Hook to get medication interaction analytics for a patient
+ */
+export const useInteractionAnalytics = (patientId: string) => {
+  return useQuery({
+    queryKey: medicationKeys.interactionAnalytics(patientId),
+    queryFn: () =>
+      medicationManagementService.getMedicationInteractionAnalytics(patientId),
+    enabled: !!patientId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * Hook to get medication summary for a patient
+ */
+export const usePatientMedicationSummary = (patientId: string) => {
+  return useQuery({
+    queryKey: medicationKeys.medicationSummary(patientId),
+    queryFn: () =>
+      medicationManagementService.getPatientMedicationSummary(patientId),
+    enabled: !!patientId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

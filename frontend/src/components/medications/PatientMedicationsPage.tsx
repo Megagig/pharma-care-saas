@@ -20,6 +20,7 @@ import {
   TextField,
   MenuItem,
   Select,
+  SelectChangeEvent,
   FormControl,
   InputLabel,
   FormHelperText,
@@ -46,11 +47,31 @@ import {
   useUpdateMedication,
   useArchiveMedication,
   useLogAdherence,
+  useAdherenceAnalytics,
+  usePrescriptionPatternAnalytics,
+  useInteractionAnalytics,
+  usePatientMedicationSummary,
 } from '../../queries/medicationManagementQueries';
 import { usePatient } from '../../queries/usePatients';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 import dayjs from 'dayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import MedicationSettingsPanel from './MedicationSettingsPanel';
 
 interface Medication {
   id: string;
@@ -187,6 +208,60 @@ const frequencyOptions = [
 
 interface PatientMedicationsPageProps {
   patientId?: string;
+}
+
+interface AdherenceData {
+  monthlyAdherence: {
+    month: string;
+    adherence: number;
+  }[];
+  averageAdherence: number;
+  trendDirection: string;
+  complianceDays: {
+    day: string;
+    count: number;
+  }[];
+}
+
+interface PrescriptionData {
+  medicationsByCategory: {
+    category: string;
+    count: number;
+  }[];
+  medicationsByRoute: {
+    route: string;
+    count: number;
+  }[];
+  prescriptionFrequency: {
+    month: string;
+    count: number;
+  }[];
+  topPrescribers: {
+    prescriber: string;
+    count: number;
+  }[];
+}
+
+interface InteractionData {
+  severityDistribution: {
+    severity: string;
+    count: number;
+  }[];
+  interactionTrends: {
+    month: string;
+    count: number;
+  }[];
+}
+
+interface MedicationSummaryData {
+  activeCount: number;
+  archivedCount: number;
+  cancelledCount: number;
+  adherenceRate: number;
+  interactionCount: number;
+  mostCommonCategory: string;
+  mostCommonRoute: string;
+  lastUpdated: string;
 }
 
 const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
@@ -791,6 +866,8 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
             <Tab label="Active Medications" />
             <Tab label="Archived" />
             <Tab label="Cancelled" />
+            <Tab label="Analytics" />
+            <Tab label="Settings" />
           </Tabs>
         </Box>
 
@@ -851,6 +928,20 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
                 isArchived={true}
               />
             )}
+          </Box>
+        )}
+
+        {/* Analytics Tab */}
+        {tabValue === 3 && (
+          <Box sx={{ p: 2 }}>
+            <MedicationAnalyticsPanel patientId={patientId} />
+          </Box>
+        )}
+
+        {/* Settings Tab */}
+        {tabValue === 4 && (
+          <Box sx={{ p: 2 }}>
+            <MedicationSettingsPanel patientId={patientId} />
           </Box>
         )}
       </Paper>
@@ -1501,6 +1592,460 @@ const MedicationList: React.FC<MedicationListProps> = ({
           </Box>
         </Paper>
       ))}
+    </Box>
+  );
+};
+
+// Analytics Components
+interface MedicationAnalyticsPanelProps {
+  patientId: string;
+}
+
+const COLORS = [
+  '#0088FE',
+  '#00C49F',
+  '#FFBB28',
+  '#FF8042',
+  '#8884d8',
+  '#82ca9d',
+];
+
+const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
+  patientId,
+}) => {
+  const [adherencePeriod, setAdherencePeriod] = useState<string>('6months');
+  const [activeTab, setActiveTab] = useState<number>(0);
+
+  // Fetch analytics data
+  const { data: adherenceData, isLoading: isLoadingAdherence } =
+    useAdherenceAnalytics(patientId, adherencePeriod);
+
+  const { data: prescriptionData, isLoading: isLoadingPrescription } =
+    usePrescriptionPatternAnalytics(patientId);
+
+  const { data: interactionData, isLoading: isLoadingInteraction } =
+    useInteractionAnalytics(patientId);
+
+  const { data: summaryData, isLoading: isLoadingSummary } =
+    usePatientMedicationSummary(patientId);
+
+  const handleAdherencePeriodChange = (event: SelectChangeEvent) => {
+    setAdherencePeriod(event.target.value);
+  };
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
+  if (
+    isLoadingAdherence ||
+    isLoadingPrescription ||
+    isLoadingInteraction ||
+    isLoadingSummary
+  ) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Until real API is implemented, provide mock data for visualization
+  // In a real implementation, this would use the fetched data
+  const mockAdherenceData: AdherenceData = adherenceData || {
+    monthlyAdherence: [
+      { month: 'Jan', adherence: 75 },
+      { month: 'Feb', adherence: 82 },
+      { month: 'Mar', adherence: 78 },
+      { month: 'Apr', adherence: 85 },
+      { month: 'May', adherence: 90 },
+      { month: 'Jun', adherence: 88 },
+    ],
+    averageAdherence: 83,
+    trendDirection: 'up',
+    complianceDays: [
+      { day: 'Mon', count: 24 },
+      { day: 'Tue', count: 26 },
+      { day: 'Wed', count: 28 },
+      { day: 'Thu', count: 25 },
+      { day: 'Fri', count: 22 },
+      { day: 'Sat', count: 18 },
+      { day: 'Sun', count: 20 },
+    ],
+  };
+
+  const mockPrescriptionData: PrescriptionData = prescriptionData || {
+    medicationsByCategory: [
+      { category: 'Cardiovascular', count: 5 },
+      { category: 'Analgesic', count: 3 },
+      { category: 'Antibiotic', count: 2 },
+      { category: 'Respiratory', count: 4 },
+      { category: 'CNS', count: 1 },
+    ],
+    medicationsByRoute: [
+      { route: 'Oral', count: 10 },
+      { route: 'Injection', count: 2 },
+      { route: 'Topical', count: 1 },
+      { route: 'Inhaled', count: 2 },
+    ],
+    prescriptionFrequency: [
+      { month: 'Jan', count: 3 },
+      { month: 'Feb', count: 2 },
+      { month: 'Mar', count: 4 },
+      { month: 'Apr', count: 1 },
+      { month: 'May', count: 5 },
+      { month: 'Jun', count: 3 },
+    ],
+    topPrescribers: [
+      { prescriber: 'Dr. Smith', count: 8 },
+      { prescriber: 'Dr. Johnson', count: 4 },
+      { prescriber: 'Dr. Williams', count: 3 },
+    ],
+  };
+
+  const mockInteractionData: InteractionData = interactionData || {
+    severityDistribution: [
+      { severity: 'Minor', count: 7 },
+      { severity: 'Moderate', count: 4 },
+      { severity: 'Severe', count: 1 },
+    ],
+    interactionTrends: [
+      { month: 'Jan', count: 2 },
+      { month: 'Feb', count: 3 },
+      { month: 'Mar', count: 1 },
+      { month: 'Apr', count: 4 },
+      { month: 'May', count: 2 },
+      { month: 'Jun', count: 0 },
+    ],
+  };
+
+  const mockSummaryData: MedicationSummaryData = summaryData || {
+    activeCount: 8,
+    archivedCount: 3,
+    cancelledCount: 1,
+    adherenceRate: 85,
+    interactionCount: 12,
+    mostCommonCategory: 'Cardiovascular',
+    mostCommonRoute: 'Oral',
+    lastUpdated: new Date().toISOString(),
+  };
+
+  return (
+    <Box sx={{ width: '100%' }}>
+      <Typography variant="h5" gutterBottom>
+        Medication Analytics Dashboard
+      </Typography>
+
+      {/* Summary Cards */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid sx={{ gridColumn: { xs: 'span 6', sm: 'span 3' } }}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle2" color="text.secondary">
+                Active Medications
+              </Typography>
+              <Typography variant="h4">
+                {mockSummaryData.activeCount}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid sx={{ gridColumn: { xs: 'span 6', sm: 'span 3' } }}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle2" color="text.secondary">
+                Avg. Adherence
+              </Typography>
+              <Typography variant="h4">
+                {mockSummaryData.adherenceRate}%
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid sx={{ gridColumn: { xs: 'span 6', sm: 'span 3' } }}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle2" color="text.secondary">
+                Potential Interactions
+              </Typography>
+              <Typography variant="h4">
+                {mockSummaryData.interactionCount}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid sx={{ gridColumn: { xs: 'span 6', sm: 'span 3' } }}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle2" color="text.secondary">
+                Most Common
+              </Typography>
+              <Typography variant="h6">
+                {mockSummaryData.mostCommonCategory}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Analytics Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={activeTab} onChange={handleTabChange}>
+          <Tab label="Adherence Trends" />
+          <Tab label="Prescription Patterns" />
+          <Tab label="Interactions" />
+        </Tabs>
+      </Box>
+
+      {/* Adherence Trends Tab */}
+      {activeTab === 0 && (
+        <Box sx={{ p: 2 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mb: 2,
+            }}
+          >
+            <Typography variant="h6">Medication Adherence Over Time</Typography>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel id="adherence-period-label">Period</InputLabel>
+              <Select
+                labelId="adherence-period-label"
+                value={adherencePeriod}
+                label="Period"
+                onChange={handleAdherencePeriodChange}
+              >
+                <MenuItem value="3months">Last 3 Months</MenuItem>
+                <MenuItem value="6months">Last 6 Months</MenuItem>
+                <MenuItem value="1year">Last Year</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+
+          <Paper sx={{ p: 2, mb: 3 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Monthly Adherence Rates
+            </Typography>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={mockAdherenceData.monthlyAdherence}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis domain={[0, 100]} />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="adherence"
+                  stroke="#8884d8"
+                  activeDot={{ r: 8 }}
+                  name="Adherence %"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Paper>
+
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Medication Compliance by Day of Week
+            </Typography>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={mockAdherenceData.complianceDays}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="count" fill="#82ca9d" name="Compliant Days" />
+              </BarChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Box>
+      )}
+
+      {/* Prescription Patterns Tab */}
+      {activeTab === 1 && (
+        <Box sx={{ p: 2 }}>
+          <Grid container spacing={3}>
+            <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 6' } }}>
+              <Paper sx={{ p: 2, height: '100%' }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Medications by Category
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={mockPrescriptionData.medicationsByCategory}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="count"
+                      nameKey="category"
+                      label={({ name, percent }) =>
+                        `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`
+                      }
+                    >
+                      {mockPrescriptionData.medicationsByCategory.map(
+                        (
+                          _entry: { category: string; count: number },
+                          index: number
+                        ) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        )
+                      )}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Grid>
+
+            <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 6' } }}>
+              <Paper sx={{ p: 2, height: '100%' }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Medications by Route
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={mockPrescriptionData.medicationsByRoute}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="count"
+                      nameKey="route"
+                      label={({ name, percent }) =>
+                        `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`
+                      }
+                    >
+                      {mockPrescriptionData.medicationsByRoute.map(
+                        (
+                          _entry: { route: string; count: number },
+                          index: number
+                        ) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        )
+                      )}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Grid>
+
+            <Grid sx={{ gridColumn: 'span 12' }}>
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Prescription Frequency Over Time
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={mockPrescriptionData.prescriptionFrequency}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar
+                      dataKey="count"
+                      fill="#8884d8"
+                      name="New Prescriptions"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+
+      {/* Interactions Tab */}
+      {activeTab === 2 && (
+        <Box sx={{ p: 2 }}>
+          <Grid container spacing={3}>
+            <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 6' } }}>
+              <Paper sx={{ p: 2, height: '100%' }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Interaction Severity Distribution
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={mockInteractionData.severityDistribution}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="count"
+                      nameKey="severity"
+                      label={({ name, percent }) =>
+                        `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`
+                      }
+                    >
+                      {mockInteractionData.severityDistribution.map(
+                        (
+                          entry: { severity: string; count: number },
+                          index: number
+                        ) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={
+                              entry.severity === 'Severe'
+                                ? '#ff6b6b'
+                                : entry.severity === 'Moderate'
+                                ? '#feca57'
+                                : '#1dd1a1'
+                            }
+                          />
+                        )
+                      )}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Grid>
+
+            <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 6' } }}>
+              <Paper sx={{ p: 2, height: '100%' }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Interaction Trends Over Time
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={mockInteractionData.interactionTrends}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="count"
+                      stroke="#ff6b6b"
+                      activeDot={{ r: 8 }}
+                      name="Interactions"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
     </Box>
   );
 };
