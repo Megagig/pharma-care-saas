@@ -144,7 +144,11 @@ const MedicationsManagementDashboard = () => {
               </Card>
             ))}
             <Box sx={{ textAlign: 'center', mt: 2 }}>
-              <Button variant="contained" component={Link} to="/patients">
+              <Button
+                variant="contained"
+                component={Link}
+                to="/patients?for=medications"
+              >
                 Select Patient
               </Button>
             </Box>

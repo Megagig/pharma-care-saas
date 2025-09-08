@@ -163,7 +163,7 @@ const Medications = () => {
           color="primary"
           startIcon={<AddIcon />}
           component={Link}
-          to="/patients"
+          to="/patients?for=medications"
         >
           Select Patient
         </Button>
