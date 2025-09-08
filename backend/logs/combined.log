@@ -3682,3 +3682,28 @@
 {"action":"SEARCH_CLINICAL_NOTES","auditId":"68bf206eca0901ffb91eb5f4","complianceCategory":"data_access","level":"info","message":"MTR Audit Log Created","resourceId":"68bf206eca0901ffb91eb5f3","resourceType":"ClinicalNote","riskLevel":"medium","service":"mtr-audit","timestamp":"2025-09-08 19:29:03","userId":"68b5cb81f1f0f9758b8afadd","workplaceId":"68b5cb82f1f0f9758b8afadf"}
 {"action":"CLINICAL_NOTE_ROUTE_ACCESS","auditId":"68bf206fca0901ffb91eb5f6","category":"data_access","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-08 19:29:03","userId":"68b5cb81f1f0f9758b8afadd"}
 {"action":"SEARCH_CLINICAL_NOTES","auditId":"68bf206fca0901ffb91eb5f7","category":"data_access","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":6,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-08 19:29:03","userId":"68b5cb81f1f0f9758b8afadd"}
+{"level":"info","message":"Cleaned up old performance metrics and alerts","service":"pharma-care-api","timestamp":"2025-09-08 19:59:34"}
+{"alertsRemoved":0,"level":"info","message":"Security monitoring cleanup completed","service":"security-monitoring","threatsRemoved":0,"timestamp":"2025-09-08 19:59:35"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-08 20:17:13"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-08 20:17:17"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-08 20:17:17"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-08 20:17:17"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-08 20:17:17"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-08 20:17:17"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-08 20:17:17"}
+{"alertId":"aja9vvp1l","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 90.17847344161545%, threshold is 85%","metric":"memory_heap_usage_percent","ruleId":"rkuboe5qw","service":"pharma-care-api","threshold":85,"timestamp":"2025-09-08 20:17:43","value":90.17847344161545}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-08 20:18:55"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-08 20:18:58"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-08 20:18:58"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-08 20:18:58"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-08 20:18:58"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-08 20:18:58"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-08 20:18:58"}
+{"alertId":"778gsj95x","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 89.29380414159024%, threshold is 85%","metric":"memory_heap_usage_percent","ruleId":"8vtt24ddh","service":"pharma-care-api","threshold":85,"timestamp":"2025-09-08 20:19:25","value":89.29380414159024}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68bf2e443b406d6445e5ff7f","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-08 20:28:04","userId":"68b5cb81f1f0f9758b8afadd"}
+{"action":"SEARCH_CLINICAL_NOTES","auditId":"68bf2eba3b406d6445e6001b","complianceCategory":"data_access","level":"info","message":"MTR Audit Log Created","resourceId":"68bf2eba3b406d6445e6001a","resourceType":"ClinicalNote","riskLevel":"medium","service":"mtr-audit","timestamp":"2025-09-08 20:30:03","userId":"68b5cb81f1f0f9758b8afadd","workplaceId":"68b5cb82f1f0f9758b8afadf"}
+{"action":"CLINICAL_NOTE_ROUTE_ACCESS","auditId":"68bf2ebb3b406d6445e6001f","category":"data_access","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-08 20:30:03","userId":"68b5cb81f1f0f9758b8afadd"}
+{"action":"SEARCH_CLINICAL_NOTES","auditId":"68bf2ebb3b406d6445e60020","category":"data_access","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":6,"service":"system-audit","severity":"medium","suspicious":false,"timestamp":"2025-09-08 20:30:03","userId":"68b5cb81f1f0f9758b8afadd"}
+{"level":"info","message":"Cleaned up old performance metrics and alerts","service":"pharma-care-api","timestamp":"2025-09-08 21:44:25"}
+{"alertsRemoved":0,"level":"info","message":"Security monitoring cleanup completed","service":"security-monitoring","threatsRemoved":0,"timestamp":"2025-09-08 21:44:26"}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68bf438a3b406d6445e600b5","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-08 21:58:50","userId":"68b5cb81f1f0f9758b8afadd"}
