@@ -67,7 +67,7 @@ export const getEnhancedAdherenceAnalytics = async (
       adherenceLogs,
       startDate,
       now
-    );
+    ) as { month: string; adherence: number }[];
 
     // Calculate average adherence
     const allScores = adherenceLogs
@@ -161,7 +161,9 @@ function generateMonthlyAdherenceData(
       monthlyData[monthKey] = [];
     }
 
-    monthlyData[monthKey].push(log.adherenceScore);
+    if (monthKey && log.adherenceScore !== undefined) {
+      monthlyData[monthKey].push(log.adherenceScore);
+    }
   }
 
   // Calculate averages
@@ -172,13 +174,14 @@ function generateMonthlyAdherenceData(
       return dateA.valueOf() - dateB.valueOf();
     })
     .map((month) => {
-      const scores = monthlyData[month];
-      const adherence = scores.length
-        ? Math.round(
-            (scores.reduce((sum, score) => sum + score, 0) / scores.length) *
-              100
-          )
-        : generateRandomAdherence(70, 95); // Fill with realistic sample data if no real data
+      const scores = monthlyData[month] || [];
+      const adherence =
+        scores && scores.length > 0
+          ? Math.round(
+              (scores.reduce((sum, score) => sum + score, 0) / scores.length) *
+                100
+            )
+          : generateRandomAdherence(70, 95); // Fill with realistic sample data if no real data
 
       return {
         month: month.split(' ')[0], // Just show month abbreviation
@@ -207,10 +210,10 @@ function generateDayOfWeekData(logs: any[], type: 'compliance' | 'missed') {
     const date = new Date(log.refillDate);
     const day = dayNames[date.getDay()];
 
-    if (type === 'compliance') {
-      dayData[day] += log.dosesTaken || 0;
-    } else {
-      dayData[day] += log.dosesMissed || 0;
+    if (day && type === 'compliance') {
+      dayData[day as keyof typeof dayData] += log.dosesTaken || 0;
+    } else if (day) {
+      dayData[day as keyof typeof dayData] += log.dosesMissed || 0;
     }
   }
 
@@ -270,7 +273,7 @@ function calculateTimeOfDayAdherence(
     .filter((log) => log.adherenceScore !== undefined)
     .map((log) => log.adherenceScore || 0);
 
-  return scores.length
+  return scores && scores.length > 0
     ? Math.round(
         (scores.reduce((sum, score) => sum + score, 0) / scores.length) * 100
       )
@@ -285,8 +288,8 @@ function determineTrendDirection(
 ): 'up' | 'down' | 'stable' {
   if (monthlyData.length < 2) return 'stable';
 
-  const last = monthlyData[monthlyData.length - 1].adherence;
-  const secondLast = monthlyData[monthlyData.length - 2].adherence;
+  const last = monthlyData[monthlyData.length - 1]?.adherence || 0;
+  const secondLast = monthlyData[monthlyData.length - 2]?.adherence || 0;
 
   if (last > secondLast + 5) return 'up';
   if (last < secondLast - 5) return 'down';
@@ -332,7 +335,7 @@ export const getPrescriptionPatternAnalytics = async (
     // Medications by category
     const categoryMap = new Map<string, number>();
     medications.forEach((med) => {
-      const category = med.category || 'Uncategorized';
+      const category = (med as any).category || 'Uncategorized';
       categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
     });
 
@@ -664,7 +667,6 @@ function generateInteractionTrendsData(startDate: Date, endDate: Date) {
     });
     current.setMonth(current.getMonth() + 1);
   }
-
   return monthlyData.length > 0
     ? monthlyData
     : [
@@ -696,7 +698,7 @@ export const getMedicationCostAnalytics = async (
       patient: patientId,
       workplaceId: workplaceId,
       isActive: true,
-      prescribedDate: { $gte: startDate },
+      createdAt: { $gte: startDate }, // Using createdAt instead of prescribedDate
     }).populate('medication');
 
     // Format cost data with Naira currency
@@ -706,8 +708,8 @@ export const getMedicationCostAnalytics = async (
       const monthEnd = moment().subtract(i, 'months').endOf('month');
 
       const medicationsInMonth = medications.filter((med) => {
-        const prescribedDate = moment(med.prescribedDate);
-        return prescribedDate.isBetween(monthStart, monthEnd, null, '[]');
+        const createdDate = moment(med.createdAt);
+        return createdDate.isBetween(monthStart, monthEnd, null, '[]');
       });
 
       const totalCost = medicationsInMonth.reduce((sum, med) => {
@@ -728,18 +730,21 @@ export const getMedicationCostAnalytics = async (
     }).reverse();
 
     // Calculate cost by medication category
-    const costByCategory = medications.reduce((acc, med) => {
-      // @ts-ignore - Adding category and cost properties to medication model
-      const category = med.medication?.category || 'Uncategorized';
-      // @ts-ignore
-      const cost = (med.medication?.cost || 0) * (med.quantity || 1);
+    const costByCategory = medications.reduce<Record<string, number>>(
+      (acc, med: any) => {
+        // Using any type as a temporary solution since the medication model structure isn't fully defined
+        const medication = med.medication || {};
+        const category = medication.category || 'Uncategorized';
+        const cost = (medication.cost || 0) * (med.quantity || 1);
 
-      if (!acc[category]) {
-        acc[category] = 0;
-      }
-      acc[category] += cost;
-      return acc;
-    }, {});
+        if (!acc[category]) {
+          acc[category] = 0;
+        }
+        acc[category] += cost;
+        return acc;
+      },
+      {}
+    );
 
     // Format category costs as array with Naira currency
     const costByCategoryFormatted = Object.entries(costByCategory).map(
@@ -781,7 +786,7 @@ export const getMedicationCostAnalytics = async (
     logger.error('Error getting medication cost analytics:', error);
     res.status(500).json({
       error: 'Failed to retrieve medication cost analytics',
-      details: error.message,
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 };
@@ -798,31 +803,36 @@ export const getDashboardAnalytics = async (
     const { patientId } = req.params;
     const workplaceId = req.user?.workplaceId;
 
+    // Create a mock response object
+    type MockResponse = {
+      json: <T>(data: T) => T;
+      status: () => { json: <T>(data: T) => T };
+      [key: string]: unknown;
+    };
+
     // Get adherence data
     const adherenceData = await getEnhancedAdherenceAnalytics(req, {
-      json: (data) => data,
-      status: () => ({ json: (data) => data }),
-    } as Response);
+      json: <T>(data: T) => data,
+      status: () => ({ json: <T>(data: T) => data }),
+    } as unknown as Response);
 
     // Get prescription pattern data
     const prescriptionData = await getPrescriptionPatternAnalytics(req, {
-      json: (data) => data,
-      status: () => ({ json: (data) => data }),
-    } as Response);
+      json: <T>(data: T) => data,
+      status: () => ({ json: <T>(data: T) => data }),
+    } as unknown as Response);
 
     // Get interaction data
     const interactionData = await getMedicationInteractionAnalytics(req, {
-      json: (data) => data,
-      status: () => ({ json: (data) => data }),
-    } as Response);
+      json: <T>(data: T) => data,
+      status: () => ({ json: <T>(data: T) => data }),
+    } as unknown as Response);
 
     // Get cost data
     const costData = await getMedicationCostAnalytics(req, {
-      json: (data) => data,
-      status: () => ({ json: (data) => data }),
-    } as Response);
-
-    // Return comprehensive dashboard data
+      json: <T>(data: T) => data,
+      status: () => ({ json: <T>(data: T) => data }),
+    } as unknown as Response); // Return comprehensive dashboard data
     res.json({
       adherenceAnalytics: adherenceData,
       prescriptionPatternAnalytics: prescriptionData,
@@ -838,7 +848,7 @@ export const getDashboardAnalytics = async (
     logger.error('Error getting dashboard analytics:', error);
     res.status(500).json({
       error: 'Failed to retrieve dashboard analytics',
-      details: error.message,
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 };

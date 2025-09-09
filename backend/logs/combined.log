@@ -3802,3 +3802,22 @@
 {"action":"USER_LOGIN_SUCCESS","auditId":"68bfc07bd35fdc59054ae1b1","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-09 06:51:55","userId":"68b5cb81f1f0f9758b8afadd"}
 {"level":"info","message":"Cleaned up old performance metrics and alerts","service":"pharma-care-api","timestamp":"2025-09-09 07:33:05"}
 {"alertsRemoved":0,"level":"info","message":"Security monitoring cleanup completed","service":"security-monitoring","threatsRemoved":0,"timestamp":"2025-09-09 07:33:06"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-09 09:55:03"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-09 09:55:09"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-09 09:55:09"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-09 09:55:09"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-09 09:55:09"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-09 09:55:09"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-09 09:55:09"}
+{"alertId":"c9tbhz066","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 95.47694091853471%, threshold is 85%","metric":"memory_heap_usage_percent","ruleId":"oxvp7vujy","service":"pharma-care-api","threshold":85,"timestamp":"2025-09-09 09:55:33","value":95.47694091853471}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68bfebbf93427e20d57ae005","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-09 09:56:31","userId":"68b5cb81f1f0f9758b8afadd"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-09 10:15:04"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-09 10:15:09"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-09 10:15:09"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-09 10:15:09"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-09 10:15:09"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-09 10:15:09"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-09 10:15:09"}
+{"alertId":"b2pxqgkkc","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 95.58554981963512%, threshold is 85%","metric":"memory_heap_usage_percent","ruleId":"m8qq4t4f0","service":"pharma-care-api","threshold":85,"timestamp":"2025-09-09 10:15:34","value":95.58554981963512}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68bff042aa149278582695af","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-09 10:15:46","userId":"68b5cb81f1f0f9758b8afadd"}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68bff8f1aa149278582696c3","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-09 10:52:49","userId":"68b5cb81f1f0f9758b8afadd"}
