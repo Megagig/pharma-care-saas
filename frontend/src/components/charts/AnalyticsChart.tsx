@@ -132,8 +132,20 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
     );
   }
 
+  interface TooltipProps {
+    active?: boolean;
+    payload?: Array<{
+      value: number;
+      name: string;
+      color: string;
+      dataKey: string;
+      payload: Record<string, unknown>;
+    }>;
+    label?: string;
+  }
+
   // Custom tooltip formatter
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <Paper
@@ -147,9 +159,9 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
           <Typography variant="subtitle2" color="text.secondary">
             {label}
           </Typography>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry) => (
             <Box
-              key={`item-${index}`}
+              key={`item-${entry.dataKey}`}
               sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}
             >
               <Box
@@ -167,7 +179,8 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                 entry.name.toLowerCase().includes('cost')
                   ? `${currencySymbol}${entry.value.toLocaleString()}`
                   : entry.value}
-                {entry.unit ? entry.unit : ''}
+                {((entry.payload as Record<string, unknown>)?.unit as string) ||
+                  ''}
               </Typography>
             </Box>
           ))}
@@ -225,7 +238,7 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
           <PieChart>
             <Tooltip content={<CustomTooltip />} />
             <Legend />
-            {series.map((s, index) => (
+            {series.map((s) => (
               <Pie
                 key={s.dataKey}
                 data={data}
@@ -235,14 +248,14 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                 cy="50%"
                 outerRadius={80}
                 label={(props) => {
-                  const { name, value } = props;
+                  const { name } = props;
                   return name;
                 }}
               >
-                {data.map((entry, index) => (
+                {data.map((_, idx) => (
                   <Cell
-                    key={`cell-${index}`}
-                    fill={colors[index % colors.length]}
+                    key={`cell-${idx}`}
+                    fill={colors[idx % colors.length]}
                   />
                 ))}
               </Pie>
