@@ -53,6 +53,14 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({
     defaultReminderTimes: ['09:00', '13:00', '19:00'],
     reminderMethod: 'email' as 'email' | 'sms' | 'both',
     defaultNotificationLeadTime: 15,
+    customMessage: 'Time to take your medication!',
+    repeatReminders: false,
+    repeatInterval: 30,
+    smartReminders: false,
+    allowSnooze: true,
+    snoozeOptions: [5, 10, 15, 30],
+    notifyCaregiver: false,
+    caregiverContact: '',
   });
 
   // State for monitoring settings form
@@ -60,24 +68,33 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({
     adherenceMonitoring: false,
     refillReminders: false,
     interactionChecking: true,
+    refillThreshold: 20,
+    missedDoseThreshold: 2,
+    adherenceReporting: false,
+    reportFrequency: 'weekly' as 'daily' | 'weekly' | 'monthly',
+    alertOnLowAdherence: false,
+    lowAdherenceThreshold: 70,
+    stockoutPrediction: false,
   });
 
   // Initialize form with data when it loads
   React.useEffect(() => {
     if (settings) {
-      setReminderSettings({
+      setReminderSettings((prev) => ({
+        ...prev,
         enabled: settings.reminderSettings.enabled,
         defaultReminderTimes: settings.reminderSettings.defaultReminderTimes,
         reminderMethod: settings.reminderSettings.reminderMethod,
         defaultNotificationLeadTime:
           settings.reminderSettings.defaultNotificationLeadTime,
-      });
+      }));
 
-      setMonitoringSettings({
+      setMonitoringSettings((prev) => ({
+        ...prev,
         adherenceMonitoring: settings.monitoringSettings.adherenceMonitoring,
         refillReminders: settings.monitoringSettings.refillReminders,
         interactionChecking: settings.monitoringSettings.interactionChecking,
-      });
+      }));
     }
   }, [settings]);
 
@@ -124,16 +141,34 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({
     });
   };
 
+  // State for test message
+  const [testMessage, setTestMessage] = React.useState(
+    reminderSettings.customMessage || 'Time to take your medication!'
+  );
+
   // Handle notification test
   const handleTestNotification = async () => {
+    if (!testContactInfo) {
+      alert('Please enter a valid email or phone number.');
+      return;
+    }
+
     try {
-      await testNotificationMutation.mutateAsync({
+      const result = await testNotificationMutation.mutateAsync({
         patientId,
         type: testNotificationType,
         contact: testContactInfo,
       });
+
+      // Show success or error message
+      if (result.success) {
+        alert(`${result.message}\n\n${result.details || ''}`);
+      } else {
+        alert(`Failed to send test notification: ${result.message}`);
+      }
     } catch (error) {
       console.error('Failed to send test notification:', error);
+      alert('Failed to send test notification. Please try again.');
     }
   };
 
@@ -235,6 +270,146 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({
             />
           </Grid>
 
+          <Grid sx={{ gridColumn: { xs: 'span 12' } }} component="div">
+            <TextField
+              fullWidth
+              label="Custom Reminder Message"
+              value={reminderSettings.customMessage}
+              onChange={(e) =>
+                setReminderSettings({
+                  ...reminderSettings,
+                  customMessage: e.target.value,
+                })
+              }
+              disabled={!reminderSettings.enabled}
+              helperText="Custom message to include in medication reminders"
+            />
+          </Grid>
+
+          <Grid
+            sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}
+            component="div"
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={reminderSettings.repeatReminders}
+                  onChange={(e) =>
+                    setReminderSettings({
+                      ...reminderSettings,
+                      repeatReminders: e.target.checked,
+                    })
+                  }
+                  disabled={!reminderSettings.enabled}
+                />
+              }
+              label="Repeat Reminders"
+            />
+            {reminderSettings.repeatReminders && (
+              <TextField
+                type="number"
+                label="Repeat Interval (minutes)"
+                value={reminderSettings.repeatInterval}
+                onChange={(e) =>
+                  setReminderSettings({
+                    ...reminderSettings,
+                    repeatInterval: parseInt(e.target.value) || 0,
+                  })
+                }
+                disabled={!reminderSettings.enabled}
+                InputProps={{ inputProps: { min: 5, max: 120 } }}
+                size="small"
+                sx={{ ml: 3, mt: 1 }}
+              />
+            )}
+          </Grid>
+
+          <Grid
+            sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}
+            component="div"
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={reminderSettings.smartReminders}
+                  onChange={(e) =>
+                    setReminderSettings({
+                      ...reminderSettings,
+                      smartReminders: e.target.checked,
+                    })
+                  }
+                  disabled={!reminderSettings.enabled}
+                />
+              }
+              label="Smart Reminders"
+            />
+            <FormHelperText>
+              Adaptive reminders based on patient behavior patterns
+            </FormHelperText>
+          </Grid>
+
+          <Grid
+            sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}
+            component="div"
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={reminderSettings.allowSnooze}
+                  onChange={(e) =>
+                    setReminderSettings({
+                      ...reminderSettings,
+                      allowSnooze: e.target.checked,
+                    })
+                  }
+                  disabled={!reminderSettings.enabled}
+                />
+              }
+              label="Allow Snooze"
+            />
+            <FormHelperText>
+              Enable snooze functionality for medication reminders
+            </FormHelperText>
+          </Grid>
+
+          <Grid
+            sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}
+            component="div"
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={reminderSettings.notifyCaregiver}
+                  onChange={(e) =>
+                    setReminderSettings({
+                      ...reminderSettings,
+                      notifyCaregiver: e.target.checked,
+                    })
+                  }
+                  disabled={!reminderSettings.enabled}
+                />
+              }
+              label="Notify Caregiver"
+            />
+            {reminderSettings.notifyCaregiver && (
+              <TextField
+                fullWidth
+                label="Caregiver Contact"
+                value={reminderSettings.caregiverContact}
+                onChange={(e) =>
+                  setReminderSettings({
+                    ...reminderSettings,
+                    caregiverContact: e.target.value,
+                  })
+                }
+                placeholder="Email or phone number"
+                disabled={!reminderSettings.enabled}
+                size="small"
+                sx={{ mt: 1 }}
+              />
+            )}
+          </Grid>
+
           <Grid sx={{ gridColumn: 'span 12' }} component="div">
             <Typography variant="subtitle1" gutterBottom>
               Default Reminder Times
@@ -293,7 +468,10 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({
 
       <Paper sx={{ p: 3, mb: 4 }}>
         <Grid container spacing={3}>
-          <Grid sx={{ gridColumn: 'span 12' }} component="div">
+          <Grid
+            sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}
+            component="div"
+          >
             <FormControlLabel
               control={
                 <Switch
@@ -311,9 +489,96 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({
             <FormHelperText>
               Track and analyze medication adherence patterns
             </FormHelperText>
+
+            {monitoringSettings.adherenceMonitoring && (
+              <Box sx={{ mt: 2, ml: 3 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={monitoringSettings.adherenceReporting}
+                      onChange={(e) =>
+                        setMonitoringSettings({
+                          ...monitoringSettings,
+                          adherenceReporting: e.target.checked,
+                        })
+                      }
+                      size="small"
+                    />
+                  }
+                  label="Generate Adherence Reports"
+                />
+
+                {monitoringSettings.adherenceReporting && (
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    sx={{ mt: 1, maxWidth: 200 }}
+                  >
+                    <InputLabel id="report-frequency-label">
+                      Report Frequency
+                    </InputLabel>
+                    <Select
+                      labelId="report-frequency-label"
+                      value={monitoringSettings.reportFrequency}
+                      label="Report Frequency"
+                      onChange={(e) =>
+                        setMonitoringSettings({
+                          ...monitoringSettings,
+                          reportFrequency: e.target.value as
+                            | 'daily'
+                            | 'weekly'
+                            | 'monthly',
+                        })
+                      }
+                    >
+                      <MenuItem value="daily">Daily</MenuItem>
+                      <MenuItem value="weekly">Weekly</MenuItem>
+                      <MenuItem value="monthly">Monthly</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={monitoringSettings.alertOnLowAdherence}
+                      onChange={(e) =>
+                        setMonitoringSettings({
+                          ...monitoringSettings,
+                          alertOnLowAdherence: e.target.checked,
+                        })
+                      }
+                      size="small"
+                    />
+                  }
+                  label="Alert on Low Adherence"
+                  sx={{ mt: 1, display: 'block' }}
+                />
+
+                {monitoringSettings.alertOnLowAdherence && (
+                  <TextField
+                    type="number"
+                    label="Low Adherence Threshold %"
+                    value={monitoringSettings.lowAdherenceThreshold}
+                    onChange={(e) =>
+                      setMonitoringSettings({
+                        ...monitoringSettings,
+                        lowAdherenceThreshold: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    InputProps={{ inputProps: { min: 0, max: 100 } }}
+                    size="small"
+                    sx={{ mt: 1, maxWidth: 200 }}
+                  />
+                )}
+              </Box>
+            )}
           </Grid>
 
-          <Grid sx={{ gridColumn: 'span 12' }} component="div">
+          <Grid
+            sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}
+            component="div"
+          >
             <FormControlLabel
               control={
                 <Switch
@@ -331,6 +596,43 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({
             <FormHelperText>
               Send reminders when medications need to be refilled
             </FormHelperText>
+
+            {monitoringSettings.refillReminders && (
+              <Box sx={{ mt: 2, ml: 3 }}>
+                <TextField
+                  type="number"
+                  label="Refill Threshold %"
+                  value={monitoringSettings.refillThreshold}
+                  onChange={(e) =>
+                    setMonitoringSettings({
+                      ...monitoringSettings,
+                      refillThreshold: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  helperText="Percentage remaining to trigger refill reminder"
+                  InputProps={{ inputProps: { min: 0, max: 50 } }}
+                  size="small"
+                  sx={{ maxWidth: 200 }}
+                />
+
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={monitoringSettings.stockoutPrediction}
+                      onChange={(e) =>
+                        setMonitoringSettings({
+                          ...monitoringSettings,
+                          stockoutPrediction: e.target.checked,
+                        })
+                      }
+                      size="small"
+                    />
+                  }
+                  label="Predict Medication Stockouts"
+                  sx={{ mt: 1, display: 'block' }}
+                />
+              </Box>
+            )}
           </Grid>
 
           <Grid sx={{ gridColumn: 'span 12' }} component="div">
@@ -351,6 +653,26 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({
             <FormHelperText>
               Check for potential interactions between medications
             </FormHelperText>
+
+            {monitoringSettings.interactionChecking && (
+              <Box sx={{ mt: 2, ml: 3 }}>
+                <TextField
+                  type="number"
+                  label="Missed Dose Threshold"
+                  value={monitoringSettings.missedDoseThreshold}
+                  onChange={(e) =>
+                    setMonitoringSettings({
+                      ...monitoringSettings,
+                      missedDoseThreshold: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  helperText="Consecutive missed doses to trigger an alert"
+                  InputProps={{ inputProps: { min: 1, max: 10 } }}
+                  size="small"
+                  sx={{ maxWidth: 200 }}
+                />
+              </Box>
+            )}
           </Grid>
         </Grid>
       </Paper>
@@ -396,7 +718,24 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({
                   : 'Phone Number'
               }
               value={testContactInfo}
+              placeholder={
+                testNotificationType === 'email'
+                  ? 'example@email.com'
+                  : '+1 (555) 123-4567'
+              }
               onChange={(e) => setTestContactInfo(e.target.value)}
+            />
+          </Grid>
+
+          <Grid sx={{ gridColumn: 'span 12' }} component="div">
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              label="Test Message"
+              value={testMessage}
+              onChange={(e) => setTestMessage(e.target.value)}
+              helperText="Message to include in the test notification"
               placeholder={
                 testNotificationType === 'email'
                   ? 'patient@example.com'
