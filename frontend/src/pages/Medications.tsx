@@ -17,6 +17,9 @@ import { Helmet } from 'react-helmet-async';
 // PageHeader is not found in the project
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
+// Import the MedicationAnalyticsPanel and MedicationSettingsPanel components
+import MedicationAnalyticsPanel from '../components/medications/MedicationAnalyticsPanel.js';
+import MedicationSettingsPanel from '../components/medications/MedicationSettingsPanel';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -208,24 +211,16 @@ const Medications = () => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="h6" color="text.secondary">
-              Medication Analytics - Coming Soon
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Adherence trends, prescription patterns, and more
-            </Typography>
+          <Box>
+            {/* Use the MedicationAnalyticsPanel component */}
+            <MedicationAnalyticsPanel patientId="system" />
           </Box>
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="h6" color="text.secondary">
-              Medication Settings - Coming Soon
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Configure notification preferences, reminders, and more
-            </Typography>
+          <Box>
+            {/* Use the MedicationSettingsPanel component */}
+            <MedicationSettingsPanel patientId="system" />
           </Box>
         </TabPanel>
       </Card>
