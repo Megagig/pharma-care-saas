@@ -267,7 +267,7 @@ const medicationManagementService = {
     return response.data.data;
   },
 
-  // Analytics endpoints
+  // Enhanced Analytics endpoints with Naira currency support
   getAdherenceAnalytics: async (
     patientId: string,
     period: string = '6months'
@@ -278,18 +278,30 @@ const medicationManagementService = {
     complianceDays: { day: string; count: number }[];
     missedDoses: { day: string; count: number }[];
     adherenceByTimeOfDay: { time: string; adherence: number }[];
+    costsData?: {
+      saved: number;
+      potential: number;
+      formattedSaved: string;
+      formattedPotential: string;
+    };
+    currencyCode?: string;
+    currencySymbol?: string;
   }> => {
     try {
       const response = await api.get(
-        `/medication-management/analytics/adherence/${patientId}`,
+        `/medication-analytics/adherence/${patientId}`,
         {
           params: { period },
         }
       );
-      return response.data.data;
+      return {
+        ...response.data,
+        currencyCode: 'NGN',
+        currencySymbol: '₦',
+      };
     } catch (error) {
-      console.error('Error fetching adherence analytics:', error);
-      // Return mock data for development and fallback
+      console.error('Error fetching enhanced adherence analytics:', error);
+      // Return mock data with Naira currency for development and fallback
       return {
         monthlyAdherence: [
           { month: 'Jan', adherence: 75 },
@@ -325,6 +337,14 @@ const medicationManagementService = {
           { time: 'Evening', adherence: 78 },
           { time: 'Night', adherence: 70 },
         ],
+        costsData: {
+          saved: 25000,
+          potential: 45000,
+          formattedSaved: '₦25,000.00',
+          formattedPotential: '₦45,000.00',
+        },
+        currencyCode: 'NGN',
+        currencySymbol: '₦',
       };
     }
   },
@@ -332,34 +352,99 @@ const medicationManagementService = {
   getPrescriptionPatternAnalytics: async (
     patientId: string
   ): Promise<{
-    medicationsByCategory: { category: string; count: number }[];
-    medicationsByRoute: { route: string; count: number }[];
+    medicationsByCategory: {
+      category: string;
+      count: number;
+      cost?: number;
+      formattedCost?: string;
+    }[];
+    medicationsByRoute: {
+      route: string;
+      count: number;
+      cost?: number;
+      formattedCost?: string;
+    }[];
     prescriptionFrequency: { month: string; count: number }[];
     topPrescribers: { prescriber: string; count: number }[];
     medicationDurationTrends: { duration: string; count: number }[];
     seasonalPrescriptionPatterns: { season: string; count: number }[];
+    costByMonth?: { month: string; cost: number; formattedCost: string }[];
+    currencyCode?: string;
+    currencySymbol?: string;
   }> => {
     try {
       const response = await api.get(
-        `/medication-management/analytics/prescription-patterns/${patientId}`
+        `/medication-analytics/prescriptions/${patientId}`
       );
-      return response.data.data;
+      return {
+        ...response.data,
+        currencyCode: 'NGN',
+        currencySymbol: '₦',
+      };
     } catch (error) {
-      console.error('Error fetching prescription pattern analytics:', error);
-      // Return mock data for development and fallback
+      console.error(
+        'Error fetching enhanced prescription pattern analytics:',
+        error
+      );
+      // Return mock data for development and fallback with Naira currency
       return {
         medicationsByCategory: [
-          { category: 'Antibiotics', count: 5 },
-          { category: 'Antihypertensives', count: 3 },
-          { category: 'Analgesics', count: 7 },
-          { category: 'Antidepressants', count: 2 },
-          { category: 'Antidiabetics', count: 1 },
+          {
+            category: 'Antibiotics',
+            count: 5,
+            cost: 12500,
+            formattedCost: '₦12,500.00',
+          },
+          {
+            category: 'Antihypertensives',
+            count: 3,
+            cost: 8750,
+            formattedCost: '₦8,750.00',
+          },
+          {
+            category: 'Analgesics',
+            count: 7,
+            cost: 5200,
+            formattedCost: '₦5,200.00',
+          },
+          {
+            category: 'Antidepressants',
+            count: 2,
+            cost: 15000,
+            formattedCost: '₦15,000.00',
+          },
+          {
+            category: 'Antidiabetics',
+            count: 1,
+            cost: 7800,
+            formattedCost: '₦7,800.00',
+          },
         ],
         medicationsByRoute: [
-          { route: 'Oral', count: 12 },
-          { route: 'Topical', count: 3 },
-          { route: 'Injectable', count: 2 },
-          { route: 'Inhalation', count: 1 },
+          {
+            route: 'Oral',
+            count: 12,
+            cost: 32500,
+            formattedCost: '₦32,500.00',
+          },
+          {
+            route: 'Topical',
+            count: 3,
+            cost: 4800,
+            formattedCost: '₦4,800.00',
+          },
+          {
+            route: 'Injectable',
+            count: 2,
+            cost: 9200,
+            formattedCost: '₦9,200.00',
+          },
+          {
+            route: 'Inhalation',
+            count: 1,
+            cost: 2750,
+            formattedCost: '₦2,750.00',
+          },
         ],
         prescriptionFrequency: [
           { month: 'Jan', count: 3 },
@@ -388,6 +473,16 @@ const medicationManagementService = {
           { season: 'Summer', count: 4 },
           { season: 'Fall', count: 7 },
         ],
+        costByMonth: [
+          { month: 'Jan', cost: 12500, formattedCost: '₦12,500.00' },
+          { month: 'Feb', cost: 8900, formattedCost: '₦8,900.00' },
+          { month: 'Mar', cost: 15200, formattedCost: '₦15,200.00' },
+          { month: 'Apr', cost: 7600, formattedCost: '₦7,600.00' },
+          { month: 'May', cost: 18700, formattedCost: '₦18,700.00' },
+          { month: 'Jun', cost: 9800, formattedCost: '₦9,800.00' },
+        ],
+        currencyCode: 'NGN',
+        currencySymbol: '₦',
       };
     }
   },
@@ -403,17 +498,31 @@ const medicationManagementService = {
       count: number;
       severityLevel: 'minor' | 'moderate' | 'severe';
       recommendedAction: string;
+      potentialCosts?: number;
+      formattedPotentialCosts?: string;
     }[];
     riskFactorsByMedication: { medication: string; riskScore: number }[];
     interactionsByBodySystem: { system: string; count: number }[];
+    financialImpact?: {
+      potentialCost: number;
+      formattedPotentialCost: string;
+      preventedCost: number;
+      formattedPreventedCost: string;
+    };
+    currencyCode?: string;
+    currencySymbol?: string;
   }> => {
     try {
       const response = await api.get(
-        `/medication-management/analytics/interactions/${patientId}`
+        `/medication-analytics/interactions/${patientId}`
       );
-      return response.data.data;
+      return {
+        ...response.data,
+        currencyCode: 'NGN',
+        currencySymbol: '₦',
+      };
     } catch (error) {
-      console.error('Error fetching interaction analytics:', error);
+      console.error('Error fetching enhanced interaction analytics:', error);
       // Return mock data for development and fallback
       return {
         severityDistribution: [
@@ -471,6 +580,58 @@ const medicationManagementService = {
     }
   },
 
+  getMedicationCostAnalytics: async (
+    patientId: string
+  ): Promise<{
+    monthlyCosts: { month: string; totalCost: number; formattedCost: string }[];
+    costByCategory: { category: string; cost: number; formattedCost: string }[];
+    totalCost: number;
+    formattedTotalCost: string;
+    currency: {
+      code: string;
+      symbol: string;
+    };
+  }> => {
+    try {
+      const response = await api.get(`/medication-analytics/cost/${patientId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching medication cost analytics:', error);
+      // Return mock data with Naira currency for development and fallback
+      return {
+        monthlyCosts: [
+          { month: 'Jan 2023', totalCost: 15600, formattedCost: '₦15,600.00' },
+          { month: 'Feb 2023', totalCost: 12400, formattedCost: '₦12,400.00' },
+          { month: 'Mar 2023', totalCost: 16700, formattedCost: '₦16,700.00' },
+          { month: 'Apr 2023', totalCost: 19200, formattedCost: '₦19,200.00' },
+          { month: 'May 2023', totalCost: 14500, formattedCost: '₦14,500.00' },
+          { month: 'Jun 2023', totalCost: 18300, formattedCost: '₦18,300.00' },
+        ],
+        costByCategory: [
+          { category: 'Antibiotics', cost: 28500, formattedCost: '₦28,500.00' },
+          {
+            category: 'Antihypertensives',
+            cost: 15700,
+            formattedCost: '₦15,700.00',
+          },
+          { category: 'Analgesics', cost: 9200, formattedCost: '₦9,200.00' },
+          {
+            category: 'Antidiabetics',
+            cost: 22600,
+            formattedCost: '₦22,600.00',
+          },
+          { category: 'Other', cost: 8400, formattedCost: '₦8,400.00' },
+        ],
+        totalCost: 84400,
+        formattedTotalCost: '₦84,400.00',
+        currency: {
+          code: 'NGN',
+          symbol: '₦',
+        },
+      };
+    }
+  },
+
   getPatientMedicationSummary: async (
     patientId: string
   ): Promise<{
@@ -485,7 +646,12 @@ const medicationManagementService = {
     adherenceTrend: 'increasing' | 'decreasing' | 'stable';
     costAnalysis: {
       totalMonthlyCost: number;
-      costByCategory: { category: string; cost: number }[];
+      formattedMonthlyCost: string;
+      costByCategory: {
+        category: string;
+        cost: number;
+        formattedCost: string;
+      }[];
       insuranceCoverageRate: number;
     };
     medicationComplexity: {
@@ -493,14 +659,27 @@ const medicationManagementService = {
       doseFrequency: number; // average daily doses
       uniqueScheduleCount: number; // number of different schedules
     };
+    currency?: {
+      code: string;
+      symbol: string;
+    };
   }> => {
     try {
       const response = await api.get(
-        `/medication-management/analytics/summary/${patientId}`
+        `/medication-analytics/dashboard/${patientId}`
       );
-      return response.data.data;
+      return {
+        ...response.data,
+        currency: {
+          code: 'NGN',
+          symbol: '₦',
+        },
+      };
     } catch (error) {
-      console.error('Error fetching patient medication summary:', error);
+      console.error(
+        'Error fetching enhanced patient medication summary:',
+        error
+      );
       // Return mock data for development and fallback
       return {
         activeCount: 7,
@@ -513,11 +692,20 @@ const medicationManagementService = {
         lastUpdated: '2023-08-15T14:30:00Z',
         adherenceTrend: 'increasing',
         costAnalysis: {
-          totalMonthlyCost: 248.75,
+          totalMonthlyCost: 24875,
+          formattedMonthlyCost: '₦24,875.00',
           costByCategory: [
-            { category: 'Antihypertensives', cost: 95.5 },
-            { category: 'Analgesics', cost: 32.25 },
-            { category: 'Antidiabetics', cost: 121.0 },
+            {
+              category: 'Antihypertensives',
+              cost: 9550,
+              formattedCost: '₦9,550.00',
+            },
+            { category: 'Analgesics', cost: 3225, formattedCost: '₦3,225.00' },
+            {
+              category: 'Antidiabetics',
+              cost: 12100,
+              formattedCost: '₦12,100.00',
+            },
           ],
           insuranceCoverageRate: 75,
         },
