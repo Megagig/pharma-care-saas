@@ -14,7 +14,9 @@ api.interceptors.request.use(
   (config) => {
     // Credentials are already set in the axios instance, but ensure it's always true
     config.withCredentials = true;
-    console.log('API Request Interceptor - Credentials included for httpOnly cookies');
+    console.log(
+      'API Request Interceptor - Credentials included for httpOnly cookies'
+    );
     return config;
   },
   (error) => Promise.reject(error)
@@ -26,8 +28,14 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If error is 401 (Unauthorized) and not already retrying
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Prevent infinite loops - only retry once
+    if (!originalRequest || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    // If error is 401 (Unauthorized)
+    if (error.response?.status === 401) {
+      console.log('Received 401 error, attempting token refresh');
       originalRequest._retry = true;
 
       try {
@@ -38,15 +46,33 @@ api.interceptors.response.use(
           { withCredentials: true }
         );
 
-        if (response.data.success) {
+        if (response.status === 200) {
+          console.log('Token refresh successful, retrying original request');
           // New access token is automatically set as httpOnly cookie by server
-          // Retry original request
-          return api(originalRequest);
+          // Retry original request with the same config
+          return axios({
+            ...originalRequest,
+            withCredentials: true, // Ensure credentials are sent
+          });
+        } else {
+          console.warn(
+            'Token refresh returned unexpected status:',
+            response.status
+          );
         }
       } catch (refreshError) {
-        console.error('Failed to refresh authentication token', refreshError);
-        // Redirect to login page - cookies will be cleared by server
-        window.location.href = '/login?session=expired';
+        console.error('Failed to refresh authentication token:', refreshError);
+
+        // Only redirect to login for actual auth failures, not network errors
+        if (axios.isAxiosError(refreshError) && refreshError.response) {
+          // Redirect to login page - cookies will be cleared by server
+          window.location.href = '/login?session=expired';
+        } else {
+          console.warn(
+            'Network error during token refresh - not redirecting to login'
+          );
+          // For network errors, don't redirect to login - might just be temporary connectivity issue
+        }
       }
     }
 

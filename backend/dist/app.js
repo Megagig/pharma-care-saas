@@ -40,6 +40,8 @@ const clinicalInterventionRoutes_1 = __importDefault(require("./routes/clinicalI
 const auditRoutes_1 = __importDefault(require("./routes/auditRoutes"));
 const securityRoutes_1 = __importDefault(require("./routes/securityRoutes"));
 const invitationRoutes_1 = __importDefault(require("./routes/invitationRoutes"));
+const medicationManagementRoutes_1 = __importDefault(require("./routes/medicationManagementRoutes"));
+const medicationAnalyticsRoutes_1 = __importDefault(require("./routes/medicationAnalyticsRoutes"));
 const usageMonitoringRoutes_1 = __importDefault(require("./routes/usageMonitoringRoutes"));
 const locationRoutes_1 = __importDefault(require("./routes/locationRoutes"));
 const locationDataRoutes_1 = __importDefault(require("./routes/locationDataRoutes"));
@@ -129,6 +131,8 @@ app.use('/api/payments', paymentRoutes_1.default);
 app.use('/api/mtr', mtrRoutes_1.default);
 app.use('/api/mtr/notifications', mtrNotificationRoutes_1.default);
 app.use('/api/clinical-interventions', clinicalInterventionRoutes_1.default);
+app.use('/api/medication-management', medicationManagementRoutes_1.default);
+app.use('/api/medication-analytics', medicationAnalyticsRoutes_1.default);
 app.use('/api/audit', auditRoutes_1.default);
 app.use('/api/security', securityRoutes_1.default);
 app.use('/api/usage', usageMonitoringRoutes_1.default);

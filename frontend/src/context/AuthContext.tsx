@@ -1,5 +1,9 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { authService } from '../services/authService';
+import {
+  authService,
+  UserData as ServiceUserData,
+  AuthResponse as ServiceAuthResponse,
+} from '../services/authService';
 import { markAuthAttempted, clearSessionState } from '../utils/cookieUtils';
 
 interface SubscriptionPlan {
@@ -40,7 +44,7 @@ interface User {
 
 interface AuthResponse {
   success: boolean;
-  message: string;
+  message?: string;
   user?: User;
   token?: string;
 }
@@ -86,10 +90,70 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 // Note: useAuth hook is now in ../hooks/useAuth.ts
 export type { AuthContextType };
 
+// Utility function to convert ServiceUserData to our User type
+const convertUserData = (
+  userData: ServiceUserData | undefined
+): User | null => {
+  if (!userData) return null;
+
+  // Map the role string to our more specific type
+  let typedRole:
+    | 'pharmacist'
+    | 'technician'
+    | 'owner'
+    | 'admin'
+    | 'super_admin' = 'pharmacist';
+
+  if (
+    userData.role === 'pharmacist' ||
+    userData.role === 'technician' ||
+    userData.role === 'owner' ||
+    userData.role === 'admin' ||
+    userData.role === 'super_admin'
+  ) {
+    typedRole = userData.role as
+      | 'pharmacist'
+      | 'technician'
+      | 'owner'
+      | 'admin'
+      | 'super_admin';
+  }
+
+  // Convert the status to the expected type
+  let typedStatus: 'pending' | 'active' | 'suspended' = 'pending';
+  if (
+    userData.status === 'pending' ||
+    userData.status === 'active' ||
+    userData.status === 'suspended'
+  ) {
+    typedStatus = userData.status as 'pending' | 'active' | 'suspended';
+  }
+
+  return {
+    ...userData,
+    role: typedRole,
+    status: typedStatus,
+    // Ensure currentPlan is properly typed
+    currentPlan: userData.currentPlan as SubscriptionPlan,
+  };
+};
+
+// Utility function to convert ServiceAuthResponse to our AuthResponse type
+const convertAuthResponse = (response: ServiceAuthResponse): AuthResponse => {
+  return {
+    ...response,
+    // Ensure message exists (even if undefined in the original)
+    message: response.message || '',
+    // Convert user data if it exists
+    user: response.user ? convertUserData(response.user) : undefined,
+  } as AuthResponse; // Force type assertion
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Initialize auth on mount only - no dependencies to avoid re-rendering
   useEffect(() => {
     const initAuth = async (): Promise<void> => {
       try {
@@ -98,7 +162,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Try to get current user - if successful, we're authenticated
         const userData = await authService.getCurrentUser();
         console.log('AuthContext: Authentication successful');
-        setUser(userData.user);
+        setUser(convertUserData(userData.user));
         markAuthAttempted();
       } catch (error: unknown) {
         console.error('AuthContext: Auth initialization failed:', error);
@@ -120,11 +184,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initAuth();
-  }, []);
+
+    // Clean up function
+    return () => {};
+  }, []); // Empty dependency array to run only on mount
+
+  // Separate effect for token refresh that doesn't depend on user state
+  useEffect(() => {
+    // Set up token refresh interval - refresh every 30 minutes to ensure tokens never expire
+    // Access token expires in 1 hour, so this gives us a 30-minute safety margin
+    const tokenRefreshInterval = setInterval(async () => {
+      try {
+        // Check if user is logged in from a ref or some other means that doesn't cause re-renders
+        console.log('AuthContext: Running scheduled token refresh');
+        const refreshed = await authService.refreshToken();
+        if (!refreshed) {
+          console.warn('AuthContext: Scheduled token refresh failed');
+        }
+      } catch (error) {
+        console.error(
+          'AuthContext: Error during scheduled token refresh:',
+          error
+        );
+      }
+    }, 30 * 60 * 1000); // 30 minutes
+
+    // Clean up interval on component unmount
+    return () => clearInterval(tokenRefreshInterval);
+  }, []); // Empty dependency array to run only on mount
   const login = async (
     credentials: LoginCredentials
   ): Promise<AuthResponse> => {
-    const response = await authService.login(credentials);
+    const serviceResponse = await authService.login(credentials);
+    const response = convertAuthResponse(serviceResponse);
     if (response.success && response.user) {
       setUser(response.user);
       markAuthAttempted(); // Mark successful auth attempt
@@ -133,17 +225,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const register = async (userData: RegisterData): Promise<AuthResponse> => {
-    const response = await authService.register(userData);
+    const serviceResponse = await authService.register(userData);
     // Note: Registration doesn't automatically log in due to email verification
-    return response;
+    return convertAuthResponse(serviceResponse);
   };
 
   const verifyEmail = async (
     token?: string,
     code?: string
   ): Promise<AuthResponse> => {
-    const response = await authService.verifyEmail(token, code);
-    return response;
+    const serviceResponse = await authService.verifyEmail(token, code);
+    return convertAuthResponse(serviceResponse);
   };
 
   const logout = async (): Promise<void> => {
@@ -171,7 +263,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const updateProfile = async (
     profileData: Partial<User>
   ): Promise<AuthResponse> => {
-    const response = await authService.updateProfile(profileData);
+    const serviceResponse = await authService.updateProfile(profileData);
+    const response = convertAuthResponse(serviceResponse);
     if (response.success && response.user) {
       setUser(response.user);
     }
@@ -179,16 +272,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const forgotPassword = async (email: string): Promise<AuthResponse> => {
-    const response = await authService.forgotPassword(email);
-    return response;
+    const serviceResponse = await authService.forgotPassword(email);
+    return convertAuthResponse(serviceResponse);
   };
 
   const resetPassword = async (
     token: string,
     password: string
   ): Promise<AuthResponse> => {
-    const response = await authService.resetPassword(token, password);
-    return response;
+    const serviceResponse = await authService.resetPassword(token, password);
+    return convertAuthResponse(serviceResponse);
   };
 
   const hasFeature = (featureName: string): boolean => {

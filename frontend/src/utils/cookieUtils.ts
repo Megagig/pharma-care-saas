@@ -15,8 +15,17 @@ export const hasAuthenticationCookies = async (): Promise<boolean> => {
     const response = await axios.get(`${API_BASE_URL}/auth/check-cookies`, {
       withCredentials: true,
     });
-    return response.status === 200;
-  } catch {
+
+    // Check if the response indicates cookies exist
+    if (response.status === 200 && response.data.hasCookies) {
+      console.log('Cookie check: Authentication cookies found');
+      return true;
+    }
+
+    console.log('Cookie check: No authentication cookies found');
+    return false;
+  } catch (error) {
+    console.error('Cookie check failed:', error);
     return false;
   }
 };
