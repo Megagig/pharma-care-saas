@@ -445,8 +445,23 @@ export const getMedicationDashboardStats = async (
         (sum, log) => sum + (log.adherenceScore || 0),
         0
       );
+      // Check if scores are already percentages (0-100) or decimals (0-1)
+      // Safely gather all non-null scores to check their range
+      const validScores = adherenceLogs
+        .map((log) => log.adherenceScore)
+        .filter(
+          (score): score is number => score !== undefined && score !== null
+        );
+
+      // Determine if the scores are decimals based on all values
+      const isDecimal =
+        validScores.length > 0 && validScores.every((score) => score <= 1);
+
+      // If scores are already percentages (like 80), don't multiply by 100
       averageAdherence = Math.round(
-        (totalAdherence / adherenceLogs.length) * 100
+        isDecimal
+          ? (totalAdherence / adherenceLogs.length) * 100
+          : totalAdherence / adherenceLogs.length
       );
     }
 
@@ -560,11 +575,23 @@ export const getMedicationAdherenceTrends = async (
         .sort()
         .map((week) => {
           const scores = weeklyData[week] || [];
+          // Check if scores are already percentages (like 80) or decimals (like 0.8)
+          const totalScore = scores.reduce(
+            (sum: number, score: number) => sum + score,
+            0
+          );
+          // Safety check for valid scores
+          const validScores = scores.filter(
+            (score: number) => score !== undefined && score !== null
+          );
+          const isDecimal =
+            validScores.length > 0 &&
+            validScores.every((score: number) => score <= 1);
           const averageScore = scores.length
             ? Math.round(
-                (scores.reduce((sum, score) => sum + score, 0) /
-                  scores.length) *
-                  100
+                isDecimal
+                  ? (totalScore / scores.length) * 100 // Convert decimal to percentage
+                  : totalScore / scores.length // Already a percentage
               )
             : 0;
 
@@ -605,11 +632,23 @@ export const getMedicationAdherenceTrends = async (
         .sort()
         .map((quarter) => {
           const scores = quarterlyData[quarter] || [];
+          // Check if scores are already percentages (like 80) or decimals (like 0.8)
+          const totalScore = scores.reduce(
+            (sum: number, score: number) => sum + score,
+            0
+          );
+          // Safety check for valid scores
+          const validScores = scores.filter(
+            (score: number) => score !== undefined && score !== null
+          );
+          const isDecimal =
+            validScores.length > 0 &&
+            validScores.every((score: number) => score <= 1);
           const averageScore = scores.length
             ? Math.round(
-                (scores.reduce((sum, score) => sum + score, 0) /
-                  scores.length) *
-                  100
+                isDecimal
+                  ? (totalScore / scores.length) * 100 // Convert decimal to percentage
+                  : totalScore / scores.length // Already a percentage
               )
             : 0;
 
@@ -679,11 +718,23 @@ export const getMedicationAdherenceTrends = async (
         })
         .map((month) => {
           const scores = monthlyData[month] || [];
+          // Check if scores are already percentages (like 80) or decimals (like 0.8)
+          const totalScore = scores.reduce(
+            (sum: number, score: number) => sum + score,
+            0
+          );
+          // Safety check for valid scores
+          const validScores = scores.filter(
+            (score: number) => score !== undefined && score !== null
+          );
+          const isDecimal =
+            validScores.length > 0 &&
+            validScores.every((score: number) => score <= 1);
           const averageScore = scores.length
             ? Math.round(
-                (scores.reduce((sum, score) => sum + score, 0) /
-                  scores.length) *
-                  100
+                isDecimal
+                  ? (totalScore / scores.length) * 100 // Convert decimal to percentage
+                  : totalScore / scores.length // Already a percentage
               )
             : 0;
 
