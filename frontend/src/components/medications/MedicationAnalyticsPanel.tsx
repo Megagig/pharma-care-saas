@@ -13,28 +13,34 @@ import {
   SelectChangeEvent,
   Tabs,
   Tab,
+  Card,
+  CardContent,
+  Alert,
+  Button,
+  Chip,
+  Stack,
+  Divider,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   useAdherenceAnalytics,
   usePrescriptionPatternAnalytics,
   useInteractionAnalytics,
   usePatientMedicationSummary,
-} from '../../queries/medicationManagementQueries';
+  useMedicationCostAnalytics,
+} from '../../queries/medicationAnalyticsQueries';
+import AnalyticsChart from '../charts/AnalyticsChart';
 import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
+  TrendingUp as TrendingUpIcon,
+  TrendingDown as TrendingDownIcon,
+  TrendingFlat as TrendingFlatIcon,
+  AttachMoney as MoneyIcon,
+  Warning as WarningIcon,
+  CalendarMonth as CalendarIcon,
+  LocalPharmacy as PharmacyIcon,
+  Analytics as AnalyticsIcon,
+} from '@mui/icons-material';
 
 interface MedicationAnalyticsPanelProps {
   patientId: string;
@@ -85,21 +91,63 @@ interface InteractionData {
 const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
   patientId,
 }) => {
+  // Theme and responsive setup
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // State for UI controls
   const [adherencePeriod, setAdherencePeriod] = useState<string>('6months');
   const [activeTab, setActiveTab] = useState<number>(0);
+  const [costPeriod, setCostPeriod] = useState<string>('12months');
 
-  // Fetch analytics data
-  const { data: adherenceData, isLoading: isLoadingAdherence } =
-    useAdherenceAnalytics(patientId, adherencePeriod);
+  // Event handlers
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
 
-  const { data: prescriptionData, isLoading: isLoadingPrescription } =
-    usePrescriptionPatternAnalytics(patientId);
+  const handlePeriodChange = (event: SelectChangeEvent) => {
+    setAdherencePeriod(event.target.value);
+  };
 
-  const { data: interactionData, isLoading: isLoadingInteraction } =
-    useInteractionAnalytics(patientId);
+  const handleCostPeriodChange = (event: SelectChangeEvent) => {
+    setCostPeriod(event.target.value);
+  };
 
-  const { data: summaryData, isLoading: isLoadingSummary } =
-    usePatientMedicationSummary(patientId);
+  // Fetch analytics data with enhanced hooks
+  const {
+    data: adherenceData,
+    isLoading: isLoadingAdherence,
+    error: adherenceError,
+    refetch: refetchAdherence,
+  } = useAdherenceAnalytics(patientId, adherencePeriod);
+
+  const {
+    data: prescriptionData,
+    isLoading: isLoadingPrescription,
+    error: prescriptionError,
+    refetch: refetchPrescription,
+  } = usePrescriptionPatternAnalytics(patientId);
+
+  const {
+    data: interactionData,
+    isLoading: isLoadingInteraction,
+    error: interactionError,
+    refetch: refetchInteraction,
+  } = useInteractionAnalytics(patientId);
+
+  const {
+    data: costData,
+    isLoading: isLoadingCost,
+    error: costError,
+    refetch: refetchCost,
+  } = useMedicationCostAnalytics(patientId);
+
+  const {
+    data: summaryData,
+    isLoading: isLoadingSummary,
+    error: summaryError,
+    refetch: refetchSummary,
+  } = usePatientMedicationSummary(patientId);
 
   const handleAdherencePeriodChange = (event: SelectChangeEvent) => {
     setAdherencePeriod(event.target.value);
