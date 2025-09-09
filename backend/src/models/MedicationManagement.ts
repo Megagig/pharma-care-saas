@@ -10,6 +10,8 @@ export interface IMedicationHistory {
   endDate?: Date;
   indication?: string;
   prescriber?: string;
+  cost?: number; // Cost price in Naira
+  sellingPrice?: number; // Selling price in Naira
   status?: 'active' | 'archived' | 'cancelled';
   updatedAt: Date;
   updatedBy?: mongoose.Types.ObjectId;
@@ -37,6 +39,8 @@ export interface IMedicationManagement extends Document {
     details?: string;
     severity?: 'minor' | 'moderate' | 'severe';
   };
+  cost?: number; // Cost price in Naira
+  sellingPrice?: number; // Selling price in Naira
   status: 'active' | 'archived' | 'cancelled';
   history: IMedicationHistory[];
   createdAt: Date;
@@ -54,6 +58,8 @@ const medicationHistorySchema = new Schema<IMedicationHistory>({
   endDate: { type: Date },
   indication: { type: String },
   prescriber: { type: String },
+  cost: { type: Number }, // Cost price in Naira
+  sellingPrice: { type: Number }, // Selling price in Naira
   status: {
     type: String,
     enum: ['active', 'archived', 'cancelled'],
@@ -111,6 +117,14 @@ const medicationManagementSchema = new Schema<IMedicationManagement>(
     prescriber: {
       type: String,
       trim: true,
+    },
+    cost: {
+      type: Number,
+      min: 0,
+    },
+    sellingPrice: {
+      type: Number,
+      min: 0,
     },
     allergyCheck: {
       status: {

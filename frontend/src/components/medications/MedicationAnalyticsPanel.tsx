@@ -30,10 +30,45 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  BarChart,
+  Bar,
 } from 'recharts';
 
 interface MedicationAnalyticsPanelProps {
   patientId: string;
+}
+
+interface MedicationCostAnalyticsData {
+  monthlyCosts?: { month: string; totalCost: number; formattedCost: string }[];
+  costByCategory?: { category: string; cost: number; formattedCost: string }[];
+  monthlyFinancials?: {
+    month: string;
+    cost: number;
+    revenue: number;
+    profit: number;
+    formattedCost: string;
+    formattedRevenue: string;
+    formattedProfit: string;
+  }[];
+  topProfitableMedications?: {
+    name: string;
+    cost: number;
+    sellingPrice: number;
+    profit: number;
+    profitMargin: number;
+  }[];
+  totalCost: number;
+  totalRevenue: number;
+  totalProfit: number;
+  profitMargin: number;
+  formattedTotalCost: string;
+  formattedTotalRevenue: string;
+  formattedTotalProfit: string;
+  formattedProfitMargin: string;
+  currency: {
+    code: string;
+    symbol: string;
+  };
 }
 
 const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
@@ -63,7 +98,10 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
 
   // Get cost analytics data and handle loading state
   const { data: costData, isLoading: isLoadingCostAnalytics } =
-    useMedicationCostAnalytics(patientId);
+    useMedicationCostAnalytics(patientId) as {
+      data: MedicationCostAnalyticsData | undefined;
+      isLoading: boolean;
+    };
 
   const handleAdherencePeriodChange = (event: SelectChangeEvent) => {
     setAdherencePeriod(event.target.value);
@@ -148,6 +186,7 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
           <Tab label="Adherence" />
           <Tab label="Prescriptions" />
           <Tab label="Interactions" />
+          <Tab label="Financial" />
         </Tabs>
       </Box>
 
@@ -362,6 +401,122 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                       name="Interactions"
                     />
                   </LineChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+
+      {/* Financial Analytics */}
+      {activeTab === 3 && costData && (
+        <Box>
+          <Typography variant="h6" sx={{ mb: 3 }}>
+            Medication Financial Analytics
+          </Typography>
+          <Grid container spacing={3}>
+            {/* Financial Summary Cards */}
+            <Grid sx={{ gridColumn: 'span 12', md: 3 }}>
+              <Paper sx={{ p: 2, height: '100%', textAlign: 'center' }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Total Revenue
+                </Typography>
+                <Typography variant="h4" color="primary.main">
+                  {costData?.formattedTotalRevenue || '₦0.00'}
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid sx={{ gridColumn: 'span 12', md: 3 }}>
+              <Paper sx={{ p: 2, height: '100%', textAlign: 'center' }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Total Cost
+                </Typography>
+                <Typography variant="h4" color="error.main">
+                  {costData?.formattedTotalCost || '₦0.00'}
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid sx={{ gridColumn: 'span 12', md: 3 }}>
+              <Paper sx={{ p: 2, height: '100%', textAlign: 'center' }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Total Profit
+                </Typography>
+                <Typography variant="h4" color="success.main">
+                  {costData?.formattedTotalProfit || '₦0.00'}
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid sx={{ gridColumn: 'span 12', md: 3 }}>
+              <Paper sx={{ p: 2, height: '100%', textAlign: 'center' }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Profit Margin
+                </Typography>
+                <Typography
+                  variant="h4"
+                  color={
+                    costData?.profitMargin && costData.profitMargin > 0
+                      ? 'success.main'
+                      : 'error.main'
+                  }
+                >
+                  {costData?.formattedProfitMargin || '0%'}
+                </Typography>
+              </Paper>
+            </Grid>
+
+            {/* Financial Analytics Charts */}
+            <Grid sx={{ gridColumn: 'span 12', md: 6 }}>
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Monthly Revenue vs Cost
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={costData?.monthlyFinancials || []}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => `₦${value}`} />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#8884d8"
+                      name="Revenue"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="cost"
+                      stroke="#ff7300"
+                      name="Cost"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="profit"
+                      stroke="#82ca9d"
+                      name="Profit"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Grid>
+
+            <Grid sx={{ gridColumn: 'span 12', md: 6 }}>
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Top 5 Most Profitable Medications
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={costData?.topProfitableMedications || []}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => `₦${value}`} />
+                    <Legend />
+                    <Bar dataKey="profit" fill="#82ca9d" name="Profit" />
+                  </BarChart>
                 </ResponsiveContainer>
               </Paper>
             </Grid>
