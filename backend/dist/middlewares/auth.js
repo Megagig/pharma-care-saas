@@ -26,17 +26,23 @@ const auth = async (req, res, next) => {
         const token = req.cookies.accessToken ||
             req.cookies.token ||
             req.header('Authorization')?.replace('Bearer ', '');
-        console.log('Auth middleware - checking token:', {
-            hasAccessToken: !!req.cookies.accessToken,
-            hasToken: !!req.cookies.token,
-            hasAuthHeader: !!req.header('Authorization'),
-            tokenExists: !!token,
-            url: req.url,
-            method: req.method,
-        });
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('Auth middleware - checking token:', {
+                hasAccessToken: !!req.cookies.accessToken,
+                hasRefreshToken: !!req.cookies.refreshToken,
+                hasToken: !!req.cookies.token,
+                hasAuthHeader: !!req.header('Authorization'),
+                tokenExists: !!token,
+                url: req.url,
+                method: req.method,
+            });
+        }
         if (!token) {
             console.log('Auth middleware - No token provided');
-            res.status(401).json({ message: 'Access denied. No token provided.' });
+            res.status(401).json({
+                message: 'Access denied. No token provided.',
+                code: 'NO_TOKEN',
+            });
             return;
         }
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
