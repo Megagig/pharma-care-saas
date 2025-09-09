@@ -15,7 +15,7 @@ const crypto_1 = __importDefault(require("crypto"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const auditLogging_1 = require("../middlewares/auditLogging");
 const generateAccessToken = (userId) => {
-    return jsonwebtoken_1.default.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    return jsonwebtoken_1.default.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '1h' });
 };
 const generateRefreshToken = () => {
     return crypto_1.default.randomBytes(64).toString('hex');
@@ -172,13 +172,15 @@ const login = async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-            maxAge: 15 * 60 * 1000,
+            maxAge: 60 * 60 * 1000,
+            path: '/',
         });
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
             maxAge: 30 * 24 * 60 * 60 * 1000,
+            path: '/',
         });
         await auditLogging_1.auditOperations.login(req, user, true);
         res.json({
@@ -830,11 +832,80 @@ const findWorkplaceByInviteCode = async (req, res) => {
         });
     }
     catch (error) {
-        res.status(400).json({
-            success: false,
-            message: error.message,
-        });
+        res.status(500).json({ message: error.message });
     }
 };
 exports.findWorkplaceByInviteCode = findWorkplaceByInviteCode;
+const refreshToken = async (req, res) => {
+    try {
+        const { refreshToken } = req.cookies;
+        if (!refreshToken) {
+            console.log('Refresh token not found in cookies');
+            res.status(401).json({ message: 'Refresh token not provided' });
+            return;
+        }
+        const hashedToken = crypto_1.default
+            .createHash('sha256')
+            .update(refreshToken)
+            .digest('hex');
+        const session = await Session_1.default.findOne({
+            refreshToken: hashedToken,
+            isActive: true,
+            expiresAt: { $gt: new Date() },
+        });
+        if (!session) {
+            console.log('No valid session found for refresh token');
+            res.status(401).json({ message: 'Invalid or expired refresh token' });
+            return;
+        }
+        const user = await User_1.default.findById(session.userId)
+            .populate('currentPlanId')
+            .select('-passwordHash');
+        if (!user) {
+            console.log('User not found during refresh');
+            res.status(401).json({ message: 'User not found' });
+            return;
+        }
+        const accessToken = generateAccessToken(user._id.toString());
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+            maxAge: 60 * 60 * 1000,
+            path: '/',
+        });
+        await auditLogging_1.auditOperations.tokenRefresh(req, user);
+        res.status(200).json({
+            success: true,
+            message: 'Token refreshed successfully',
+            user: {
+                id: user._id,
+                role: user.role,
+            },
+        });
+    }
+    catch (error) {
+        console.error('Token refresh error:', error);
+        res.status(401).json({ message: 'Failed to refresh token' });
+    }
+};
+exports.refreshToken = refreshToken;
+const checkCookies = async (req, res) => {
+    try {
+        if (req.cookies.accessToken || req.cookies.refreshToken) {
+            res.status(200).json({ success: true, hasCookies: true });
+        }
+        else {
+            res.status(200).json({ success: true, hasCookies: false });
+        }
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+exports.checkCookies = checkCookies;
+message: error.message,
+;
+;
+;
 //# sourceMappingURL=authController.js.map

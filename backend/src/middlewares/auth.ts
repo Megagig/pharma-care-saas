@@ -49,18 +49,43 @@ export const auth = async (
       req.cookies.token ||
       req.header('Authorization')?.replace('Bearer ', '');
 
-    console.log('Auth middleware - checking token:', {
-      hasAccessToken: !!req.cookies.accessToken,
-      hasToken: !!req.cookies.token,
-      hasAuthHeader: !!req.header('Authorization'),
-      tokenExists: !!token,
-      url: req.url,
-      method: req.method,
-    });
+    // If no access token but we have a refresh token, try using the refresh flow
+    // This helps prevent intermittent logouts if access token expires
+    if (
+      !token &&
+      req.cookies.refreshToken &&
+      !req.originalUrl.includes('/auth/refresh-token')
+    ) {
+      console.log(
+        'Auth middleware - no access token but found refresh token, redirecting to refresh flow'
+      );
+      res.status(401).json({
+        message: 'Access token expired, please refresh',
+        requiresRefresh: true,
+      });
+      return;
+    }
 
+    // Debug token information with limited logging
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Auth middleware - checking token:', {
+        hasAccessToken: !!req.cookies.accessToken,
+        hasRefreshToken: !!req.cookies.refreshToken,
+        hasToken: !!req.cookies.token,
+        hasAuthHeader: !!req.header('Authorization'),
+        tokenExists: !!token,
+        url: req.url,
+        method: req.method,
+      });
+    }
+
+    // Check for any token
     if (!token) {
       console.log('Auth middleware - No token provided');
-      res.status(401).json({ message: 'Access denied. No token provided.' });
+      res.status(401).json({
+        message: 'Access denied. No token provided.',
+        code: 'NO_TOKEN',
+      });
       return;
     }
 
@@ -97,8 +122,8 @@ export const auth = async (
           user.status === 'license_pending'
             ? 'license_verification'
             : user.status === 'pending'
-              ? 'email_verification'
-              : 'account_activation',
+            ? 'email_verification'
+            : 'account_activation',
       });
       return;
     }

@@ -12,7 +12,7 @@ import mongoose from 'mongoose';
 import { auditOperations } from '../middlewares/auditLogging';
 
 const generateAccessToken = (userId: string): string => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: '15m' });
+  return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: '1h' }); // Increased to 1 hour
 };
 
 const generateRefreshToken = (): string => {
@@ -210,12 +210,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       expiresAt,
     });
 
-    // Set both access and refresh tokens as httpOnly cookies
+    // Set both access and refresh tokens as httpOnly cookies with path settings
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 60 * 60 * 1000, // 1 hour (matching JWT expiration)
+      path: '/', // Ensure cookie is available on all paths
     });
 
     res.cookie('refreshToken', refreshToken, {
@@ -223,6 +224,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: '/', // Ensure cookie is available on all paths
     });
 
     // Log successful login
@@ -471,7 +473,9 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
         .digest('hex');
 
       // Find the session to get user info for audit logging
-      const session = await Session.findOne({ refreshToken: hashedToken }).populate('userId');
+      const session = await Session.findOne({
+        refreshToken: hashedToken,
+      }).populate('userId');
       if (session) {
         user = session.userId;
       }
@@ -539,10 +543,10 @@ export const checkCookies = async (
       debug:
         process.env.NODE_ENV === 'development'
           ? {
-            cookies: Object.keys(req.cookies),
-            userAgent: req.get('User-Agent'),
-            origin: req.get('Origin'),
-          }
+              cookies: Object.keys(req.cookies),
+              userAgent: req.get('User-Agent'),
+              origin: req.get('Origin'),
+            }
           : undefined,
     });
   } catch (error: any) {
@@ -888,7 +892,7 @@ export const registerWithWorkplace = async (
         // Find the workplace's subscription to inherit
         const workplaceSubscription = await Subscription.findOne({
           workspaceId: workplaceData._id,
-          status: { $in: ['active', 'trial', 'grace_period'] }
+          status: { $in: ['active', 'trial', 'grace_period'] },
         });
 
         if (workplaceSubscription) {
@@ -906,7 +910,6 @@ export const registerWithWorkplace = async (
         // Independent user - no workplace, no subscription
         // They get access to basic features only (Knowledge Hub, CPD, Forum)
         // No subscription needed for these features
-
         // User remains with workplaceId: null and no subscription
         // They can create or join a workplace later from their dashboard
       }
@@ -940,10 +943,12 @@ export const registerWithWorkplace = async (
         emailContent += `
           <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
             <h3 style="color: #059669; margin-bottom: 10px;">🤝 You've joined a workplace!</h3>
-            <p style="color: #374151; margin-bottom: 10px;"><strong>Workplace:</strong> ${workplaceData?.name
-          }</p>
-            <p style="color: #374151; margin-bottom: 10px;"><strong>Your Role:</strong> ${workplaceRole || 'Staff'
-          }</p>
+            <p style="color: #374151; margin-bottom: 10px;"><strong>Workplace:</strong> ${
+              workplaceData?.name
+            }</p>
+            <p style="color: #374151; margin-bottom: 10px;"><strong>Your Role:</strong> ${
+              workplaceRole || 'Staff'
+            }</p>
             <p style="color: #6b7280; font-size: 14px;">You now have access to your workplace's features and subscription plan.</p>
           </div>`;
       } else {
@@ -1006,19 +1011,19 @@ export const registerWithWorkplace = async (
           },
           workplace: workplaceData
             ? {
-              id: workplaceData._id,
-              name: workplaceData.name,
-              type: workplaceData.type,
-              inviteCode: workplaceData.inviteCode,
-            }
+                id: workplaceData._id,
+                name: workplaceData.name,
+                type: workplaceData.type,
+                inviteCode: workplaceData.inviteCode,
+              }
             : null,
           subscription: subscription
             ? {
-              id: subscription._id,
-              tier: subscription.tier,
-              status: subscription.status,
-              endDate: subscription.endDate,
-            }
+                id: subscription._id,
+                tier: subscription.tier,
+                status: subscription.status,
+                endDate: subscription.endDate,
+              }
             : null,
           workplaceFlow,
         },
@@ -1030,8 +1035,13 @@ export const registerWithWorkplace = async (
       await session.withTransaction(executeRegistration);
     } catch (transactionError: any) {
       // If transaction fails (e.g., in test environment), try without transaction
-      if (transactionError.code === 20 || transactionError.codeName === 'IllegalOperation') {
-        console.warn('Transactions not supported, falling back to non-transactional execution');
+      if (
+        transactionError.code === 20 ||
+        transactionError.codeName === 'IllegalOperation'
+      ) {
+        console.warn(
+          'Transactions not supported, falling back to non-transactional execution'
+        );
         await executeRegistration();
       } else {
         throw transactionError;
@@ -1087,9 +1097,25 @@ export const findWorkplaceByInviteCode = async (
       },
     });
   } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// The duplicate refreshToken function has been removed
+
+// Check if cookies exist - lightweight endpoint for frontend to detect authentication state
+export const checkCookiesStatus = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    // If either cookie exists, respond with success
+    if (req.cookies.accessToken || req.cookies.refreshToken) {
+      res.status(200).json({ success: true, hasCookies: true });
+    } else {
+      res.status(200).json({ success: true, hasCookies: false });
+    }
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
   }
 };

@@ -11,7 +11,7 @@ import {
   logout,
   logoutAll,
   clearCookies,
-  checkCookies,
+  checkCookiesStatus,
   getMe,
   updateProfile,
 } from '../controllers/authController';
@@ -29,7 +29,7 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.post('/refresh-token', refreshToken);
 router.post('/clear-cookies', clearCookies); // No auth required
-router.get('/check-cookies', checkCookies); // No auth required - just checks if cookies exist
+router.get('/check-cookies', checkCookiesStatus); // No auth required - just checks if cookies exist
 
 // Protected routes
 router.post('/logout', logout);
