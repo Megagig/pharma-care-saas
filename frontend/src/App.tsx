@@ -33,18 +33,21 @@ import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
 // Lazy load Clinical Notes components for better performance
-import {
-  LazyClinicalNotesDashboard,
-  LazyClinicalNoteDetail,
-  LazyClinicalNoteForm,
-  preloadClinicalNotesComponents,
-} from './components/ClinicalNotesLazy';
+// Lazy loading components is handled directly in routes
+// import {
+//   LazyClinicalNotesDashboard,
+//   LazyClinicalNoteDetail,
+//   LazyClinicalNoteForm,
+//   preloadClinicalNotesComponents,
+// } from './components/ClinicalNotesLazy';
 
 // Keep original imports as fallback
 import ClinicalNotes from './pages/ClinicalNotes';
 import ClinicalNoteDetailPage from './pages/ClinicalNoteDetailPage';
 import ClinicalNoteFormPage from './pages/ClinicalNoteFormPage';
 import Medications from './pages/Medications';
+import MedicationsManagementDashboard from './components/medications/MedicationsManagementDashboard';
+import PatientMedicationsPage from './components/medications/PatientMedicationsPage';
 import Subscriptions from './pages/Subscriptions';
 import Reports from './pages/Reports';
 import SaasSettings from './pages/SaasSettings';
@@ -190,6 +193,19 @@ function App(): JSX.Element {
                           }
                         />
                         <Route
+                          path="/patients/:patientId/medications"
+                          element={
+                            <ProtectedRoute
+                              requiredFeature="medication_management"
+                              requiresActiveSubscription
+                            >
+                              <AppLayout>
+                                <PatientMedicationsPage />
+                              </AppLayout>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
                           path="/patients/:patientId/edit"
                           element={
                             <ProtectedRoute
@@ -267,6 +283,19 @@ function App(): JSX.Element {
                             >
                               <AppLayout>
                                 <Medications />
+                              </AppLayout>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/medications/dashboard"
+                          element={
+                            <ProtectedRoute
+                              requiredFeature="medication_management"
+                              requiresActiveSubscription
+                            >
+                              <AppLayout>
+                                <MedicationsManagementDashboard />
                               </AppLayout>
                             </ProtectedRoute>
                           }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -104,6 +104,8 @@ const GENOTYPES: Genotype[] = ['AA', 'AS', 'SS', 'AC', 'SC', 'CC'];
 
 const Patients = () => {
   const navigate = useNavigate();
+  const [urlParams] = useSearchParams();
+  const isForMedications = urlParams.get('for') === 'medications';
 
   // RBAC permissions
   const { permissions } = useRBAC();
@@ -205,7 +207,12 @@ const Patients = () => {
   };
 
   const handleViewPatient = (patientId: string) => {
-    navigate(`/patients/${patientId}`);
+    // If we're selecting a patient for medications, navigate to the medications page
+    if (isForMedications) {
+      navigate(`/patients/${patientId}/medications`);
+    } else {
+      navigate(`/patients/${patientId}`);
+    }
     handleMenuClose();
   };
 
@@ -287,6 +294,25 @@ const Patients = () => {
 
   return (
     <Box sx={{ p: 3 }}>
+      {/* Helper message for medication selection mode */}
+      {isForMedications && (
+        <Alert
+          severity="info"
+          sx={{
+            mb: 3,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+          icon={<LocalHospitalIcon fontSize="inherit" />}
+        >
+          <Box sx={{ fontWeight: 'medium' }}>Patient Selection Mode</Box>
+          <Typography variant="body2">
+            Select a patient from the list below to manage their medications.
+            Click the "Select" button in the Actions column to proceed.
+          </Typography>
+        </Alert>
+      )}
+
       {/* Header */}
       <Box
         sx={{
@@ -311,10 +337,12 @@ const Patients = () => {
             }}
           >
             <LocalHospitalIcon color="primary" />
-            Patient Management
+            {isForMedications ? 'Select a Patient' : 'Patient Management'}
           </Typography>
           <Typography component="div" variant="body1" color="text.secondary">
-            Comprehensive patient care and medical records management
+            {isForMedications
+              ? 'Click on any patient to manage their medications'
+              : 'Comprehensive patient care and medical records management'}
             {totalPatients > 0 && (
               <Chip
                 label={`${totalPatients} total patients`}
@@ -522,7 +550,23 @@ const Patients = () => {
                   <TableRow
                     key={patient._id}
                     hover
-                    sx={{ '&:hover': { bgcolor: 'action.hover' } }}
+                    sx={{
+                      '&:hover': {
+                        bgcolor: isForMedications
+                          ? 'primary.lighter'
+                          : 'action.hover',
+                        transition: 'background-color 0.2s ease',
+                      },
+                      cursor: isForMedications ? 'pointer' : 'default',
+                      bgcolor: isForMedications
+                        ? 'rgba(25, 118, 210, 0.04)'
+                        : 'inherit',
+                    }}
+                    onClick={
+                      isForMedications
+                        ? () => handleViewPatient(patient._id)
+                        : undefined
+                    }
                   >
                     <TableCell>
                       <Box
@@ -665,15 +709,31 @@ const Patients = () => {
                           justifyContent: 'center',
                         }}
                       >
-                        <Tooltip title="View Details">
-                          <IconButton
+                        {/* Check if we're in medication selection mode */}
+                        {isForMedications ? (
+                          <Button
                             size="small"
+                            variant="contained"
                             color="primary"
-                            onClick={() => handleViewPatient(patient._id)}
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent row click from triggering
+                              handleViewPatient(patient._id);
+                            }}
+                            startIcon={<LocalHospitalIcon />}
                           >
-                            <VisibilityIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                            Select
+                          </Button>
+                        ) : (
+                          <Tooltip title="View Details">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleViewPatient(patient._id)}
+                            >
+                              <VisibilityIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         <Tooltip title="Edit Patient">
                           <IconButton
                             size="small"
