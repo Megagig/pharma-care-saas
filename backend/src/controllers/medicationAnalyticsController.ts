@@ -694,15 +694,16 @@ export const getMedicationCostAnalytics = async (
     // Get cost data from the past year
     const startDate = moment().subtract(1, 'year').toDate();
 
+    // Use our own fields instead of the nested 'medication' reference
     const medications = await MedicationManagement.find({
-      patient: patientId,
+      patientId: patientId !== 'system' ? patientId : { $exists: true },
       workplaceId: workplaceId,
-      isActive: true,
-      createdAt: { $gte: startDate }, // Using createdAt instead of prescribedDate
-    }).populate('medication');
+      status: 'active',
+      createdAt: { $gte: startDate },
+    });
 
-    // Format cost data with Naira currency
-    const monthlyCosts = Array.from({ length: 12 }, (_, i) => {
+    // Format financial data with Naira currency
+    const monthlyFinancials = Array.from({ length: 12 }, (_, i) => {
       const month = moment().subtract(i, 'months').format('MMM YYYY');
       const monthStart = moment().subtract(i, 'months').startOf('month');
       const monthEnd = moment().subtract(i, 'months').endOf('month');
@@ -713,70 +714,129 @@ export const getMedicationCostAnalytics = async (
       });
 
       const totalCost = medicationsInMonth.reduce((sum, med) => {
-        // @ts-ignore - Adding cost property to medication model
-        return sum + (med.medication?.cost || 0) * (med.quantity || 1);
+        return sum + (med.cost || 0);
       }, 0);
+
+      const totalRevenue = medicationsInMonth.reduce((sum, med) => {
+        return sum + (med.sellingPrice || 0);
+      }, 0);
+
+      const profit = totalRevenue - totalCost;
 
       return {
         month,
-        totalCost,
+        cost: totalCost,
+        revenue: totalRevenue,
+        profit: profit,
         // Format as Naira
         formattedCost: new Intl.NumberFormat('en-NG', {
           style: 'currency',
           currency: 'NGN',
           minimumFractionDigits: 2,
         }).format(totalCost),
-      };
-    }).reverse();
-
-    // Calculate cost by medication category
-    const costByCategory = medications.reduce<Record<string, number>>(
-      (acc, med: any) => {
-        // Using any type as a temporary solution since the medication model structure isn't fully defined
-        const medication = med.medication || {};
-        const category = medication.category || 'Uncategorized';
-        const cost = (medication.cost || 0) * (med.quantity || 1);
-
-        if (!acc[category]) {
-          acc[category] = 0;
-        }
-        acc[category] += cost;
-        return acc;
-      },
-      {}
-    );
-
-    // Format category costs as array with Naira currency
-    const costByCategoryFormatted = Object.entries(costByCategory).map(
-      ([category, cost]) => ({
-        category,
-        cost,
-        // Format as Naira
-        formattedCost: new Intl.NumberFormat('en-NG', {
+        formattedRevenue: new Intl.NumberFormat('en-NG', {
           style: 'currency',
           currency: 'NGN',
           minimumFractionDigits: 2,
-        }).format(cost as number),
-      })
-    );
+        }).format(totalRevenue),
+        formattedProfit: new Intl.NumberFormat('en-NG', {
+          style: 'currency',
+          currency: 'NGN',
+          minimumFractionDigits: 2,
+        }).format(profit),
+      };
+    }).reverse();
 
-    // Total costs with Naira formatting
+    // Calculate financial metrics by medication category (if category field exists)
+    const financialsByCategory = medications.reduce<
+      Record<string, { cost: number; revenue: number; profit: number }>
+    >((acc, med: any) => {
+      const category = med.category || 'Uncategorized';
+      const cost = med.cost || 0;
+      const revenue = med.sellingPrice || 0;
+      const profit = revenue - cost;
+
+      if (!acc[category]) {
+        acc[category] = { cost: 0, revenue: 0, profit: 0 };
+      }
+      acc[category].cost += cost;
+      acc[category].revenue += revenue;
+      acc[category].profit += profit;
+      return acc;
+    }, {});
+
+    // Format category financials as array with Naira currency
+    const financialsByCategoryFormatted = Object.entries(
+      financialsByCategory
+    ).map(([category, data]) => ({
+      category,
+      cost: data.cost,
+      revenue: data.revenue,
+      profit: data.profit,
+      formattedCost: new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency: 'NGN',
+        minimumFractionDigits: 2,
+      }).format(data.cost),
+      formattedRevenue: new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency: 'NGN',
+        minimumFractionDigits: 2,
+      }).format(data.revenue),
+      formattedProfit: new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency: 'NGN',
+        minimumFractionDigits: 2,
+      }).format(data.profit),
+    }));
+
+    // Total financials with Naira formatting
     const totalCost = medications.reduce((sum, med) => {
-      // @ts-ignore
-      return sum + (med.medication?.cost || 0) * (med.quantity || 1);
+      return sum + (med.cost || 0);
     }, 0);
 
-    const formattedTotalCost = new Intl.NumberFormat('en-NG', {
+    const totalRevenue = medications.reduce((sum, med) => {
+      return sum + (med.sellingPrice || 0);
+    }, 0);
+
+    const totalProfit = totalRevenue - totalCost;
+    const profitMargin =
+      totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
+    // Get top 5 most profitable medications
+    const medicationsWithProfits = medications.map((med) => ({
+      name: med.name,
+      cost: med.cost || 0,
+      sellingPrice: med.sellingPrice || 0,
+      profit: (med.sellingPrice || 0) - (med.cost || 0),
+      profitMargin: med.sellingPrice
+        ? ((med.sellingPrice - (med.cost || 0)) / med.sellingPrice) * 100
+        : 0,
+    }));
+
+    const topProfitableMedications = medicationsWithProfits
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, 5);
+
+    // Format results
+    const formatter = new Intl.NumberFormat('en-NG', {
       style: 'currency',
       currency: 'NGN',
       minimumFractionDigits: 2,
-    }).format(totalCost);
+    });
 
     res.json({
-      monthlyCosts,
-      costByCategory: costByCategoryFormatted,
+      monthlyFinancials,
+      financialsByCategory: financialsByCategoryFormatted,
+      topProfitableMedications,
       totalCost,
-      formattedTotalCost,
+      totalRevenue,
+      totalProfit,
+      profitMargin,
+      formattedTotalCost: formatter.format(totalCost),
+      formattedTotalRevenue: formatter.format(totalRevenue),
+      formattedTotalProfit: formatter.format(totalProfit),
+      formattedProfitMargin: `${profitMargin.toFixed(2)}%`,
       currency: {
         code: 'NGN',
         symbol: '₦',

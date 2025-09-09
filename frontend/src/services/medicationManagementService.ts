@@ -10,6 +10,8 @@ export interface MedicationCreateData {
   endDate?: string | Date;
   indication?: string;
   prescriber?: string;
+  cost?: number; // Cost price in Naira
+  sellingPrice?: number; // Selling price in Naira
   allergyCheck?: {
     status: boolean;
     details?: string;
@@ -26,6 +28,8 @@ export interface MedicationUpdateData {
   endDate?: string | Date;
   indication?: string;
   prescriber?: string;
+  cost?: number; // Cost price in Naira
+  sellingPrice?: number; // Selling price in Naira
   allergyCheck?: {
     status: boolean;
     details?: string;
@@ -43,6 +47,8 @@ export interface MedicationHistoryItem {
   endDate?: string | Date;
   indication?: string;
   prescriber?: string;
+  cost?: number; // Cost price in Naira
+  sellingPrice?: number; // Selling price in Naira
   status?: 'active' | 'archived' | 'cancelled';
   updatedAt: string | Date;
   updatedBy?: string;
@@ -60,6 +66,8 @@ export interface MedicationData {
   endDate?: string | Date;
   indication?: string;
   prescriber?: string;
+  cost?: number; // Cost price in Naira
+  sellingPrice?: number; // Selling price in Naira
   allergyCheck: {
     status: boolean;
     details?: string;
@@ -301,47 +309,30 @@ const medicationManagementService = {
       };
     } catch (error) {
       console.error('Error fetching enhanced adherence analytics:', error);
-      // Return mock data with Naira currency for development and fallback
+      // Return empty data with zero values
+      const currentDate = new Date();
+      const months = [];
+      for (let i = 5; i >= 0; i--) {
+        const month = new Date(currentDate);
+        month.setMonth(currentDate.getMonth() - i);
+        months.push(month.toLocaleDateString('en-US', { month: 'short' }));
+      }
+
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const timeOfDay = ['Morning', 'Noon', 'Evening', 'Night'];
+
       return {
-        monthlyAdherence: [
-          { month: 'Jan', adherence: 75 },
-          { month: 'Feb', adherence: 82 },
-          { month: 'Mar', adherence: 78 },
-          { month: 'Apr', adherence: 85 },
-          { month: 'May', adherence: 90 },
-          { month: 'Jun', adherence: 88 },
-        ],
-        averageAdherence: 83,
-        trendDirection: 'up',
-        complianceDays: [
-          { day: 'Mon', count: 24 },
-          { day: 'Tue', count: 22 },
-          { day: 'Wed', count: 26 },
-          { day: 'Thu', count: 23 },
-          { day: 'Fri', count: 20 },
-          { day: 'Sat', count: 18 },
-          { day: 'Sun', count: 17 },
-        ],
-        missedDoses: [
-          { day: 'Mon', count: 2 },
-          { day: 'Tue', count: 3 },
-          { day: 'Wed', count: 1 },
-          { day: 'Thu', count: 4 },
-          { day: 'Fri', count: 5 },
-          { day: 'Sat', count: 6 },
-          { day: 'Sun', count: 7 },
-        ],
-        adherenceByTimeOfDay: [
-          { time: 'Morning', adherence: 92 },
-          { time: 'Noon', adherence: 85 },
-          { time: 'Evening', adherence: 78 },
-          { time: 'Night', adherence: 70 },
-        ],
+        monthlyAdherence: months.map((month) => ({ month, adherence: 0 })),
+        averageAdherence: 0,
+        trendDirection: 'stable',
+        complianceDays: days.map((day) => ({ day, count: 0 })),
+        missedDoses: days.map((day) => ({ day, count: 0 })),
+        adherenceByTimeOfDay: timeOfDay.map((time) => ({ time, adherence: 0 })),
         costsData: {
-          saved: 25000,
-          potential: 45000,
-          formattedSaved: '₦25,000.00',
-          formattedPotential: '₦45,000.00',
+          saved: 0,
+          potential: 0,
+          formattedSaved: '₦0.00',
+          formattedPotential: '₦0.00',
         },
         currencyCode: 'NGN',
         currencySymbol: '₦',
@@ -386,66 +377,10 @@ const medicationManagementService = {
         'Error fetching enhanced prescription pattern analytics:',
         error
       );
-      // Return mock data for development and fallback with Naira currency
+      // Return empty data with zero values
       return {
-        medicationsByCategory: [
-          {
-            category: 'Antibiotics',
-            count: 5,
-            cost: 12500,
-            formattedCost: '₦12,500.00',
-          },
-          {
-            category: 'Antihypertensives',
-            count: 3,
-            cost: 8750,
-            formattedCost: '₦8,750.00',
-          },
-          {
-            category: 'Analgesics',
-            count: 7,
-            cost: 5200,
-            formattedCost: '₦5,200.00',
-          },
-          {
-            category: 'Antidepressants',
-            count: 2,
-            cost: 15000,
-            formattedCost: '₦15,000.00',
-          },
-          {
-            category: 'Antidiabetics',
-            count: 1,
-            cost: 7800,
-            formattedCost: '₦7,800.00',
-          },
-        ],
-        medicationsByRoute: [
-          {
-            route: 'Oral',
-            count: 12,
-            cost: 32500,
-            formattedCost: '₦32,500.00',
-          },
-          {
-            route: 'Topical',
-            count: 3,
-            cost: 4800,
-            formattedCost: '₦4,800.00',
-          },
-          {
-            route: 'Injectable',
-            count: 2,
-            cost: 9200,
-            formattedCost: '₦9,200.00',
-          },
-          {
-            route: 'Inhalation',
-            count: 1,
-            cost: 2750,
-            formattedCost: '₦2,750.00',
-          },
-        ],
+        medicationsByCategory: [],
+        medicationsByRoute: [],
         prescriptionFrequency: [
           { month: 'Jan', count: 3 },
           { month: 'Feb', count: 2 },
@@ -523,59 +458,17 @@ const medicationManagementService = {
       };
     } catch (error) {
       console.error('Error fetching enhanced interaction analytics:', error);
-      // Return mock data for development and fallback
+      // Return empty data with zero values
       return {
         severityDistribution: [
-          { severity: 'Minor', count: 12 },
-          { severity: 'Moderate', count: 8 },
-          { severity: 'Severe', count: 3 },
+          { severity: 'Minor', count: 0 },
+          { severity: 'Moderate', count: 0 },
+          { severity: 'Severe', count: 0 },
         ],
-        interactionTrends: [
-          { month: 'Jan', count: 2 },
-          { month: 'Feb', count: 3 },
-          { month: 'Mar', count: 5 },
-          { month: 'Apr', count: 4 },
-          { month: 'May', count: 6 },
-          { month: 'Jun', count: 3 },
-        ],
-        commonInteractions: [
-          {
-            medications: ['Warfarin', 'Aspirin'],
-            description: 'Increased risk of bleeding',
-            count: 5,
-            severityLevel: 'severe',
-            recommendedAction:
-              'Consider alternative antiplatelet therapy or close monitoring',
-          },
-          {
-            medications: ['Lisinopril', 'Potassium supplements'],
-            description: 'Increased risk of hyperkalemia',
-            count: 3,
-            severityLevel: 'moderate',
-            recommendedAction: 'Monitor potassium levels regularly',
-          },
-          {
-            medications: ['Simvastatin', 'Grapefruit juice'],
-            description: 'Increased risk of myopathy',
-            count: 4,
-            severityLevel: 'moderate',
-            recommendedAction: 'Advise patient to avoid grapefruit juice',
-          },
-        ],
-        riskFactorsByMedication: [
-          { medication: 'Warfarin', riskScore: 85 },
-          { medication: 'Metformin', riskScore: 45 },
-          { medication: 'Lisinopril', riskScore: 60 },
-          { medication: 'Simvastatin', riskScore: 65 },
-          { medication: 'Aspirin', riskScore: 55 },
-        ],
-        interactionsByBodySystem: [
-          { system: 'Cardiovascular', count: 8 },
-          { system: 'Digestive', count: 6 },
-          { system: 'Central Nervous System', count: 5 },
-          { system: 'Respiratory', count: 3 },
-          { system: 'Endocrine', count: 2 },
-        ],
+        interactionTrends: [],
+        commonInteractions: [],
+        riskFactorsByMedication: [],
+        interactionsByBodySystem: [],
       };
     }
   },
@@ -591,39 +484,72 @@ const medicationManagementService = {
       code: string;
       symbol: string;
     };
+    // New fields for the updated API
+    monthlyFinancials?: {
+      month: string;
+      cost: number;
+      revenue: number;
+      profit: number;
+      formattedCost: string;
+      formattedRevenue: string;
+      formattedProfit: string;
+    }[];
+    financialsByCategory?: {
+      category: string;
+      cost: number;
+      revenue: number;
+      profit: number;
+      formattedCost: string;
+      formattedRevenue: string;
+      formattedProfit: string;
+    }[];
+    topProfitableMedications?: {
+      medicationName: string;
+      profit: number;
+      formattedProfit: string;
+      profitMargin: number;
+      formattedProfitMargin: string;
+    }[];
+    totalRevenue?: number;
+    totalProfit?: number;
+    profitMargin?: number;
+    formattedTotalRevenue?: string;
+    formattedTotalProfit?: string;
+    formattedProfitMargin?: string;
   }> => {
     try {
-      const response = await api.get(`/medication-analytics/cost/${patientId}`);
+      const response = await api.get(
+        `/medication-analytics/costs/${patientId}`
+      );
       return response.data;
     } catch (error) {
       console.error('Error fetching medication cost analytics:', error);
-      // Return mock data with Naira currency for development and fallback
+      // Return empty data with zero values instead of mock data
       return {
-        monthlyCosts: [
-          { month: 'Jan 2023', totalCost: 15600, formattedCost: '₦15,600.00' },
-          { month: 'Feb 2023', totalCost: 12400, formattedCost: '₦12,400.00' },
-          { month: 'Mar 2023', totalCost: 16700, formattedCost: '₦16,700.00' },
-          { month: 'Apr 2023', totalCost: 19200, formattedCost: '₦19,200.00' },
-          { month: 'May 2023', totalCost: 14500, formattedCost: '₦14,500.00' },
-          { month: 'Jun 2023', totalCost: 18300, formattedCost: '₦18,300.00' },
-        ],
-        costByCategory: [
-          { category: 'Antibiotics', cost: 28500, formattedCost: '₦28,500.00' },
-          {
-            category: 'Antihypertensives',
-            cost: 15700,
-            formattedCost: '₦15,700.00',
-          },
-          { category: 'Analgesics', cost: 9200, formattedCost: '₦9,200.00' },
-          {
-            category: 'Antidiabetics',
-            cost: 22600,
-            formattedCost: '₦22,600.00',
-          },
-          { category: 'Other', cost: 8400, formattedCost: '₦8,400.00' },
-        ],
-        totalCost: 84400,
-        formattedTotalCost: '₦84,400.00',
+        monthlyCosts: Array.from({ length: 6 }, (_, i) => {
+          const date = new Date();
+          date.setMonth(date.getMonth() - i);
+          return {
+            month: date.toLocaleDateString('en-US', {
+              month: 'short',
+              year: 'numeric',
+            }),
+            totalCost: 0,
+            formattedCost: '₦0.00',
+          };
+        }).reverse(),
+        costByCategory: [],
+        totalCost: 0,
+        formattedTotalCost: '₦0.00',
+        totalRevenue: 0,
+        totalProfit: 0,
+        profitMargin: 0,
+        formattedTotalRevenue: '₦0.00',
+        formattedTotalProfit: '₦0.00',
+        formattedProfitMargin: '0%',
+        monthlyFinancials: [],
+        financialsByCategory: [],
+        topProfitableMedications: [],
         currency: {
           code: 'NGN',
           symbol: '₦',
@@ -680,39 +606,27 @@ const medicationManagementService = {
         'Error fetching enhanced patient medication summary:',
         error
       );
-      // Return mock data for development and fallback
+      // Return empty data with zero values instead of mock data
       return {
-        activeCount: 7,
-        archivedCount: 3,
-        cancelledCount: 1,
-        adherenceRate: 86,
-        interactionCount: 4,
-        mostCommonCategory: 'Antihypertensives',
-        mostCommonRoute: 'Oral',
-        lastUpdated: '2023-08-15T14:30:00Z',
-        adherenceTrend: 'increasing',
+        activeCount: 0,
+        archivedCount: 0,
+        cancelledCount: 0,
+        adherenceRate: 0,
+        interactionCount: 0,
+        mostCommonCategory: 'None',
+        mostCommonRoute: 'None',
+        lastUpdated: new Date().toISOString(),
+        adherenceTrend: 'stable',
         costAnalysis: {
-          totalMonthlyCost: 24875,
-          formattedMonthlyCost: '₦24,875.00',
-          costByCategory: [
-            {
-              category: 'Antihypertensives',
-              cost: 9550,
-              formattedCost: '₦9,550.00',
-            },
-            { category: 'Analgesics', cost: 3225, formattedCost: '₦3,225.00' },
-            {
-              category: 'Antidiabetics',
-              cost: 12100,
-              formattedCost: '₦12,100.00',
-            },
-          ],
-          insuranceCoverageRate: 75,
+          totalMonthlyCost: 0,
+          formattedMonthlyCost: '₦0.00',
+          costByCategory: [],
+          insuranceCoverageRate: 0,
         },
         medicationComplexity: {
-          complexityScore: 62,
-          doseFrequency: 3.5,
-          uniqueScheduleCount: 4,
+          complexityScore: 0,
+          doseFrequency: 0,
+          uniqueScheduleCount: 0,
         },
       };
     }
@@ -732,15 +646,15 @@ const medicationManagementService = {
       return response.data.data;
     } catch (error) {
       console.error('Error fetching patient medication settings:', error);
-      // Return mock data for development and fallback
+      // Return empty data instead of mock data
       return {
         reminderSettings: {
-          enabled: true,
-          defaultReminderTimes: ['09:00', '13:00', '19:00'],
+          enabled: false,
+          defaultReminderTimes: [],
           reminderMethod: 'email',
-          defaultNotificationLeadTime: 15,
-          customMessage: 'Time to take your medication!',
-          repeatReminders: true,
+          defaultNotificationLeadTime: 0,
+          customMessage: '',
+          repeatReminders: false,
           repeatInterval: 30,
           smartReminders: false,
           allowSnooze: true,
@@ -783,26 +697,21 @@ const medicationManagementService = {
     } catch (error) {
       console.error('Error updating patient medication settings:', error);
 
-      // Mock successful response for development purposes
-      // In production, this should be removed
+      // Return empty default settings instead of mock data
       return {
         reminderSettings: {
-          enabled: settings.reminderSettings?.enabled ?? true,
-          defaultReminderTimes: settings.reminderSettings
-            ?.defaultReminderTimes ?? ['09:00', '13:00', '19:00'],
+          enabled: settings.reminderSettings?.enabled ?? false,
+          defaultReminderTimes:
+            settings.reminderSettings?.defaultReminderTimes ?? [],
           reminderMethod: settings.reminderSettings?.reminderMethod ?? 'email',
           defaultNotificationLeadTime:
-            settings.reminderSettings?.defaultNotificationLeadTime ?? 15,
-          customMessage:
-            settings.reminderSettings?.customMessage ??
-            'Time to take your medication!',
-          repeatReminders: settings.reminderSettings?.repeatReminders ?? true,
-          repeatInterval: settings.reminderSettings?.repeatInterval ?? 30,
+            settings.reminderSettings?.defaultNotificationLeadTime ?? 0,
+          customMessage: settings.reminderSettings?.customMessage ?? '',
+          repeatReminders: settings.reminderSettings?.repeatReminders ?? false,
+          repeatInterval: settings.reminderSettings?.repeatInterval ?? 0,
           smartReminders: settings.reminderSettings?.smartReminders ?? false,
-          allowSnooze: settings.reminderSettings?.allowSnooze ?? true,
-          snoozeOptions: settings.reminderSettings?.snoozeOptions ?? [
-            5, 10, 15, 30,
-          ],
+          allowSnooze: settings.reminderSettings?.allowSnooze ?? false,
+          snoozeOptions: settings.reminderSettings?.snoozeOptions ?? [],
           notifyCaregiver: settings.reminderSettings?.notifyCaregiver ?? false,
           caregiverContact: settings.reminderSettings?.caregiverContact ?? '',
         },
@@ -848,11 +757,11 @@ const medicationManagementService = {
       return response.data;
     } catch (error) {
       console.error('Error sending test notification:', error);
-      // Return mock response for development
+      // Return error response instead of mock success
       return {
-        success: true,
-        message: `Test ${type.toUpperCase()} notification sent successfully to ${contact}`,
-        details: `This is a simulated test response. In production, a real ${type} would be sent to ${contact}.`,
+        success: false,
+        message: `Failed to send test notification`,
+        details: `Could not connect to notification service. Please try again or check your network connection.`,
       };
     }
   },

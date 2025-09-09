@@ -83,6 +83,8 @@ interface Medication {
   endDate: string | null | undefined;
   indication: string;
   prescriber: string;
+  cost?: number;
+  sellingPrice?: number;
   allergyCheck: {
     status: boolean;
     details: string;
@@ -102,6 +104,8 @@ interface MedicationData {
   endDate: string | Date | undefined;
   indication: string;
   prescriber: string;
+  cost?: number;
+  sellingPrice?: number;
   allergyCheck: {
     status: boolean;
     details: string;
@@ -120,6 +124,8 @@ interface MedicationFormValues {
   endDate: Date | null;
   indication: string;
   prescriber: string;
+  cost: number | string; // Cost price in Naira (string for form handling)
+  sellingPrice: number | string; // Selling price in Naira (string for form handling)
   allergyCheck: {
     status: boolean;
     details: string;
@@ -171,6 +177,8 @@ const initialFormValues: MedicationFormValues = {
   endDate: null,
   indication: '',
   prescriber: '',
+  cost: '', // Empty string for optional cost
+  sellingPrice: '', // Empty string for optional selling price
   allergyCheck: {
     status: false,
     details: '',
@@ -515,6 +523,8 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
       endDate: medication.endDate ? new Date(medication.endDate) : null,
       indication: medication.indication,
       prescriber: medication.prescriber,
+      cost: medication.cost?.toString() || '',
+      sellingPrice: medication.sellingPrice?.toString() || '',
       allergyCheck: medication.allergyCheck,
       status: medication.status,
       reminders: medication.reminders || [],
@@ -581,11 +591,17 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
         }
       }
 
-      // Include reminders in the submission
+      // Include reminders in the submission and convert cost/sellingPrice to numbers
       const submissionData = {
         ...formValues,
         startDate: formValues.startDate ? formValues.startDate : undefined,
         endDate: formValues.endDate ? formValues.endDate : undefined,
+        cost: formValues.cost
+          ? parseFloat(formValues.cost as string)
+          : undefined,
+        sellingPrice: formValues.sellingPrice
+          ? parseFloat(formValues.sellingPrice as string)
+          : undefined,
         reminders: reminders,
       };
 
@@ -1078,6 +1094,30 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
                   value={formValues.prescriber}
                   onChange={handleInputChange}
                   fullWidth
+                />
+              </Grid>
+              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
+                <TextField
+                  name="cost"
+                  label="Cost Price (₦)"
+                  value={formValues.cost}
+                  onChange={handleInputChange}
+                  fullWidth
+                  type="number"
+                  inputProps={{ min: 0, step: '0.01' }}
+                  helperText="Optional - Cost price in Naira"
+                />
+              </Grid>
+              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
+                <TextField
+                  name="sellingPrice"
+                  label="Selling Price (₦)"
+                  value={formValues.sellingPrice}
+                  onChange={handleInputChange}
+                  fullWidth
+                  type="number"
+                  inputProps={{ min: 0, step: '0.01' }}
+                  helperText="Optional - Selling price in Naira"
                 />
               </Grid>
               <Grid sx={{ gridColumn: 'span 12' }}>
