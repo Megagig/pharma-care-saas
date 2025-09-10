@@ -200,10 +200,14 @@ const Dashboard = () => {
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+          background: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+              : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
           minHeight: '100vh',
           borderRadius: 4,
           p: { xs: 3, md: 4 },
+          transition: 'background 0.3s ease',
         }}
       >
         {/* Modern Centered Header */}
@@ -212,12 +216,16 @@ const Dashboard = () => {
           sx={{
             p: { xs: 3, md: 5 },
             mb: 5,
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: (theme) =>
+              theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
+                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             color: 'white',
             borderRadius: 4,
             position: 'relative',
             overflow: 'hidden',
             textAlign: 'center',
+            transition: 'background 0.3s ease',
             '&::before': {
               content: '""',
               position: 'absolute',

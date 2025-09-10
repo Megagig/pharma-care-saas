@@ -187,7 +187,7 @@ const MTRHelp: React.FC = () => {
                       <Chip
                         label={guide.duration}
                         color={guide.color}
-                        size="small"
+                        size="sm"
                       />
                     </Box>
                     <Typography
@@ -236,10 +236,10 @@ const MTRHelp: React.FC = () => {
                     <Chip
                       label={item.shortcut}
                       variant="outlined"
-                      size="small"
+                      size="sm"
                     />
                     <Box sx={{ mt: 1 }}>
-                      <Button size="small" onClick={() => navigate(item.page)}>
+                      <Button size="sm" onClick={() => navigate(item.page)}>
                         Go to Page
                       </Button>
                     </Box>

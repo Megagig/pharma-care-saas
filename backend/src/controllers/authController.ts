@@ -642,6 +642,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
         subscription: subscriptionData,
         hasSubscription: !!subscriptionData,
         lastLoginAt: user.lastLoginAt,
+        themePreference: user.themePreference,
       },
     });
   } catch (error: any) {
@@ -688,7 +689,47 @@ export const updateProfile = async (
         phone: user.phone,
         role: user.role,
         status: user.status,
+        themePreference: user.themePreference,
       },
+    });
+  } catch (error: any) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const updateThemePreference = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { themePreference } = req.body;
+
+    // Validate theme preference
+    if (!['light', 'dark', 'system'].includes(themePreference)) {
+      res.status(400).json({
+        message: 'Invalid theme preference. Must be light, dark, or system.',
+      });
+      return;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { themePreference },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select('-passwordHash');
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: 'Theme preference updated successfully',
+      themePreference: user.themePreference,
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });

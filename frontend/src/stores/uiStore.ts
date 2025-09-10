@@ -23,10 +23,6 @@ interface UIStore extends UIState {
   // Sidebar actions
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
-
-  // Theme actions
-  toggleTheme: () => void;
-  setTheme: (theme: 'light' | 'dark') => void;
 }
 
 // Create the main UI store with persistence
@@ -38,7 +34,6 @@ export const useUIStore = create<UIStore>()(
       notifications: [],
       modals: {},
       sidebarOpen: true,
-      theme: 'light',
 
       // Notification actions
       addNotification: (notification) => {
@@ -103,19 +98,10 @@ export const useUIStore = create<UIStore>()(
         set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
-
-      // Theme actions
-      toggleTheme: () =>
-        set((state) => ({
-          theme: state.theme === 'light' ? 'dark' : 'light',
-        })),
-
-      setTheme: (theme) => set({ theme }),
     }),
     {
       name: 'ui-store',
       partialize: (state) => ({
-        theme: state.theme,
         sidebarOpen: state.sidebarOpen,
       }),
     }
@@ -152,11 +138,4 @@ export const useSidebar = () =>
     sidebarOpen: state.sidebarOpen,
     toggleSidebar: state.toggleSidebar,
     setSidebarOpen: state.setSidebarOpen,
-  }));
-
-export const useTheme = () =>
-  useUIStore((state) => ({
-    theme: state.theme,
-    toggleTheme: state.toggleTheme,
-    setTheme: state.setTheme,
   }));

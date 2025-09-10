@@ -9,21 +9,22 @@ import {
   Toolbar,
   Paper,
   Chip,
+  useTheme,
 } from '@mui/material';
-import {
-  Shield as ShieldIcon,
-  People as PeopleIcon,
-  EmojiEvents as AwardIcon,
-  Favorite as HeartIcon,
-  Group as GroupIcon,
-  Visibility as VisionIcon,
-  TrendingUp as GrowthIcon,
-  Star as StarIcon,
-  CheckCircle as CheckIcon,
-} from '@mui/icons-material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PeopleIcon from '@mui/icons-material/People';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import StarIcon from '@mui/icons-material/Star';
+import ShieldIcon from '@mui/icons-material/Shield';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import GroupIcon from '@mui/icons-material/Group';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import Footer from '../components/Footer';
+import ThemeToggle from '../components/common/ThemeToggle';
 
 const About: React.FC = () => {
+  const theme = useTheme();
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Navigation */}
@@ -69,6 +70,7 @@ const About: React.FC = () => {
             <Button component={Link} to="/pricing" color="inherit">
               Pricing
             </Button>
+            <ThemeToggle size="sm" variant="button" />
             <Button component={Link} to="/login" color="inherit">
               Sign In
             </Button>
@@ -87,7 +89,10 @@ const About: React.FC = () => {
       {/* Hero Section */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+          background:
+            theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+              : 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
           py: { xs: 8, md: 12 },
         }}
       >
@@ -175,19 +180,19 @@ const About: React.FC = () => {
             {/* Key Features */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <CheckIcon sx={{ color: 'success.main', fontSize: 24 }} />
+                <CheckCircleIcon sx={{ color: 'success.main', fontSize: 24 }} />
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
                   Evidence-based clinical decision support
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <CheckIcon sx={{ color: 'success.main', fontSize: 24 }} />
+                <CheckCircleIcon sx={{ color: 'success.main', fontSize: 24 }} />
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
                   Advanced medication management tools
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <CheckIcon sx={{ color: 'success.main', fontSize: 24 }} />
+                <CheckCircleIcon sx={{ color: 'success.main', fontSize: 24 }} />
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
                   Patient safety and error prevention
                 </Typography>
@@ -245,7 +250,7 @@ const About: React.FC = () => {
                   },
                 }}
               >
-                <HeartIcon sx={{ fontSize: 48, mb: 2, opacity: 0.9 }} />
+                <FavoriteIcon sx={{ fontSize: 48, mb: 2, opacity: 0.9 }} />
                 <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
                   50K+
                 </Typography>
@@ -270,7 +275,7 @@ const About: React.FC = () => {
                   },
                 }}
               >
-                <GrowthIcon sx={{ fontSize: 48, mb: 2, opacity: 0.9 }} />
+                <TrendingUpIcon sx={{ fontSize: 48, mb: 2, opacity: 0.9 }} />
                 <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
                   98%
                 </Typography>
@@ -418,7 +423,7 @@ const About: React.FC = () => {
                   mb: 3,
                 }}
               >
-                <AwardIcon sx={{ fontSize: 40, color: 'success.main' }} />
+                <EmojiEventsIcon sx={{ fontSize: 40, color: 'success.main' }} />
               </Box>
               <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
                 Excellence in Care
@@ -533,7 +538,7 @@ const About: React.FC = () => {
                 minWidth: 200,
               }}
             >
-              <VisionIcon sx={{ fontSize: 32 }} />
+              <VisibilityIcon sx={{ fontSize: 32 }} />
               <Box sx={{ textAlign: 'left' }}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Innovation
@@ -555,7 +560,7 @@ const About: React.FC = () => {
                 minWidth: 200,
               }}
             >
-              <HeartIcon sx={{ fontSize: 32 }} />
+              <FavoriteIcon sx={{ fontSize: 32 }} />
               <Box sx={{ textAlign: 'left' }}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Care
@@ -579,7 +584,7 @@ const About: React.FC = () => {
                 minWidth: 200,
               }}
             >
-              <GrowthIcon sx={{ fontSize: 32 }} />
+              <TrendingUpIcon sx={{ fontSize: 32 }} />
               <Box sx={{ textAlign: 'left' }}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Growth

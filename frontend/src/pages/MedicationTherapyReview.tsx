@@ -175,7 +175,7 @@ const MedicationTherapyReview: React.FC = () => {
               startIcon={<ArrowBackIcon />}
               onClick={handleMTRCancel}
               variant="outlined"
-              size="small"
+              size="sm"
             >
               Back to Overview
             </Button>

@@ -15,15 +15,14 @@ import {
   AccordionDetails,
   Paper,
 } from '@mui/material';
-import {
-  Email as EmailIcon,
-  Phone as PhoneIcon,
-  LocationOn as LocationIcon,
-  Send as SendIcon,
-  Schedule as ScheduleIcon,
-  ExpandMore as ExpandMoreIcon,
-} from '@mui/icons-material';
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import SendIcon from '@mui/icons-material/Send';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Footer from '../components/Footer';
+import ThemeToggle from '../components/common/ThemeToggle';
 
 interface ContactForm {
   name: string;
@@ -96,6 +95,7 @@ const Contact: React.FC = () => {
             <Button component={Link} to="/pricing" color="inherit">
               Pricing
             </Button>
+            <ThemeToggle size="sm" variant="button" />
             <Button component={Link} to="/login" color="inherit">
               Sign In
             </Button>
@@ -114,8 +114,12 @@ const Contact: React.FC = () => {
       {/* Hero Section */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+          background: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
+              : 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
           py: { xs: 8, md: 12 },
+          transition: 'background 0.3s ease',
         }}
       >
         <Container maxWidth="lg">
@@ -292,7 +296,7 @@ const Contact: React.FC = () => {
                       justifyContent: 'center',
                     }}
                   >
-                    <LocationIcon
+                    <LocationOnIcon
                       sx={{ color: 'warning.main', fontSize: 28 }}
                     />
                   </Box>
@@ -396,7 +400,10 @@ const Contact: React.FC = () => {
               sx={{
                 p: 4,
                 borderRadius: 3,
-                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
+                    : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
                 border: '1px solid',
                 borderColor: 'grey.200',
                 height: 'fit-content',
@@ -504,11 +511,15 @@ const Contact: React.FC = () => {
                     borderRadius: 3,
                     fontSize: '1.1rem',
                     fontWeight: 600,
-                    background:
-                      'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+                    background: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)'
+                        : 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
                     '&:hover': {
-                      background:
-                        'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
+                      background: (theme) =>
+                        theme.palette.mode === 'dark'
+                          ? 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)'
+                          : 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
                       transform: 'translateY(-1px)',
                       boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
                     },

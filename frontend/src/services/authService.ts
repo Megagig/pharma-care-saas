@@ -25,6 +25,28 @@ export interface UserData {
   workplaceId?: string;
 }
 
+// Define workplace response type
+export interface WorkplaceResponse {
+  success: boolean;
+  data: {
+    _id: string;
+    name: string;
+    type: string;
+    email: string;
+    licenseNumber: string;
+    address: string;
+    state: string;
+    lga: string;
+    inviteCode: string;
+    ownerId: string;
+    teamMembers: string[];
+    teamSize: number;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
+
 // Define the auth response type
 export interface AuthResponse {
   success: boolean;
@@ -224,10 +246,12 @@ class AuthService {
     }) as Promise<AuthResponse>;
   }
 
-  async findWorkplaceByInviteCode(inviteCode: string): Promise<unknown> {
+  async findWorkplaceByInviteCode(
+    inviteCode: string
+  ): Promise<WorkplaceResponse> {
     return this.makeRequest(`/auth/workplace/invite/${inviteCode}`, {
       method: 'GET',
-    });
+    }) as Promise<WorkplaceResponse>;
   }
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
