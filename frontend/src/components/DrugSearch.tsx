@@ -12,6 +12,7 @@ import {
   Typography,
   Paper,
   InputAdornment,
+  useTheme,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import LoadingSkeleton from './LoadingSkeleton';
@@ -28,6 +29,7 @@ interface DrugSearchProps {
 }
 
 const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
+  const theme = useTheme();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const debouncedSearchTerm = useDebounce<string>(searchTerm, 300);
   const {
@@ -150,10 +152,12 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
           '& .MuiOutlinedInput-root': {
             borderRadius: '8px',
             '&:hover fieldset': {
-              borderColor: '#0047AB',
+              borderColor:
+                theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
             },
             '&.Mui-focused fieldset': {
-              borderColor: '#0047AB',
+              borderColor:
+                theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
               borderWidth: 2,
             },
           },
@@ -166,8 +170,9 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
             mb: 3,
             p: 1,
             borderRadius: '8px',
-            bgcolor: '#fff0f0',
-            border: '1px solid #ffcccc',
+            bgcolor: theme.palette.mode === 'dark' ? '#4c1d1d' : '#fff0f0',
+            border: '1px solid',
+            borderColor: theme.palette.mode === 'dark' ? '#dc2626' : '#ffcccc',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -181,13 +186,15 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
             onClick={handleRetry}
             sx={{
               cursor: 'pointer',
-              color: '#0047AB',
+              color: theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
               fontWeight: 500,
               fontSize: '0.875rem',
               textDecoration: 'underline',
               border: 'none',
               background: 'none',
-              '&:hover': { color: '#002D69' },
+              '&:hover': {
+                color: theme.palette.mode === 'dark' ? '#5bb0d4' : '#002D69',
+              },
             }}
           >
             Retry
@@ -213,7 +220,8 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
                   borderBottom: '1px solid #f0f0f0',
                   '&:last-child': { border: 'none' },
                   '&:hover': {
-                    bgcolor: '#f5f9ff',
+                    bgcolor:
+                      theme.palette.mode === 'dark' ? '#374151' : '#f5f9ff',
                     cursor: 'pointer',
                   },
                 }}
@@ -238,9 +246,13 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
                       borderRadius: '16px',
                       fontSize: '0.75rem',
                       fontWeight: 500,
-                      color: '#0047AB',
-                      bgcolor: '#f0f7ff',
-                      border: '1px solid #d0e4ff',
+                      color:
+                        theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
+                      bgcolor:
+                        theme.palette.mode === 'dark' ? '#374151' : '#f0f7ff',
+                      border: '1px solid',
+                      borderColor:
+                        theme.palette.mode === 'dark' ? '#4b5563' : '#d0e4ff',
                     }}
                   >
                     {drug.tty}
@@ -262,11 +274,17 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
               alignItems: 'center',
               justifyContent: 'center',
               py: 4,
-              bgcolor: '#f9fbff',
+              bgcolor: theme.palette.mode === 'dark' ? '#0f172a' : '#f9fbff',
               borderRadius: '8px',
             }}
           >
-            <SearchIcon sx={{ fontSize: '2rem', color: '#9e9e9e', mb: 1 }} />
+            <SearchIcon
+              sx={{
+                fontSize: '2rem',
+                color: theme.palette.mode === 'dark' ? '#6b7280' : '#9e9e9e',
+                mb: 1,
+              }}
+            />
             <Typography color="text.secondary" align="center">
               No medications found matching "{debouncedSearchTerm}"
             </Typography>

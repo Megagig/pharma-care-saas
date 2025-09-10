@@ -2,7 +2,15 @@ import React, { useState, useEffect } from 'react';
 import ModulePage from '../components/ModulePage';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import InfoIcon from '@mui/icons-material/Info';
-import { Box, Tabs, Tab, Typography, Paper, Alert } from '@mui/material';
+import {
+  Box,
+  Tabs,
+  Tab,
+  Typography,
+  Paper,
+  Alert,
+  useTheme,
+} from '@mui/material';
 import DrugSearch from '../components/DrugSearch';
 import DrugDetails from '../components/DrugDetails';
 import DrugInteractions from '../components/DrugInteractions';
@@ -14,6 +22,7 @@ import { useDrugStore } from '../stores/drugStore';
 import type { ModuleInfo } from '../types/moduleTypes';
 
 const DrugInformationCenter: React.FC = () => {
+  const theme = useTheme();
   const [activeTab, setActiveTab] = useState(0);
   const { selectedDrug, searchError, setSearchError } = useDrugStore();
 
@@ -81,7 +90,10 @@ const DrugInformationCenter: React.FC = () => {
           sx={{
             p: 3,
             borderRadius: '12px',
-            background: 'linear-gradient(to bottom, #f9f9f9, #ffffff)',
+            background:
+              theme.palette.mode === 'dark'
+                ? 'linear-gradient(to bottom, #1e293b, #0f172a)'
+                : 'linear-gradient(to bottom, #f9f9f9, #ffffff)',
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
           }}
         >
@@ -90,8 +102,10 @@ const DrugInformationCenter: React.FC = () => {
             sx={{
               mb: 3,
               fontWeight: 600,
-              color: '#0047AB',
-              borderBottom: '2px solid #e0e0e0',
+              color: theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
+              borderBottom: '2px solid',
+              borderBottomColor:
+                theme.palette.mode === 'dark' ? '#374151' : '#e0e0e0',
               paddingBottom: 2,
             }}
           >
@@ -121,7 +135,8 @@ const DrugInformationCenter: React.FC = () => {
                   borderBottom: 1,
                   borderColor: 'divider',
                   mt: 3,
-                  backgroundColor: '#f5f9ff',
+                  backgroundColor:
+                    theme.palette.mode === 'dark' ? '#374151' : '#f5f9ff',
                   borderRadius: '8px 8px 0 0',
                   px: 1,
                 }}
@@ -138,11 +153,13 @@ const DrugInformationCenter: React.FC = () => {
                       minHeight: '48px',
                     },
                     '& .Mui-selected': {
-                      color: '#0047AB',
+                      color:
+                        theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
                       fontWeight: 600,
                     },
                     '& .MuiTabs-indicator': {
-                      backgroundColor: '#0047AB',
+                      backgroundColor:
+                        theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
                       height: 3,
                     },
                   }}
@@ -161,16 +178,28 @@ const DrugInformationCenter: React.FC = () => {
                 sx={{
                   mt: 3,
                   p: 2,
-                  bgcolor: '#fff',
+                  bgcolor: theme.palette.mode === 'dark' ? '#1e293b' : '#fff',
                   borderRadius: '0 0 8px 8px',
                   boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.05)',
                 }}
               >
                 {activeTab === 0 && (
-                  <Box sx={{ p: 2, borderRadius: '8px', bgcolor: '#f9fbff' }}>
+                  <Box
+                    sx={{
+                      p: 2,
+                      borderRadius: '8px',
+                      bgcolor:
+                        theme.palette.mode === 'dark' ? '#0f172a' : '#f9fbff',
+                    }}
+                  >
                     <Typography
                       variant="h6"
-                      sx={{ mb: 3, fontWeight: 600, color: '#0047AB' }}
+                      sx={{
+                        mb: 3,
+                        fontWeight: 600,
+                        color:
+                          theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
+                      }}
                     >
                       {selectedDrug.name}
                     </Typography>
@@ -181,7 +210,10 @@ const DrugInformationCenter: React.FC = () => {
                       <Paper
                         sx={{
                           p: 2,
-                          bgcolor: '#f0f7ff',
+                          bgcolor:
+                            theme.palette.mode === 'dark'
+                              ? '#374151'
+                              : '#f0f7ff',
                           borderRadius: '8px',
                           flex: '1 1 45%',
                           minWidth: '250px',
@@ -201,7 +233,10 @@ const DrugInformationCenter: React.FC = () => {
                       <Paper
                         sx={{
                           p: 2,
-                          bgcolor: '#f0f7ff',
+                          bgcolor:
+                            theme.palette.mode === 'dark'
+                              ? '#374151'
+                              : '#f0f7ff',
                           borderRadius: '8px',
                           flex: '1 1 45%',
                           minWidth: '250px',
@@ -267,13 +302,18 @@ const DrugInformationCenter: React.FC = () => {
                 justifyContent: 'center',
                 alignItems: 'center',
                 minHeight: '300px',
-                bgcolor: '#f9fbff',
+                bgcolor: theme.palette.mode === 'dark' ? '#0f172a' : '#f9fbff',
                 borderRadius: '8px',
                 p: 4,
               }}
             >
               <MenuBookIcon
-                sx={{ fontSize: '4rem', color: '#0047AB', opacity: 0.6, mb: 2 }}
+                sx={{
+                  fontSize: '4rem',
+                  color: theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
+                  opacity: 0.6,
+                  mb: 2,
+                }}
               />
               <Typography
                 variant="h6"
