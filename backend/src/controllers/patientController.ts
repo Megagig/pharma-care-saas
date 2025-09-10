@@ -183,10 +183,7 @@ export const createPatient = asyncHandler(
     try {
       // Generate MRN
       const workplaceCode = 'GEN'; // TODO: Get from workplace settings
-      const patientCount = await Patient.countDocuments({
-        workplaceId: context.workplaceId,
-      });
-      const mrn = generateMRN(workplaceCode, patientCount + 1);
+      const mrn = await (Patient as any).generateNextMRN(context.workplaceId, workplaceCode);
 
       // Create patient
       const patient = new Patient({

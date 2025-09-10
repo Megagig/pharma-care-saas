@@ -7,6 +7,7 @@ import {
   GENOTYPES,
   MARITAL_STATUS,
   GENDERS,
+  generateMRN,
 } from '../utils/tenancyGuard';
 
 export interface IPatientVitals {
@@ -432,7 +433,7 @@ patientSchema.statics.generateNextMRN = async function (
 ): Promise<string> {
   const lastPatient = await this.findOne(
     { workplaceId },
-    {},
+    { mrn: 1 },
     { sort: { createdAt: -1 }, bypassTenancyGuard: true }
   );
 
@@ -440,11 +441,11 @@ patientSchema.statics.generateNextMRN = async function (
   if (lastPatient?.mrn) {
     const match = lastPatient.mrn.match(/-(\d+)$/);
     if (match) {
-      sequence = parseInt(match[1]) + 1;
+      sequence = parseInt(match[1], 10) + 1;
     }
   }
 
-  return `${workplaceCode}-${sequence.toString().padStart(4, '0')}`;
+  return generateMRN(workplaceCode, sequence);
 };
 
 export default mongoose.model<IPatient>('Patient', patientSchema);
