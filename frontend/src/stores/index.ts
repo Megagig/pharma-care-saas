@@ -1,6 +1,7 @@
 // Main store composition and exports
 export * from './types';
 export * from './uiStore';
+export * from './themeStore';
 export * from './patientStore';
 export * from './medicationStore';
 export * from './clinicalNoteStore';
@@ -21,9 +22,11 @@ export {
   // UI Store hooks
   useNotifications,
   useLoading,
-  useTheme,
   useModals,
 } from './uiStore';
+
+// Theme Store exports
+export { useTheme, useThemeStore } from './themeStore';
 
 export {
   // Patient Store hooks

@@ -339,7 +339,7 @@ const SubscriptionManagement: React.FC = () => {
               Yearly
               <Chip
                 label="Save 17%"
-                size="small"
+                size="sm"
                 color="success"
                 sx={{ ml: 1 }}
               />

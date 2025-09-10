@@ -346,7 +346,7 @@ const Patients = () => {
             {totalPatients > 0 && (
               <Chip
                 label={`${totalPatients} total patients`}
-                size="small"
+                size="sm"
                 color="primary"
                 variant="outlined"
                 sx={{ ml: 2 }}
@@ -416,11 +416,11 @@ const Patients = () => {
                   handleAdvancedFilter({ state: value || undefined })
                 }
                 renderInput={(params) => (
-                  <TextField {...params} label="State" size="small" />
+                  <TextField {...params} label="State" size="sm" />
                 )}
               />
 
-              <FormControl size="small">
+              <FormControl size="sm">
                 <InputLabel>Blood Group</InputLabel>
                 <Select
                   value={searchParams.bloodGroup || ''}
@@ -440,7 +440,7 @@ const Patients = () => {
                 </Select>
               </FormControl>
 
-              <FormControl size="small">
+              <FormControl size="sm">
                 <InputLabel>Genotype</InputLabel>
                 <Select
                   value={searchParams.genotype || ''}
@@ -462,7 +462,7 @@ const Patients = () => {
 
               <TextField
                 label="MRN"
-                size="small"
+                size="sm"
                 value={searchParams.mrn || ''}
                 onChange={(e) =>
                   handleAdvancedFilter({ mrn: e.target.value || undefined })
@@ -472,7 +472,7 @@ const Patients = () => {
 
               <TextField
                 label="Phone Number"
-                size="small"
+                size="sm"
                 value={searchParams.phone || ''}
                 onChange={(e) =>
                   handleAdvancedFilter({ phone: e.target.value || undefined })
@@ -636,7 +636,7 @@ const Patients = () => {
                         {patient.bloodGroup && (
                           <Chip
                             label={patient.bloodGroup}
-                            size="small"
+                            size="sm"
                             color="primary"
                             variant="outlined"
                             sx={{ fontSize: '0.75rem' }}
@@ -645,7 +645,7 @@ const Patients = () => {
                         {patient.genotype && (
                           <Chip
                             label={patient.genotype}
-                            size="small"
+                            size="sm"
                             color={
                               patient.genotype.includes('S')
                                 ? 'warning'
@@ -658,7 +658,7 @@ const Patients = () => {
                         {patient.hasActiveDTP && (
                           <Chip
                             label="DTP"
-                            size="small"
+                            size="sm"
                             color="error"
                             icon={<WarningIcon sx={{ fontSize: 14 }} />}
                             sx={{ fontSize: '0.75rem' }}
@@ -671,7 +671,7 @@ const Patients = () => {
                       {/* Temporarily disabled to prevent excessive API calls */}
                       <Chip
                         label="MTR Available"
-                        size="small"
+                        size="sm"
                         variant="outlined"
                         color="default"
                       />
@@ -712,7 +712,7 @@ const Patients = () => {
                         {/* Check if we're in medication selection mode */}
                         {isForMedications ? (
                           <Button
-                            size="small"
+                            size="sm"
                             variant="contained"
                             color="primary"
                             onClick={(e) => {
@@ -726,7 +726,7 @@ const Patients = () => {
                         ) : (
                           <Tooltip title="View Details">
                             <IconButton
-                              size="small"
+                              size="sm"
                               color="primary"
                               onClick={() => handleViewPatient(patient._id)}
                             >
@@ -736,7 +736,7 @@ const Patients = () => {
                         )}
                         <Tooltip title="Edit Patient">
                           <IconButton
-                            size="small"
+                            size="sm"
                             color="primary"
                             onClick={() => handleEditPatient(patient._id)}
                           >
@@ -745,7 +745,7 @@ const Patients = () => {
                         </Tooltip>
                         <Tooltip title="More Actions">
                           <IconButton
-                            size="small"
+                            size="sm"
                             onClick={(e) => handleMenuClick(e, patient._id)}
                             color="primary"
                           >

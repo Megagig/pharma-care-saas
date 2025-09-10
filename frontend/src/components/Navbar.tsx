@@ -16,6 +16,7 @@ import LogoutIcon from '@mui/icons-material/ExitToApp';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
+import ThemeToggle from './common/ThemeToggle';
 
 /**
  * Main navigation bar component displayed at the top of the application
@@ -93,6 +94,11 @@ const Navbar: React.FC = () => {
               }
             />
           )}
+
+          {/* Theme Toggle */}
+          <Box sx={{ mr: 1 }}>
+            <ThemeToggle size="sm" />
+          </Box>
 
           <IconButton
             size="large"

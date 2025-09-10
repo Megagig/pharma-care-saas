@@ -11,18 +11,19 @@ import {
   Paper,
   Rating,
   Avatar,
+  useTheme,
 } from '@mui/material';
-import {
-  People as PeopleIcon,
-  Security as SecurityIcon,
-  BarChart as BarChartIcon,
-  Schedule as ScheduleIcon,
-  ArrowForward as ArrowForwardIcon,
-  CheckCircle as CheckCircleIcon,
-} from '@mui/icons-material';
+import PeopleIcon from '@mui/icons-material/People';
+import SecurityIcon from '@mui/icons-material/Security';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Footer from '../components/Footer';
+import ThemeToggle from '../components/common/ThemeToggle';
 
 const Landing = () => {
+  const theme = useTheme();
   const features = [
     {
       icon: PeopleIcon,
@@ -120,6 +121,7 @@ const Landing = () => {
             <Button component={Link} to="/pricing" color="inherit">
               Pricing
             </Button>
+            <ThemeToggle size="sm" variant="button" />
             <Button component={Link} to="/login" color="inherit">
               Sign In
             </Button>
@@ -138,7 +140,10 @@ const Landing = () => {
       {/* Hero Section */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+          background:
+            theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+              : 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
           py: { xs: 8, md: 12 },
         }}
       >

@@ -98,6 +98,10 @@ export interface ClinicalNoteFormData {
   isPrivate: boolean;
 }
 
+// Theme Types
+export type ThemeMode = 'light' | 'dark' | 'system';
+export type ResolvedTheme = 'light' | 'dark';
+
 // UI State Types
 export interface UIState {
   loading: boolean;
@@ -106,7 +110,6 @@ export interface UIState {
     [key: string]: boolean;
   };
   sidebarOpen: boolean;
-  theme: 'light' | 'dark';
 }
 
 export interface Notification {
