@@ -165,7 +165,7 @@ const ClinicalNoteDetailPage: React.FC = () => {
                 variant="outlined"
                 startIcon={<ArrowBackIcon />}
                 onClick={handleBackNavigation}
-                size="small"
+                size="sm"
               >
                 Back
               </Button>

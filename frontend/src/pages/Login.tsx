@@ -23,6 +23,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import toast from 'react-hot-toast';
 import { checkAuthToken, testAPIConnection } from '../utils/authDebug';
+import ThemeToggle from '../components/common/ThemeToggle';
 
 const Login = () => {
   const { login } = useAuth();
@@ -107,13 +108,30 @@ const Login = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: (theme) =>
+          theme.palette.mode === 'dark'
+            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         py: 4,
+        position: 'relative',
+        transition: 'background 0.3s ease',
       }}
     >
+      {/* Floating Theme Toggle */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          zIndex: 1000,
+        }}
+      >
+        <ThemeToggle size="sm" variant="button" />
+      </Box>
+
       <Container maxWidth="sm">
         <Card
           sx={{ borderRadius: 4, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}

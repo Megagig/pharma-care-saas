@@ -497,7 +497,7 @@ const FeatureFlagsPage: React.FC = () => {
                       <TableCell>
                         <Chip
                           label={getCategoryInfo(flag.metadata.category).label}
-                          size="small"
+                          size="sm"
                           color={
                             getCategoryInfo(flag.metadata.category).color as
                               | 'default'
@@ -514,7 +514,7 @@ const FeatureFlagsPage: React.FC = () => {
                       <TableCell>
                         <Chip
                           label={flag.metadata.priority.toUpperCase()}
-                          size="small"
+                          size="sm"
                           color={
                             getPriorityColor(flag.metadata.priority) as
                               | 'default'
@@ -536,14 +536,14 @@ const FeatureFlagsPage: React.FC = () => {
                             <Chip
                               key={tier}
                               label={tier}
-                              size="small"
+                              size="sm"
                               variant="outlined"
                             />
                           ))}
                           {flag.allowedTiers.length > 2 && (
                             <Chip
                               label={`+${flag.allowedTiers.length - 2}`}
-                              size="small"
+                              size="sm"
                               variant="outlined"
                               color="default"
                             />
@@ -554,7 +554,7 @@ const FeatureFlagsPage: React.FC = () => {
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
                           <Tooltip title="Edit">
                             <IconButton
-                              size="small"
+                              size="sm"
                               onClick={() => handleEditFlag(flag)}
                             >
                               <EditIcon />
@@ -562,7 +562,7 @@ const FeatureFlagsPage: React.FC = () => {
                           </Tooltip>
                           <Tooltip title="Delete">
                             <IconButton
-                              size="small"
+                              size="sm"
                               color="error"
                               onClick={() => handleDeleteFlag(flag)}
                             >
@@ -720,7 +720,7 @@ const FeatureFlagsPage: React.FC = () => {
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((value) => (
-                        <Chip key={value} label={value} size="small" />
+                        <Chip key={value} label={value} size="sm" />
                       ))}
                     </Box>
                   )}
@@ -749,7 +749,7 @@ const FeatureFlagsPage: React.FC = () => {
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((value) => (
-                        <Chip key={value} label={value} size="small" />
+                        <Chip key={value} label={value} size="sm" />
                       ))}
                     </Box>
                   )}
@@ -898,7 +898,7 @@ const FeatureFlagsPage: React.FC = () => {
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((value) => (
-                        <Chip key={value} label={value} size="small" />
+                        <Chip key={value} label={value} size="sm" />
                       ))}
                     </Box>
                   )}
@@ -927,7 +927,7 @@ const FeatureFlagsPage: React.FC = () => {
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((value) => (
-                        <Chip key={value} label={value} size="small" />
+                        <Chip key={value} label={value} size="sm" />
                       ))}
                     </Box>
                   )}

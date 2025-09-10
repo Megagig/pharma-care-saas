@@ -352,7 +352,7 @@ const Help: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
                 {faq.tags.slice(0, 2).map((tag) => (
-                  <Chip key={tag} label={tag} size="small" variant="outlined" />
+                  <Chip key={tag} label={tag} size="sm" variant="outlined" />
                 ))}
               </Box>
             </Box>
@@ -374,7 +374,7 @@ const Help: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button
-                  size="small"
+                  size="sm"
                   startIcon={<ThumbUpIcon />}
                   variant="outlined"
                   sx={{ minWidth: 'auto' }}
@@ -382,7 +382,7 @@ const Help: React.FC = () => {
                   {faq.helpful}
                 </Button>
                 <Button
-                  size="small"
+                  size="sm"
                   startIcon={<ThumbDownIcon />}
                   variant="outlined"
                   sx={{ minWidth: 'auto' }}
@@ -430,7 +430,7 @@ const Help: React.FC = () => {
                 >
                   <Chip
                     label={article.difficulty}
-                    size="small"
+                    size="sm"
                     color={
                       article.difficulty === 'beginner'
                         ? 'success'
@@ -492,7 +492,7 @@ const Help: React.FC = () => {
               </IconButton>
               <Chip
                 label={video.duration}
-                size="small"
+                size="sm"
                 sx={{
                   position: 'absolute',
                   bottom: 8,
@@ -642,7 +642,7 @@ const Help: React.FC = () => {
                   primary="User Manual"
                   secondary="Complete documentation for all features"
                 />
-                <Button variant="outlined" size="small">
+                <Button variant="outlined" size="sm">
                   Download
                 </Button>
               </ListItem>
@@ -655,7 +655,7 @@ const Help: React.FC = () => {
                   primary="API Documentation"
                   secondary="Developer resources for integrations"
                 />
-                <Button variant="outlined" size="small">
+                <Button variant="outlined" size="sm">
                   View
                 </Button>
               </ListItem>
@@ -668,7 +668,7 @@ const Help: React.FC = () => {
                   primary="Training Materials"
                   secondary="Training guides and best practices"
                 />
-                <Button variant="outlined" size="small">
+                <Button variant="outlined" size="sm">
                   Access
                 </Button>
               </ListItem>

@@ -244,7 +244,7 @@ const Settings: React.FC = () => {
                     color: 'white',
                     '&:hover': { bgcolor: 'primary.dark' },
                   }}
-                  size="small"
+                  size="sm"
                 >
                   <PhotoCameraIcon />
                 </IconButton>
@@ -259,7 +259,7 @@ const Settings: React.FC = () => {
             <Chip
               label={settings.profile.organization}
               variant="outlined"
-              size="small"
+              size="sm"
             />
           </CardContent>
         </Card>
@@ -819,7 +819,7 @@ const Settings: React.FC = () => {
               </Typography>
               <Select
                 fullWidth
-                size="small"
+                size="sm"
                 value={settings.security.sessionTimeout}
                 onChange={(e) =>
                   setSettings({
@@ -862,7 +862,7 @@ const Settings: React.FC = () => {
               </Typography>
               <Select
                 fullWidth
-                size="small"
+                size="sm"
                 value={settings.privacy.profileVisibility}
                 onChange={(e) =>
                   setSettings({

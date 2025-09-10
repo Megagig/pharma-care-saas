@@ -37,7 +37,8 @@ import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import toast from 'react-hot-toast';
-import { authService } from '../services/authService';
+import { authService, WorkplaceResponse } from '../services/authService';
+import ThemeToggle from '../components/common/ThemeToggle';
 
 // Nigerian states for dropdown
 const nigerianStates = [
@@ -251,9 +252,8 @@ const MultiStepRegister = () => {
     setError('');
 
     try {
-      const response = await authService.findWorkplaceByInviteCode(
-        joinForm.inviteCode
-      );
+      const response: WorkplaceResponse =
+        await authService.findWorkplaceByInviteCode(joinForm.inviteCode);
       setFoundWorkplace(response.data);
       toast.success(`Found workplace: ${response.data.name}`);
     } catch (error: unknown) {
@@ -985,12 +985,29 @@ const MultiStepRegister = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: (theme) =>
+          theme.palette.mode === 'dark'
+            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         display: 'flex',
         alignItems: 'center',
         py: 4,
+        position: 'relative',
+        transition: 'background 0.3s ease',
       }}
     >
+      {/* Floating Theme Toggle */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          zIndex: 1000,
+        }}
+      >
+        <ThemeToggle size="sm" variant="button" />
+      </Box>
+
       <Container maxWidth="md">
         <Card
           elevation={24}
