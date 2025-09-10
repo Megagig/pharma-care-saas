@@ -215,7 +215,7 @@ const SaasSettings: React.FC = () => {
             title="Quick Actions"
             avatar={<TuneIcon />}
             action={
-              <Button variant="outlined" size="small">
+              <Button variant="outlined" size="sm">
                 View All Settings
               </Button>
             }
@@ -297,7 +297,7 @@ const SaasSettings: React.FC = () => {
                   secondary="Average response time: 45ms"
                 />
                 <ListItemSecondaryAction>
-                  <Chip label="Excellent" color="success" size="small" />
+                  <Chip label="Excellent" color="success" size="sm" />
                 </ListItemSecondaryAction>
               </ListItem>
               <ListItem>
@@ -306,7 +306,7 @@ const SaasSettings: React.FC = () => {
                   secondary="95th percentile: 120ms"
                 />
                 <ListItemSecondaryAction>
-                  <Chip label="Good" color="info" size="small" />
+                  <Chip label="Good" color="info" size="sm" />
                 </ListItemSecondaryAction>
               </ListItem>
               <ListItem>

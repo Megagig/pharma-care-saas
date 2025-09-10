@@ -12,7 +12,6 @@ import {
   ListItemIcon,
   ListItemText,
   Chip,
-  Grid,
   AppBar,
   Toolbar,
   Accordion,
@@ -23,14 +22,13 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from '@mui/material';
-import {
-  Check as CheckIcon,
-  Star as StarIcon,
-  Bolt as BoltIcon,
-  Stars as StarsIcon,
-  ExpandMore as ExpandMoreIcon,
-} from '@mui/icons-material';
+import CheckIcon from '@mui/icons-material/Check';
+import StarIcon from '@mui/icons-material/Star';
+import BoltIcon from '@mui/icons-material/Bolt';
+import StarsIcon from '@mui/icons-material/Stars';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Footer from '../components/Footer';
+import ThemeToggle from '../components/common/ThemeToggle';
 import {
   useAvailablePlansQuery,
   useCreateCheckoutSessionMutation,
@@ -61,11 +59,11 @@ const Pricing = () => {
   };
 
   const handleBillingIntervalChange = (
-    event: React.MouseEvent<HTMLElement>,
-    newBillingInterval: 'monthly' | 'yearly' | null
+    _event: React.MouseEvent<HTMLElement>,
+    newInterval: 'monthly' | 'yearly'
   ) => {
-    if (newBillingInterval !== null) {
-      setBillingInterval(newBillingInterval);
+    if (newInterval !== null) {
+      setBillingInterval(newInterval);
     }
   };
 
@@ -114,6 +112,7 @@ const Pricing = () => {
             <Button component={Link} to="/pricing" color="inherit">
               Pricing
             </Button>
+            <ThemeToggle size="sm" variant="button" />
             <Button component={Link} to="/login" color="inherit">
               Sign In
             </Button>
@@ -197,24 +196,40 @@ const Pricing = () => {
             Error fetching pricing plans. Please try again later.
           </Alert>
         )}
-        <Grid container spacing={4} justifyContent="center">
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 4,
+            justifyContent: 'center',
+          }}
+        >
           {plans?.map((plan, index) => (
-            <Grid item xs={12} md={4} key={index}>
+            <Box
+              key={plan._id || index}
+              sx={{ flex: '1 1 300px', maxWidth: '400px' }}
+            >
               <Card
                 sx={{
                   height: '100%',
                   position: 'relative',
-                  border: plan.isPopular ? 2 : 1,
-                  borderColor: plan.isPopular ? 'primary.main' : 'grey.200',
-                  transform: plan.isPopular ? 'scale(1.05)' : 'scale(1)',
+                  border: plan.metadata?.mostPopular ? 2 : 1,
+                  borderColor: plan.metadata?.mostPopular
+                    ? 'primary.main'
+                    : 'grey.200',
+                  transform: plan.metadata?.mostPopular
+                    ? 'scale(1.05)'
+                    : 'scale(1)',
                   transition: 'all 0.3s ease-in-out',
                   '&:hover': {
-                    transform: plan.isPopular ? 'scale(1.05)' : 'scale(1.02)',
-                    boxShadow: plan.isPopular ? 6 : 4,
+                    transform: plan.metadata?.mostPopular
+                      ? 'scale(1.05)'
+                      : 'scale(1.02)',
+                    boxShadow: plan.metadata?.mostPopular ? 6 : 4,
                   },
                 }}
               >
-                {plan.isPopular && (
+                {plan.metadata?.mostPopular && (
                   <Box
                     sx={{
                       position: 'absolute',
@@ -276,13 +291,6 @@ const Pricing = () => {
                         {plan.name}
                       </Typography>
                     </Box>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 3 }}
-                    >
-                      {plan.description}
-                    </Typography>
                     {plan.isContactSales ? (
                       <Typography
                         variant="h4"
@@ -337,7 +345,9 @@ const Pricing = () => {
                     </Button>
                   ) : (
                     <Button
-                      variant={plan.isPopular ? 'contained' : 'outlined'}
+                      variant={
+                        plan.metadata?.mostPopular ? 'contained' : 'outlined'
+                      }
                       size="large"
                       fullWidth
                       sx={{
@@ -352,7 +362,7 @@ const Pricing = () => {
                     >
                       {createCheckoutSession.isPending
                         ? 'Processing...'
-                        : plan.isPopular
+                        : plan.metadata?.mostPopular
                         ? 'Start Free Trial'
                         : 'Get Started'}
                     </Button>
@@ -366,7 +376,7 @@ const Pricing = () => {
                       What's included:
                     </Typography>
                     <List disablePadding>
-                      {plan.displayFeatures.map(
+                      {plan.displayedFeatures.map(
                         (feature: string, featureIndex: number) => (
                           <ListItem
                             key={featureIndex}
@@ -392,9 +402,9 @@ const Pricing = () => {
                   </Box>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
 
         {/* FAQ Section */}
         <Box sx={{ mt: 12 }}>

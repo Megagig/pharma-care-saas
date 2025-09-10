@@ -14,6 +14,7 @@ import {
   checkCookiesStatus,
   getMe,
   updateProfile,
+  updateThemePreference,
 } from '../controllers/authController';
 import { auth } from '../middlewares/auth';
 
@@ -36,5 +37,6 @@ router.post('/logout', logout);
 router.post('/logout-all', logoutAll);
 router.get('/me', auth, getMe);
 router.put('/profile', auth, updateProfile);
+router.patch('/theme', auth, updateThemePreference);
 
 export default router;

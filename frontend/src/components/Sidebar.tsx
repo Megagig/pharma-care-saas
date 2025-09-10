@@ -360,15 +360,28 @@ const Sidebar = () => {
           boxSizing: 'border-box',
           position: 'fixed',
           height: '100vh',
+          backgroundColor: theme.palette.background.paper,
           background:
-            'linear-gradient(180deg, rgba(245,247,250,1) 0%, rgba(255,255,255,1) 100%)',
-          borderRight: `1px solid rgba(200, 210, 225, 0.5)`,
-          transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.standard,
-          }),
+            theme.palette.mode === 'dark'
+              ? 'linear-gradient(180deg, #1e293b 0%, #1a2332 100%)'
+              : 'linear-gradient(180deg, rgba(245,247,250,1) 0%, rgba(255,255,255,1) 100%)',
+          borderRight: `1px solid ${
+            theme.palette.mode === 'dark'
+              ? '#334155'
+              : 'rgba(200, 210, 225, 0.5)'
+          }`,
+          transition: theme.transitions.create(
+            ['width', 'margin', 'background', 'border-color'],
+            {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.standard,
+            }
+          ),
           overflowX: 'hidden',
-          boxShadow: '0 0 20px rgba(0, 0, 0, 0.08)',
+          boxShadow:
+            theme.palette.mode === 'dark'
+              ? '0 0 20px rgba(0, 0, 0, 0.3)'
+              : '0 0 20px rgba(0, 0, 0, 0.08)',
           zIndex: theme.zIndex.drawer,
         },
       }}
@@ -384,11 +397,17 @@ const Sidebar = () => {
             background: 'transparent',
           },
           '&::-webkit-scrollbar-thumb': {
-            background: 'rgba(0, 0, 0, 0.1)',
+            background:
+              theme.palette.mode === 'dark'
+                ? 'rgba(148, 163, 184, 0.3)'
+                : 'rgba(0, 0, 0, 0.1)',
             borderRadius: '10px',
           },
           '&::-webkit-scrollbar-thumb:hover': {
-            background: 'rgba(0, 0, 0, 0.2)',
+            background:
+              theme.palette.mode === 'dark'
+                ? 'rgba(148, 163, 184, 0.5)'
+                : 'rgba(0, 0, 0, 0.2)',
           },
         }}
       >
