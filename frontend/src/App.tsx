@@ -36,7 +36,8 @@ import MultiStepRegister from './pages/MultiStepRegister';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import Dashboard from './pages/Dashboard';
+// Modern Dashboard is now the default dashboard
+import ModernDashboardPage from './pages/ModernDashboardPage';
 import Patients from './pages/Patients';
 // Lazy load Clinical Notes components for better performance
 // Lazy loading components is handled directly in routes
@@ -172,12 +173,11 @@ function App(): JSX.Element {
                             path="/dashboard"
                             element={
                               <ProtectedRoute>
-                                <AppLayout>
-                                  <Dashboard />
-                                </AppLayout>
+                                <ModernDashboardPage />
                               </ProtectedRoute>
                             }
                           />
+                          {/* Removed old dashboard route */}
                           <Route
                             path="/patients"
                             element={
