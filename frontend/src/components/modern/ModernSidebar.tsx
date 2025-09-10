@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -16,31 +16,30 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import {
-  ChevronLeft as ChevronLeftIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Dashboard as DashboardIcon,
-  People as PeopleIcon,
-  Description as DescriptionIcon,
-  Medication as MedicationIcon,
-  Assessment as AssessmentIcon,
-  LocalPharmacy as PharmacyIcon,
-  Settings as SettingsIcon,
-  AccountCircle as AccountCircleIcon,
-  Help as HelpIcon,
-  CreditCard as CreditCardIcon,
-  Science as ScienceIcon,
-  BarChart as BarChartIcon,
-  Forum as ForumIcon,
-  MenuBook as MenuBookIcon,
-  Psychology as PsychologyIcon,
-  Analytics as AnalyticsIcon,
-  SupervisorAccount as SupervisorAccountIcon,
-  Tune as TuneIcon,
-} from '@mui/icons-material';
-import { useRBAC } from '../hooks/useRBAC';
-import { useSidebarControls } from '../stores/sidebarHooks';
+
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import PeopleIcon from '@mui/icons-material/People';
+import DescriptionIcon from '@mui/icons-material/Description';
+import MedicationIcon from '@mui/icons-material/Medication';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
+import SettingsIcon from '@mui/icons-material/Settings';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import HelpIcon from '@mui/icons-material/Help';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import ScienceIcon from '@mui/icons-material/Science';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import ForumIcon from '@mui/icons-material/Forum';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
+import TuneIcon from '@mui/icons-material/Tune';
+import { useRBAC } from '../../hooks/useRBAC';
+import { useSidebarControls } from '../../stores/sidebarHooks';
 import { styled } from '@mui/system';
 
 // Styled components for sidebar
@@ -334,7 +333,7 @@ const ModernSidebar = () => {
               variant="rounded"
               sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}
             >
-              <PharmacyIcon fontSize="small" />
+              <LocalPharmacyIcon fontSize="small" />
             </Avatar>
             <Typography variant="h6" fontWeight="bold">
               PharmaCare
@@ -347,7 +346,7 @@ const ModernSidebar = () => {
             variant="rounded"
             sx={{ bgcolor: 'primary.main', width: 32, height: 32, mx: 'auto' }}
           >
-            <PharmacyIcon fontSize="small" />
+            <LocalPharmacyIcon fontSize="small" />
           </Avatar>
         )}
         {sidebarOpen && (
@@ -412,7 +411,7 @@ const ModernSidebar = () => {
               title="Pharmacy Tools"
               onClick={() => toggleNestedMenu('pharmacy')}
               open={openMenus.pharmacy}
-              icon={<PharmacyIcon />}
+              icon={<LocalPharmacyIcon />}
             />
           </ListItem>
 
