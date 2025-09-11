@@ -78,8 +78,9 @@ export const createPatientSchema = z.object({
   phone: z
     .string()
     .regex(phoneRegex, 'Phone must be in +234 format')
+    .or(z.literal(''))
     .optional(),
-  email: z.string().email('Invalid email format').optional(),
+  email: z.string().email('Invalid email format').or(z.literal('')).optional(),
   address: z.string().max(200).trim().optional(),
   state: z.enum(NIGERIAN_STATES as [string, ...string[]]).optional(),
   lga: z.string().max(100).trim().optional(),
