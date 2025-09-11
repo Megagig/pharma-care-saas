@@ -157,16 +157,6 @@ const patientSchema = new Schema(
     },
     phone: {
       type: String,
-      validate: {
-        validator: function (value: string) {
-          if (value) {
-            // E.164 format for Nigerian numbers: +234...
-            return /^\+234[789][01]\d{8}$/.test(value);
-          }
-          return true;
-        },
-        message: 'Phone must be in E.164 format (+234...)',
-      },
     },
     email: {
       type: String,
@@ -255,9 +245,11 @@ const patientSchema = new Schema(
           type: Schema.Types.ObjectId,
           ref: 'Patient',
         },
-        sharedWithLocations: [{
-          type: String,
-        }],
+        sharedWithLocations: [
+          {
+            type: String,
+          },
+        ],
         sharedBy: {
           type: Schema.Types.ObjectId,
           ref: 'User',
@@ -294,14 +286,16 @@ const patientSchema = new Schema(
           type: Schema.Types.ObjectId,
           ref: 'User',
         },
-        steps: [{
-          step: String,
-          completedAt: Date,
-          completedBy: {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
+        steps: [
+          {
+            step: String,
+            completedAt: Date,
+            completedBy: {
+              type: Schema.Types.ObjectId,
+              ref: 'User',
+            },
           },
-        }],
+        ],
       },
     },
 
@@ -335,7 +329,10 @@ patientSchema.index({ workplaceId: 1, isDeleted: 1 });
 patientSchema.index({ workplaceId: 1, phone: 1 }, { sparse: true });
 patientSchema.index({ workplaceId: 1, email: 1 }, { sparse: true });
 patientSchema.index({ workplaceId: 1, locationId: 1 }, { sparse: true });
-patientSchema.index({ workplaceId: 1, 'metadata.sharedAccess.sharedWithLocations': 1 }, { sparse: true });
+patientSchema.index(
+  { workplaceId: 1, 'metadata.sharedAccess.sharedWithLocations': 1 },
+  { sparse: true }
+);
 patientSchema.index({ hasActiveDTP: 1 });
 patientSchema.index({ createdAt: -1 });
 
@@ -390,7 +387,9 @@ patientSchema.methods.updateLatestVitals = function (
   };
 };
 
-patientSchema.methods.getInterventionCount = async function (this: IPatient): Promise<number> {
+patientSchema.methods.getInterventionCount = async function (
+  this: IPatient
+): Promise<number> {
   const ClinicalIntervention = mongoose.model('ClinicalIntervention');
   return await ClinicalIntervention.countDocuments({
     patientId: this._id,
@@ -398,7 +397,9 @@ patientSchema.methods.getInterventionCount = async function (this: IPatient): Pr
   });
 };
 
-patientSchema.methods.getActiveInterventionCount = async function (this: IPatient): Promise<number> {
+patientSchema.methods.getActiveInterventionCount = async function (
+  this: IPatient
+): Promise<number> {
   const ClinicalIntervention = mongoose.model('ClinicalIntervention');
   return await ClinicalIntervention.countDocuments({
     patientId: this._id,
@@ -407,7 +408,9 @@ patientSchema.methods.getActiveInterventionCount = async function (this: IPatien
   });
 };
 
-patientSchema.methods.updateInterventionFlags = async function (this: IPatient): Promise<void> {
+patientSchema.methods.updateInterventionFlags = async function (
+  this: IPatient
+): Promise<void> {
   const activeCount = await this.getActiveInterventionCount();
   this.hasActiveInterventions = activeCount > 0;
   await this.save();

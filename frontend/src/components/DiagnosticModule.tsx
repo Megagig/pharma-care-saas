@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -21,8 +21,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Divider,
-  Paper,
   Tab,
   Tabs,
   IconButton,
@@ -35,7 +33,6 @@ import {
   Remove as RemoveIcon,
   Psychology as PsychologyIcon,
   Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
   ExpandMore as ExpandMoreIcon,
   LocalHospital as HospitalIcon,
   Science as ScienceIcon,
@@ -111,7 +108,7 @@ interface DiagnosticAnalysis {
     disclaimer: string;
     confidenceScore: number;
   };
-  drugInteractions: any[];
+  drugInteractions: unknown[];
   processingTime: number;
 }
 
@@ -127,28 +124,35 @@ const DiagnosticModule: React.FC = () => {
 
   // Patient search state
   const [patientSearchQuery, setPatientSearchQuery] = useState('');
-  const [selectedPatientObject, setSelectedPatientObject] = useState<Patient | null>(null);
-  
+  const [selectedPatientObject, setSelectedPatientObject] =
+    useState<Patient | null>(null);
+
   // Load patients for dropdown and search
-  const { data: patientsData, isLoading: patientsLoading } = usePatients({ limit: 100 });
-  const { data: searchData, isLoading: searchLoading } = useSearchPatients(patientSearchQuery);
-  
+  const { data: patientsData, isLoading: patientsLoading } = usePatients({
+    limit: 100,
+  });
+  const { data: searchData, isLoading: searchLoading } =
+    useSearchPatients(patientSearchQuery);
+
   const patients = patientsData?.data?.results || [];
   const searchResults = searchData?.data?.results || [];
-  
+
   // Combine regular patients with search results
-  const availablePatients = patientSearchQuery.length >= 2 ? searchResults : patients;
+  const availablePatients =
+    patientSearchQuery.length >= 2 ? searchResults : patients;
 
   // Form state
   const [selectedPatient, setSelectedPatient] = useState('');
   const [symptoms, setSymptoms] = useState<Symptom[]>([
-    { type: 'subjective', description: '' }
+    { type: 'subjective', description: '' },
   ]);
   const [labResults, setLabResults] = useState<LabResult[]>([]);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [vitalSigns, setVitalSigns] = useState<VitalSigns>({});
   const [duration, setDuration] = useState('');
-  const [severity, setSeverity] = useState<'mild' | 'moderate' | 'severe'>('mild');
+  const [severity, setSeverity] = useState<'mild' | 'moderate' | 'severe'>(
+    'mild'
+  );
   const [onset, setOnset] = useState<'acute' | 'chronic' | 'subacute'>('acute');
 
   // Check feature access - super_admin bypasses feature flag checks
@@ -160,8 +164,8 @@ const DiagnosticModule: React.FC = () => {
       <Card>
         <CardContent>
           <Alert severity="warning">
-            Clinical Decision Support feature is not available in your current plan.
-            Please upgrade to access AI-powered diagnostic assistance.
+            Clinical Decision Support feature is not available in your current
+            plan. Please upgrade to access AI-powered diagnostic assistance.
           </Alert>
         </CardContent>
       </Card>
@@ -183,11 +187,17 @@ const DiagnosticModule: React.FC = () => {
   };
 
   const addLabResult = () => {
-    setLabResults([...labResults, { testName: '', value: '', referenceRange: '', abnormal: false }]);
+    setLabResults([
+      ...labResults,
+      { testName: '', value: '', referenceRange: '', abnormal: false },
+    ]);
   };
 
   const addMedication = () => {
-    setMedications([...medications, { name: '', dosage: '', frequency: '', startDate: '' }]);
+    setMedications([
+      ...medications,
+      { name: '', dosage: '', frequency: '', startDate: '' },
+    ]);
   };
 
   const handleAnalysis = async () => {
@@ -203,19 +213,25 @@ const DiagnosticModule: React.FC = () => {
       const response = await apiHelpers.post('/diagnostics/ai', {
         patientId: selectedPatient,
         symptoms: {
-          subjective: symptoms.filter(s => s.type === 'subjective').map(s => s.description).filter(Boolean),
-          objective: symptoms.filter(s => s.type === 'objective').map(s => s.description).filter(Boolean),
+          subjective: symptoms
+            .filter((s) => s.type === 'subjective')
+            .map((s) => s.description)
+            .filter(Boolean),
+          objective: symptoms
+            .filter((s) => s.type === 'objective')
+            .map((s) => s.description)
+            .filter(Boolean),
           duration,
           severity,
           onset,
         },
-        labResults: labResults.filter(lr => lr.testName && lr.value),
-        currentMedications: medications.filter(m => m.name && m.dosage),
+        labResults: labResults.filter((lr) => lr.testName && lr.value),
+        currentMedications: medications.filter((m) => m.name && m.dosage),
         vitalSigns,
         patientConsent: {
           provided: true,
-          method: 'electronic'
-        }
+          method: 'electronic',
+        },
       });
 
       setAnalysis(response.data.data);
@@ -234,7 +250,7 @@ const DiagnosticModule: React.FC = () => {
         <Autocomplete
           fullWidth
           options={availablePatients}
-          getOptionLabel={(patient: Patient) => 
+          getOptionLabel={(patient: Patient) =>
             `${patient.displayName || `${patient.firstName} ${patient.lastName}`} - ${patient.mrn}${patient.age ? ` (${patient.age} years)` : ''}`
           }
           value={selectedPatientObject}
@@ -258,7 +274,9 @@ const DiagnosticModule: React.FC = () => {
                 ...params.InputProps,
                 endAdornment: (
                   <>
-                    {patientsLoading || searchLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                    {patientsLoading || searchLoading ? (
+                      <CircularProgress color="inherit" size={20} />
+                    ) : null}
                     {params.InputProps.endAdornment}
                   </>
                 ),
@@ -269,25 +287,34 @@ const DiagnosticModule: React.FC = () => {
             <Box component="li" {...props}>
               <Box>
                 <Typography variant="body1">
-                  {patient.displayName || `${patient.firstName} ${patient.lastName}`}
+                  {patient.displayName ||
+                    `${patient.firstName} ${patient.lastName}`}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  MRN: {patient.mrn} {patient.age && `• Age: ${patient.age}`} {patient.phone && `• ${patient.phone}`}
+                  MRN: {patient.mrn} {patient.age && `• Age: ${patient.age}`}{' '}
+                  {patient.phone && `• ${patient.phone}`}
                 </Typography>
               </Box>
             </Box>
           )}
           noOptionsText={
-            patientSearchQuery.length < 2 
-              ? "Type at least 2 characters to search patients" 
-              : "No patients found"
+            patientSearchQuery.length < 2
+              ? 'Type at least 2 characters to search patients'
+              : 'No patients found'
           }
         />
-        {availablePatients.length === 0 && !patientsLoading && !searchLoading && patientSearchQuery.length < 2 && (
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-            No patients found. Please add patients to the system first.
-          </Typography>
-        )}
+        {availablePatients.length === 0 &&
+          !patientsLoading &&
+          !searchLoading &&
+          patientSearchQuery.length < 2 && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mt: 1, display: 'block' }}
+            >
+              No patients found. Please add patients to the system first.
+            </Typography>
+          )}
       </Grid>
 
       {/* Symptoms */}
@@ -296,7 +323,10 @@ const DiagnosticModule: React.FC = () => {
           Symptoms
         </Typography>
         {symptoms.map((symptom, index) => (
-          <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <Box
+            key={index}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+          >
             <Chip
               label={symptom.type === 'subjective' ? 'Subjective' : 'Objective'}
               color={symptom.type === 'subjective' ? 'primary' : 'secondary'}
@@ -344,7 +374,10 @@ const DiagnosticModule: React.FC = () => {
       <Grid item xs={12} md={4}>
         <FormControl fullWidth>
           <InputLabel>Severity</InputLabel>
-          <Select value={severity} onChange={(e) => setSeverity(e.target.value as any)}>
+          <Select
+            value={severity}
+            onChange={(e) => setSeverity(e.target.value as 'mild' | 'moderate' | 'severe')}
+          >
             <MenuItem value="mild">Mild</MenuItem>
             <MenuItem value="moderate">Moderate</MenuItem>
             <MenuItem value="severe">Severe</MenuItem>
@@ -354,7 +387,10 @@ const DiagnosticModule: React.FC = () => {
       <Grid item xs={12} md={4}>
         <FormControl fullWidth>
           <InputLabel>Onset</InputLabel>
-          <Select value={onset} onChange={(e) => setOnset(e.target.value as any)}>
+          <Select
+            value={onset}
+            onChange={(e) => setOnset(e.target.value as 'acute' | 'chronic' | 'subacute')}
+          >
             <MenuItem value="acute">Acute</MenuItem>
             <MenuItem value="chronic">Chronic</MenuItem>
             <MenuItem value="subacute">Subacute</MenuItem>
@@ -373,7 +409,9 @@ const DiagnosticModule: React.FC = () => {
               fullWidth
               label="Blood Pressure"
               value={vitalSigns.bloodPressure || ''}
-              onChange={(e) => setVitalSigns({...vitalSigns, bloodPressure: e.target.value})}
+              onChange={(e) =>
+                setVitalSigns({ ...vitalSigns, bloodPressure: e.target.value })
+              }
               placeholder="120/80"
             />
           </Grid>
@@ -383,7 +421,12 @@ const DiagnosticModule: React.FC = () => {
               label="Heart Rate"
               type="number"
               value={vitalSigns.heartRate || ''}
-              onChange={(e) => setVitalSigns({...vitalSigns, heartRate: Number(e.target.value)})}
+              onChange={(e) =>
+                setVitalSigns({
+                  ...vitalSigns,
+                  heartRate: Number(e.target.value),
+                })
+              }
               placeholder="BPM"
             />
           </Grid>
@@ -393,7 +436,12 @@ const DiagnosticModule: React.FC = () => {
               label="Temperature"
               type="number"
               value={vitalSigns.temperature || ''}
-              onChange={(e) => setVitalSigns({...vitalSigns, temperature: Number(e.target.value)})}
+              onChange={(e) =>
+                setVitalSigns({
+                  ...vitalSigns,
+                  temperature: Number(e.target.value),
+                })
+              }
               placeholder="°C"
             />
           </Grid>
@@ -403,7 +451,12 @@ const DiagnosticModule: React.FC = () => {
               label="O2 Saturation"
               type="number"
               value={vitalSigns.oxygenSaturation || ''}
-              onChange={(e) => setVitalSigns({...vitalSigns, oxygenSaturation: Number(e.target.value)})}
+              onChange={(e) =>
+                setVitalSigns({
+                  ...vitalSigns,
+                  oxygenSaturation: Number(e.target.value),
+                })
+              }
               placeholder="%"
             />
           </Grid>
@@ -416,9 +469,15 @@ const DiagnosticModule: React.FC = () => {
           <Button
             variant="contained"
             size="large"
-            startIcon={loading ? <CircularProgress size={20} /> : <PsychologyIcon />}
+            startIcon={
+              loading ? <CircularProgress size={20} /> : <PsychologyIcon />
+            }
             onClick={handleAnalysis}
-            disabled={loading || !selectedPatient || symptoms.filter(s => s.description).length === 0}
+            disabled={
+              loading ||
+              !selectedPatient ||
+              symptoms.filter((s) => s.description).length === 0
+            }
           >
             {loading ? 'Generating Analysis...' : 'Generate AI Analysis'}
           </Button>
@@ -433,7 +492,8 @@ const DiagnosticModule: React.FC = () => {
     return (
       <Box>
         <Alert severity="info" sx={{ mb: 3 }}>
-          Analysis completed in {analysis.processingTime}ms with confidence score: {analysis.analysis.confidenceScore}%
+          Analysis completed in {analysis.processingTime}ms with confidence
+          score: {analysis.analysis.confidenceScore}%
         </Alert>
 
         {/* Differential Diagnoses */}
@@ -446,28 +506,46 @@ const DiagnosticModule: React.FC = () => {
           </AccordionSummary>
           <AccordionDetails>
             <List>
-              {analysis.analysis.differentialDiagnoses.map((diagnosis, index) => (
-                <ListItem key={index}>
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="subtitle1">{diagnosis.condition}</Typography>
-                        <Chip
-                          label={`${diagnosis.probability}%`}
-                          color={diagnosis.probability > 70 ? 'error' : diagnosis.probability > 40 ? 'warning' : 'success'}
-                          size="small"
-                        />
-                        <Chip
-                          label={diagnosis.severity}
-                          color={diagnosis.severity === 'high' ? 'error' : diagnosis.severity === 'medium' ? 'warning' : 'info'}
-                          size="small"
-                        />
-                      </Box>
-                    }
-                    secondary={diagnosis.reasoning}
-                  />
-                </ListItem>
-              ))}
+              {analysis.analysis.differentialDiagnoses.map(
+                (diagnosis, index) => (
+                  <ListItem key={index}>
+                    <ListItemText
+                      primary={
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <Typography variant="subtitle1">
+                            {diagnosis.condition}
+                          </Typography>
+                          <Chip
+                            label={`${diagnosis.probability}%`}
+                            color={
+                              diagnosis.probability > 70
+                                ? 'error'
+                                : diagnosis.probability > 40
+                                  ? 'warning'
+                                  : 'success'
+                            }
+                            size="small"
+                          />
+                          <Chip
+                            label={diagnosis.severity}
+                            color={
+                              diagnosis.severity === 'high'
+                                ? 'error'
+                                : diagnosis.severity === 'medium'
+                                  ? 'warning'
+                                  : 'info'
+                            }
+                            size="small"
+                          />
+                        </Box>
+                      }
+                      secondary={diagnosis.reasoning}
+                    />
+                  </ListItem>
+                )
+              )}
             </List>
           </AccordionDetails>
         </Accordion>
@@ -487,11 +565,21 @@ const DiagnosticModule: React.FC = () => {
                   <ListItem key={index}>
                     <ListItemText
                       primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="subtitle1">{flag.flag}</Typography>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <Typography variant="subtitle1">
+                            {flag.flag}
+                          </Typography>
                           <Chip
                             label={flag.severity}
-                            color={flag.severity === 'critical' ? 'error' : flag.severity === 'high' ? 'warning' : 'info'}
+                            color={
+                              flag.severity === 'critical'
+                                ? 'error'
+                                : flag.severity === 'high'
+                                  ? 'warning'
+                                  : 'info'
+                            }
                             size="small"
                           />
                         </Box>
@@ -519,11 +607,21 @@ const DiagnosticModule: React.FC = () => {
                 <ListItem key={index}>
                   <ListItemText
                     primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="subtitle1">{test.testName}</Typography>
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <Typography variant="subtitle1">
+                          {test.testName}
+                        </Typography>
                         <Chip
                           label={test.priority}
-                          color={test.priority === 'urgent' ? 'error' : test.priority === 'routine' ? 'warning' : 'info'}
+                          color={
+                            test.priority === 'urgent'
+                              ? 'error'
+                              : test.priority === 'routine'
+                                ? 'warning'
+                                : 'info'
+                          }
                           size="small"
                         />
                       </Box>
@@ -552,12 +650,21 @@ const DiagnosticModule: React.FC = () => {
                     primary={`${option.medication} - ${option.dosage}, ${option.frequency}`}
                     secondary={
                       <Box>
-                        <Typography variant="body2">{option.reasoning}</Typography>
+                        <Typography variant="body2">
+                          {option.reasoning}
+                        </Typography>
                         {option.safetyNotes.length > 0 && (
                           <Box sx={{ mt: 1 }}>
-                            <Typography variant="caption" color="error">Safety Notes:</Typography>
+                            <Typography variant="caption" color="error">
+                              Safety Notes:
+                            </Typography>
                             {option.safetyNotes.map((note, i) => (
-                              <Typography key={i} variant="caption" display="block" color="error">
+                              <Typography
+                                key={i}
+                                variant="caption"
+                                display="block"
+                                color="error"
+                              >
                                 • {note}
                               </Typography>
                             ))}
@@ -588,7 +695,11 @@ const DiagnosticModule: React.FC = () => {
         </Alert>
       )}
 
-      <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)} sx={{ mb: 3 }}>
+      <Tabs
+        value={activeTab}
+        onChange={(_, newValue) => setActiveTab(newValue)}
+        sx={{ mb: 3 }}
+      >
         <Tab label="Input Data" />
         <Tab label="AI Analysis" disabled={!analysis} />
       </Tabs>
@@ -621,7 +732,8 @@ const DiagnosticModule: React.FC = () => {
         <DialogContent>
           <Typography>
             AI diagnostic analysis requires patient consent for data processing.
-            Please ensure the patient has provided informed consent before proceeding.
+            Please ensure the patient has provided informed consent before
+            proceeding.
           </Typography>
         </DialogContent>
         <DialogActions>
