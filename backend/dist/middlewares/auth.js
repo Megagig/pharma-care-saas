@@ -26,6 +26,16 @@ const auth = async (req, res, next) => {
         const token = req.cookies.accessToken ||
             req.cookies.token ||
             req.header('Authorization')?.replace('Bearer ', '');
+        if (!token &&
+            req.cookies.refreshToken &&
+            !req.originalUrl.includes('/auth/refresh-token')) {
+            console.log('Auth middleware - no access token but found refresh token, redirecting to refresh flow');
+            res.status(401).json({
+                message: 'Access token expired, please refresh',
+                requiresRefresh: true,
+            });
+            return;
+        }
         if (process.env.NODE_ENV !== 'production') {
             console.log('Auth middleware - checking token:', {
                 hasAccessToken: !!req.cookies.accessToken,

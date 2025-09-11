@@ -49,6 +49,7 @@ import emailWebhookRoutes from './routes/emailWebhookRoutes';
 import drugRoutes from './modules/drug-info/routes/drugRoutes';
 import publicApiRoutes from './routes/publicApiRoutes';
 import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
+import diagnosticRoutes from './routes/diagnosticRoutes';
 
 const app: Application = express();
 
@@ -153,6 +154,9 @@ app.use('/api', visitRoutes);
 
 // Drug Information Center routes
 app.use('/api/drugs', drugRoutes);
+
+// AI Diagnostic routes
+app.use('/api/diagnostics', diagnosticRoutes);
 
 // Clinical Notes routes - added special debug log
 app.use((req, res, next) => {

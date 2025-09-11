@@ -155,7 +155,7 @@ const ModernSidebar = () => {
     },
     {
       name: 'Clinical Decision Support',
-      path: '/pharmacy/cds',
+      path: '/pharmacy/decision-support',
       icon: <PsychologyIcon />,
       show: hasFeature('decision_support'),
     },
