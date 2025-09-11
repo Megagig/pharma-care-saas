@@ -111,9 +111,10 @@ class OpenRouterService {
   private timeout: number;
 
   constructor() {
-    this.baseURL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
+    this.baseURL =
+      process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
     this.apiKey = process.env.OPENROUTER_API_KEY || '';
-    this.defaultModel = 'deepseek/deepseek-reasoner'; // Use reasoning mode for complex diagnostics
+    this.defaultModel = 'deepseek/deepseek-chat-v3.1:free'; // Use reasoning mode for complex diagnostics
     this.timeout = 60000; // 60 seconds timeout
 
     if (!this.apiKey) {
@@ -141,16 +142,16 @@ class OpenRouterService {
         model: this.defaultModel,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
+          { role: 'user', content: userPrompt },
         ],
         max_tokens: 4000,
         temperature: 0.1, // Low temperature for consistent medical analysis
-        top_p: 0.9
+        top_p: 0.9,
       };
 
       logger.info('Sending diagnostic request to OpenRouter', {
         model: this.defaultModel,
-        promptLength: userPrompt.length
+        promptLength: userPrompt.length,
       });
 
       const response: AxiosResponse<OpenRouterResponse> = await axios.post(
@@ -158,12 +159,12 @@ class OpenRouterService {
         request,
         {
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${this.apiKey}`,
             'Content-Type': 'application/json',
             'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
-            'X-Title': 'PharmaCare SaaS - AI Diagnostic Module'
+            'X-Title': 'PharmaCare SaaS - AI Diagnostic Module',
           },
-          timeout: this.timeout
+          timeout: this.timeout,
         }
       );
 
@@ -172,7 +173,9 @@ class OpenRouterService {
       const message = response.data.choices?.[0]?.message;
 
       if (!message?.content) {
-        throw new Error('No response generated from AI model or content is empty');
+        throw new Error(
+          'No response generated from AI model or content is empty'
+        );
       }
 
       const aiContent = message.content;
@@ -181,23 +184,60 @@ class OpenRouterService {
       logger.info('Diagnostic analysis completed', {
         requestId: response.data.id,
         processingTime,
-        tokensUsed: response.data.usage.total_tokens
+        tokensUsed: response.data.usage.total_tokens,
       });
 
       return {
         analysis,
         usage: response.data.usage,
         requestId: response.data.id,
-        processingTime
+        processingTime,
       };
     } catch (error) {
       const processingTime = Date.now() - startTime;
+
+      let errorMessage = 'Unknown error';
+      let statusCode: number | null = null;
+      let responseData = 'N/A';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+
+        // Check if it's an axios error with response data
+        if ('response' in error && error.response) {
+          const axiosError = error as any;
+          if (axiosError.response && axiosError.response.status) {
+            statusCode = parseInt(axiosError.response.status, 10);
+          }
+          responseData = JSON.stringify(axiosError.response.data);
+
+          // Specific error handling for common OpenRouter issues
+          if (statusCode) {
+            if (statusCode === 401) {
+              errorMessage = 'Invalid or missing OpenRouter API key';
+            } else if (statusCode === 402) {
+              errorMessage =
+                'OpenRouter API quota exceeded or payment required';
+            } else if (statusCode === 429) {
+              errorMessage = 'OpenRouter API rate limit exceeded';
+            } else if (statusCode >= 500) {
+              errorMessage = 'OpenRouter API server error';
+            }
+          }
+        }
+      }
+
       logger.error('OpenRouter API error', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
+        statusCode,
+        responseData,
         processingTime,
-        input: JSON.stringify(input, null, 2)
+        apiKey: this.apiKey ? `${this.apiKey.substring(0, 10)}...` : 'NOT_SET',
+        baseURL: this.baseURL,
+        model: this.defaultModel,
       });
-      throw new Error(`AI diagnostic analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+      throw new Error(`AI diagnostic analysis failed: ${errorMessage}`);
     }
   }
 
@@ -287,11 +327,11 @@ Your response must be valid JSON in this exact format:
     prompt += `- Onset: ${input.symptoms.onset}\n`;
     prompt += `- Duration: ${input.symptoms.duration}\n`;
     prompt += `- Severity: ${input.symptoms.severity}\n`;
-    
+
     if (input.symptoms.subjective.length > 0) {
       prompt += `- Subjective complaints: ${input.symptoms.subjective.join(', ')}\n`;
     }
-    
+
     if (input.symptoms.objective.length > 0) {
       prompt += `- Objective findings: ${input.symptoms.objective.join(', ')}\n`;
     }
@@ -300,18 +340,23 @@ Your response must be valid JSON in this exact format:
     // Vital Signs
     if (input.vitalSigns) {
       prompt += `VITAL SIGNS:\n`;
-      if (input.vitalSigns.bloodPressure) prompt += `- Blood Pressure: ${input.vitalSigns.bloodPressure}\n`;
-      if (input.vitalSigns.heartRate) prompt += `- Heart Rate: ${input.vitalSigns.heartRate} bpm\n`;
-      if (input.vitalSigns.temperature) prompt += `- Temperature: ${input.vitalSigns.temperature}°C\n`;
-      if (input.vitalSigns.respiratoryRate) prompt += `- Respiratory Rate: ${input.vitalSigns.respiratoryRate} breaths/min\n`;
-      if (input.vitalSigns.oxygenSaturation) prompt += `- Oxygen Saturation: ${input.vitalSigns.oxygenSaturation}%\n`;
+      if (input.vitalSigns.bloodPressure)
+        prompt += `- Blood Pressure: ${input.vitalSigns.bloodPressure}\n`;
+      if (input.vitalSigns.heartRate)
+        prompt += `- Heart Rate: ${input.vitalSigns.heartRate} bpm\n`;
+      if (input.vitalSigns.temperature)
+        prompt += `- Temperature: ${input.vitalSigns.temperature}°C\n`;
+      if (input.vitalSigns.respiratoryRate)
+        prompt += `- Respiratory Rate: ${input.vitalSigns.respiratoryRate} breaths/min\n`;
+      if (input.vitalSigns.oxygenSaturation)
+        prompt += `- Oxygen Saturation: ${input.vitalSigns.oxygenSaturation}%\n`;
       prompt += `\n`;
     }
 
     // Lab Results
     if (input.labResults && input.labResults.length > 0) {
       prompt += `LABORATORY RESULTS:\n`;
-      input.labResults.forEach(lab => {
+      input.labResults.forEach((lab) => {
         prompt += `- ${lab.testName}: ${lab.value} (Reference: ${lab.referenceRange})${lab.abnormal ? ' [ABNORMAL]' : ''}\n`;
       });
       prompt += `\n`;
@@ -320,7 +365,7 @@ Your response must be valid JSON in this exact format:
     // Current Medications
     if (input.currentMedications && input.currentMedications.length > 0) {
       prompt += `CURRENT MEDICATIONS:\n`;
-      input.currentMedications.forEach(med => {
+      input.currentMedications.forEach((med) => {
         prompt += `- ${med.name} ${med.dosage} ${med.frequency}\n`;
       });
       prompt += `\n`;
@@ -355,15 +400,19 @@ Your response must be valid JSON in this exact format:
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
-      
+
       // Validate required fields
-      if (!parsed.differentialDiagnoses || !Array.isArray(parsed.differentialDiagnoses)) {
+      if (
+        !parsed.differentialDiagnoses ||
+        !Array.isArray(parsed.differentialDiagnoses)
+      ) {
         throw new Error('Invalid differential diagnoses format');
       }
 
       // Ensure disclaimer is present
       if (!parsed.disclaimer) {
-        parsed.disclaimer = "This AI-generated analysis is for pharmacist consultation only and does not replace professional medical diagnosis. Final clinical decisions must always be made by qualified healthcare professionals.";
+        parsed.disclaimer =
+          'This AI-generated analysis is for pharmacist consultation only and does not replace professional medical diagnosis. Final clinical decisions must always be made by qualified healthcare professionals.';
       }
 
       // Ensure confidence score is present
@@ -375,7 +424,7 @@ Your response must be valid JSON in this exact format:
     } catch (error) {
       logger.error('Failed to parse AI response', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        content: content.substring(0, 500)
+        content: content.substring(0, 500),
       });
       throw new Error('Failed to parse AI diagnostic response');
     }
@@ -386,17 +435,49 @@ Your response must be valid JSON in this exact format:
    */
   async testConnection(): Promise<boolean> {
     try {
+      logger.info('Testing OpenRouter connection', {
+        baseURL: this.baseURL,
+        apiKeySet: !!this.apiKey,
+        apiKeyPrefix: this.apiKey ? this.apiKey.substring(0, 10) : 'NOT_SET',
+      });
+
       const response = await axios.get(`${this.baseURL}/models`, {
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`
+          Authorization: `Bearer ${this.apiKey}`,
+          'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
+          'X-Title': 'PharmaCare SaaS - AI Diagnostic Module',
         },
-        timeout: 10000
+        timeout: 10000,
       });
+
+      logger.info('OpenRouter connection test successful', {
+        status: response.status,
+        modelsCount: response.data?.data?.length || 'unknown',
+      });
+
       return response.status === 200;
     } catch (error) {
+      let errorDetails = 'Unknown error';
+      let statusCode: number | null = null;
+
+      if (error instanceof Error) {
+        errorDetails = error.message;
+        if ('response' in error && error.response) {
+          const axiosError = error as any;
+          if (axiosError.response && axiosError.response.status) {
+            statusCode = parseInt(axiosError.response.status, 10);
+          }
+          errorDetails = `${error.message} (Status: ${statusCode || 'N/A'})`;
+        }
+      }
+
       logger.error('OpenRouter connection test failed', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorDetails,
+        statusCode,
+        baseURL: this.baseURL,
+        apiKeySet: !!this.apiKey,
       });
+
       return false;
     }
   }
