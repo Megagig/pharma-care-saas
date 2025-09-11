@@ -374,15 +374,6 @@ const PatientForm = () => {
           <CardContent sx={{ p: 4 }}>
             <form
               onSubmit={handleSubmit(onSubmit)}
-              onKeyDown={(e) => {
-                // Prevent form submission on Enter key unless on the final step
-                if (e.key === 'Enter' && activeStep < steps.length - 1) {
-                  e.preventDefault();
-                  if (canProceedToNext()) {
-                    handleNext();
-                  }
-                }
-              }}
             >
               {/* Step 0: Demographics */}
               {activeStep === 0 && (
