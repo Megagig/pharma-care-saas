@@ -13,7 +13,6 @@ const ClinicalAssessment_1 = __importDefault(require("../models/ClinicalAssessme
 const DrugTherapyProblem_1 = __importDefault(require("../models/DrugTherapyProblem"));
 const CarePlan_1 = __importDefault(require("../models/CarePlan"));
 const Visit_1 = __importDefault(require("../models/Visit"));
-const tenancyGuard_1 = require("../utils/tenancyGuard");
 const responseHelpers_1 = require("../utils/responseHelpers");
 exports.getPatients = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { page = 1, limit = 10, q, name, mrn, phone, state, bloodGroup, genotype, sort, } = req.query;
@@ -89,10 +88,7 @@ exports.createPatient = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
     session.startTransaction();
     try {
         const workplaceCode = 'GEN';
-        const patientCount = await Patient_1.default.countDocuments({
-            workplaceId: context.workplaceId,
-        });
-        const mrn = (0, tenancyGuard_1.generateMRN)(workplaceCode, patientCount + 1);
+        const mrn = await Patient_1.default.generateNextMRN(context.workplaceId, workplaceCode);
         const patient = new Patient_1.default({
             ...patientData,
             mrn,

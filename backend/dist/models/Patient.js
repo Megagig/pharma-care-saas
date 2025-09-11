@@ -329,15 +329,15 @@ patientSchema.pre('save', function () {
     }
 });
 patientSchema.statics.generateNextMRN = async function (workplaceId, workplaceCode) {
-    const lastPatient = await this.findOne({ workplaceId }, {}, { sort: { createdAt: -1 }, bypassTenancyGuard: true });
+    const lastPatient = await this.findOne({ workplaceId }, { mrn: 1 }, { sort: { createdAt: -1 }, bypassTenancyGuard: true });
     let sequence = 1;
     if (lastPatient?.mrn) {
         const match = lastPatient.mrn.match(/-(\d+)$/);
         if (match) {
-            sequence = parseInt(match[1]) + 1;
+            sequence = parseInt(match[1], 10) + 1;
         }
     }
-    return `${workplaceCode}-${sequence.toString().padStart(4, '0')}`;
+    return (0, tenancyGuard_1.generateMRN)(workplaceCode, sequence);
 };
 exports.default = mongoose_1.default.model('Patient', patientSchema);
 //# sourceMappingURL=Patient.js.map

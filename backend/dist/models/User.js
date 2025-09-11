@@ -232,6 +232,11 @@ const userSchema = new mongoose_1.Schema({
             default: false,
         },
     },
+    themePreference: {
+        type: String,
+        enum: ['light', 'dark', 'system'],
+        default: 'system',
+    },
 }, { timestamps: true });
 userSchema.pre('save', async function (next) {
     if (!this.isModified('passwordHash'))
