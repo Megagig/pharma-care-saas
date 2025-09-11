@@ -16,6 +16,8 @@ import {
   updateConditionSchema,
   conditionParamsSchema,
   paginationSchema,
+  patientParamsSchema,
+  conditionIdSchema,
 } from '../validators/patientValidators';
 
 const router = express.Router();
@@ -39,7 +41,7 @@ router.post(
   auth,
   checkPharmacyAccess,
   requirePatientPermission('create'),
-  validateRequest(conditionParamsSchema, 'params'),
+  validateRequest(patientParamsSchema, 'params'),
   validateRequest(createConditionSchema, 'body'),
   createCondition
 );
@@ -53,7 +55,7 @@ router.get(
   auth,
   checkPharmacyAccess,
   requirePatientPermission('read'),
-  validateRequest(conditionParamsSchema, 'params'),
+  validateRequest(patientParamsSchema, 'params'),
   validateRequest(paginationSchema, 'query'),
   getConditions
 );
@@ -71,7 +73,7 @@ router.patch(
   auth,
   checkPharmacyAccess,
   requirePatientPermission('update'),
-  validateRequest(conditionParamsSchema.pick({ conditionId: true }), 'params'),
+  validateRequest(conditionIdSchema, 'params'),
   validateRequest(updateConditionSchema, 'body'),
   updateCondition
 );
@@ -85,7 +87,7 @@ router.delete(
   auth,
   checkPharmacyAccess,
   requirePatientPermission('delete'),
-  validateRequest(conditionParamsSchema.pick({ conditionId: true }), 'params'),
+  validateRequest(conditionIdSchema, 'params'),
   deleteCondition
 );
 

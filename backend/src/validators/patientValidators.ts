@@ -261,6 +261,10 @@ export const conditionParamsSchema = z.object({
   conditionId: mongoIdSchema,
 });
 
+export const conditionIdSchema = z.object({
+  conditionId: mongoIdSchema,
+});
+
 // ===============================
 // MEDICATION SCHEMAS
 // ===============================

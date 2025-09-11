@@ -12,6 +12,7 @@ import {
   getRequestContext,
   createAuditLog,
   createDuplicateError,
+  createPaginationMeta,
 } from '../utils/responseHelpers';
 
 /**
@@ -126,20 +127,18 @@ export const getAllergies = asyncHandler(
         .map((a) => a.substance),
     };
 
-    respondWithPaginatedResults(
-      res,
-      allergies,
-      total,
-      page,
-      limit,
-      `Found ${total} allergies for patient`
-    );
+    const meta = createPaginationMeta(total, page, limit);
 
-    // Add summary to response
-    res.json({
-      ...res.locals.responseData,
-      summary,
-    });
+    sendSuccess(
+      res,
+      {
+        results: allergies,
+        summary,
+      },
+      `Found ${total} allergies for patient`,
+      200,
+      meta
+    );
   }
 );
 

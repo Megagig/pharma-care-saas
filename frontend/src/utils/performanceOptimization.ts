@@ -37,17 +37,17 @@ export const createLazyComponent = <T extends ComponentType<any>>(
             // Return a simple error component
             return {
                 default: () => (
-                    <div className= "p-4 text-center" >
-                    <p className="text-red-600"> Failed to load component</ p >
-                <button 
-              onClick={ () => window.location.reload() }
-            className = "mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                Retry
-                </button>
-                </div>
-        )
-};
+                    <div className="p-4 text-center">
+                        <p className="text-red-600">Failed to load component</p>
+                        <button 
+                            onClick={() => window.location.reload()}
+                            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                )
+            };
     }
   });
 };
