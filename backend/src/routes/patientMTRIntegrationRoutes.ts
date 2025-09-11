@@ -4,7 +4,8 @@ import { patientMTRIntegrationController } from '../controllers/patientMTRIntegr
 // Simple middleware placeholders
 const authenticate = (req: any, res: any, next: any) => next();
 const validateWorkplace = (req: any, res: any, next: any) => next();
-const auditMiddleware = (action: string) => (req: any, res: any, next: any) => next();
+const auditMiddleware = (action: string) => (req: any, res: any, next: any) =>
+   next();
 
 const router = Router();
 
@@ -22,9 +23,9 @@ router.use(validateWorkplace);
  * @access Private
  */
 router.get(
-    '/:patientId/mtr/summary',
-    auditMiddleware('patient_mtr_summary_view'),
-    patientMTRIntegrationController.getPatientMTRSummary
+   '/:patientId/mtr/summary',
+   auditMiddleware('patient_mtr_summary_view'),
+   patientMTRIntegrationController.getPatientMTRSummary
 );
 
 /**
@@ -33,9 +34,9 @@ router.get(
  * @access Private
  */
 router.get(
-    '/:patientId/mtr/data',
-    auditMiddleware('patient_mtr_data_view'),
-    patientMTRIntegrationController.getPatientDataForMTR
+   '/:patientId/mtr/data',
+   auditMiddleware('patient_mtr_data_view'),
+   patientMTRIntegrationController.getPatientDataForMTR
 );
 
 /**
@@ -44,9 +45,9 @@ router.get(
  * @access Private
  */
 router.get(
-    '/:patientId/dashboard/mtr',
-    auditMiddleware('patient_dashboard_mtr_view'),
-    patientMTRIntegrationController.getPatientDashboardMTRData
+   '/:patientId/dashboard/mtr',
+   auditMiddleware('patient_dashboard_mtr_view'),
+   patientMTRIntegrationController.getPatientDashboardMTRData
 );
 
 /**
@@ -55,9 +56,9 @@ router.get(
  * @access Private
  */
 router.post(
-    '/:patientId/mtr/:mtrId/sync-medications',
-    auditMiddleware('patient_mtr_medications_sync'),
-    patientMTRIntegrationController.syncMedicationsWithMTR
+   '/:patientId/mtr/:mtrId/sync-medications',
+   auditMiddleware('patient_mtr_medications_sync'),
+   patientMTRIntegrationController.syncMedicationsWithMTR
 );
 
 /**
@@ -66,9 +67,9 @@ router.post(
  * @access Private
  */
 router.get(
-    '/search/with-mtr',
-    auditMiddleware('patients_search_with_mtr'),
-    patientMTRIntegrationController.searchPatientsWithMTR
+   '/search/with-mtr',
+   auditMiddleware('patients_search_with_mtr'),
+   patientMTRIntegrationController.searchPatientsWithMTR
 );
 
 export default router;

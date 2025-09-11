@@ -6,52 +6,52 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 async function checkAndUpdateUser() {
-  try {
-    await connectDB();
-    console.log('Connected to database');
+   try {
+      await connectDB();
+      console.log('Connected to database');
 
-    // Find the user
-    const user = await User.findOne({ email: 'megagigdev@gmail.com' });
+      // Find the user
+      const user = await User.findOne({ email: 'megagigdev@gmail.com' });
 
-    if (!user) {
-      console.log('User not found');
-      return;
-    }
+      if (!user) {
+         console.log('User not found');
+         return;
+      }
 
-    console.log('Current user details:');
-    console.log('- Email:', user.email);
-    console.log('- First Name:', user.firstName);
-    console.log('- Last Name:', user.lastName);
-    console.log('- Role:', user.role);
-    console.log('- Status:', user.status);
-    console.log('- WorkplaceId:', user.workplaceId);
+      console.log('Current user details:');
+      console.log('- Email:', user.email);
+      console.log('- First Name:', user.firstName);
+      console.log('- Last Name:', user.lastName);
+      console.log('- Role:', user.role);
+      console.log('- Status:', user.status);
+      console.log('- WorkplaceId:', user.workplaceId);
 
-    // Update user to super_admin if not already
-    if (user.role !== 'super_admin') {
-      console.log('\nUpdating user role to super_admin...');
-      user.role = 'super_admin';
-      await user.save();
-      console.log('✅ User role updated to super_admin');
-    } else {
-      console.log('✅ User already has super_admin role');
-    }
+      // Update user to super_admin if not already
+      if (user.role !== 'super_admin') {
+         console.log('\nUpdating user role to super_admin...');
+         user.role = 'super_admin';
+         await user.save();
+         console.log('✅ User role updated to super_admin');
+      } else {
+         console.log('✅ User already has super_admin role');
+      }
 
-    // Ensure user is active
-    if (user.status !== 'active') {
-      console.log('Setting user status to active...');
-      user.status = 'active';
-      await user.save();
-      console.log('✅ User status updated to active');
-    } else {
-      console.log('✅ User is already active');
-    }
+      // Ensure user is active
+      if (user.status !== 'active') {
+         console.log('Setting user status to active...');
+         user.status = 'active';
+         await user.save();
+         console.log('✅ User status updated to active');
+      } else {
+         console.log('✅ User is already active');
+      }
 
-    console.log('\n✅ User setup complete');
-  } catch (error) {
-    console.error('❌ Error:', error);
-  } finally {
-    process.exit(0);
-  }
+      console.log('\n✅ User setup complete');
+   } catch (error) {
+      console.error('❌ Error:', error);
+   } finally {
+      process.exit(0);
+   }
 }
 
 checkAndUpdateUser();

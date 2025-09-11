@@ -1,20 +1,20 @@
 import express from 'express';
 import {
-  createCarePlan,
-  getCarePlans,
-  updateCarePlan,
+   createCarePlan,
+   getCarePlans,
+   updateCarePlan,
 } from '../controllers/patientResourcesController';
 import { auth } from '../middlewares/auth';
 import {
-  requirePatientPermission,
-  checkPharmacyAccess,
+   requirePatientPermission,
+   checkPharmacyAccess,
 } from '../middlewares/patientRBAC';
 import {
-  validateRequest,
-  createCarePlanSchema,
-  updateCarePlanSchema,
-  carePlanParamsSchema,
-  paginationSchema,
+   validateRequest,
+   createCarePlanSchema,
+   updateCarePlanSchema,
+   carePlanParamsSchema,
+   paginationSchema,
 } from '../validators/patientValidators';
 
 const router = express.Router();
@@ -34,13 +34,13 @@ const router = express.Router();
  * Create new care plan for patient
  */
 router.post(
-  '/:id/careplans',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('create'),
-  validateRequest(carePlanParamsSchema.pick({ id: true }), 'params'),
-  validateRequest(createCarePlanSchema, 'body'),
-  createCarePlan
+   '/:id/careplans',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('create'),
+   validateRequest(carePlanParamsSchema.pick({ id: true }), 'params'),
+   validateRequest(createCarePlanSchema, 'body'),
+   createCarePlan
 );
 
 /**
@@ -49,13 +49,13 @@ router.post(
  * Sorted by creation date (most recent first)
  */
 router.get(
-  '/:id/careplans',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('read'),
-  validateRequest(carePlanParamsSchema.pick({ id: true }), 'params'),
-  validateRequest(paginationSchema, 'query'),
-  getCarePlans
+   '/:id/careplans',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('read'),
+   validateRequest(carePlanParamsSchema.pick({ id: true }), 'params'),
+   validateRequest(paginationSchema, 'query'),
+   getCarePlans
 );
 
 // ===============================
@@ -67,13 +67,13 @@ router.get(
  * Update care plan information
  */
 router.patch(
-  '/careplans/:carePlanId',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('update'),
-  validateRequest(carePlanParamsSchema.pick({ carePlanId: true }), 'params'),
-  validateRequest(updateCarePlanSchema, 'body'),
-  updateCarePlan
+   '/careplans/:carePlanId',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('update'),
+   validateRequest(carePlanParamsSchema.pick({ carePlanId: true }), 'params'),
+   validateRequest(updateCarePlanSchema, 'body'),
+   updateCarePlan
 );
 
 export default router;

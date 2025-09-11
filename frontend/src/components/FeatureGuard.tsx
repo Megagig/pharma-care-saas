@@ -4,11 +4,11 @@ import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
 
 interface FeatureGuardProps {
-  feature: string;
-  requiredRole?: string | string[];
-  requiresLicense?: boolean;
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
+   feature: string;
+   requiredRole?: string | string[];
+   requiresLicense?: boolean;
+   children: React.ReactNode;
+   fallback?: React.ReactNode;
 }
 
 /**
@@ -22,38 +22,38 @@ interface FeatureGuardProps {
  * @param fallback - Content to show if user doesn't have access (optional)
  */
 export const FeatureGuard: React.FC<FeatureGuardProps> = ({
-  feature,
-  requiredRole,
-  requiresLicense = false,
-  children,
-  fallback = null,
+   feature,
+   requiredRole,
+   requiresLicense = false,
+   children,
+   fallback = null,
 }) => {
-  const { role } = useRBAC();
-  const { isFeatureEnabled } = useFeatureAccess();
+   const { role } = useRBAC();
+   const { isFeatureEnabled } = useFeatureAccess();
 
-  // Check if feature is available
-  if (!isFeatureEnabled(feature)) return <>{fallback}</>;
+   // Check if feature is available
+   if (!isFeatureEnabled(feature)) return <>{fallback}</>;
 
-  // Check role if required
-  if (requiredRole) {
-    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    if (!roles.includes(role)) return <>{fallback}</>;
-  }
+   // Check role if required
+   if (requiredRole) {
+      const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+      if (!roles.includes(role)) return <>{fallback}</>;
+   }
 
-  // License check would need to be implemented with a license status hook
-  if (requiresLicense) {
-    // TODO: Implement license status check
-    // For now, assume access is granted
-  }
+   // License check would need to be implemented with a license status hook
+   if (requiresLicense) {
+      // TODO: Implement license status check
+      // For now, assume access is granted
+   }
 
-  // All checks passed
-  return <>{children}</>;
+   // All checks passed
+   return <>{children}</>;
 };
 
 interface SubscriptionGuardProps {
-  tier: string | string[];
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
+   tier: string | string[];
+   children: React.ReactNode;
+   fallback?: React.ReactNode;
 }
 
 /**
@@ -65,32 +65,32 @@ interface SubscriptionGuardProps {
  * @param fallback - Content to show if user doesn't have the required tier
  */
 export const SubscriptionGuard: React.FC<SubscriptionGuardProps> = ({
-  tier,
-  children,
-  fallback = null,
+   tier,
+   children,
+   fallback = null,
 }) => {
-  const subscription = useSubscriptionStatus();
+   const subscription = useSubscriptionStatus();
 
-  const currentTier = subscription?.tier || 'free';
-  const tierHierarchy: Record<string, string[]> = {
-    enterprise: ['enterprise'],
-    pro: ['pro', 'enterprise'],
-    basic: ['basic', 'pro', 'enterprise'],
-    free_trial: ['free_trial', 'basic', 'pro', 'enterprise'],
-  };
+   const currentTier = subscription?.tier || 'free';
+   const tierHierarchy: Record<string, string[]> = {
+      enterprise: ['enterprise'],
+      pro: ['pro', 'enterprise'],
+      basic: ['basic', 'pro', 'enterprise'],
+      free_trial: ['free_trial', 'basic', 'pro', 'enterprise'],
+   };
 
-  const requiredTiers = Array.isArray(tier) ? tier : [tier];
-  const allowedTiers = currentTier ? tierHierarchy[currentTier] || [] : [];
+   const requiredTiers = Array.isArray(tier) ? tier : [tier];
+   const allowedTiers = currentTier ? tierHierarchy[currentTier] || [] : [];
 
-  const hasAccess = requiredTiers.some((t) => allowedTiers.includes(t));
+   const hasAccess = requiredTiers.some((t) => allowedTiers.includes(t));
 
-  return hasAccess ? <>{children}</> : <>{fallback}</>;
+   return hasAccess ? <>{children}</> : <>{fallback}</>;
 };
 
 interface RoleGuardProps {
-  role: string | string[];
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
+   role: string | string[];
+   children: React.ReactNode;
+   fallback?: React.ReactNode;
 }
 
 /**
@@ -102,18 +102,18 @@ interface RoleGuardProps {
  * @param fallback - Content to show if user doesn't have the required role
  */
 export const RoleGuard: React.FC<RoleGuardProps> = ({
-  role,
-  children,
-  fallback = null,
+   role,
+   children,
+   fallback = null,
 }) => {
-  const { role: currentRole } = useRBAC();
+   const { role: currentRole } = useRBAC();
 
-  const hasRole = (requiredRole: string | string[]): boolean => {
-    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    return roles.includes(currentRole);
-  };
+   const hasRole = (requiredRole: string | string[]): boolean => {
+      const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+      return roles.includes(currentRole);
+   };
 
-  return hasRole(role) ? <>{children}</> : <>{fallback}</>;
+   return hasRole(role) ? <>{children}</> : <>{fallback}</>;
 };
 
 export default FeatureGuard;

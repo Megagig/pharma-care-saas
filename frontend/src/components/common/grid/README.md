@@ -36,9 +36,9 @@ import * as Grid from '../components/common/grid';
 
 ```tsx
 <Grid container spacing={2}>
-  <Grid item xs={12} md={6}>
-    {/* content */}
-  </Grid>
+   <Grid item xs={12} md={6}>
+      {/* content */}
+   </Grid>
 </Grid>
 ```
 
@@ -46,9 +46,9 @@ import * as Grid from '../components/common/grid';
 
 ```tsx
 <GridContainer spacing={2}>
-  <GridItem xs={12} md={6}>
-    {/* content */}
-  </GridItem>
+   <GridItem xs={12} md={6}>
+      {/* content */}
+   </GridItem>
 </GridContainer>
 ```
 

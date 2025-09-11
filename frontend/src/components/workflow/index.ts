@@ -6,8 +6,8 @@ export { default as OutcomeTrackingStep } from './OutcomeTrackingStep';
 
 // Re-export types for convenience
 export type {
-    IssueIdentificationStepProps,
-    StrategyRecommendationStepProps,
-    TeamCollaborationStepProps,
-    OutcomeTrackingStepProps,
+   IssueIdentificationStepProps,
+   StrategyRecommendationStepProps,
+   TeamCollaborationStepProps,
+   OutcomeTrackingStepProps,
 } from './types';

@@ -12,30 +12,30 @@ This document describes the comprehensive dark/light mode system implemented in 
 
 - **Location**: `frontend/src/stores/themeStore.ts`
 - **Features**:
-  - Three-state theme system: `light`, `dark`, `system`
-  - Real-time system preference detection
-  - Local storage persistence
-  - Backend synchronization for authenticated users
-  - Smooth DOM transitions
+   - Three-state theme system: `light`, `dark`, `system`
+   - Real-time system preference detection
+   - Local storage persistence
+   - Backend synchronization for authenticated users
+   - Smooth DOM transitions
 
 #### 2. Theme Types
 
 - **Location**: `frontend/src/stores/types.ts`
 - **Types**:
-  ```typescript
-  type ThemeMode = 'light' | 'dark' | 'system';
-  type ResolvedTheme = 'light' | 'dark';
-  ```
+   ```typescript
+   type ThemeMode = 'light' | 'dark' | 'system';
+   type ResolvedTheme = 'light' | 'dark';
+   ```
 
 #### 3. Components
 
 - **ThemeToggle**: `frontend/src/components/common/ThemeToggle.tsx`
-  - Button and dropdown variants
-  - Size options (sm, md, lg)
-  - Visual indicators for system mode
+   - Button and dropdown variants
+   - Size options (sm, md, lg)
+   - Visual indicators for system mode
 - **ThemeProvider**: `frontend/src/components/providers/ThemeProvider.tsx`
-  - Initializes theme system on app load
-  - Prevents FOUC (Flash of Unstyled Content)
+   - Initializes theme system on app load
+   - Prevents FOUC (Flash of Unstyled Content)
 
 ### Backend Implementation
 
@@ -43,9 +43,9 @@ This document describes the comprehensive dark/light mode system implemented in 
 
 - **Location**: `backend/src/models/User.ts`
 - **Field Added**:
-  ```typescript
-  themePreference?: 'light' | 'dark' | 'system';
-  ```
+   ```typescript
+   themePreference?: 'light' | 'dark' | 'system';
+   ```
 - **Default**: `'system'`
 
 #### 2. API Endpoints
@@ -59,11 +59,11 @@ This document describes the comprehensive dark/light mode system implemented in 
 
 - **Script**: `backend/src/scripts/themePreferenceMigration.ts`
 - **Commands**:
-  ```bash
-  npm run migrate:theme-preference        # Apply migration
-  npm run migrate:theme-preference:status # Check status
-  npm run migrate:theme-preference:down   # Rollback
-  ```
+   ```bash
+   npm run migrate:theme-preference        # Apply migration
+   npm run migrate:theme-preference:status # Check status
+   npm run migrate:theme-preference:down   # Rollback
+   ```
 
 ## Styling System
 
@@ -71,20 +71,20 @@ This document describes the comprehensive dark/light mode system implemented in 
 
 - **File**: `frontend/tailwind.config.js`
 - **Features**:
-  - Dark mode enabled with `class` strategy
-  - Custom color palettes for both themes
-  - Smooth transition animations
-  - Professional purple-blue dark theme
+   - Dark mode enabled with `class` strategy
+   - Custom color palettes for both themes
+   - Smooth transition animations
+   - Professional purple-blue dark theme
 
 ### CSS Classes
 
 - **File**: `frontend/src/styles/theme.css`
 - **Utilities**:
-  - `.text-theme-primary` - Primary text color
-  - `.bg-theme-primary` - Primary background
-  - `.border-theme` - Theme-aware borders
-  - `.btn-primary` - Themed primary button
-  - `.input-theme` - Themed form inputs
+   - `.text-theme-primary` - Primary text color
+   - `.bg-theme-primary` - Primary background
+   - `.border-theme` - Theme-aware borders
+   - `.btn-primary` - Themed primary button
+   - `.input-theme` - Themed form inputs
 
 ### Color Scheme
 
@@ -201,12 +201,12 @@ import ThemeToggle from './components/common/ThemeToggle';
 ```typescript
 // Extend the theme store for custom behavior
 const useCustomTheme = () => {
-  const theme = useTheme();
+   const theme = useTheme();
 
-  const isHighContrast = theme.resolvedTheme === 'dark';
-  const primaryColor = isHighContrast ? 'accent' : 'primary';
+   const isHighContrast = theme.resolvedTheme === 'dark';
+   const primaryColor = isHighContrast ? 'accent' : 'primary';
 
-  return { ...theme, isHighContrast, primaryColor };
+   return { ...theme, isHighContrast, primaryColor };
 };
 ```
 
@@ -250,18 +250,15 @@ const useCustomTheme = () => {
 ### Common Issues
 
 1. **FOUC (Flash of Unstyled Content)**
-
    - Ensure ThemeProvider is wrapped around app
    - Check that theme initialization runs before render
 
 2. **Theme Not Persisting**
-
    - Verify localStorage is available
    - Check backend API for authenticated users
    - Ensure migration has been run
 
 3. **Colors Not Switching**
-
    - Verify `dark` class is being applied to `<html>`
    - Check Tailwind purging isn't removing dark: classes
    - Ensure CSS transitions aren't interfering
@@ -304,13 +301,11 @@ console.log(document.documentElement.classList);
 ### Planned Features
 
 1. **Multiple Theme Variants**
-
    - High contrast mode
    - Reduced motion support
    - Custom color themes
 
 2. **Advanced Preferences**
-
    - Per-page theme settings
    - Scheduled theme switching
    - Theme templates
@@ -325,11 +320,11 @@ console.log(document.documentElement.classList);
 ```typescript
 // Future theme hook features
 const {
-  theme,
-  setTheme,
-  scheduleThemeChange,
-  getThemeHistory,
-  applyCustomTheme,
+   theme,
+   setTheme,
+   scheduleThemeChange,
+   getThemeHistory,
+   applyCustomTheme,
 } = useAdvancedTheme();
 ```
 
@@ -342,10 +337,10 @@ const {
 import { useThemeStore } from '../stores/themeStore';
 
 test('theme toggle cycles through options', () => {
-  const store = useThemeStore.getState();
-  store.setTheme('light');
-  store.toggleTheme();
-  expect(store.theme).toBe('dark');
+   const store = useThemeStore.getState();
+   store.setTheme('light');
+   store.toggleTheme();
+   expect(store.theme).toBe('dark');
 });
 ```
 
@@ -354,10 +349,10 @@ test('theme toggle cycles through options', () => {
 ```typescript
 // Test theme persistence
 test('theme persists across page reload', async () => {
-  await page.click('[data-testid="theme-toggle"]');
-  await page.reload();
-  const theme = await page.getAttribute('html', 'class');
-  expect(theme).toContain('dark');
+   await page.click('[data-testid="theme-toggle"]');
+   await page.reload();
+   const theme = await page.getAttribute('html', 'class');
+   expect(theme).toContain('dark');
 });
 ```
 

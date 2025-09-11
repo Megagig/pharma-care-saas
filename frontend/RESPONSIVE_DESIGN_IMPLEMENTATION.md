@@ -13,10 +13,10 @@ This document outlines the comprehensive responsive design and mobile optimizati
 - **Breakpoint Detection**: Comprehensive breakpoint queries for xs, sm, md, lg, xl
 - **Device Categories**: isMobile, isTablet, isDesktop, isSmallMobile, isLargeMobile
 - **Responsive Helpers**:
-  - `getColumns()` - Dynamic column counts
-  - `getSpacing()` - Responsive spacing
-  - `getFontSize()` - Adaptive font sizes
-  - `getDialogMaxWidth()` - Context-aware dialog sizing
+   - `getColumns()` - Dynamic column counts
+   - `getSpacing()` - Responsive spacing
+   - `getFontSize()` - Adaptive font sizes
+   - `getDialogMaxWidth()` - Context-aware dialog sizing
 - **Layout Decisions**: shouldUseCardLayout, shouldCollapseSidebar, shouldShowCompactHeader
 
 #### Responsive Components (`frontend/src/components/common/ResponsiveComponents.tsx`)
@@ -169,11 +169,11 @@ This document outlines the comprehensive responsive design and mobile optimizati
 ```typescript
 // Mobile-first approach with progressive enhancement
 const breakpoints = {
-  xs: 0, // 0px and up (small mobile)
-  sm: 600, // 600px and up (large mobile)
-  md: 900, // 900px and up (tablet)
-  lg: 1200, // 1200px and up (desktop)
-  xl: 1536, // 1536px and up (large desktop)
+   xs: 0, // 0px and up (small mobile)
+   sm: 600, // 600px and up (large mobile)
+   md: 900, // 900px and up (tablet)
+   lg: 1200, // 1200px and up (desktop)
+   xl: 1536, // 1536px and up (large desktop)
 };
 ```
 
@@ -181,10 +181,10 @@ const breakpoints = {
 
 ```typescript
 const swipeConfig = {
-  threshold: 50, // Minimum distance (px)
-  velocityThreshold: 0.3, // Minimum velocity (px/ms)
-  timeThreshold: 300, // Maximum duration (ms)
-  preventScroll: false, // Allow scroll during gesture
+   threshold: 50, // Minimum distance (px)
+   velocityThreshold: 0.3, // Minimum velocity (px/ms)
+   timeThreshold: 300, // Maximum duration (ms)
+   preventScroll: false, // Allow scroll during gesture
 };
 ```
 
@@ -192,14 +192,14 @@ const swipeConfig = {
 
 ```typescript
 const stores = {
-  patients: 'Patient records with search indexes',
-  medications: 'MTR medications with patient references',
-  problems: 'Drug therapy problems with review links',
-  plans: 'Therapy plans with problem associations',
-  interventions: 'Pharmacist interventions with outcomes',
-  followUps: 'Scheduled follow-up activities',
-  syncQueue: 'Pending synchronization items',
-  drafts: 'Auto-saved form data',
+   patients: 'Patient records with search indexes',
+   medications: 'MTR medications with patient references',
+   problems: 'Drug therapy problems with review links',
+   plans: 'Therapy plans with problem associations',
+   interventions: 'Pharmacist interventions with outcomes',
+   followUps: 'Scheduled follow-up activities',
+   syncQueue: 'Pending synchronization items',
+   drafts: 'Auto-saved form data',
 };
 ```
 

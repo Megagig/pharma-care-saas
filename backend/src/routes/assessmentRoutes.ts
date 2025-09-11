@@ -1,20 +1,20 @@
 import express from 'express';
 import {
-  createAssessment,
-  getAssessments,
-  updateAssessment,
+   createAssessment,
+   getAssessments,
+   updateAssessment,
 } from '../controllers/patientResourcesController';
 import { auth } from '../middlewares/auth';
 import {
-  requirePatientPermission,
-  checkPharmacyAccess,
+   requirePatientPermission,
+   checkPharmacyAccess,
 } from '../middlewares/patientRBAC';
 import {
-  validateRequest,
-  createAssessmentSchema,
-  updateAssessmentSchema,
-  assessmentParamsSchema,
-  paginationSchema,
+   validateRequest,
+   createAssessmentSchema,
+   updateAssessmentSchema,
+   assessmentParamsSchema,
+   paginationSchema,
 } from '../validators/patientValidators';
 
 const router = express.Router();
@@ -34,13 +34,13 @@ const router = express.Router();
  * Add new clinical assessment to patient (vitals and/or labs)
  */
 router.post(
-  '/:id/assessments',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('create'),
-  validateRequest(assessmentParamsSchema.pick({ id: true }), 'params'),
-  validateRequest(createAssessmentSchema, 'body'),
-  createAssessment
+   '/:id/assessments',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('create'),
+   validateRequest(assessmentParamsSchema.pick({ id: true }), 'params'),
+   validateRequest(createAssessmentSchema, 'body'),
+   createAssessment
 );
 
 /**
@@ -49,13 +49,13 @@ router.post(
  * Sorted by recordedAt date (most recent first)
  */
 router.get(
-  '/:id/assessments',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('read'),
-  validateRequest(assessmentParamsSchema.pick({ id: true }), 'params'),
-  validateRequest(paginationSchema, 'query'),
-  getAssessments
+   '/:id/assessments',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('read'),
+   validateRequest(assessmentParamsSchema.pick({ id: true }), 'params'),
+   validateRequest(paginationSchema, 'query'),
+   getAssessments
 );
 
 // ===============================
@@ -67,16 +67,16 @@ router.get(
  * Update clinical assessment information
  */
 router.patch(
-  '/assessments/:assessmentId',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('update'),
-  validateRequest(
-    assessmentParamsSchema.pick({ assessmentId: true }),
-    'params'
-  ),
-  validateRequest(updateAssessmentSchema, 'body'),
-  updateAssessment
+   '/assessments/:assessmentId',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('update'),
+   validateRequest(
+      assessmentParamsSchema.pick({ assessmentId: true }),
+      'params'
+   ),
+   validateRequest(updateAssessmentSchema, 'body'),
+   updateAssessment
 );
 
 export default router;

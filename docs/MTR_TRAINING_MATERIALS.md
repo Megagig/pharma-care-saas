@@ -28,13 +28,11 @@ By the end of this training, participants will be able to:
 #### Content Overview
 
 1. **Introduction to MTR**
-
    - Definition and scope of medication therapy review
    - Regulatory requirements and standards
    - Benefits for patients, pharmacists, and healthcare systems
 
 2. **MTR Workflow Overview**
-
    - Six-step process explanation
    - Step interdependencies and flow
    - Quality checkpoints and validation
@@ -67,13 +65,11 @@ By the end of this training, participants will be able to:
 #### Content Overview
 
 1. **Patient Selection Criteria**
-
    - High-risk patient identification
    - Prioritization strategies
    - Documentation requirements
 
 2. **Medication History Collection**
-
    - Systematic approach to medication reconciliation
    - Prescription, OTC, and supplement documentation
    - Verification and validation techniques
@@ -113,14 +109,12 @@ By the end of this training, participants will be able to:
 #### Content Overview
 
 1. **Automated Screening**
-
    - Drug interaction checking
    - Contraindication detection
    - Duplicate therapy identification
    - Dosing validation
 
 2. **Problem Classification**
-
    - Indication-related problems
    - Effectiveness issues
    - Safety concerns
@@ -175,13 +169,11 @@ By the end of this training, participants will be able to:
 #### Content Overview
 
 1. **Recommendation Development**
-
    - Evidence-based decision making
    - Clinical guideline integration
    - Patient-specific considerations
 
 2. **Intervention Prioritization**
-
    - Risk-benefit assessment
    - Urgency classification
    - Resource considerations
@@ -231,13 +223,11 @@ By the end of this training, participants will be able to:
 #### Content Overview
 
 1. **Intervention Documentation**
-
    - Standardized formats and templates
    - Outcome tracking methods
    - Audit trail maintenance
 
 2. **Communication Strategies**
-
    - Patient counseling techniques
    - Provider communication best practices
    - Written documentation standards
@@ -310,13 +300,11 @@ Sincerely,
 #### Content Overview
 
 1. **Follow-up Planning**
-
    - Appropriate intervals and methods
    - Priority-based scheduling
    - Resource allocation
 
 2. **Monitoring Strategies**
-
    - Clinical parameter tracking
    - Adherence assessment
    - Outcome evaluation

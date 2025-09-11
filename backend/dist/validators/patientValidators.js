@@ -169,7 +169,10 @@ exports.createPatientSchema = zod_1.z.object({
     })
         .optional(),
 });
-exports.updatePatientSchema = exports.createPatientSchema.partial();
+exports.updatePatientSchema = zod_1.z.object(Object.entries(exports.createPatientSchema.shape).reduce((acc, [key, schema]) => {
+    acc[key] = zod_1.z.preprocess((val) => (val === '' || val === null ? undefined : val), schema.optional());
+    return acc;
+}, {}));
 exports.patientParamsSchema = zod_1.z.object({
     id: mongoIdSchema,
 });

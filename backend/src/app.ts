@@ -55,43 +55,43 @@ const app: Application = express();
 // Security middleware
 app.use(helmet());
 app.use(
-  cors({
-    origin: [
-      'http://localhost:3000', // Create React App dev server
-      'http://localhost:5173', // Vite dev server
-      'http://127.0.0.1:5173', // Alternative Vite URL
-      'http://192.168.8.167:5173', // Local network Vite URL
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-    ],
-    credentials: true,
-    exposedHeaders: ['Content-Type', 'Authorization'],
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  })
+   cors({
+      origin: [
+         'http://localhost:3000', // Create React App dev server
+         'http://localhost:5173', // Vite dev server
+         'http://127.0.0.1:5173', // Alternative Vite URL
+         'http://192.168.8.167:5173', // Local network Vite URL
+         process.env.FRONTEND_URL || 'http://localhost:3000',
+      ],
+      credentials: true,
+      exposedHeaders: ['Content-Type', 'Authorization'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+   })
 );
 
 // Security monitoring middleware
 import {
-  blockSuspiciousIPs,
-  detectAnomalies,
+   blockSuspiciousIPs,
+   detectAnomalies,
 } from './middlewares/securityMonitoring';
 app.use(blockSuspiciousIPs);
 app.use(detectAnomalies);
 
 // Rate limiting - more lenient for development
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Higher limit for development
-  message: 'Too many requests from this IP, please try again later.',
-  skip: (req) => {
-    // Skip rate limiting for health checks and certain endpoints in development
-    if (
-      process.env.NODE_ENV === 'development' &&
-      (req.path.includes('/health') || req.path.includes('/mtr/summary'))
-    ) {
-      return true;
-    }
-    return false;
-  },
+   windowMs: 15 * 60 * 1000, // 15 minutes
+   max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Higher limit for development
+   message: 'Too many requests from this IP, please try again later.',
+   skip: (req) => {
+      // Skip rate limiting for health checks and certain endpoints in development
+      if (
+         process.env.NODE_ENV === 'development' &&
+         (req.path.includes('/health') || req.path.includes('/mtr/summary'))
+      ) {
+         return true;
+      }
+      return false;
+   },
 });
 app.use('/api/', limiter);
 
@@ -107,16 +107,16 @@ app.use(hpp()); // Against HTTP Parameter Pollution
 
 // Logging middleware
 if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
+   app.use(morgan('dev'));
 }
 
 // Health check routes
 app.get('/api/health', (req: Request, res: Response) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-  });
+   res.json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+   });
 });
 app.use('/api/health/feature-flags', healthRoutes);
 
@@ -156,12 +156,12 @@ app.use('/api/drugs', drugRoutes);
 
 // Clinical Notes routes - added special debug log
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api/notes')) {
-    console.log(
-      `[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`
-    );
-  }
-  next();
+   if (req.path.startsWith('/api/notes')) {
+      console.log(
+         `[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`
+      );
+   }
+   next();
 });
 app.use('/api/notes', noteRoutes);
 
@@ -197,30 +197,30 @@ app.use('/api/feature-flags', featureFlagRoutes);
 
 // Webhooks - no rate limiting and body parsing is raw for signature verification
 app.use(
-  '/api/webhooks',
-  express.raw({ type: 'application/json' }), // Raw body parser for signature verification
-  webhookRoutes
+   '/api/webhooks',
+   express.raw({ type: 'application/json' }), // Raw body parser for signature verification
+   webhookRoutes
 );
 
 // Serve uploaded files (with proper security)
 app.use(
-  '/uploads',
-  express.static('uploads', {
-    maxAge: '1d',
-    setHeaders: (res, path) => {
-      // Security headers for file downloads
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'DENY');
-      if (path.endsWith('.pdf')) {
-        res.setHeader('Content-Disposition', 'inline');
-      }
-    },
-  })
+   '/uploads',
+   express.static('uploads', {
+      maxAge: '1d',
+      setHeaders: (res, path) => {
+         // Security headers for file downloads
+         res.setHeader('X-Content-Type-Options', 'nosniff');
+         res.setHeader('X-Frame-Options', 'DENY');
+         if (path.endsWith('.pdf')) {
+            res.setHeader('Content-Disposition', 'inline');
+         }
+      },
+   })
 );
 
 // 404 handler
 app.all('*', (req: Request, res: Response) => {
-  res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+   res.status(404).json({ message: `Route ${req.originalUrl} not found` });
 });
 
 // Global error handler

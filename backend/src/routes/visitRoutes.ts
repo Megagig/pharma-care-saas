@@ -1,23 +1,23 @@
 import express from 'express';
 import {
-  createVisit,
-  getVisits,
-  getVisit,
-  updateVisit,
-  addVisitAttachment,
+   createVisit,
+   getVisits,
+   getVisit,
+   updateVisit,
+   addVisitAttachment,
 } from '../controllers/patientResourcesController';
 import { auth } from '../middlewares/auth';
 import {
-  requirePatientPermission,
-  checkPharmacyAccess,
+   requirePatientPermission,
+   checkPharmacyAccess,
 } from '../middlewares/patientRBAC';
 import {
-  validateRequest,
-  createVisitSchema,
-  updateVisitSchema,
-  visitParamsSchema,
-  paginationSchema,
-  attachmentSchema,
+   validateRequest,
+   createVisitSchema,
+   updateVisitSchema,
+   visitParamsSchema,
+   paginationSchema,
+   attachmentSchema,
 } from '../validators/patientValidators';
 
 const router = express.Router();
@@ -37,13 +37,13 @@ const router = express.Router();
  * Create new visit for patient with SOAP notes
  */
 router.post(
-  '/:id/visits',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('create'),
-  validateRequest(visitParamsSchema.pick({ id: true }), 'params'),
-  validateRequest(createVisitSchema, 'body'),
-  createVisit
+   '/:id/visits',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('create'),
+   validateRequest(visitParamsSchema.pick({ id: true }), 'params'),
+   validateRequest(createVisitSchema, 'body'),
+   createVisit
 );
 
 /**
@@ -52,13 +52,13 @@ router.post(
  * Sorted by visit date (most recent first)
  */
 router.get(
-  '/:id/visits',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('read'),
-  validateRequest(visitParamsSchema.pick({ id: true }), 'params'),
-  validateRequest(paginationSchema, 'query'),
-  getVisits
+   '/:id/visits',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('read'),
+   validateRequest(visitParamsSchema.pick({ id: true }), 'params'),
+   validateRequest(paginationSchema, 'query'),
+   getVisits
 );
 
 // ===============================
@@ -70,12 +70,12 @@ router.get(
  * Get detailed visit information with patient details
  */
 router.get(
-  '/visits/:visitId',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('read'),
-  validateRequest(visitParamsSchema.pick({ visitId: true }), 'params'),
-  getVisit
+   '/visits/:visitId',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('read'),
+   validateRequest(visitParamsSchema.pick({ visitId: true }), 'params'),
+   getVisit
 );
 
 /**
@@ -83,13 +83,13 @@ router.get(
  * Update visit information and SOAP notes
  */
 router.patch(
-  '/visits/:visitId',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('update'),
-  validateRequest(visitParamsSchema.pick({ visitId: true }), 'params'),
-  validateRequest(updateVisitSchema, 'body'),
-  updateVisit
+   '/visits/:visitId',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('update'),
+   validateRequest(visitParamsSchema.pick({ visitId: true }), 'params'),
+   validateRequest(updateVisitSchema, 'body'),
+   updateVisit
 );
 
 /**
@@ -97,13 +97,13 @@ router.patch(
  * Add attachment to visit (lab results, images, etc.)
  */
 router.post(
-  '/visits/:visitId/attachments',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('create'),
-  validateRequest(visitParamsSchema.pick({ visitId: true }), 'params'),
-  validateRequest(attachmentSchema, 'body'),
-  addVisitAttachment
+   '/visits/:visitId/attachments',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('create'),
+   validateRequest(visitParamsSchema.pick({ visitId: true }), 'params'),
+   validateRequest(attachmentSchema, 'body'),
+   addVisitAttachment
 );
 
 export default router;

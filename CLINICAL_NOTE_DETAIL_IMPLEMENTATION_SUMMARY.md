@@ -45,11 +45,11 @@ Successfully implemented Task 7: Clinical Note Detail View Component as part of 
 
 ```typescript
 interface ClinicalNoteDetailProps {
-  noteId?: string; // Optional note ID (can use URL param instead)
-  onEdit?: () => void; // Optional edit callback
-  onDelete?: () => void; // Optional delete callback
-  readonly?: boolean; // Disable edit/delete actions
-  embedded?: boolean; // Hide navigation elements for embedding
+   noteId?: string; // Optional note ID (can use URL param instead)
+   onEdit?: () => void; // Optional edit callback
+   onDelete?: () => void; // Optional delete callback
+   readonly?: boolean; // Disable edit/delete actions
+   embedded?: boolean; // Hide navigation elements for embedding
 }
 ```
 
@@ -265,14 +265,14 @@ _Note: Tests currently require additional mocking setup for AuthProvider integra
 ```tsx
 // In App.tsx
 <Route
-  path="/notes/:id"
-  element={
-    <ProtectedRoute requiredFeature="clinical_notes">
-      <AppLayout>
-        <ClinicalNoteDetail />
-      </AppLayout>
-    </ProtectedRoute>
-  }
+   path="/notes/:id"
+   element={
+      <ProtectedRoute requiredFeature="clinical_notes">
+         <AppLayout>
+            <ClinicalNoteDetail />
+         </AppLayout>
+      </ProtectedRoute>
+   }
 />
 ```
 

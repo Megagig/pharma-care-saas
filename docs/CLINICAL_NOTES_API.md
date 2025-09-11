@@ -24,40 +24,40 @@ Authorization: Bearer <jwt_token>
 
 ```typescript
 interface ClinicalNote {
-  _id: string;
-  patient: ObjectId | PopulatedPatient;
-  pharmacist: ObjectId | PopulatedUser;
-  workplaceId: ObjectId;
-  locationId?: string;
-  type:
-    | 'consultation'
-    | 'medication_review'
-    | 'follow_up'
-    | 'adverse_event'
-    | 'other';
-  title: string;
-  content: {
-    subjective?: string;
-    objective?: string;
-    assessment?: string;
-    plan?: string;
-  };
-  medications: ObjectId[];
-  vitalSigns?: VitalSigns;
-  laborResults: LabResult[];
-  recommendations: string[];
-  followUpRequired: boolean;
-  followUpDate?: Date;
-  attachments: Attachment[];
-  priority: 'low' | 'medium' | 'high';
-  isConfidential: boolean;
-  tags: string[];
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: ObjectId;
-  lastModifiedBy: ObjectId;
-  deletedAt?: Date;
-  deletedBy?: ObjectId;
+   _id: string;
+   patient: ObjectId | PopulatedPatient;
+   pharmacist: ObjectId | PopulatedUser;
+   workplaceId: ObjectId;
+   locationId?: string;
+   type:
+      | 'consultation'
+      | 'medication_review'
+      | 'follow_up'
+      | 'adverse_event'
+      | 'other';
+   title: string;
+   content: {
+      subjective?: string;
+      objective?: string;
+      assessment?: string;
+      plan?: string;
+   };
+   medications: ObjectId[];
+   vitalSigns?: VitalSigns;
+   laborResults: LabResult[];
+   recommendations: string[];
+   followUpRequired: boolean;
+   followUpDate?: Date;
+   attachments: Attachment[];
+   priority: 'low' | 'medium' | 'high';
+   isConfidential: boolean;
+   tags: string[];
+   createdAt: Date;
+   updatedAt: Date;
+   createdBy: ObjectId;
+   lastModifiedBy: ObjectId;
+   deletedAt?: Date;
+   deletedBy?: ObjectId;
 }
 ```
 
@@ -65,34 +65,34 @@ interface ClinicalNote {
 
 ```typescript
 interface VitalSigns {
-  bloodPressure?: {
-    systolic?: number;
-    diastolic?: number;
-  };
-  heartRate?: number;
-  temperature?: number;
-  weight?: number;
-  height?: number;
-  recordedAt?: Date;
+   bloodPressure?: {
+      systolic?: number;
+      diastolic?: number;
+   };
+   heartRate?: number;
+   temperature?: number;
+   weight?: number;
+   height?: number;
+   recordedAt?: Date;
 }
 
 interface LabResult {
-  test: string;
-  result: string;
-  normalRange: string;
-  date: Date;
-  status: 'normal' | 'abnormal' | 'critical';
+   test: string;
+   result: string;
+   normalRange: string;
+   date: Date;
+   status: 'normal' | 'abnormal' | 'critical';
 }
 
 interface Attachment {
-  _id: string;
-  fileName: string;
-  originalName: string;
-  mimeType: string;
-  size: number;
-  url: string;
-  uploadedAt: Date;
-  uploadedBy: ObjectId;
+   _id: string;
+   fileName: string;
+   originalName: string;
+   mimeType: string;
+   size: number;
+   url: string;
+   uploadedAt: Date;
+   uploadedBy: ObjectId;
 }
 ```
 
@@ -117,38 +117,38 @@ Retrieves a paginated list of clinical notes for the authenticated user's workpl
 
 ```json
 {
-  "success": true,
-  "data": {
-    "notes": [
-      {
-        "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
-        "patient": {
-          "_id": "64f8a1b2c3d4e5f6a7b8c9d1",
-          "firstName": "John",
-          "lastName": "Doe",
-          "mrn": "MRN001"
-        },
-        "pharmacist": {
-          "_id": "64f8a1b2c3d4e5f6a7b8c9d2",
-          "firstName": "Dr. Jane",
-          "lastName": "Smith"
-        },
-        "type": "consultation",
-        "title": "Initial Consultation",
-        "priority": "medium",
-        "isConfidential": false,
-        "createdAt": "2023-09-06T10:30:00.000Z",
-        "updatedAt": "2023-09-06T10:30:00.000Z"
+   "success": true,
+   "data": {
+      "notes": [
+         {
+            "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
+            "patient": {
+               "_id": "64f8a1b2c3d4e5f6a7b8c9d1",
+               "firstName": "John",
+               "lastName": "Doe",
+               "mrn": "MRN001"
+            },
+            "pharmacist": {
+               "_id": "64f8a1b2c3d4e5f6a7b8c9d2",
+               "firstName": "Dr. Jane",
+               "lastName": "Smith"
+            },
+            "type": "consultation",
+            "title": "Initial Consultation",
+            "priority": "medium",
+            "isConfidential": false,
+            "createdAt": "2023-09-06T10:30:00.000Z",
+            "updatedAt": "2023-09-06T10:30:00.000Z"
+         }
+      ],
+      "pagination": {
+         "currentPage": 1,
+         "totalPages": 5,
+         "totalItems": 50,
+         "hasNext": true,
+         "hasPrev": false
       }
-    ],
-    "pagination": {
-      "currentPage": 1,
-      "totalPages": 5,
-      "totalItems": 50,
-      "hasNext": true,
-      "hasPrev": false
-    }
-  }
+   }
 }
 ```
 
@@ -168,53 +168,53 @@ Retrieves a specific clinical note by ID.
 
 ```json
 {
-  "success": true,
-  "data": {
-    "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
-    "patient": {
-      "_id": "64f8a1b2c3d4e5f6a7b8c9d1",
-      "firstName": "John",
-      "lastName": "Doe",
-      "mrn": "MRN001"
-    },
-    "pharmacist": {
-      "_id": "64f8a1b2c3d4e5f6a7b8c9d2",
-      "firstName": "Dr. Jane",
-      "lastName": "Smith"
-    },
-    "workplaceId": "64f8a1b2c3d4e5f6a7b8c9d3",
-    "type": "consultation",
-    "title": "Initial Consultation",
-    "content": {
-      "subjective": "Patient reports mild headache for 2 days",
-      "objective": "BP: 120/80, HR: 72, Temp: 98.6°F",
-      "assessment": "Tension headache, likely stress-related",
-      "plan": "Recommend OTC pain relief and stress management"
-    },
-    "medications": [],
-    "vitalSigns": {
-      "bloodPressure": {
-        "systolic": 120,
-        "diastolic": 80
+   "success": true,
+   "data": {
+      "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
+      "patient": {
+         "_id": "64f8a1b2c3d4e5f6a7b8c9d1",
+         "firstName": "John",
+         "lastName": "Doe",
+         "mrn": "MRN001"
       },
-      "heartRate": 72,
-      "temperature": 98.6,
-      "recordedAt": "2023-09-06T10:30:00.000Z"
-    },
-    "laborResults": [],
-    "recommendations": [
-      "Follow up in 1 week if symptoms persist",
-      "Monitor blood pressure"
-    ],
-    "followUpRequired": true,
-    "followUpDate": "2023-09-13T10:30:00.000Z",
-    "attachments": [],
-    "priority": "medium",
-    "isConfidential": false,
-    "tags": ["headache", "consultation"],
-    "createdAt": "2023-09-06T10:30:00.000Z",
-    "updatedAt": "2023-09-06T10:30:00.000Z"
-  }
+      "pharmacist": {
+         "_id": "64f8a1b2c3d4e5f6a7b8c9d2",
+         "firstName": "Dr. Jane",
+         "lastName": "Smith"
+      },
+      "workplaceId": "64f8a1b2c3d4e5f6a7b8c9d3",
+      "type": "consultation",
+      "title": "Initial Consultation",
+      "content": {
+         "subjective": "Patient reports mild headache for 2 days",
+         "objective": "BP: 120/80, HR: 72, Temp: 98.6°F",
+         "assessment": "Tension headache, likely stress-related",
+         "plan": "Recommend OTC pain relief and stress management"
+      },
+      "medications": [],
+      "vitalSigns": {
+         "bloodPressure": {
+            "systolic": 120,
+            "diastolic": 80
+         },
+         "heartRate": 72,
+         "temperature": 98.6,
+         "recordedAt": "2023-09-06T10:30:00.000Z"
+      },
+      "laborResults": [],
+      "recommendations": [
+         "Follow up in 1 week if symptoms persist",
+         "Monitor blood pressure"
+      ],
+      "followUpRequired": true,
+      "followUpDate": "2023-09-13T10:30:00.000Z",
+      "attachments": [],
+      "priority": "medium",
+      "isConfidential": false,
+      "tags": ["headache", "consultation"],
+      "createdAt": "2023-09-06T10:30:00.000Z",
+      "updatedAt": "2023-09-06T10:30:00.000Z"
+   }
 }
 ```
 
@@ -228,34 +228,34 @@ Creates a new clinical note.
 
 ```json
 {
-  "patient": "64f8a1b2c3d4e5f6a7b8c9d1",
-  "type": "consultation",
-  "title": "Initial Consultation",
-  "content": {
-    "subjective": "Patient reports mild headache for 2 days",
-    "objective": "BP: 120/80, HR: 72, Temp: 98.6°F",
-    "assessment": "Tension headache, likely stress-related",
-    "plan": "Recommend OTC pain relief and stress management"
-  },
-  "medications": [],
-  "vitalSigns": {
-    "bloodPressure": {
-      "systolic": 120,
-      "diastolic": 80
-    },
-    "heartRate": 72,
-    "temperature": 98.6
-  },
-  "laborResults": [],
-  "recommendations": [
-    "Follow up in 1 week if symptoms persist",
-    "Monitor blood pressure"
-  ],
-  "followUpRequired": true,
-  "followUpDate": "2023-09-13T10:30:00.000Z",
-  "priority": "medium",
-  "isConfidential": false,
-  "tags": ["headache", "consultation"]
+   "patient": "64f8a1b2c3d4e5f6a7b8c9d1",
+   "type": "consultation",
+   "title": "Initial Consultation",
+   "content": {
+      "subjective": "Patient reports mild headache for 2 days",
+      "objective": "BP: 120/80, HR: 72, Temp: 98.6°F",
+      "assessment": "Tension headache, likely stress-related",
+      "plan": "Recommend OTC pain relief and stress management"
+   },
+   "medications": [],
+   "vitalSigns": {
+      "bloodPressure": {
+         "systolic": 120,
+         "diastolic": 80
+      },
+      "heartRate": 72,
+      "temperature": 98.6
+   },
+   "laborResults": [],
+   "recommendations": [
+      "Follow up in 1 week if symptoms persist",
+      "Monitor blood pressure"
+   ],
+   "followUpRequired": true,
+   "followUpDate": "2023-09-13T10:30:00.000Z",
+   "priority": "medium",
+   "isConfidential": false,
+   "tags": ["headache", "consultation"]
 }
 ```
 
@@ -263,12 +263,12 @@ Creates a new clinical note.
 
 ```json
 {
-  "success": true,
-  "message": "Clinical note created successfully",
-  "data": {
-    "_id": "64f8a1b2c3d4e5f6a7b8c9d0"
-    // ... full note object
-  }
+   "success": true,
+   "message": "Clinical note created successfully",
+   "data": {
+      "_id": "64f8a1b2c3d4e5f6a7b8c9d0"
+      // ... full note object
+   }
 }
 ```
 
@@ -292,12 +292,12 @@ Same as create request, but all fields are optional.
 
 ```json
 {
-  "success": true,
-  "message": "Clinical note updated successfully",
-  "data": {
-    "_id": "64f8a1b2c3d4e5f6a7b8c9d0"
-    // ... updated note object
-  }
+   "success": true,
+   "message": "Clinical note updated successfully",
+   "data": {
+      "_id": "64f8a1b2c3d4e5f6a7b8c9d0"
+      // ... updated note object
+   }
 }
 ```
 
@@ -317,8 +317,8 @@ Soft deletes a clinical note (marks as deleted but preserves data).
 
 ```json
 {
-  "success": true,
-  "message": "Clinical note deleted successfully"
+   "success": true,
+   "message": "Clinical note deleted successfully"
 }
 ```
 
@@ -389,28 +389,28 @@ Retrieves statistics about clinical notes for the workplace.
 
 ```json
 {
-  "success": true,
-  "data": {
-    "totalNotes": 150,
-    "notesByType": {
-      "consultation": 60,
-      "medication_review": 40,
-      "follow_up": 30,
-      "adverse_event": 15,
-      "other": 5
-    },
-    "notesByPriority": {
-      "low": 50,
-      "medium": 80,
-      "high": 20
-    },
-    "confidentialNotes": 25,
-    "notesWithFollowUp": 45,
-    "recentActivity": {
-      "last7Days": 12,
-      "last30Days": 45
-    }
-  }
+   "success": true,
+   "data": {
+      "totalNotes": 150,
+      "notesByType": {
+         "consultation": 60,
+         "medication_review": 40,
+         "follow_up": 30,
+         "adverse_event": 15,
+         "other": 5
+      },
+      "notesByPriority": {
+         "low": 50,
+         "medium": 80,
+         "high": 20
+      },
+      "confidentialNotes": 25,
+      "notesWithFollowUp": 45,
+      "recentActivity": {
+         "last7Days": 12,
+         "last30Days": 45
+      }
+   }
 }
 ```
 
@@ -424,11 +424,11 @@ Updates multiple notes at once.
 
 ```json
 {
-  "noteIds": ["64f8a1b2c3d4e5f6a7b8c9d0", "64f8a1b2c3d4e5f6a7b8c9d1"],
-  "updates": {
-    "priority": "high",
-    "tags": ["urgent", "review"]
-  }
+   "noteIds": ["64f8a1b2c3d4e5f6a7b8c9d0", "64f8a1b2c3d4e5f6a7b8c9d1"],
+   "updates": {
+      "priority": "high",
+      "tags": ["urgent", "review"]
+   }
 }
 ```
 
@@ -436,12 +436,12 @@ Updates multiple notes at once.
 
 ```json
 {
-  "success": true,
-  "message": "2 notes updated successfully",
-  "data": {
-    "updatedCount": 2,
-    "failedUpdates": []
-  }
+   "success": true,
+   "message": "2 notes updated successfully",
+   "data": {
+      "updatedCount": 2,
+      "failedUpdates": []
+   }
 }
 ```
 
@@ -455,7 +455,7 @@ Soft deletes multiple notes at once.
 
 ```json
 {
-  "noteIds": ["64f8a1b2c3d4e5f6a7b8c9d0", "64f8a1b2c3d4e5f6a7b8c9d1"]
+   "noteIds": ["64f8a1b2c3d4e5f6a7b8c9d0", "64f8a1b2c3d4e5f6a7b8c9d1"]
 }
 ```
 
@@ -463,12 +463,12 @@ Soft deletes multiple notes at once.
 
 ```json
 {
-  "success": true,
-  "message": "2 notes deleted successfully",
-  "data": {
-    "deletedCount": 2,
-    "failedDeletions": []
-  }
+   "success": true,
+   "message": "2 notes deleted successfully",
+   "data": {
+      "deletedCount": 2,
+      "failedDeletions": []
+   }
 }
 ```
 
@@ -494,22 +494,22 @@ Multipart form data with files field containing up to 5 files.
 
 ```json
 {
-  "success": true,
-  "message": "Files uploaded successfully",
-  "data": {
-    "attachments": [
-      {
-        "_id": "64f8a1b2c3d4e5f6a7b8c9d4",
-        "fileName": "lab_results_20230906.pdf",
-        "originalName": "Lab Results.pdf",
-        "mimeType": "application/pdf",
-        "size": 1024000,
-        "url": "/uploads/notes/64f8a1b2c3d4e5f6a7b8c9d0/lab_results_20230906.pdf",
-        "uploadedAt": "2023-09-06T10:30:00.000Z",
-        "uploadedBy": "64f8a1b2c3d4e5f6a7b8c9d2"
-      }
-    ]
-  }
+   "success": true,
+   "message": "Files uploaded successfully",
+   "data": {
+      "attachments": [
+         {
+            "_id": "64f8a1b2c3d4e5f6a7b8c9d4",
+            "fileName": "lab_results_20230906.pdf",
+            "originalName": "Lab Results.pdf",
+            "mimeType": "application/pdf",
+            "size": 1024000,
+            "url": "/uploads/notes/64f8a1b2c3d4e5f6a7b8c9d0/lab_results_20230906.pdf",
+            "uploadedAt": "2023-09-06T10:30:00.000Z",
+            "uploadedBy": "64f8a1b2c3d4e5f6a7b8c9d2"
+         }
+      ]
+   }
 }
 ```
 
@@ -530,8 +530,8 @@ Deletes a file attachment from a clinical note.
 
 ```json
 {
-  "success": true,
-  "message": "Attachment deleted successfully"
+   "success": true,
+   "message": "Attachment deleted successfully"
 }
 ```
 
@@ -558,17 +558,17 @@ All endpoints return standardized error responses:
 
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Validation failed",
-    "details": [
-      {
-        "field": "title",
-        "message": "Title is required"
-      }
-    ]
-  }
+   "success": false,
+   "error": {
+      "code": "VALIDATION_ERROR",
+      "message": "Validation failed",
+      "details": [
+         {
+            "field": "title",
+            "message": "Title is required"
+         }
+      ]
+   }
 }
 ```
 
@@ -608,15 +608,15 @@ List endpoints support cursor-based pagination:
 
 ```json
 {
-  "pagination": {
-    "currentPage": 1,
-    "totalPages": 5,
-    "totalItems": 50,
-    "hasNext": true,
-    "hasPrev": false,
-    "nextCursor": "eyJfaWQiOiI2NGY4YTFiMmMzZDRlNWY2YTdiOGM5ZDAifQ==",
-    "prevCursor": null
-  }
+   "pagination": {
+      "currentPage": 1,
+      "totalPages": 5,
+      "totalItems": 50,
+      "hasNext": true,
+      "hasPrev": false,
+      "nextCursor": "eyJfaWQiOiI2NGY4YTFiMmMzZDRlNWY2YTdiOGM5ZDAifQ==",
+      "prevCursor": null
+   }
 }
 ```
 

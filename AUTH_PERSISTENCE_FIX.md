@@ -17,9 +17,9 @@ Users were automatically logged out when refreshing the page, even though the ap
 
 - Changed `sameSite` policy from `'strict'` to `'lax'` in development
 - Added environment-specific cookie settings:
-  ```typescript
-  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax';
-  ```
+   ```typescript
+   sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax';
+   ```
 - Added `checkCookies` endpoint for lightweight cookie verification
 
 ### 2. Frontend Authentication Context (`AuthContext.tsx`)

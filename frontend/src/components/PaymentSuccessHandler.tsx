@@ -10,99 +10,104 @@ import { useUIStore } from '../stores';
  * and refreshes the user data as needed
  */
 const PaymentSuccessHandler: React.FC = () => {
-  const { refreshUser } = useAuth();
-  const location = useLocation();
-  const addNotification = useUIStore((state) => state.addNotification);
+   const { refreshUser } = useAuth();
+   const location = useLocation();
+   const addNotification = useUIStore((state) => state.addNotification);
 
-  useEffect(() => {
-    const handlePaymentSuccess = async () => {
-      // Check if we're coming from a payment success page
-      const fromPayment =
-        location.search.includes('fromPayment=true') ||
-        sessionStorage.getItem('paymentSuccessful') === 'true';
+   useEffect(() => {
+      const handlePaymentSuccess = async () => {
+         // Check if we're coming from a payment success page
+         const fromPayment =
+            location.search.includes('fromPayment=true') ||
+            sessionStorage.getItem('paymentSuccessful') === 'true';
 
-      const paymentRef =
-        new URLSearchParams(location.search).get('ref') ||
-        sessionStorage.getItem('paymentReference');
+         const paymentRef =
+            new URLSearchParams(location.search).get('ref') ||
+            sessionStorage.getItem('paymentReference');
 
-      if (fromPayment && paymentRef) {
-        console.log('Payment success detected, refreshing user data...');
+         if (fromPayment && paymentRef) {
+            console.log('Payment success detected, refreshing user data...');
 
-        try {
-          // Force delay to ensure backend has processed payment
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+            try {
+               // Force delay to ensure backend has processed payment
+               await new Promise((resolve) => setTimeout(resolve, 1000));
 
-          // Try to verify the payment one more time
-          const verifyResult = await subscriptionService.verifyPayment(
-            paymentRef
-          );
-          if (verifyResult.success) {
-            console.log('Payment verification confirmed');
-          }
+               // Try to verify the payment one more time
+               const verifyResult =
+                  await subscriptionService.verifyPayment(paymentRef);
+               if (verifyResult.success) {
+                  console.log('Payment verification confirmed');
+               }
 
-          // Try to handle successful payment
-          try {
-            await subscriptionService.handleSuccessfulPayment(paymentRef);
-            console.log('Payment success handling complete');
-          } catch (e) {
-            console.log(
-              'Payment already processed or error in handling payment:',
-              e
-            );
-          }
+               // Try to handle successful payment
+               try {
+                  await subscriptionService.handleSuccessfulPayment(paymentRef);
+                  console.log('Payment success handling complete');
+               } catch (e) {
+                  console.log(
+                     'Payment already processed or error in handling payment:',
+                     e
+                  );
+               }
 
-          // Refresh user data multiple times to ensure we have the latest
-          console.log('First refresh attempt...');
-          await refreshUser();
+               // Refresh user data multiple times to ensure we have the latest
+               console.log('First refresh attempt...');
+               await refreshUser();
 
-          // Small delay
-          await new Promise((resolve) => setTimeout(resolve, 500));
+               // Small delay
+               await new Promise((resolve) => setTimeout(resolve, 500));
 
-          // One more refresh for good measure
-          console.log('Second refresh attempt...');
-          await refreshUser();
+               // One more refresh for good measure
+               console.log('Second refresh attempt...');
+               await refreshUser();
 
-          // Show success notification
-          addNotification({
-            type: 'success',
-            title: 'Subscription Active',
-            message:
-              'Your subscription is now active and all features are available.',
-            duration: 8000,
-          });
+               // Show success notification
+               addNotification({
+                  type: 'success',
+                  title: 'Subscription Active',
+                  message:
+                     'Your subscription is now active and all features are available.',
+                  duration: 8000,
+               });
 
-          // IMPORTANT: Instead of removing, let's keep the payment indicators
-          // for a temporary period to force bypassing subscription checks
-          // This ensures access even if refreshUser doesn't immediately update the state
-          sessionStorage.setItem('paymentSuccessful', 'true');
-          sessionStorage.setItem('paymentTimestamp', Date.now().toString());
-          sessionStorage.setItem('paymentReference', paymentRef || '');
+               // IMPORTANT: Instead of removing, let's keep the payment indicators
+               // for a temporary period to force bypassing subscription checks
+               // This ensures access even if refreshUser doesn't immediately update the state
+               sessionStorage.setItem('paymentSuccessful', 'true');
+               sessionStorage.setItem(
+                  'paymentTimestamp',
+                  Date.now().toString()
+               );
+               sessionStorage.setItem('paymentReference', paymentRef || '');
 
-          // Log the bypass status
-          console.log('⚠️ TEMPORARY SUBSCRIPTION CHECK BYPASS ACTIVATED:', {
-            paymentRef,
-            timestamp: new Date().toLocaleString(),
-          });
+               // Log the bypass status
+               console.log(
+                  '⚠️ TEMPORARY SUBSCRIPTION CHECK BYPASS ACTIVATED:',
+                  {
+                     paymentRef,
+                     timestamp: new Date().toLocaleString(),
+                  }
+               );
 
-          console.log('Payment success flow completed successfully');
-        } catch (error) {
-          console.error('Error handling payment success:', error);
+               console.log('Payment success flow completed successfully');
+            } catch (error) {
+               console.error('Error handling payment success:', error);
 
-          // Try one more time to refresh user
-          try {
-            await refreshUser();
-          } catch (e) {
-            console.error('Final refresh attempt failed:', e);
-          }
-        }
-      }
-    };
+               // Try one more time to refresh user
+               try {
+                  await refreshUser();
+               } catch (e) {
+                  console.error('Final refresh attempt failed:', e);
+               }
+            }
+         }
+      };
 
-    handlePaymentSuccess();
-  }, [location, refreshUser, addNotification]);
+      handlePaymentSuccess();
+   }, [location, refreshUser, addNotification]);
 
-  // This is an invisible component that just runs the effect
-  return null;
+   // This is an invisible component that just runs the effect
+   return null;
 };
 
 export default PaymentSuccessHandler;

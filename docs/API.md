@@ -30,13 +30,13 @@ Register a new pharmacist account.
 
 ```json
 {
-  "firstName": "John",
-  "lastName": "Doe",
-  "email": "john.doe@example.com",
-  "password": "securepassword",
-  "licenseNumber": "12345678",
-  "pharmacyName": "Community Health Pharmacy",
-  "phoneNumber": "+1 (555) 123-4567"
+   "firstName": "John",
+   "lastName": "Doe",
+   "email": "john.doe@example.com",
+   "password": "securepassword",
+   "licenseNumber": "12345678",
+   "pharmacyName": "Community Health Pharmacy",
+   "phoneNumber": "+1 (555) 123-4567"
 }
 ```
 
@@ -48,8 +48,8 @@ Authenticate a user and receive a JWT token.
 
 ```json
 {
-  "email": "john.doe@example.com",
-  "password": "securepassword"
+   "email": "john.doe@example.com",
+   "password": "securepassword"
 }
 ```
 
@@ -77,18 +77,18 @@ Create a new patient record.
 
 ```json
 {
-  "firstName": "Sarah",
-  "lastName": "Johnson",
-  "dateOfBirth": "1958-03-15",
-  "gender": "female",
-  "contactInfo": {
-    "phone": "(555) 123-4567",
-    "email": "sarah.johnson@email.com"
-  },
-  "medicalInfo": {
-    "allergies": ["Penicillin"],
-    "chronicConditions": ["Hypertension"]
-  }
+   "firstName": "Sarah",
+   "lastName": "Johnson",
+   "dateOfBirth": "1958-03-15",
+   "gender": "female",
+   "contactInfo": {
+      "phone": "(555) 123-4567",
+      "email": "sarah.johnson@email.com"
+   },
+   "medicalInfo": {
+      "allergies": ["Penicillin"],
+      "chronicConditions": ["Hypertension"]
+   }
 }
 ```
 
@@ -125,30 +125,30 @@ Create a new clinical note.
 
 ```json
 {
-  "patient": "patient_id",
-  "type": "consultation",
-  "title": "Initial Consultation",
-  "content": {
-    "subjective": "Patient reports mild headache for 2 days",
-    "objective": "BP: 120/80, HR: 72, Temp: 98.6°F",
-    "assessment": "Tension headache, likely stress-related",
-    "plan": "Recommend OTC pain relief and stress management"
-  },
-  "medications": [],
-  "vitalSigns": {
-    "bloodPressure": {
-      "systolic": 120,
-      "diastolic": 80
-    },
-    "heartRate": 72,
-    "temperature": 98.6
-  },
-  "recommendations": ["Follow up in 1 week if symptoms persist"],
-  "followUpRequired": true,
-  "followUpDate": "2023-09-13T10:30:00.000Z",
-  "priority": "medium",
-  "isConfidential": false,
-  "tags": ["headache", "consultation"]
+   "patient": "patient_id",
+   "type": "consultation",
+   "title": "Initial Consultation",
+   "content": {
+      "subjective": "Patient reports mild headache for 2 days",
+      "objective": "BP: 120/80, HR: 72, Temp: 98.6°F",
+      "assessment": "Tension headache, likely stress-related",
+      "plan": "Recommend OTC pain relief and stress management"
+   },
+   "medications": [],
+   "vitalSigns": {
+      "bloodPressure": {
+         "systolic": 120,
+         "diastolic": 80
+      },
+      "heartRate": 72,
+      "temperature": 98.6
+   },
+   "recommendations": ["Follow up in 1 week if symptoms persist"],
+   "followUpRequired": true,
+   "followUpDate": "2023-09-13T10:30:00.000Z",
+   "priority": "medium",
+   "isConfidential": false,
+   "tags": ["headache", "consultation"]
 }
 ```
 
@@ -204,11 +204,11 @@ Update multiple notes at once.
 
 ```json
 {
-  "noteIds": ["note_id_1", "note_id_2"],
-  "updates": {
-    "priority": "high",
-    "tags": ["urgent", "review"]
-  }
+   "noteIds": ["note_id_1", "note_id_2"],
+   "updates": {
+      "priority": "high",
+      "tags": ["urgent", "review"]
+   }
 }
 ```
 
@@ -220,7 +220,7 @@ Soft delete multiple notes at once.
 
 ```json
 {
-  "noteIds": ["note_id_1", "note_id_2"]
+   "noteIds": ["note_id_1", "note_id_2"]
 }
 ```
 
@@ -254,18 +254,18 @@ Add new medication for a patient.
 
 ```json
 {
-  "patient": "patient_id",
-  "drugName": "Lisinopril",
-  "strength": {
-    "value": 10,
-    "unit": "mg"
-  },
-  "dosageForm": "tablet",
-  "instructions": {
-    "dosage": "1 tablet",
-    "frequency": "once daily"
-  },
-  "indication": "Hypertension"
+   "patient": "patient_id",
+   "drugName": "Lisinopril",
+   "strength": {
+      "value": 10,
+      "unit": "mg"
+   },
+   "dosageForm": "tablet",
+   "instructions": {
+      "dosage": "1 tablet",
+      "frequency": "once daily"
+   },
+   "indication": "Hypertension"
 }
 ```
 
@@ -303,7 +303,7 @@ The API uses standard HTTP status codes and returns error responses in the follo
 
 ```json
 {
-  "message": "Error description"
+   "message": "Error description"
 }
 ```
 

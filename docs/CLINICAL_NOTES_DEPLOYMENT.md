@@ -134,18 +134,18 @@ Example S3 policy (`s3-policy.json`):
 
 ```json
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "ClinicalNotesAccess",
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "arn:aws:iam::YOUR-ACCOUNT:user/clinical-notes-user"
-      },
-      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-      "Resource": "arn:aws:s3:::your-clinical-notes-bucket/*"
-    }
-  ]
+   "Version": "2012-10-17",
+   "Statement": [
+      {
+         "Sid": "ClinicalNotesAccess",
+         "Effect": "Allow",
+         "Principal": {
+            "AWS": "arn:aws:iam::YOUR-ACCOUNT:user/clinical-notes-user"
+         },
+         "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+         "Resource": "arn:aws:s3:::your-clinical-notes-bucket/*"
+      }
+   ]
 }
 ```
 
@@ -199,22 +199,22 @@ Example `ecosystem.config.js`:
 
 ```javascript
 module.exports = {
-  apps: [
-    {
-      name: 'clinical-notes-api',
-      script: './backend/dist/server.js',
-      instances: 'max',
-      exec_mode: 'cluster',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 3000,
+   apps: [
+      {
+         name: 'clinical-notes-api',
+         script: './backend/dist/server.js',
+         instances: 'max',
+         exec_mode: 'cluster',
+         env: {
+            NODE_ENV: 'production',
+            PORT: 3000,
+         },
+         error_file: './logs/clinical-notes-error.log',
+         out_file: './logs/clinical-notes-out.log',
+         log_file: './logs/clinical-notes-combined.log',
+         time: true,
       },
-      error_file: './logs/clinical-notes-error.log',
-      out_file: './logs/clinical-notes-out.log',
-      log_file: './logs/clinical-notes-combined.log',
-      time: true,
-    },
-  ],
+   ],
 };
 ```
 
@@ -380,27 +380,27 @@ Example `load-test-config.yml`:
 
 ```yaml
 config:
-  target: 'https://your-domain.com'
-  phases:
-    - duration: 60
-      arrivalRate: 10
-  defaults:
-    headers:
-      Authorization: 'Bearer YOUR_TEST_TOKEN'
+   target: 'https://your-domain.com'
+   phases:
+      - duration: 60
+        arrivalRate: 10
+   defaults:
+      headers:
+         Authorization: 'Bearer YOUR_TEST_TOKEN'
 
 scenarios:
-  - name: 'Clinical Notes API'
-    requests:
-      - get:
-          url: '/api/notes'
-      - post:
-          url: '/api/notes'
-          json:
-            patient: 'test-patient-id'
-            type: 'consultation'
-            title: 'Load Test Note'
-            content:
-              subjective: 'Test content'
+   - name: 'Clinical Notes API'
+     requests:
+        - get:
+             url: '/api/notes'
+        - post:
+             url: '/api/notes'
+             json:
+                patient: 'test-patient-id'
+                type: 'consultation'
+                title: 'Load Test Note'
+                content:
+                   subjective: 'Test content'
 ```
 
 ## Monitoring and Maintenance
@@ -425,31 +425,31 @@ pm2 restart clinical-notes-api
 ```javascript
 // Add to your Express app
 app.get('/api/health/clinical-notes', async (req, res) => {
-  try {
-    // Check database connectivity
-    await mongoose.connection.db.admin().ping();
+   try {
+      // Check database connectivity
+      await mongoose.connection.db.admin().ping();
 
-    // Check file storage
-    const storageHealthy = await checkStorageHealth();
+      // Check file storage
+      const storageHealthy = await checkStorageHealth();
 
-    // Check cache
-    const cacheHealthy = await checkCacheHealth();
+      // Check cache
+      const cacheHealthy = await checkCacheHealth();
 
-    res.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      services: {
-        database: 'healthy',
-        storage: storageHealthy ? 'healthy' : 'unhealthy',
-        cache: cacheHealthy ? 'healthy' : 'unhealthy',
-      },
-    });
-  } catch (error) {
-    res.status(503).json({
-      status: 'unhealthy',
-      error: error.message,
-    });
-  }
+      res.json({
+         status: 'healthy',
+         timestamp: new Date().toISOString(),
+         services: {
+            database: 'healthy',
+            storage: storageHealthy ? 'healthy' : 'unhealthy',
+            cache: cacheHealthy ? 'healthy' : 'unhealthy',
+         },
+      });
+   } catch (error) {
+      res.status(503).json({
+         status: 'unhealthy',
+         error: error.message,
+      });
+   }
 });
 ```
 
@@ -563,11 +563,11 @@ sudo ufw enable
 const rateLimit = require('express-rate-limit');
 
 const clinicalNotesLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP',
-  standardHeaders: true,
-  legacyHeaders: false,
+   windowMs: 15 * 60 * 1000, // 15 minutes
+   max: 100, // limit each IP to 100 requests per windowMs
+   message: 'Too many requests from this IP',
+   standardHeaders: true,
+   legacyHeaders: false,
 });
 
 app.use('/api/notes', clinicalNotesLimiter);
@@ -580,27 +580,27 @@ app.use('/api/notes', clinicalNotesLimiter);
 const { body, validationResult } = require('express-validator');
 
 const validateClinicalNote = [
-  body('title').isLength({ min: 1, max: 200 }).trim().escape(),
-  body('content.subjective').optional().isLength({ max: 5000 }).trim(),
-  body('content.objective').optional().isLength({ max: 5000 }).trim(),
-  body('content.assessment').optional().isLength({ max: 5000 }).trim(),
-  body('content.plan').optional().isLength({ max: 5000 }).trim(),
-  body('type').isIn([
-    'consultation',
-    'medication_review',
-    'follow_up',
-    'adverse_event',
-    'other',
-  ]),
-  body('priority').isIn(['low', 'medium', 'high']),
-  body('isConfidential').isBoolean(),
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    next();
-  },
+   body('title').isLength({ min: 1, max: 200 }).trim().escape(),
+   body('content.subjective').optional().isLength({ max: 5000 }).trim(),
+   body('content.objective').optional().isLength({ max: 5000 }).trim(),
+   body('content.assessment').optional().isLength({ max: 5000 }).trim(),
+   body('content.plan').optional().isLength({ max: 5000 }).trim(),
+   body('type').isIn([
+      'consultation',
+      'medication_review',
+      'follow_up',
+      'adverse_event',
+      'other',
+   ]),
+   body('priority').isIn(['low', 'medium', 'high']),
+   body('isConfidential').isBoolean(),
+   (req, res, next) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+         return res.status(400).json({ errors: errors.array() });
+      }
+      next();
+   },
 ];
 ```
 
@@ -611,20 +611,20 @@ const validateClinicalNote = [
 const crypto = require('crypto');
 
 const encryptFile = (buffer, key) => {
-  const algorithm = 'aes-256-gcm';
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipher(algorithm, key, iv);
+   const algorithm = 'aes-256-gcm';
+   const iv = crypto.randomBytes(16);
+   const cipher = crypto.createCipher(algorithm, key, iv);
 
-  let encrypted = cipher.update(buffer);
-  encrypted = Buffer.concat([encrypted, cipher.final()]);
+   let encrypted = cipher.update(buffer);
+   encrypted = Buffer.concat([encrypted, cipher.final()]);
 
-  const authTag = cipher.getAuthTag();
+   const authTag = cipher.getAuthTag();
 
-  return {
-    encrypted,
-    iv,
-    authTag,
-  };
+   return {
+      encrypted,
+      iv,
+      authTag,
+   };
 };
 ```
 

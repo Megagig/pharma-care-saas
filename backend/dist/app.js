@@ -63,7 +63,7 @@ app.use((0, cors_1.default)({
     ],
     credentials: true,
     exposedHeaders: ['Content-Type', 'Authorization'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 }));
 const securityMonitoring_1 = require("./middlewares/securityMonitoring");
 app.use(securityMonitoring_1.blockSuspiciousIPs);

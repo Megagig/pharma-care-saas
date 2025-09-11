@@ -4,10 +4,10 @@ import { AuthRequest } from '../middlewares/auth';
 
 // Import services
 import ClinicalInterventionService, {
-    CreateInterventionDTO,
-    UpdateInterventionDTO,
-    InterventionFilters,
-    PaginatedResult
+   CreateInterventionDTO,
+   UpdateInterventionDTO,
+   InterventionFilters,
+   PaginatedResult,
 } from '../services/clinicalInterventionService';
 
 // Import models
@@ -15,24 +15,27 @@ import { IClinicalIntervention } from '../models/ClinicalIntervention';
 
 // Import utilities
 import {
-    sendSuccess,
-    sendError,
-    asyncHandler,
-    getRequestContext,
-    createValidationError,
-    createNotFoundError,
-    createBusinessRuleError,
-    PatientManagementError,
-    ErrorCode
+   sendSuccess,
+   sendError,
+   asyncHandler,
+   getRequestContext,
+   createValidationError,
+   createNotFoundError,
+   createBusinessRuleError,
+   PatientManagementError,
+   ErrorCode,
 } from '../utils/responseHelpers';
 import logger from '../utils/logger';
 
 // Helper function to validate and convert ObjectId
-const validateObjectId = (id: string | undefined, fieldName: string): mongoose.Types.ObjectId => {
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-        throw createValidationError(`Invalid ${fieldName} format`);
-    }
-    return new mongoose.Types.ObjectId(id);
+const validateObjectId = (
+   id: string | undefined,
+   fieldName: string
+): mongoose.Types.ObjectId => {
+   if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      throw createValidationError(`Invalid ${fieldName} format`);
+   }
+   return new mongoose.Types.ObjectId(id);
 };
 
 /**
@@ -42,17 +45,17 @@ const validateObjectId = (id: string | undefined, fieldName: string): mongoose.T
 
 // Helper function to safely convert context to ObjectIds
 const getValidatedContext = (req: AuthRequest) => {
-    const context = getRequestContext(req);
+   const context = getRequestContext(req);
 
-    if (!context.userId || !context.workplaceId) {
-        throw createValidationError('Missing user or workplace context');
-    }
+   if (!context.userId || !context.workplaceId) {
+      throw createValidationError('Missing user or workplace context');
+   }
 
-    return {
-        ...context,
-        userIdObj: new mongoose.Types.ObjectId(context.userId),
-        workplaceIdObj: new mongoose.Types.ObjectId(context.workplaceId)
-    };
+   return {
+      ...context,
+      userIdObj: new mongoose.Types.ObjectId(context.userId),
+      workplaceIdObj: new mongoose.Types.ObjectId(context.workplaceId),
+   };
 };
 
 // Type for validated context
@@ -67,87 +70,92 @@ type ValidatedContext = ReturnType<typeof getValidatedContext>;
  * List interventions with filtering, sorting, and pagination
  */
 export const getClinicalInterventions = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
 
-        // Extract query parameters
-        const {
-            page = 1,
-            limit = 20,
-            patientId,
-            category,
-            priority,
-            status,
-            identifiedBy,
-            assignedTo,
-            dateFrom,
-            dateTo,
-            search,
-            sortBy = 'identifiedDate',
-            sortOrder = 'desc'
-        } = req.query as any;
+      // Extract query parameters
+      const {
+         page = 1,
+         limit = 20,
+         patientId,
+         category,
+         priority,
+         status,
+         identifiedBy,
+         assignedTo,
+         dateFrom,
+         dateTo,
+         search,
+         sortBy = 'identifiedDate',
+         sortOrder = 'desc',
+      } = req.query as any;
 
-        // Build filters
-        const filters: InterventionFilters = {
-            workplaceId: context.workplaceIdObj,
-            page: Math.max(1, parseInt(page) || 1),
-            limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
-            sortBy,
-            sortOrder: sortOrder === 'asc' ? 'asc' : 'desc'
-        };
+      // Build filters
+      const filters: InterventionFilters = {
+         workplaceId: context.workplaceIdObj,
+         page: Math.max(1, parseInt(page) || 1),
+         limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
+         sortBy,
+         sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+      };
 
-        // Add optional filters
-        if (patientId) {
-            if (!mongoose.Types.ObjectId.isValid(patientId)) {
-                throw createValidationError('Invalid patient ID format');
-            }
-            filters.patientId = new mongoose.Types.ObjectId(patientId);
-        }
+      // Add optional filters
+      if (patientId) {
+         if (!mongoose.Types.ObjectId.isValid(patientId)) {
+            throw createValidationError('Invalid patient ID format');
+         }
+         filters.patientId = new mongoose.Types.ObjectId(patientId);
+      }
 
-        if (category) filters.category = category;
-        if (priority) filters.priority = priority;
-        if (status) filters.status = status;
-        if (search) filters.search = search;
+      if (category) filters.category = category;
+      if (priority) filters.priority = priority;
+      if (status) filters.status = status;
+      if (search) filters.search = search;
 
-        if (identifiedBy) {
-            if (!mongoose.Types.ObjectId.isValid(identifiedBy)) {
-                throw createValidationError('Invalid identifiedBy ID format');
-            }
-            filters.identifiedBy = new mongoose.Types.ObjectId(identifiedBy);
-        }
+      if (identifiedBy) {
+         if (!mongoose.Types.ObjectId.isValid(identifiedBy)) {
+            throw createValidationError('Invalid identifiedBy ID format');
+         }
+         filters.identifiedBy = new mongoose.Types.ObjectId(identifiedBy);
+      }
 
-        if (assignedTo) {
-            if (!mongoose.Types.ObjectId.isValid(assignedTo)) {
-                throw createValidationError('Invalid assignedTo ID format');
-            }
-            filters.assignedTo = new mongoose.Types.ObjectId(assignedTo);
-        }
+      if (assignedTo) {
+         if (!mongoose.Types.ObjectId.isValid(assignedTo)) {
+            throw createValidationError('Invalid assignedTo ID format');
+         }
+         filters.assignedTo = new mongoose.Types.ObjectId(assignedTo);
+      }
 
-        // Parse date filters
-        if (dateFrom) {
-            const fromDate = new Date(dateFrom);
-            if (isNaN(fromDate.getTime())) {
-                throw createValidationError('Invalid dateFrom format');
-            }
-            filters.dateFrom = fromDate;
-        }
+      // Parse date filters
+      if (dateFrom) {
+         const fromDate = new Date(dateFrom);
+         if (isNaN(fromDate.getTime())) {
+            throw createValidationError('Invalid dateFrom format');
+         }
+         filters.dateFrom = fromDate;
+      }
 
-        if (dateTo) {
-            const toDate = new Date(dateTo);
-            if (isNaN(toDate.getTime())) {
-                throw createValidationError('Invalid dateTo format');
-            }
-            filters.dateTo = toDate;
-        }
+      if (dateTo) {
+         const toDate = new Date(dateTo);
+         if (isNaN(toDate.getTime())) {
+            throw createValidationError('Invalid dateTo format');
+         }
+         filters.dateTo = toDate;
+      }
 
-        // Get interventions from service
-        const result: PaginatedResult<IClinicalIntervention> = await ClinicalInterventionService.getInterventions(filters);
+      // Get interventions from service
+      const result: PaginatedResult<IClinicalIntervention> =
+         await ClinicalInterventionService.getInterventions(filters);
 
-        sendSuccess(res, {
+      sendSuccess(
+         res,
+         {
             interventions: result.data,
-            pagination: result.pagination
-        }, 'Interventions retrieved successfully');
-    }
+            pagination: result.pagination,
+         },
+         'Interventions retrieved successfully'
+      );
+   }
 );
 
 /**
@@ -155,74 +163,91 @@ export const getClinicalInterventions = asyncHandler(
  * Create new clinical intervention
  */
 export const createClinicalIntervention = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
 
-        // Extract and validate request data
-        const {
-            patientId,
-            category,
-            priority,
-            issueDescription,
-            strategies,
-            estimatedDuration,
-            relatedMTRId,
-            relatedDTPIds
-        } = req.body;
+      // Extract and validate request data
+      const {
+         patientId,
+         category,
+         priority,
+         issueDescription,
+         strategies,
+         estimatedDuration,
+         relatedMTRId,
+         relatedDTPIds,
+      } = req.body;
 
-        // Validate required fields
-        if (!patientId || !category || !priority || !issueDescription) {
-            throw createValidationError('Missing required fields: patientId, category, priority, issueDescription');
-        }
+      // Validate required fields
+      if (!patientId || !category || !priority || !issueDescription) {
+         throw createValidationError(
+            'Missing required fields: patientId, category, priority, issueDescription'
+         );
+      }
 
-        // Validate ObjectIds
-        if (!mongoose.Types.ObjectId.isValid(patientId)) {
-            throw createValidationError('Invalid patient ID format');
-        }
+      // Validate ObjectIds
+      if (!mongoose.Types.ObjectId.isValid(patientId)) {
+         throw createValidationError('Invalid patient ID format');
+      }
 
-        if (relatedMTRId && !mongoose.Types.ObjectId.isValid(relatedMTRId)) {
-            throw createValidationError('Invalid MTR ID format');
-        }
+      if (relatedMTRId && !mongoose.Types.ObjectId.isValid(relatedMTRId)) {
+         throw createValidationError('Invalid MTR ID format');
+      }
 
-        if (relatedDTPIds && Array.isArray(relatedDTPIds)) {
-            for (const dtpId of relatedDTPIds) {
-                if (!mongoose.Types.ObjectId.isValid(dtpId)) {
-                    throw createValidationError('Invalid DTP ID format');
-                }
+      if (relatedDTPIds && Array.isArray(relatedDTPIds)) {
+         for (const dtpId of relatedDTPIds) {
+            if (!mongoose.Types.ObjectId.isValid(dtpId)) {
+               throw createValidationError('Invalid DTP ID format');
             }
-        }
+         }
+      }
 
-        // Build intervention data
-        const interventionData: CreateInterventionDTO = {
-            patientId: new mongoose.Types.ObjectId(patientId),
-            category,
-            priority,
-            issueDescription,
-            identifiedBy: context.userIdObj,
-            workplaceId: context.workplaceIdObj,
-            strategies: strategies || [],
-            estimatedDuration: estimatedDuration ? parseInt(estimatedDuration) : undefined,
-            relatedMTRId: relatedMTRId ? new mongoose.Types.ObjectId(relatedMTRId) : undefined,
-            relatedDTPIds: relatedDTPIds ? relatedDTPIds.map((id: string) => new mongoose.Types.ObjectId(id)) : []
-        };
+      // Build intervention data
+      const interventionData: CreateInterventionDTO = {
+         patientId: new mongoose.Types.ObjectId(patientId),
+         category,
+         priority,
+         issueDescription,
+         identifiedBy: context.userIdObj,
+         workplaceId: context.workplaceIdObj,
+         strategies: strategies || [],
+         estimatedDuration: estimatedDuration
+            ? parseInt(estimatedDuration)
+            : undefined,
+         relatedMTRId: relatedMTRId
+            ? new mongoose.Types.ObjectId(relatedMTRId)
+            : undefined,
+         relatedDTPIds: relatedDTPIds
+            ? relatedDTPIds.map((id: string) => new mongoose.Types.ObjectId(id))
+            : [],
+      };
 
-        // Create intervention
-        const intervention = await ClinicalInterventionService.createIntervention(interventionData);
+      // Create intervention
+      const intervention =
+         await ClinicalInterventionService.createIntervention(interventionData);
 
-        // Log access for audit trail
-        await ClinicalInterventionService.logInterventionAccess(
-            intervention._id.toString(),
-            context.userIdObj,
-            context.workplaceIdObj,
-            'create',
-            req,
-            { category: interventionData.category, priority: interventionData.priority }
-        );
+      // Log access for audit trail
+      await ClinicalInterventionService.logInterventionAccess(
+         intervention._id.toString(),
+         context.userIdObj,
+         context.workplaceIdObj,
+         'create',
+         req,
+         {
+            category: interventionData.category,
+            priority: interventionData.priority,
+         }
+      );
 
-        sendSuccess(res, {
-            intervention
-        }, 'Clinical intervention created successfully', 201);
-    }
+      sendSuccess(
+         res,
+         {
+            intervention,
+         },
+         'Clinical intervention created successfully',
+         201
+      );
+   }
 );
 
 /**
@@ -230,38 +255,43 @@ export const createClinicalIntervention = asyncHandler(
  * Get intervention details by ID
  */
 export const getClinicalIntervention = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getRequestContext(req);
-        const { id } = req.params;
+   async (req: AuthRequest, res: Response) => {
+      const context = getRequestContext(req);
+      const { id } = req.params;
 
-        // Validate and convert IDs
-        const interventionId = validateObjectId(id, 'intervention ID');
-        const workplaceId = validateObjectId(context.workplaceId, 'workplace ID');
+      // Validate and convert IDs
+      const interventionId = validateObjectId(id, 'intervention ID');
+      const workplaceId = validateObjectId(context.workplaceId, 'workplace ID');
 
-        // Get intervention
-        const intervention = await ClinicalInterventionService.getInterventionById(
+      // Get intervention
+      const intervention =
+         await ClinicalInterventionService.getInterventionById(
             interventionId.toString(),
             workplaceId
-        );
+         );
 
-        // Log access for audit trail
-        await ClinicalInterventionService.logActivity(
-            'VIEW_INTERVENTION',
-            id || '',
-            new mongoose.Types.ObjectId(context.userId),
-            new mongoose.Types.ObjectId(context.workplaceId),
-            {
-                interventionNumber: intervention.interventionNumber,
-                status: intervention.status,
-                category: intervention.category
-            },
-            req
-        );
+      // Log access for audit trail
+      await ClinicalInterventionService.logActivity(
+         'VIEW_INTERVENTION',
+         id || '',
+         new mongoose.Types.ObjectId(context.userId),
+         new mongoose.Types.ObjectId(context.workplaceId),
+         {
+            interventionNumber: intervention.interventionNumber,
+            status: intervention.status,
+            category: intervention.category,
+         },
+         req
+      );
 
-        sendSuccess(res, {
-            intervention
-        }, 'Intervention retrieved successfully');
-    }
+      sendSuccess(
+         res,
+         {
+            intervention,
+         },
+         'Intervention retrieved successfully'
+      );
+   }
 );
 
 /**
@@ -269,67 +299,74 @@ export const getClinicalIntervention = asyncHandler(
  * Update intervention with partial updates
  */
 export const updateClinicalIntervention = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { id } = req.params;
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { id } = req.params;
 
-        // Validate ID format
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            throw createValidationError('Invalid intervention ID format');
-        }
+      // Validate ID format
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+         throw createValidationError('Invalid intervention ID format');
+      }
 
-        // Extract update data
-        const updates: UpdateInterventionDTO = {};
-        const {
-            category,
-            priority,
-            issueDescription,
-            status,
-            implementationNotes,
-            estimatedDuration,
-            outcomes,
-            followUp
-        } = req.body;
+      // Extract update data
+      const updates: UpdateInterventionDTO = {};
+      const {
+         category,
+         priority,
+         issueDescription,
+         status,
+         implementationNotes,
+         estimatedDuration,
+         outcomes,
+         followUp,
+      } = req.body;
 
-        // Build updates object with only provided fields
-        if (category !== undefined) updates.category = category;
-        if (priority !== undefined) updates.priority = priority;
-        if (issueDescription !== undefined) updates.issueDescription = issueDescription;
-        if (status !== undefined) updates.status = status;
-        if (implementationNotes !== undefined) updates.implementationNotes = implementationNotes;
-        if (estimatedDuration !== undefined) updates.estimatedDuration = parseInt(estimatedDuration);
-        if (outcomes !== undefined) updates.outcomes = outcomes;
-        if (followUp !== undefined) updates.followUp = followUp;
+      // Build updates object with only provided fields
+      if (category !== undefined) updates.category = category;
+      if (priority !== undefined) updates.priority = priority;
+      if (issueDescription !== undefined)
+         updates.issueDescription = issueDescription;
+      if (status !== undefined) updates.status = status;
+      if (implementationNotes !== undefined)
+         updates.implementationNotes = implementationNotes;
+      if (estimatedDuration !== undefined)
+         updates.estimatedDuration = parseInt(estimatedDuration);
+      if (outcomes !== undefined) updates.outcomes = outcomes;
+      if (followUp !== undefined) updates.followUp = followUp;
 
-        // Validate that at least one field is being updated
-        if (Object.keys(updates).length === 0) {
-            throw createValidationError('No valid fields provided for update');
-        }
+      // Validate that at least one field is being updated
+      if (Object.keys(updates).length === 0) {
+         throw createValidationError('No valid fields provided for update');
+      }
 
-        // Update intervention
-        const intervention = await ClinicalInterventionService.updateIntervention(
-            id,
-            updates,
-            context.userIdObj,
-            context.workplaceIdObj
-        );
+      // Update intervention
+      const intervention = await ClinicalInterventionService.updateIntervention(
+         id,
+         updates,
+         context.userIdObj,
+         context.workplaceIdObj
+      );
 
-        // Log access for audit trail
-        await ClinicalInterventionService.logActivity(
-            'UPDATE_INTERVENTION',
-            id,
-            context.userIdObj,
-            context.workplaceIdObj,
-            {
-                updatedFields: Object.keys(updates),
-                statusChange: updates.status ? { to: updates.status } : undefined
-            }
-        );
+      // Log access for audit trail
+      await ClinicalInterventionService.logActivity(
+         'UPDATE_INTERVENTION',
+         id,
+         context.userIdObj,
+         context.workplaceIdObj,
+         {
+            updatedFields: Object.keys(updates),
+            statusChange: updates.status ? { to: updates.status } : undefined,
+         }
+      );
 
-        sendSuccess(res, {
-            intervention
-        }, 'Intervention updated successfully');
-    }
+      sendSuccess(
+         res,
+         {
+            intervention,
+         },
+         'Intervention updated successfully'
+      );
+   }
 );
 
 /**
@@ -337,40 +374,46 @@ export const updateClinicalIntervention = asyncHandler(
  * Soft delete intervention
  */
 export const deleteClinicalIntervention = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { id } = req.params;
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { id } = req.params;
 
-        // Validate ID format
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            throw createValidationError('Invalid intervention ID format');
-        }
+      // Validate ID format
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+         throw createValidationError('Invalid intervention ID format');
+      }
 
-        // Delete intervention
-        const success = await ClinicalInterventionService.deleteIntervention(
-            id,
-            context.userIdObj,
-            context.workplaceIdObj
-        );
+      // Delete intervention
+      const success = await ClinicalInterventionService.deleteIntervention(
+         id,
+         context.userIdObj,
+         context.workplaceIdObj
+      );
 
-        if (!success) {
-            throw createNotFoundError('Intervention not found or could not be deleted');
-        }
+      if (!success) {
+         throw createNotFoundError(
+            'Intervention not found or could not be deleted'
+         );
+      }
 
-        // Log access for audit trail
-        await ClinicalInterventionService.logActivity(
-            'DELETE_INTERVENTION',
-            id,
-            context.userIdObj,
-            context.workplaceIdObj,
-            { reason: 'soft_delete' },
-            req
-        );
+      // Log access for audit trail
+      await ClinicalInterventionService.logActivity(
+         'DELETE_INTERVENTION',
+         id,
+         context.userIdObj,
+         context.workplaceIdObj,
+         { reason: 'soft_delete' },
+         req
+      );
 
-        sendSuccess(res, {
-            deleted: true
-        }, 'Intervention deleted successfully');
-    }
+      sendSuccess(
+         res,
+         {
+            deleted: true,
+         },
+         'Intervention deleted successfully'
+      );
+   }
 );
 
 // ===============================
@@ -382,45 +425,56 @@ export const deleteClinicalIntervention = asyncHandler(
  * Add intervention strategy
  */
 export const addInterventionStrategy = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { id } = req.params;
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { id } = req.params;
 
-        // Validate ID format
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            throw createValidationError('Invalid intervention ID format');
-        }
+      // Validate ID format
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+         throw createValidationError('Invalid intervention ID format');
+      }
 
-        // Extract strategy data
-        const {
-            type,
-            description,
-            rationale,
-            expectedOutcome,
-            priority = 'secondary'
-        } = req.body;
+      // Extract strategy data
+      const {
+         type,
+         description,
+         rationale,
+         expectedOutcome,
+         priority = 'secondary',
+      } = req.body;
 
-        // Validate required fields
-        if (!type || !description || !rationale || !expectedOutcome) {
-            throw createValidationError('Missing required strategy fields: type, description, rationale, expectedOutcome');
-        }
+      // Validate required fields
+      if (!type || !description || !rationale || !expectedOutcome) {
+         throw createValidationError(
+            'Missing required strategy fields: type, description, rationale, expectedOutcome'
+         );
+      }
 
-        // Build strategy object
-        const strategy = {
-            type,
-            description,
-            rationale,
-            expectedOutcome,
-            priority
-        };
+      // Build strategy object
+      const strategy = {
+         type,
+         description,
+         rationale,
+         expectedOutcome,
+         priority,
+      };
 
-        // Add strategy through service
-        const intervention = await ClinicalInterventionService.addStrategy(id!, strategy, context.userIdObj, context.workplaceIdObj);
+      // Add strategy through service
+      const intervention = await ClinicalInterventionService.addStrategy(
+         id!,
+         strategy,
+         context.userIdObj,
+         context.workplaceIdObj
+      );
 
-        sendSuccess(res, {
-            intervention
-        }, 'Strategy added successfully');
-    }
+      sendSuccess(
+         res,
+         {
+            intervention,
+         },
+         'Strategy added successfully'
+      );
+   }
 );
 
 /**
@@ -428,54 +482,56 @@ export const addInterventionStrategy = asyncHandler(
  * Update intervention strategy
  */
 export const updateInterventionStrategy = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { id, strategyId } = req.params;
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { id, strategyId } = req.params;
 
-        // Validate ID formats
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            throw createValidationError('Invalid intervention ID format');
-        }
+      // Validate ID formats
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+         throw createValidationError('Invalid intervention ID format');
+      }
 
-        if (!strategyId || !mongoose.Types.ObjectId.isValid(strategyId)) {
-            throw createValidationError('Invalid strategy ID format');
-        }
+      if (!strategyId || !mongoose.Types.ObjectId.isValid(strategyId)) {
+         throw createValidationError('Invalid strategy ID format');
+      }
 
-        // Extract update data
-        const {
-            type,
-            description,
-            rationale,
-            expectedOutcome,
-            priority
-        } = req.body;
+      // Extract update data
+      const { type, description, rationale, expectedOutcome, priority } =
+         req.body;
 
-        // Build updates object
-        const updates: any = {};
-        if (type !== undefined) updates.type = type;
-        if (description !== undefined) updates.description = description;
-        if (rationale !== undefined) updates.rationale = rationale;
-        if (expectedOutcome !== undefined) updates.expectedOutcome = expectedOutcome;
-        if (priority !== undefined) updates.priority = priority;
+      // Build updates object
+      const updates: any = {};
+      if (type !== undefined) updates.type = type;
+      if (description !== undefined) updates.description = description;
+      if (rationale !== undefined) updates.rationale = rationale;
+      if (expectedOutcome !== undefined)
+         updates.expectedOutcome = expectedOutcome;
+      if (priority !== undefined) updates.priority = priority;
 
-        // Validate that at least one field is being updated
-        if (Object.keys(updates).length === 0) {
-            throw createValidationError('No valid fields provided for strategy update');
-        }
+      // Validate that at least one field is being updated
+      if (Object.keys(updates).length === 0) {
+         throw createValidationError(
+            'No valid fields provided for strategy update'
+         );
+      }
 
-        // Update strategy through service
-        const intervention = await ClinicalInterventionService.updateStrategy(
-            id!,
-            strategyId!,
-            updates,
-            context.userIdObj,
-            context.workplaceIdObj
-        );
+      // Update strategy through service
+      const intervention = await ClinicalInterventionService.updateStrategy(
+         id!,
+         strategyId!,
+         updates,
+         context.userIdObj,
+         context.workplaceIdObj
+      );
 
-        sendSuccess(res, {
-            intervention
-        }, 'Strategy updated successfully');
-    }
+      sendSuccess(
+         res,
+         {
+            intervention,
+         },
+         'Strategy updated successfully'
+      );
+   }
 );
 
 /**
@@ -483,54 +539,55 @@ export const updateInterventionStrategy = asyncHandler(
  * Assign team member to intervention
  */
 export const assignTeamMember = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { id } = req.params;
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { id } = req.params;
 
-        // Validate ID format
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            throw createValidationError('Invalid intervention ID format');
-        }
+      // Validate ID format
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+         throw createValidationError('Invalid intervention ID format');
+      }
 
-        // Extract assignment data
-        const {
-            userId,
-            role,
-            task,
-            notes
-        } = req.body;
+      // Extract assignment data
+      const { userId, role, task, notes } = req.body;
 
-        // Validate required fields
-        if (!userId || !role || !task) {
-            throw createValidationError('Missing required assignment fields: userId, role, task');
-        }
+      // Validate required fields
+      if (!userId || !role || !task) {
+         throw createValidationError(
+            'Missing required assignment fields: userId, role, task'
+         );
+      }
 
-        // Validate user ID format
-        if (!mongoose.Types.ObjectId.isValid(userId)) {
-            throw createValidationError('Invalid user ID format');
-        }
+      // Validate user ID format
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+         throw createValidationError('Invalid user ID format');
+      }
 
-        // Build assignment object
-        const assignment = {
-            userId: new mongoose.Types.ObjectId(userId),
-            role,
-            task,
-            status: 'pending' as const,
-            notes
-        };
+      // Build assignment object
+      const assignment = {
+         userId: new mongoose.Types.ObjectId(userId),
+         role,
+         task,
+         status: 'pending' as const,
+         notes,
+      };
 
-        // Assign team member through service
-        const intervention = await ClinicalInterventionService.assignTeamMember(
-            id!,
-            assignment,
-            context.userIdObj,
-            context.workplaceIdObj
-        );
+      // Assign team member through service
+      const intervention = await ClinicalInterventionService.assignTeamMember(
+         id!,
+         assignment,
+         context.userIdObj,
+         context.workplaceIdObj
+      );
 
-        sendSuccess(res, {
-            intervention
-        }, 'Team member assigned successfully');
-    }
+      sendSuccess(
+         res,
+         {
+            intervention,
+         },
+         'Team member assigned successfully'
+      );
+   }
 );
 
 /**
@@ -538,41 +595,48 @@ export const assignTeamMember = asyncHandler(
  * Update assignment status and notes
  */
 export const updateAssignment = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { id, assignmentId } = req.params;
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { id, assignmentId } = req.params;
 
-        // Validate ID formats
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            throw createValidationError('Invalid intervention ID format');
-        }
+      // Validate ID formats
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+         throw createValidationError('Invalid intervention ID format');
+      }
 
-        if (!assignmentId || !mongoose.Types.ObjectId.isValid(assignmentId)) {
-            throw createValidationError('Invalid assignment ID format');
-        }
+      if (!assignmentId || !mongoose.Types.ObjectId.isValid(assignmentId)) {
+         throw createValidationError('Invalid assignment ID format');
+      }
 
-        // Extract update data
-        const { status, notes } = req.body;
+      // Extract update data
+      const { status, notes } = req.body;
 
-        // Validate required fields
-        if (!status) {
-            throw createValidationError('Status is required for assignment update');
-        }
+      // Validate required fields
+      if (!status) {
+         throw createValidationError(
+            'Status is required for assignment update'
+         );
+      }
 
-        // Update assignment through service
-        const intervention = await ClinicalInterventionService.updateAssignmentStatus(
+      // Update assignment through service
+      const intervention =
+         await ClinicalInterventionService.updateAssignmentStatus(
             id!,
             new mongoose.Types.ObjectId(assignmentId!),
             status,
             notes,
             context.userIdObj,
             context.workplaceIdObj
-        );
+         );
 
-        sendSuccess(res, {
-            intervention
-        }, 'Assignment updated successfully');
-    }
+      sendSuccess(
+         res,
+         {
+            intervention,
+         },
+         'Assignment updated successfully'
+      );
+   }
 );
 
 /**
@@ -580,50 +644,54 @@ export const updateAssignment = asyncHandler(
  * Record intervention outcomes
  */
 export const recordOutcome = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { id } = req.params;
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { id } = req.params;
 
-        // Validate ID format
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            throw createValidationError('Invalid intervention ID format');
-        }
+      // Validate ID format
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+         throw createValidationError('Invalid intervention ID format');
+      }
 
-        // Extract outcome data
-        const {
-            patientResponse,
-            clinicalParameters,
-            adverseEffects,
-            additionalIssues,
-            successMetrics
-        } = req.body;
+      // Extract outcome data
+      const {
+         patientResponse,
+         clinicalParameters,
+         adverseEffects,
+         additionalIssues,
+         successMetrics,
+      } = req.body;
 
-        // Validate required fields
-        if (!patientResponse) {
-            throw createValidationError('Patient response is required');
-        }
+      // Validate required fields
+      if (!patientResponse) {
+         throw createValidationError('Patient response is required');
+      }
 
-        // Build outcome object
-        const outcome = {
-            patientResponse,
-            clinicalParameters: clinicalParameters || [],
-            adverseEffects,
-            additionalIssues,
-            successMetrics: successMetrics || {}
-        };
+      // Build outcome object
+      const outcome = {
+         patientResponse,
+         clinicalParameters: clinicalParameters || [],
+         adverseEffects,
+         additionalIssues,
+         successMetrics: successMetrics || {},
+      };
 
-        // Record outcome through service
-        const intervention = await ClinicalInterventionService.recordOutcome(
-            id,
-            outcome,
-            context.userIdObj,
-            context.workplaceIdObj
-        );
+      // Record outcome through service
+      const intervention = await ClinicalInterventionService.recordOutcome(
+         id,
+         outcome,
+         context.userIdObj,
+         context.workplaceIdObj
+      );
 
-        sendSuccess(res, {
-            intervention
-        }, 'Outcome recorded successfully');
-    }
+      sendSuccess(
+         res,
+         {
+            intervention,
+         },
+         'Outcome recorded successfully'
+      );
+   }
 );
 
 /**
@@ -631,66 +699,67 @@ export const recordOutcome = asyncHandler(
  * Schedule follow-up for intervention
  */
 export const scheduleFollowUp = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { id } = req.params;
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { id } = req.params;
 
-        // Validate ID format
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            throw createValidationError('Invalid intervention ID format');
-        }
+      // Validate ID format
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+         throw createValidationError('Invalid intervention ID format');
+      }
 
-        // Extract follow-up data
-        const {
-            required,
-            scheduledDate,
-            notes,
-            nextReviewDate
-        } = req.body;
+      // Extract follow-up data
+      const { required, scheduledDate, notes, nextReviewDate } = req.body;
 
-        // Validate required fields
-        if (required === undefined) {
-            throw createValidationError('Follow-up required flag must be specified');
-        }
+      // Validate required fields
+      if (required === undefined) {
+         throw createValidationError(
+            'Follow-up required flag must be specified'
+         );
+      }
 
-        // Validate dates if provided
-        let parsedScheduledDate: Date | undefined;
-        let parsedNextReviewDate: Date | undefined;
+      // Validate dates if provided
+      let parsedScheduledDate: Date | undefined;
+      let parsedNextReviewDate: Date | undefined;
 
-        if (scheduledDate) {
-            parsedScheduledDate = new Date(scheduledDate);
-            if (isNaN(parsedScheduledDate.getTime())) {
-                throw createValidationError('Invalid scheduled date format');
-            }
-        }
+      if (scheduledDate) {
+         parsedScheduledDate = new Date(scheduledDate);
+         if (isNaN(parsedScheduledDate.getTime())) {
+            throw createValidationError('Invalid scheduled date format');
+         }
+      }
 
-        if (nextReviewDate) {
-            parsedNextReviewDate = new Date(nextReviewDate);
-            if (isNaN(parsedNextReviewDate.getTime())) {
-                throw createValidationError('Invalid next review date format');
-            }
-        }
+      if (nextReviewDate) {
+         parsedNextReviewDate = new Date(nextReviewDate);
+         if (isNaN(parsedNextReviewDate.getTime())) {
+            throw createValidationError('Invalid next review date format');
+         }
+      }
 
-        // Build follow-up object
-        const followUp = {
-            required,
-            scheduledDate: parsedScheduledDate,
-            notes,
-            nextReviewDate: parsedNextReviewDate
-        };
+      // Build follow-up object
+      const followUp = {
+         required,
+         scheduledDate: parsedScheduledDate,
+         notes,
+         nextReviewDate: parsedNextReviewDate,
+      };
 
-        // Schedule follow-up through service
-        const intervention = await ClinicalInterventionService.scheduleFollowUp(
-            id,
-            followUp,
-            context.userIdObj,
-            context.workplaceIdObj
-        );
+      // Schedule follow-up through service
+      const intervention = await ClinicalInterventionService.scheduleFollowUp(
+         id,
+         followUp,
+         context.userIdObj,
+         context.workplaceIdObj
+      );
 
-        sendSuccess(res, {
-            intervention
-        }, 'Follow-up scheduled successfully');
-    }
+      sendSuccess(
+         res,
+         {
+            intervention,
+         },
+         'Follow-up scheduled successfully'
+      );
+   }
 );
 
 // ===============================
@@ -702,97 +771,123 @@ export const scheduleFollowUp = asyncHandler(
  * Advanced search with multiple filter criteria
  */
 export const searchClinicalInterventions = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
 
-        // Extract advanced search parameters
-        const {
-            q, // General search query
-            patientName,
-            interventionNumber,
-            categories, // Array of categories
-            priorities, // Array of priorities
-            statuses, // Array of statuses
-            assignedUsers, // Array of user IDs
-            dateRange, // Object with from/to dates
-            outcomeTypes, // Array of outcome types
-            page = 1,
-            limit = 20,
-            sortBy = 'identifiedDate',
-            sortOrder = 'desc'
-        } = req.query as any;
+      // Extract advanced search parameters
+      const {
+         q, // General search query
+         patientName,
+         interventionNumber,
+         categories, // Array of categories
+         priorities, // Array of priorities
+         statuses, // Array of statuses
+         assignedUsers, // Array of user IDs
+         dateRange, // Object with from/to dates
+         outcomeTypes, // Array of outcome types
+         page = 1,
+         limit = 20,
+         sortBy = 'identifiedDate',
+         sortOrder = 'desc',
+      } = req.query as any;
 
-        // Build advanced filters
-        const filters: InterventionFilters = {
-            workplaceId: context.workplaceIdObj,
-            page: Math.max(1, parseInt(page) || 1),
-            limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
-            sortBy,
-            sortOrder: sortOrder === 'asc' ? 'asc' : 'desc'
-        };
+      // Build advanced filters
+      const filters: InterventionFilters = {
+         workplaceId: context.workplaceIdObj,
+         page: Math.max(1, parseInt(page) || 1),
+         limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
+         sortBy,
+         sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+      };
 
-        // Add search query
-        if (q) {
-            filters.search = q;
-        }
+      // Add search query
+      if (q) {
+         filters.search = q;
+      }
 
-        // Add category filter (multiple categories)
-        if (categories) {
-            const categoryArray = Array.isArray(categories) ? categories : [categories];
-            filters.category = categoryArray.length === 1 ? categoryArray[0] : { $in: categoryArray };
-        }
+      // Add category filter (multiple categories)
+      if (categories) {
+         const categoryArray = Array.isArray(categories)
+            ? categories
+            : [categories];
+         filters.category =
+            categoryArray.length === 1
+               ? categoryArray[0]
+               : { $in: categoryArray };
+      }
 
-        // Add priority filter (multiple priorities)
-        if (priorities) {
-            const priorityArray = Array.isArray(priorities) ? priorities : [priorities];
-            filters.priority = priorityArray.length === 1 ? priorityArray[0] : { $in: priorityArray };
-        }
+      // Add priority filter (multiple priorities)
+      if (priorities) {
+         const priorityArray = Array.isArray(priorities)
+            ? priorities
+            : [priorities];
+         filters.priority =
+            priorityArray.length === 1
+               ? priorityArray[0]
+               : { $in: priorityArray };
+      }
 
-        // Add status filter (multiple statuses)
-        if (statuses) {
-            const statusArray = Array.isArray(statuses) ? statuses : [statuses];
-            filters.status = statusArray.length === 1 ? statusArray[0] : { $in: statusArray };
-        }
+      // Add status filter (multiple statuses)
+      if (statuses) {
+         const statusArray = Array.isArray(statuses) ? statuses : [statuses];
+         filters.status =
+            statusArray.length === 1 ? statusArray[0] : { $in: statusArray };
+      }
 
-        // Add date range filter
-        if (dateRange) {
-            try {
-                const range = typeof dateRange === 'string' ? JSON.parse(dateRange) : dateRange;
-                if (range.from) {
-                    filters.dateFrom = new Date(range.from);
-                }
-                if (range.to) {
-                    filters.dateTo = new Date(range.to);
-                }
-            } catch (error) {
-                throw createValidationError('Invalid date range format');
+      // Add date range filter
+      if (dateRange) {
+         try {
+            const range =
+               typeof dateRange === 'string'
+                  ? JSON.parse(dateRange)
+                  : dateRange;
+            if (range.from) {
+               filters.dateFrom = new Date(range.from);
             }
-        }
+            if (range.to) {
+               filters.dateTo = new Date(range.to);
+            }
+         } catch (error) {
+            throw createValidationError('Invalid date range format');
+         }
+      }
 
-        // Get interventions with advanced search
-        const result = await ClinicalInterventionService.advancedSearch(filters, {
-            patientName,
-            interventionNumber,
-            assignedUsers: assignedUsers ? (Array.isArray(assignedUsers) ? assignedUsers : [assignedUsers]) : undefined,
-            outcomeTypes: outcomeTypes ? (Array.isArray(outcomeTypes) ? outcomeTypes : [outcomeTypes]) : undefined
-        });
+      // Get interventions with advanced search
+      const result = await ClinicalInterventionService.advancedSearch(filters, {
+         patientName,
+         interventionNumber,
+         assignedUsers: assignedUsers
+            ? Array.isArray(assignedUsers)
+               ? assignedUsers
+               : [assignedUsers]
+            : undefined,
+         outcomeTypes: outcomeTypes
+            ? Array.isArray(outcomeTypes)
+               ? outcomeTypes
+               : [outcomeTypes]
+            : undefined,
+      });
 
-        sendSuccess(res, {
+      sendSuccess(
+         res,
+         {
             interventions: result.data,
             pagination: result.pagination,
             searchCriteria: {
-                query: q,
-                patientName,
-                interventionNumber,
-                categories,
-                priorities,
-                statuses,
-                assignedUsers,
-                dateRange,
-                outcomeTypes
-            }
-        }, 'Advanced search completed successfully');
-    }
+               query: q,
+               patientName,
+               interventionNumber,
+               categories,
+               priorities,
+               statuses,
+               assignedUsers,
+               dateRange,
+               outcomeTypes,
+            },
+         },
+         'Advanced search completed successfully'
+      );
+   }
 );
 
 /**
@@ -800,54 +895,60 @@ export const searchClinicalInterventions = asyncHandler(
  * Get patient-specific interventions
  */
 export const getPatientInterventions = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { patientId } = req.params;
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { patientId } = req.params;
 
-        // Validate patient ID format
-        if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
-            throw createValidationError('Invalid patient ID format');
-        }
+      // Validate patient ID format
+      if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
+         throw createValidationError('Invalid patient ID format');
+      }
 
-        // Extract query parameters
-        const {
-            page = 1,
-            limit = 20,
-            status,
-            category,
-            sortBy = 'identifiedDate',
-            sortOrder = 'desc'
-        } = req.query as any;
+      // Extract query parameters
+      const {
+         page = 1,
+         limit = 20,
+         status,
+         category,
+         sortBy = 'identifiedDate',
+         sortOrder = 'desc',
+      } = req.query as any;
 
-        // Build filters for patient-specific interventions
-        const filters: InterventionFilters = {
-            workplaceId: context.workplaceIdObj,
-            patientId: new mongoose.Types.ObjectId(patientId),
-            page: Math.max(1, parseInt(page) || 1),
-            limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
-            sortBy,
-            sortOrder: sortOrder === 'asc' ? 'asc' : 'desc'
-        };
+      // Build filters for patient-specific interventions
+      const filters: InterventionFilters = {
+         workplaceId: context.workplaceIdObj,
+         patientId: new mongoose.Types.ObjectId(patientId),
+         page: Math.max(1, parseInt(page) || 1),
+         limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
+         sortBy,
+         sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+      };
 
-        // Add optional filters
-        if (status) filters.status = status;
-        if (category) filters.category = category;
+      // Add optional filters
+      if (status) filters.status = status;
+      if (category) filters.category = category;
 
-        // Get patient interventions
-        const result = await ClinicalInterventionService.getInterventions(filters);
+      // Get patient interventions
+      const result =
+         await ClinicalInterventionService.getInterventions(filters);
 
-        // Get patient intervention summary
-        const summary = await ClinicalInterventionService.getPatientInterventionSummary(
+      // Get patient intervention summary
+      const summary =
+         await ClinicalInterventionService.getPatientInterventionSummary(
             new mongoose.Types.ObjectId(patientId),
             context.workplaceIdObj
-        );
+         );
 
-        sendSuccess(res, {
+      sendSuccess(
+         res,
+         {
             interventions: result.data,
             pagination: result.pagination,
-            summary
-        }, 'Patient interventions retrieved successfully');
-    }
+            summary,
+         },
+         'Patient interventions retrieved successfully'
+      );
+   }
 );
 
 /**
@@ -855,51 +956,55 @@ export const getPatientInterventions = asyncHandler(
  * Get user's assigned interventions ("my interventions" view)
  */
 export const getAssignedInterventions = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
 
-        // Extract query parameters
-        const {
-            page = 1,
-            limit = 20,
-            status,
-            priority,
-            sortBy = 'identifiedDate',
-            sortOrder = 'desc'
-        } = req.query as any;
+      // Extract query parameters
+      const {
+         page = 1,
+         limit = 20,
+         status,
+         priority,
+         sortBy = 'identifiedDate',
+         sortOrder = 'desc',
+      } = req.query as any;
 
-        // Build filters for user assignments
-        const filters: InterventionFilters = {
-            workplaceId: context.workplaceIdObj,
-            assignedTo: context.userIdObj,
-            page: Math.max(1, parseInt(page) || 1),
-            limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
-            sortBy,
-            sortOrder: sortOrder === 'asc' ? 'asc' : 'desc'
-        };
+      // Build filters for user assignments
+      const filters: InterventionFilters = {
+         workplaceId: context.workplaceIdObj,
+         assignedTo: context.userIdObj,
+         page: Math.max(1, parseInt(page) || 1),
+         limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
+         sortBy,
+         sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+      };
 
-        // Add optional filters
-        if (status) filters.status = status;
-        if (priority) filters.priority = priority;
+      // Add optional filters
+      if (status) filters.status = status;
+      if (priority) filters.priority = priority;
 
-        // Get assigned interventions
-        const result = await ClinicalInterventionService.getUserAssignments(
-            context.userIdObj,
-            context.workplaceIdObj,
-            status ? [status] : undefined
-        );
+      // Get assigned interventions
+      const result = await ClinicalInterventionService.getUserAssignments(
+         context.userIdObj,
+         context.workplaceIdObj,
+         status ? [status] : undefined
+      );
 
-        // Get user assignment statistics
-        const stats = await ClinicalInterventionService.getUserAssignmentStats(
-            context.userIdObj,
-            context.workplaceIdObj
-        );
+      // Get user assignment statistics
+      const stats = await ClinicalInterventionService.getUserAssignmentStats(
+         context.userIdObj,
+         context.workplaceIdObj
+      );
 
-        sendSuccess(res, {
+      sendSuccess(
+         res,
+         {
             interventions: result,
-            stats
-        }, 'Assigned interventions retrieved successfully');
-    }
+            stats,
+         },
+         'Assigned interventions retrieved successfully'
+      );
+   }
 );
 
 /**
@@ -907,56 +1012,60 @@ export const getAssignedInterventions = asyncHandler(
  * Get dashboard metrics and analytics
  */
 export const getInterventionAnalytics = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
 
-        // Extract date range parameters
-        const {
-            dateFrom,
-            dateTo,
-            period = 'month' // month, quarter, year
-        } = req.query as any;
+      // Extract date range parameters
+      const {
+         dateFrom,
+         dateTo,
+         period = 'month', // month, quarter, year
+      } = req.query as any;
 
-        // Parse date range
-        let fromDate: Date | undefined;
-        let toDate: Date | undefined;
+      // Parse date range
+      let fromDate: Date | undefined;
+      let toDate: Date | undefined;
 
-        if (dateFrom) {
-            fromDate = new Date(dateFrom);
-            if (isNaN(fromDate.getTime())) {
-                throw createValidationError('Invalid dateFrom format');
-            }
-        }
+      if (dateFrom) {
+         fromDate = new Date(dateFrom);
+         if (isNaN(fromDate.getTime())) {
+            throw createValidationError('Invalid dateFrom format');
+         }
+      }
 
-        if (dateTo) {
-            toDate = new Date(dateTo);
-            if (isNaN(toDate.getTime())) {
-                throw createValidationError('Invalid dateTo format');
-            }
-        }
+      if (dateTo) {
+         toDate = new Date(dateTo);
+         if (isNaN(toDate.getTime())) {
+            throw createValidationError('Invalid dateTo format');
+         }
+      }
 
-        // Default to current month if no dates provided
-        if (!fromDate && !toDate) {
-            const now = new Date();
-            fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        }
+      // Default to current month if no dates provided
+      if (!fromDate && !toDate) {
+         const now = new Date();
+         fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+         toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      }
 
-        // Get dashboard metrics
-        const metrics = await ClinicalInterventionService.getDashboardMetrics(
-            context.workplaceIdObj,
-            { from: fromDate!, to: toDate! }
-        );
+      // Get dashboard metrics
+      const metrics = await ClinicalInterventionService.getDashboardMetrics(
+         context.workplaceIdObj,
+         { from: fromDate!, to: toDate! }
+      );
 
-        sendSuccess(res, {
+      sendSuccess(
+         res,
+         {
             metrics,
             dateRange: {
-                from: fromDate,
-                to: toDate,
-                period
-            }
-        }, 'Analytics retrieved successfully');
-    }
+               from: fromDate,
+               to: toDate,
+               period,
+            },
+         },
+         'Analytics retrieved successfully'
+      );
+   }
 );
 
 /**
@@ -964,50 +1073,54 @@ export const getInterventionAnalytics = asyncHandler(
  * Get trend analysis data
  */
 export const getInterventionTrends = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
 
-        // Extract parameters
-        const {
-            period = 'month', // day, week, month, quarter
-            groupBy = 'category', // category, priority, status, user
-            dateFrom,
-            dateTo
-        } = req.query as any;
+      // Extract parameters
+      const {
+         period = 'month', // day, week, month, quarter
+         groupBy = 'category', // category, priority, status, user
+         dateFrom,
+         dateTo,
+      } = req.query as any;
 
-        // Parse date range
-        let fromDate: Date;
-        let toDate: Date;
+      // Parse date range
+      let fromDate: Date;
+      let toDate: Date;
 
-        if (dateFrom && dateTo) {
-            fromDate = new Date(dateFrom);
-            toDate = new Date(dateTo);
+      if (dateFrom && dateTo) {
+         fromDate = new Date(dateFrom);
+         toDate = new Date(dateTo);
 
-            if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-                throw createValidationError('Invalid date format');
-            }
-        } else {
-            // Default to last 6 months
-            toDate = new Date();
-            fromDate = new Date();
-            fromDate.setMonth(fromDate.getMonth() - 6);
-        }
+         if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+            throw createValidationError('Invalid date format');
+         }
+      } else {
+         // Default to last 6 months
+         toDate = new Date();
+         fromDate = new Date();
+         fromDate.setMonth(fromDate.getMonth() - 6);
+      }
 
-        // Get trend analysis
-        const trends = await ClinicalInterventionService.getTrendAnalysis(
-            context.workplaceIdObj,
-            { from: fromDate, to: toDate, period, groupBy }
-        );
+      // Get trend analysis
+      const trends = await ClinicalInterventionService.getTrendAnalysis(
+         context.workplaceIdObj,
+         { from: fromDate, to: toDate, period, groupBy }
+      );
 
-        sendSuccess(res, {
+      sendSuccess(
+         res,
+         {
             trends,
             parameters: {
-                period,
-                groupBy,
-                dateRange: { from: fromDate, to: toDate }
-            }
-        }, 'Trend analysis retrieved successfully');
-    }
+               period,
+               groupBy,
+               dateRange: { from: fromDate, to: toDate },
+            },
+         },
+         'Trend analysis retrieved successfully'
+      );
+   }
 );
 
 /**
@@ -1015,58 +1128,62 @@ export const getInterventionTrends = asyncHandler(
  * Get outcome reports
  */
 export const getOutcomeReports = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
 
-        // Extract parameters
-        const {
-            dateFrom,
-            dateTo,
-            category,
-            priority,
-            outcome,
-            pharmacist,
-            includeDetails = false
-        } = req.query as any;
+      // Extract parameters
+      const {
+         dateFrom,
+         dateTo,
+         category,
+         priority,
+         outcome,
+         pharmacist,
+         includeDetails = false,
+      } = req.query as any;
 
-        // Parse date range
-        let fromDate: Date | undefined;
-        let toDate: Date | undefined;
+      // Parse date range
+      let fromDate: Date | undefined;
+      let toDate: Date | undefined;
 
-        if (dateFrom) {
-            fromDate = new Date(dateFrom);
-            if (isNaN(fromDate.getTime())) {
-                throw createValidationError('Invalid dateFrom format');
-            }
-        }
+      if (dateFrom) {
+         fromDate = new Date(dateFrom);
+         if (isNaN(fromDate.getTime())) {
+            throw createValidationError('Invalid dateFrom format');
+         }
+      }
 
-        if (dateTo) {
-            toDate = new Date(dateTo);
-            if (isNaN(toDate.getTime())) {
-                throw createValidationError('Invalid dateTo format');
-            }
-        }
+      if (dateTo) {
+         toDate = new Date(dateTo);
+         if (isNaN(toDate.getTime())) {
+            throw createValidationError('Invalid dateTo format');
+         }
+      }
 
-        // Build filters
-        const filters = {
-            dateFrom: fromDate,
-            dateTo: toDate,
-            category,
-            priority,
-            outcome,
-            pharmacist
-        };
+      // Build filters
+      const filters = {
+         dateFrom: fromDate,
+         dateTo: toDate,
+         category,
+         priority,
+         outcome,
+         pharmacist,
+      };
 
-        // Generate outcome report
-        const report = await ClinicalInterventionService.generateOutcomeReport(
-            context.workplaceIdObj,
-            filters
-        );
+      // Generate outcome report
+      const report = await ClinicalInterventionService.generateOutcomeReport(
+         context.workplaceIdObj,
+         filters
+      );
 
-        sendSuccess(res, {
-            report
-        }, 'Outcome report generated successfully');
-    }
+      sendSuccess(
+         res,
+         {
+            report,
+         },
+         'Outcome report generated successfully'
+      );
+   }
 );
 
 /**
@@ -1074,79 +1191,92 @@ export const getOutcomeReports = asyncHandler(
  * Calculate cost savings with configurable parameters
  */
 export const getCostSavingsReport = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
 
-        // Extract parameters
-        const {
-            dateFrom,
-            dateTo,
-            adverseEventCost,
-            hospitalAdmissionCost,
-            medicationWasteCost,
-            pharmacistHourlyCost
-        } = req.query as any;
+      // Extract parameters
+      const {
+         dateFrom,
+         dateTo,
+         adverseEventCost,
+         hospitalAdmissionCost,
+         medicationWasteCost,
+         pharmacistHourlyCost,
+      } = req.query as any;
 
-        // Parse date range
-        let fromDate: Date | undefined;
-        let toDate: Date | undefined;
+      // Parse date range
+      let fromDate: Date | undefined;
+      let toDate: Date | undefined;
 
-        if (dateFrom) {
-            fromDate = new Date(dateFrom);
-            if (isNaN(fromDate.getTime())) {
-                throw createValidationError('Invalid dateFrom format');
-            }
-        }
+      if (dateFrom) {
+         fromDate = new Date(dateFrom);
+         if (isNaN(fromDate.getTime())) {
+            throw createValidationError('Invalid dateFrom format');
+         }
+      }
 
-        if (dateTo) {
-            toDate = new Date(dateTo);
-            if (isNaN(toDate.getTime())) {
-                throw createValidationError('Invalid dateTo format');
-            }
-        }
+      if (dateTo) {
+         toDate = new Date(dateTo);
+         if (isNaN(toDate.getTime())) {
+            throw createValidationError('Invalid dateTo format');
+         }
+      }
 
-        // Build query for interventions
-        const query: any = {
-            workplaceId: context.workplaceIdObj,
-            isDeleted: { $ne: true },
-            status: 'completed'
-        };
+      // Build query for interventions
+      const query: any = {
+         workplaceId: context.workplaceIdObj,
+         isDeleted: { $ne: true },
+         status: 'completed',
+      };
 
-        if (fromDate || toDate) {
-            query.completedAt = {};
-            if (fromDate) query.completedAt.$gte = fromDate;
-            if (toDate) query.completedAt.$lte = toDate;
-        }
+      if (fromDate || toDate) {
+         query.completedAt = {};
+         if (fromDate) query.completedAt.$gte = fromDate;
+         if (toDate) query.completedAt.$lte = toDate;
+      }
 
-        // Get interventions
-        const interventions = await ClinicalInterventionService.getInterventions({
-            workplaceId: context.workplaceIdObj,
-            dateFrom: fromDate,
-            dateTo: toDate,
-            status: 'completed',
-            limit: 1000 // Get all completed interventions
-        });
+      // Get interventions
+      const interventions = await ClinicalInterventionService.getInterventions({
+         workplaceId: context.workplaceIdObj,
+         dateFrom: fromDate,
+         dateTo: toDate,
+         status: 'completed',
+         limit: 1000, // Get all completed interventions
+      });
 
-        // Calculate cost savings
-        const costSavingsParameters = {
-            adverseEventCost: adverseEventCost ? parseFloat(adverseEventCost) : undefined,
-            hospitalAdmissionCost: hospitalAdmissionCost ? parseFloat(hospitalAdmissionCost) : undefined,
-            medicationWasteCost: medicationWasteCost ? parseFloat(medicationWasteCost) : undefined,
-            pharmacistHourlyCost: pharmacistHourlyCost ? parseFloat(pharmacistHourlyCost) : undefined
-        };
+      // Calculate cost savings
+      const costSavingsParameters = {
+         adverseEventCost: adverseEventCost
+            ? parseFloat(adverseEventCost)
+            : undefined,
+         hospitalAdmissionCost: hospitalAdmissionCost
+            ? parseFloat(hospitalAdmissionCost)
+            : undefined,
+         medicationWasteCost: medicationWasteCost
+            ? parseFloat(medicationWasteCost)
+            : undefined,
+         pharmacistHourlyCost: pharmacistHourlyCost
+            ? parseFloat(pharmacistHourlyCost)
+            : undefined,
+      };
 
-        const costSavings = await ClinicalInterventionService.calculateCostSavings(
+      const costSavings =
+         await ClinicalInterventionService.calculateCostSavings(
             interventions.data,
             costSavingsParameters
-        );
+         );
 
-        sendSuccess(res, {
+      sendSuccess(
+         res,
+         {
             costSavings,
             parameters: costSavingsParameters,
             interventionCount: interventions.data.length,
-            dateRange: { from: fromDate, to: toDate }
-        }, 'Cost savings calculated successfully');
-    }
+            dateRange: { from: fromDate, to: toDate },
+         },
+         'Cost savings calculated successfully'
+      );
+   }
 );
 
 /**
@@ -1154,99 +1284,117 @@ export const getCostSavingsReport = asyncHandler(
  * Export interventions data in various formats
  */
 export const exportInterventionsReport = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getRequestContext(req);
+   async (req: AuthRequest, res: Response) => {
+      const context = getRequestContext(req);
 
-        // Extract parameters
-        const {
-            format = 'excel',
-            dateFrom,
-            dateTo,
-            category,
-            priority,
-            status,
-            includeOutcomes = true
-        } = req.query as any;
+      // Extract parameters
+      const {
+         format = 'excel',
+         dateFrom,
+         dateTo,
+         category,
+         priority,
+         status,
+         includeOutcomes = true,
+      } = req.query as any;
 
-        // Validate format
-        if (!['excel', 'csv', 'pdf'].includes(format)) {
-            throw createValidationError('Invalid export format. Supported formats: excel, csv, pdf');
-        }
+      // Validate format
+      if (!['excel', 'csv', 'pdf'].includes(format)) {
+         throw createValidationError(
+            'Invalid export format. Supported formats: excel, csv, pdf'
+         );
+      }
 
-        // Parse date range
-        let fromDate: Date | undefined;
-        let toDate: Date | undefined;
+      // Parse date range
+      let fromDate: Date | undefined;
+      let toDate: Date | undefined;
 
-        if (dateFrom) {
-            fromDate = new Date(dateFrom);
-            if (isNaN(fromDate.getTime())) {
-                throw createValidationError('Invalid dateFrom format');
-            }
-        }
+      if (dateFrom) {
+         fromDate = new Date(dateFrom);
+         if (isNaN(fromDate.getTime())) {
+            throw createValidationError('Invalid dateFrom format');
+         }
+      }
 
-        if (dateTo) {
-            toDate = new Date(dateTo);
-            if (isNaN(toDate.getTime())) {
-                throw createValidationError('Invalid dateTo format');
-            }
-        }
+      if (dateTo) {
+         toDate = new Date(dateTo);
+         if (isNaN(toDate.getTime())) {
+            throw createValidationError('Invalid dateTo format');
+         }
+      }
 
-        // Build filters
-        const validatedContext = getValidatedContext(req);
-        const filters: InterventionFilters = {
-            workplaceId: validatedContext.workplaceIdObj,
-            dateFrom: fromDate,
-            dateTo: toDate,
-            category,
-            priority,
-            status,
-            limit: 10000 // Large limit for export
-        };
+      // Build filters
+      const validatedContext = getValidatedContext(req);
+      const filters: InterventionFilters = {
+         workplaceId: validatedContext.workplaceIdObj,
+         dateFrom: fromDate,
+         dateTo: toDate,
+         category,
+         priority,
+         status,
+         limit: 10000, // Large limit for export
+      };
 
-        // Get interventions data
-        const result = await ClinicalInterventionService.getInterventions(filters);
+      // Get interventions data
+      const result =
+         await ClinicalInterventionService.getInterventions(filters);
 
-        // For now, return JSON data - in production, this would generate actual files
-        const exportData = {
-            metadata: {
-                exportDate: new Date().toISOString(),
-                format,
-                filters,
-                totalRecords: result.data.length
-            },
-            data: result.data.map(intervention => ({
-                interventionNumber: intervention.interventionNumber,
-                patientName: intervention.patientId ?
-                    `${(intervention.patientId as any).firstName} ${(intervention.patientId as any).lastName}` :
-                    'Unknown',
-                category: intervention.category,
-                priority: intervention.priority,
-                status: intervention.status,
-                issueDescription: intervention.issueDescription,
-                identifiedDate: intervention.identifiedDate,
-                identifiedBy: intervention.identifiedBy ?
-                    `${(intervention.identifiedBy as any).firstName} ${(intervention.identifiedBy as any).lastName}` :
-                    'Unknown',
-                completedDate: intervention.completedAt,
-                resolutionTime: intervention.completedAt && intervention.startedAt ?
-                    Math.ceil((intervention.completedAt.getTime() - intervention.startedAt.getTime()) / (1000 * 60 * 60 * 24)) : null,
-                ...(includeOutcomes && intervention.outcomes ? {
+      // For now, return JSON data - in production, this would generate actual files
+      const exportData = {
+         metadata: {
+            exportDate: new Date().toISOString(),
+            format,
+            filters,
+            totalRecords: result.data.length,
+         },
+         data: result.data.map((intervention) => ({
+            interventionNumber: intervention.interventionNumber,
+            patientName: intervention.patientId
+               ? `${(intervention.patientId as any).firstName} ${(intervention.patientId as any).lastName}`
+               : 'Unknown',
+            category: intervention.category,
+            priority: intervention.priority,
+            status: intervention.status,
+            issueDescription: intervention.issueDescription,
+            identifiedDate: intervention.identifiedDate,
+            identifiedBy: intervention.identifiedBy
+               ? `${(intervention.identifiedBy as any).firstName} ${(intervention.identifiedBy as any).lastName}`
+               : 'Unknown',
+            completedDate: intervention.completedAt,
+            resolutionTime:
+               intervention.completedAt && intervention.startedAt
+                  ? Math.ceil(
+                       (intervention.completedAt.getTime() -
+                          intervention.startedAt.getTime()) /
+                          (1000 * 60 * 60 * 24)
+                    )
+                  : null,
+            ...(includeOutcomes && intervention.outcomes
+               ? {
                     patientResponse: intervention.outcomes.patientResponse,
-                    costSavings: intervention.outcomes.successMetrics?.costSavings,
-                    problemResolved: intervention.outcomes.successMetrics?.problemResolved,
-                    medicationOptimized: intervention.outcomes.successMetrics?.medicationOptimized
-                } : {})
-            }))
-        };
+                    costSavings:
+                       intervention.outcomes.successMetrics?.costSavings,
+                    problemResolved:
+                       intervention.outcomes.successMetrics?.problemResolved,
+                    medicationOptimized:
+                       intervention.outcomes.successMetrics
+                          ?.medicationOptimized,
+                 }
+               : {}),
+         })),
+      };
 
-        // Set appropriate headers for file download
-        const filename = `clinical-interventions-${format}-${new Date().toISOString().split('T')[0]}`;
+      // Set appropriate headers for file download
+      const filename = `clinical-interventions-${format}-${new Date().toISOString().split('T')[0]}`;
 
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}.json"`);
-        res.setHeader('Content-Type', 'application/json');
+      res.setHeader(
+         'Content-Disposition',
+         `attachment; filename="${filename}.json"`
+      );
+      res.setHeader('Content-Type', 'application/json');
 
-        sendSuccess(res, exportData, `Data exported successfully as ${format}`);
-    }
+      sendSuccess(res, exportData, `Data exported successfully as ${format}`);
+   }
 );
 
 /**
@@ -1254,75 +1402,92 @@ export const exportInterventionsReport = asyncHandler(
  * Export intervention data
  */
 export const exportInterventionData = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
 
-        // Extract parameters
-        const {
-            format = 'csv', // csv, excel, pdf
-            dateFrom,
-            dateTo,
-            category,
-            priority,
-            status,
-            includeOutcomes = true
-        } = req.query as any;
+      // Extract parameters
+      const {
+         format = 'csv', // csv, excel, pdf
+         dateFrom,
+         dateTo,
+         category,
+         priority,
+         status,
+         includeOutcomes = true,
+      } = req.query as any;
 
-        // Validate format
-        if (!['csv', 'excel', 'pdf'].includes(format)) {
-            throw createValidationError('Invalid export format. Supported formats: csv, excel, pdf');
-        }
+      // Validate format
+      if (!['csv', 'excel', 'pdf'].includes(format)) {
+         throw createValidationError(
+            'Invalid export format. Supported formats: csv, excel, pdf'
+         );
+      }
 
-        // Parse date range
-        let fromDate: Date | undefined;
-        let toDate: Date | undefined;
+      // Parse date range
+      let fromDate: Date | undefined;
+      let toDate: Date | undefined;
 
-        if (dateFrom) {
-            fromDate = new Date(dateFrom);
-            if (isNaN(fromDate.getTime())) {
-                throw createValidationError('Invalid dateFrom format');
-            }
-        }
+      if (dateFrom) {
+         fromDate = new Date(dateFrom);
+         if (isNaN(fromDate.getTime())) {
+            throw createValidationError('Invalid dateFrom format');
+         }
+      }
 
-        if (dateTo) {
-            toDate = new Date(dateTo);
-            if (isNaN(toDate.getTime())) {
-                throw createValidationError('Invalid dateTo format');
-            }
-        }
+      if (dateTo) {
+         toDate = new Date(dateTo);
+         if (isNaN(toDate.getTime())) {
+            throw createValidationError('Invalid dateTo format');
+         }
+      }
 
-        // Build export filters
-        const exportFilters = {
-            workplaceId: context.workplaceIdObj,
-            dateFrom: fromDate,
-            dateTo: toDate,
-            category,
-            priority,
-            status,
-            includeOutcomes: includeOutcomes === 'true'
-        };
+      // Build export filters
+      const exportFilters = {
+         workplaceId: context.workplaceIdObj,
+         dateFrom: fromDate,
+         dateTo: toDate,
+         category,
+         priority,
+         status,
+         includeOutcomes: includeOutcomes === 'true',
+      };
 
-        // Generate export
-        const exportData = await ClinicalInterventionService.exportData(exportFilters, format);
+      // Generate export
+      const exportData = await ClinicalInterventionService.exportData(
+         exportFilters,
+         format
+      );
 
-        // Set appropriate headers based on format
-        switch (format) {
-            case 'csv':
-                res.setHeader('Content-Type', 'text/csv');
-                res.setHeader('Content-Disposition', 'attachment; filename="interventions.csv"');
-                break;
-            case 'excel':
-                res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-                res.setHeader('Content-Disposition', 'attachment; filename="interventions.xlsx"');
-                break;
-            case 'pdf':
-                res.setHeader('Content-Type', 'application/pdf');
-                res.setHeader('Content-Disposition', 'attachment; filename="interventions.pdf"');
-                break;
-        }
+      // Set appropriate headers based on format
+      switch (format) {
+         case 'csv':
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader(
+               'Content-Disposition',
+               'attachment; filename="interventions.csv"'
+            );
+            break;
+         case 'excel':
+            res.setHeader(
+               'Content-Type',
+               'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            );
+            res.setHeader(
+               'Content-Disposition',
+               'attachment; filename="interventions.xlsx"'
+            );
+            break;
+         case 'pdf':
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader(
+               'Content-Disposition',
+               'attachment; filename="interventions.pdf"'
+            );
+            break;
+      }
 
-        res.send(exportData);
-    }
+      res.send(exportData);
+   }
 );
 
 // ===============================
@@ -1334,34 +1499,40 @@ export const exportInterventionData = asyncHandler(
  * Get strategy recommendations for intervention category
  */
 export const getStrategyRecommendations = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const { category } = req.params;
-        const { priority, issueDescription } = req.query as any;
+   async (req: AuthRequest, res: Response) => {
+      const { category } = req.params;
+      const { priority, issueDescription } = req.query as any;
 
-        // Validate category
-        if (!category) {
-            throw createValidationError('Category is required');
-        }
+      // Validate category
+      if (!category) {
+         throw createValidationError('Category is required');
+      }
 
-        // Get strategy recommendations
-        const recommendations = ClinicalInterventionService.getRecommendedStrategies(category);
+      // Get strategy recommendations
+      const recommendations =
+         ClinicalInterventionService.getRecommendedStrategies(category);
 
-        // Generate enhanced recommendations if additional context provided
-        let enhancedRecommendations = recommendations;
-        if (priority && issueDescription) {
-            enhancedRecommendations = ClinicalInterventionService.generateRecommendations(
-                category,
-                priority,
-                issueDescription
+      // Generate enhanced recommendations if additional context provided
+      let enhancedRecommendations = recommendations;
+      if (priority && issueDescription) {
+         enhancedRecommendations =
+            ClinicalInterventionService.generateRecommendations(
+               category,
+               priority,
+               issueDescription
             );
-        }
+      }
 
-        sendSuccess(res, {
+      sendSuccess(
+         res,
+         {
             category,
             recommendations: enhancedRecommendations,
-            totalCount: enhancedRecommendations.length
-        }, 'Strategy recommendations retrieved successfully');
-    }
+            totalCount: enhancedRecommendations.length,
+         },
+         'Strategy recommendations retrieved successfully'
+      );
+   }
 );
 
 /**
@@ -1369,32 +1540,36 @@ export const getStrategyRecommendations = asyncHandler(
  * Link intervention to MTR
  */
 export const linkToMTR = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { id } = req.params;
-        const { mtrId } = req.body;
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { id } = req.params;
+      const { mtrId } = req.body;
 
-        // Validate ID formats
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            throw createValidationError('Invalid intervention ID format');
-        }
+      // Validate ID formats
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+         throw createValidationError('Invalid intervention ID format');
+      }
 
-        if (!mtrId || !mongoose.Types.ObjectId.isValid(mtrId)) {
-            throw createValidationError('Invalid MTR ID format');
-        }
+      if (!mtrId || !mongoose.Types.ObjectId.isValid(mtrId)) {
+         throw createValidationError('Invalid MTR ID format');
+      }
 
-        // Link intervention to MTR
-        const intervention = await ClinicalInterventionService.linkToMTR(
-            id,
-            mtrId,
-            context.userIdObj,
-            context.workplaceIdObj
-        );
+      // Link intervention to MTR
+      const intervention = await ClinicalInterventionService.linkToMTR(
+         id,
+         mtrId,
+         context.userIdObj,
+         context.workplaceIdObj
+      );
 
-        sendSuccess(res, {
-            intervention
-        }, 'Intervention linked to MTR successfully');
-    }
+      sendSuccess(
+         res,
+         {
+            intervention,
+         },
+         'Intervention linked to MTR successfully'
+      );
+   }
 );
 
 /**
@@ -1402,58 +1577,68 @@ export const linkToMTR = asyncHandler(
  * Send intervention notifications
  */
 export const sendInterventionNotifications = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { id } = req.params;
-        const {
-            notificationType,
-            recipients,
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { id } = req.params;
+      const {
+         notificationType,
+         recipients,
+         message,
+         urgency = 'normal',
+      } = req.body;
+
+      // Validate ID format
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+         throw createValidationError('Invalid intervention ID format');
+      }
+
+      // Validate required fields
+      if (!notificationType || !recipients) {
+         throw createValidationError(
+            'Notification type and recipients are required'
+         );
+      }
+
+      // Validate recipients
+      if (!Array.isArray(recipients) || recipients.length === 0) {
+         throw createValidationError('Recipients must be a non-empty array');
+      }
+
+      // Validate recipient IDs
+      for (const recipientId of recipients) {
+         if (!mongoose.Types.ObjectId.isValid(recipientId)) {
+            throw createValidationError(
+               `Invalid recipient ID format: ${recipientId}`
+            );
+         }
+      }
+
+      // Send notifications
+      const result = await ClinicalInterventionService.sendNotifications(
+         id!,
+         {
+            type: notificationType,
+            recipients: recipients.map(
+               (id: string) => new mongoose.Types.ObjectId(id)
+            ),
             message,
-            urgency = 'normal'
-        } = req.body;
+            urgency,
+            sentBy: context.userId,
+         },
+         context.userIdObj,
+         context.workplaceIdObj
+      );
 
-        // Validate ID format
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            throw createValidationError('Invalid intervention ID format');
-        }
-
-        // Validate required fields
-        if (!notificationType || !recipients) {
-            throw createValidationError('Notification type and recipients are required');
-        }
-
-        // Validate recipients
-        if (!Array.isArray(recipients) || recipients.length === 0) {
-            throw createValidationError('Recipients must be a non-empty array');
-        }
-
-        // Validate recipient IDs
-        for (const recipientId of recipients) {
-            if (!mongoose.Types.ObjectId.isValid(recipientId)) {
-                throw createValidationError(`Invalid recipient ID format: ${recipientId}`);
-            }
-        }
-
-        // Send notifications
-        const result = await ClinicalInterventionService.sendNotifications(
-            id!,
-            {
-                type: notificationType,
-                recipients: recipients.map((id: string) => new mongoose.Types.ObjectId(id)),
-                message,
-                urgency,
-                sentBy: context.userId
-            },
-            context.userIdObj,
-            context.workplaceIdObj
-        );
-
-        sendSuccess(res, {
+      sendSuccess(
+         res,
+         {
             notificationsSent: result.sent,
             failedNotifications: result.failed,
-            totalRecipients: recipients.length
-        }, 'Notifications sent successfully');
-    }
+            totalRecipients: recipients.length,
+         },
+         'Notifications sent successfully'
+      );
+   }
 );
 
 // ===============================
@@ -1463,42 +1648,52 @@ export const sendInterventionNotifications = asyncHandler(
 /**
  * Error handler middleware for clinical intervention operations
  */
-export const handleClinicalInterventionError = (error: any, req: AuthRequest, res: Response, next: any) => {
-    logger.error('Clinical Intervention Controller Error:', {
-        error: error.message,
-        stack: error.stack,
-        path: req.path,
-        method: req.method,
-        userId: req.user?.id,
-        workplaceId: req.user?.workplaceId
-    });
+export const handleClinicalInterventionError = (
+   error: any,
+   req: AuthRequest,
+   res: Response,
+   next: any
+) => {
+   logger.error('Clinical Intervention Controller Error:', {
+      error: error.message,
+      stack: error.stack,
+      path: req.path,
+      method: req.method,
+      userId: req.user?.id,
+      workplaceId: req.user?.workplaceId,
+   });
 
-    // Handle specific error types
-    if (error instanceof PatientManagementError) {
-        return sendError(res, error.code, error.message, error.statusCode || 400);
-    }
+   // Handle specific error types
+   if (error instanceof PatientManagementError) {
+      return sendError(res, error.code, error.message, error.statusCode || 400);
+   }
 
-    if (error.name === 'ValidationError') {
-        const validationErrors = Object.values(error.errors).map((err: any) => ({
-            field: err.path,
-            message: err.message
-        }));
+   if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map((err: any) => ({
+         field: err.path,
+         message: err.message,
+      }));
 
-        return sendError(res, 'VALIDATION_ERROR', 'Validation failed', 400, {
-            errors: validationErrors
-        });
-    }
+      return sendError(res, 'VALIDATION_ERROR', 'Validation failed', 400, {
+         errors: validationErrors,
+      });
+   }
 
-    if (error.name === 'CastError') {
-        return sendError(res, 'BAD_REQUEST', 'Invalid ID format', 400);
-    }
+   if (error.name === 'CastError') {
+      return sendError(res, 'BAD_REQUEST', 'Invalid ID format', 400);
+   }
 
-    if (error.code === 11000) {
-        return sendError(res, 'DUPLICATE_RESOURCE', 'Duplicate entry detected', 409);
-    }
+   if (error.code === 11000) {
+      return sendError(
+         res,
+         'DUPLICATE_RESOURCE',
+         'Duplicate entry detected',
+         409
+      );
+   }
 
-    // Default error response
-    sendError(res, 'SERVER_ERROR', 'Internal server error', 500);
+   // Default error response
+   sendError(res, 'SERVER_ERROR', 'Internal server error', 500);
 };
 
 // ===============================
@@ -1510,50 +1705,58 @@ export const handleClinicalInterventionError = (error: any, req: AuthRequest, re
  * POST /api/clinical-interventions/from-mtr
  */
 export const createInterventionsFromMTR = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { mtrId, problemIds, priority, estimatedDuration } = req.body;
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { mtrId, problemIds, priority, estimatedDuration } = req.body;
 
-        // Validate required fields
-        if (!mtrId || !problemIds || !Array.isArray(problemIds) || problemIds.length === 0) {
-            throw createValidationError('MTR ID and problem IDs are required');
-        }
+      // Validate required fields
+      if (
+         !mtrId ||
+         !problemIds ||
+         !Array.isArray(problemIds) ||
+         problemIds.length === 0
+      ) {
+         throw createValidationError('MTR ID and problem IDs are required');
+      }
 
-        // Validate ObjectIds
-        if (!mongoose.Types.ObjectId.isValid(mtrId)) {
-            throw createValidationError('Invalid MTR ID format');
-        }
+      // Validate ObjectIds
+      if (!mongoose.Types.ObjectId.isValid(mtrId)) {
+         throw createValidationError('Invalid MTR ID format');
+      }
 
-        for (const problemId of problemIds) {
-            if (!mongoose.Types.ObjectId.isValid(problemId)) {
-                throw createValidationError(`Invalid problem ID format: ${problemId}`);
-            }
-        }
+      for (const problemId of problemIds) {
+         if (!mongoose.Types.ObjectId.isValid(problemId)) {
+            throw createValidationError(
+               `Invalid problem ID format: ${problemId}`
+            );
+         }
+      }
 
-        try {
-            const interventions = await ClinicalInterventionService.createInterventionFromMTR(
-                mtrId,
-                problemIds,
-                context.userIdObj,
-                context.workplaceIdObj,
-                { priority, estimatedDuration }
+      try {
+         const interventions =
+            await ClinicalInterventionService.createInterventionFromMTR(
+               mtrId,
+               problemIds,
+               context.userIdObj,
+               context.workplaceIdObj,
+               { priority, estimatedDuration }
             );
 
-            sendSuccess(
-                res,
-                {
-                    interventions,
-                    count: interventions.length,
-                    mtrId
-                },
-                `Created ${interventions.length} interventions from MTR problems`,
-                201
-            );
-        } catch (error: any) {
-            logger.error('Error creating interventions from MTR:', error);
-            throw error;
-        }
-    }
+         sendSuccess(
+            res,
+            {
+               interventions,
+               count: interventions.length,
+               mtrId,
+            },
+            `Created ${interventions.length} interventions from MTR problems`,
+            201
+         );
+      } catch (error: any) {
+         logger.error('Error creating interventions from MTR:', error);
+         throw error;
+      }
+   }
 );
 
 /**
@@ -1561,45 +1764,47 @@ export const createInterventionsFromMTR = asyncHandler(
  * GET /api/clinical-interventions/:id/mtr-reference
  */
 export const getMTRReference = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { id } = req.params;
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { id } = req.params;
 
-        // Validate intervention ID
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            throw createValidationError('Invalid intervention ID format');
-        }
+      // Validate intervention ID
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+         throw createValidationError('Invalid intervention ID format');
+      }
 
-        try {
-            // Get intervention to find MTR ID
-            const intervention = await ClinicalInterventionService.getInterventionById(
-                id,
-                context.workplaceIdObj
+      try {
+         // Get intervention to find MTR ID
+         const intervention =
+            await ClinicalInterventionService.getInterventionById(
+               id,
+               context.workplaceIdObj
             );
 
-            if (!intervention.relatedMTRId) {
-                return sendSuccess(
-                    res,
-                    { mtrReference: null },
-                    'No MTR linked to this intervention'
-                );
-            }
+         if (!intervention.relatedMTRId) {
+            return sendSuccess(
+               res,
+               { mtrReference: null },
+               'No MTR linked to this intervention'
+            );
+         }
 
-            const mtrReference = await ClinicalInterventionService.getMTRReferenceData(
-                intervention.relatedMTRId.toString(),
-                context.workplaceIdObj
+         const mtrReference =
+            await ClinicalInterventionService.getMTRReferenceData(
+               intervention.relatedMTRId.toString(),
+               context.workplaceIdObj
             );
 
-            sendSuccess(
-                res,
-                { mtrReference },
-                'MTR reference data retrieved successfully'
-            );
-        } catch (error: any) {
-            logger.error('Error getting MTR reference:', error);
-            throw error;
-        }
-    }
+         sendSuccess(
+            res,
+            { mtrReference },
+            'MTR reference data retrieved successfully'
+         );
+      } catch (error: any) {
+         logger.error('Error getting MTR reference:', error);
+         throw error;
+      }
+   }
 );
 
 /**
@@ -1607,35 +1812,36 @@ export const getMTRReference = asyncHandler(
  * GET /api/clinical-interventions/mtr/:mtrId
  */
 export const getInterventionsForMTR = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getValidatedContext(req);
-        const { mtrId } = req.params;
+   async (req: AuthRequest, res: Response) => {
+      const context = getValidatedContext(req);
+      const { mtrId } = req.params;
 
-        // Validate MTR ID
-        if (!mtrId || !mongoose.Types.ObjectId.isValid(mtrId)) {
-            throw createValidationError('Invalid MTR ID format');
-        }
+      // Validate MTR ID
+      if (!mtrId || !mongoose.Types.ObjectId.isValid(mtrId)) {
+         throw createValidationError('Invalid MTR ID format');
+      }
 
-        try {
-            const interventions = await ClinicalInterventionService.getInterventionsForMTR(
-                mtrId,
-                new mongoose.Types.ObjectId(context.workplaceId)
+      try {
+         const interventions =
+            await ClinicalInterventionService.getInterventionsForMTR(
+               mtrId,
+               new mongoose.Types.ObjectId(context.workplaceId)
             );
 
-            sendSuccess(
-                res,
-                {
-                    interventions,
-                    count: interventions.length,
-                    mtrId
-                },
-                `Found ${interventions.length} interventions for MTR`
-            );
-        } catch (error: any) {
-            logger.error('Error getting interventions for MTR:', error);
-            throw error;
-        }
-    }
+         sendSuccess(
+            res,
+            {
+               interventions,
+               count: interventions.length,
+               mtrId,
+            },
+            `Found ${interventions.length} interventions for MTR`
+         );
+      } catch (error: any) {
+         logger.error('Error getting interventions for MTR:', error);
+         throw error;
+      }
+   }
 );
 
 /**
@@ -1643,28 +1849,27 @@ export const getInterventionsForMTR = asyncHandler(
  * POST /api/clinical-interventions/:id/sync-mtr
  */
 export const syncWithMTR = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getRequestContext(req);
-        const { id } = req.params;
+   async (req: AuthRequest, res: Response) => {
+      const context = getRequestContext(req);
+      const { id } = req.params;
 
-        // Validate intervention ID
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            throw createValidationError('Invalid intervention ID format');
-        }
+      // Validate intervention ID
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+         throw createValidationError('Invalid intervention ID format');
+      }
 
-        try {
-            await ClinicalInterventionService.syncWithMTR(id, new mongoose.Types.ObjectId(context.workplaceId));
+      try {
+         await ClinicalInterventionService.syncWithMTR(
+            id,
+            new mongoose.Types.ObjectId(context.workplaceId)
+         );
 
-            sendSuccess(
-                res,
-                null,
-                'Intervention synced with MTR successfully'
-            );
-        } catch (error: any) {
-            logger.error('Error syncing intervention with MTR:', error);
-            throw error;
-        }
-    }
+         sendSuccess(res, null, 'Intervention synced with MTR successfully');
+      } catch (error: any) {
+         logger.error('Error syncing intervention with MTR:', error);
+         throw error;
+      }
+   }
 );
 
 // ===============================
@@ -1676,46 +1881,48 @@ export const syncWithMTR = asyncHandler(
  * GET /api/clinical-interventions/:id/audit-trail
  */
 export const getInterventionAuditTrail = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getRequestContext(req);
-        const { id } = req.params;
-        const { page = 1, limit = 50, startDate, endDate } = req.query as any;
+   async (req: AuthRequest, res: Response) => {
+      const context = getRequestContext(req);
+      const { id } = req.params;
+      const { page = 1, limit = 50, startDate, endDate } = req.query as any;
 
-        // Validate intervention ID
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            throw createValidationError('Invalid intervention ID format');
-        }
+      // Validate intervention ID
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+         throw createValidationError('Invalid intervention ID format');
+      }
 
-        try {
-            // Verify intervention exists and user has access
-            const intervention = await ClinicalInterventionService.getInterventionById(
-                id,
-                new mongoose.Types.ObjectId(context.workplaceId)
+      try {
+         // Verify intervention exists and user has access
+         const intervention =
+            await ClinicalInterventionService.getInterventionById(
+               id,
+               new mongoose.Types.ObjectId(context.workplaceId)
             );
 
-            const options = {
-                page: Math.max(1, parseInt(page) || 1),
-                limit: Math.min(100, Math.max(1, parseInt(limit) || 50)),
-                startDate: startDate ? new Date(startDate) : undefined,
-                endDate: endDate ? new Date(endDate) : undefined,
-            };
+         const options = {
+            page: Math.max(1, parseInt(page) || 1),
+            limit: Math.min(100, Math.max(1, parseInt(limit) || 50)),
+            startDate: startDate ? new Date(startDate) : undefined,
+            endDate: endDate ? new Date(endDate) : undefined,
+         };
 
-            const auditTrail = await ClinicalInterventionService.getInterventionAuditTrail(
-                id,
-                new mongoose.Types.ObjectId(context.workplaceId),
-                options
+         const auditTrail =
+            await ClinicalInterventionService.getInterventionAuditTrail(
+               id,
+               new mongoose.Types.ObjectId(context.workplaceId),
+               options
             );
 
-            sendSuccess(
-                res,
-                auditTrail,
-                'Intervention audit trail retrieved successfully'
-            );
-        } catch (error: any) {
-            logger.error('Error getting intervention audit trail:', error);
-            throw error;
-        }
-    }
+         sendSuccess(
+            res,
+            auditTrail,
+            'Intervention audit trail retrieved successfully'
+         );
+      } catch (error: any) {
+         logger.error('Error getting intervention audit trail:', error);
+         throw error;
+      }
+   }
 );
 
 /**
@@ -1723,72 +1930,75 @@ export const getInterventionAuditTrail = asyncHandler(
  * GET /api/clinical-interventions/compliance/report
  */
 export const getComplianceReport = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getRequestContext(req);
-        const {
-            startDate,
-            endDate,
-            includeDetails = false,
-            interventionIds
-        } = req.query as any;
+   async (req: AuthRequest, res: Response) => {
+      const context = getRequestContext(req);
+      const {
+         startDate,
+         endDate,
+         includeDetails = false,
+         interventionIds,
+      } = req.query as any;
 
-        // Validate date range
-        if (!startDate || !endDate) {
-            throw createValidationError('Start date and end date are required');
-        }
+      // Validate date range
+      if (!startDate || !endDate) {
+         throw createValidationError('Start date and end date are required');
+      }
 
-        const dateRange = {
-            start: new Date(startDate),
-            end: new Date(endDate),
-        };
+      const dateRange = {
+         start: new Date(startDate),
+         end: new Date(endDate),
+      };
 
-        // Validate date range
-        if (dateRange.start >= dateRange.end) {
-            throw createValidationError('Start date must be before end date');
-        }
+      // Validate date range
+      if (dateRange.start >= dateRange.end) {
+         throw createValidationError('Start date must be before end date');
+      }
 
-        // Validate date range is not too large (max 1 year)
-        const maxRange = 365 * 24 * 60 * 60 * 1000; // 1 year in milliseconds
-        if (dateRange.end.getTime() - dateRange.start.getTime() > maxRange) {
-            throw createValidationError('Date range cannot exceed 1 year');
-        }
+      // Validate date range is not too large (max 1 year)
+      const maxRange = 365 * 24 * 60 * 60 * 1000; // 1 year in milliseconds
+      if (dateRange.end.getTime() - dateRange.start.getTime() > maxRange) {
+         throw createValidationError('Date range cannot exceed 1 year');
+      }
 
-        try {
-            const options = {
-                includeDetails: includeDetails === 'true',
-                interventionIds: interventionIds ? interventionIds.split(',') : undefined,
-            };
+      try {
+         const options = {
+            includeDetails: includeDetails === 'true',
+            interventionIds: interventionIds
+               ? interventionIds.split(',')
+               : undefined,
+         };
 
-            const complianceReport = await ClinicalInterventionService.generateComplianceReport(
-                new mongoose.Types.ObjectId(context.workplaceId),
-                dateRange,
-                options
+         const complianceReport =
+            await ClinicalInterventionService.generateComplianceReport(
+               new mongoose.Types.ObjectId(context.workplaceId),
+               dateRange,
+               options
             );
 
-            // Log compliance report access
-            await ClinicalInterventionService.logActivity(
-                'GENERATE_COMPLIANCE_REPORT',
-                'system',
-                context.userId,
-                new mongoose.Types.ObjectId(context.workplaceId),
-                {
-                    dateRange,
-                    interventionCount: complianceReport.summary.totalInterventions,
-                    complianceScore: complianceReport.summary.complianceScore,
-                },
-                req
-            );
+         // Log compliance report access
+         await ClinicalInterventionService.logActivity(
+            'GENERATE_COMPLIANCE_REPORT',
+            'system',
+            context.userId,
+            new mongoose.Types.ObjectId(context.workplaceId),
+            {
+               dateRange,
+               interventionCount: complianceReport.summary.totalInterventions,
+               complianceScore: complianceReport.summary.complianceScore,
+            },
+            req
+         );
 
-            sendSuccess(
-                res,
-                complianceReport,
-                'Compliance report generated successfully'
-            );
-        } catch (error: any) {
-            logger.error('Error generating compliance report:', error);
-            throw error;
-        }
-    }
+         sendSuccess(
+            res,
+            complianceReport,
+            'Compliance report generated successfully'
+         );
+      } catch (error: any) {
+         logger.error('Error generating compliance report:', error);
+         throw error;
+      }
+   }
 );
 
 /**
@@ -1796,82 +2006,91 @@ export const getComplianceReport = asyncHandler(
  * GET /api/clinical-interventions/audit/export
  */
 export const exportAuditData = asyncHandler(
-    async (req: AuthRequest, res: Response) => {
-        const context = getRequestContext(req);
-        const {
-            format = 'json',
-            startDate,
-            endDate,
-            interventionIds,
-            includeDetails = false
-        } = req.query as any;
+   async (req: AuthRequest, res: Response) => {
+      const context = getRequestContext(req);
+      const {
+         format = 'json',
+         startDate,
+         endDate,
+         interventionIds,
+         includeDetails = false,
+      } = req.query as any;
 
-        // Validate required parameters
-        if (!startDate || !endDate) {
-            throw createValidationError('Start date and end date are required');
-        }
+      // Validate required parameters
+      if (!startDate || !endDate) {
+         throw createValidationError('Start date and end date are required');
+      }
 
-        // Validate format
-        if (!['json', 'csv', 'pdf'].includes(format)) {
-            throw createValidationError('Format must be json, csv, or pdf');
-        }
+      // Validate format
+      if (!['json', 'csv', 'pdf'].includes(format)) {
+         throw createValidationError('Format must be json, csv, or pdf');
+      }
 
-        try {
-            const dateRange = {
-                start: new Date(startDate),
-                end: new Date(endDate),
-            };
+      try {
+         const dateRange = {
+            start: new Date(startDate),
+            end: new Date(endDate),
+         };
 
-            const filters = {
-                resourceType: 'ClinicalIntervention',
-                startDate: dateRange.start,
-                endDate: dateRange.end,
-                ...(interventionIds && {
-                    resourceId: { $in: interventionIds.split(',').map((id: string) => new mongoose.Types.ObjectId(id)) }
-                }),
-            };
+         const filters = {
+            resourceType: 'ClinicalIntervention',
+            startDate: dateRange.start,
+            endDate: dateRange.end,
+            ...(interventionIds && {
+               resourceId: {
+                  $in: interventionIds
+                     .split(',')
+                     .map((id: string) => new mongoose.Types.ObjectId(id)),
+               },
+            }),
+         };
 
-            const exportOptions = {
-                format,
-                dateRange,
-                filters,
-                includeDetails: includeDetails === 'true',
-                includeSensitiveData: false, // Never include sensitive data in exports
-            };
+         const exportOptions = {
+            format,
+            dateRange,
+            filters,
+            includeDetails: includeDetails === 'true',
+            includeSensitiveData: false, // Never include sensitive data in exports
+         };
 
-            // Import AuditService for export
-            const AuditService = require('../services/auditService').default;
-            const exportResult = await AuditService.exportAuditData(
-                context.workplaceId,
-                exportOptions
-            );
+         // Import AuditService for export
+         const AuditService = require('../services/auditService').default;
+         const exportResult = await AuditService.exportAuditData(
+            context.workplaceId,
+            exportOptions
+         );
 
-            // Log audit export
-            await ClinicalInterventionService.logActivity(
-                'EXPORT_AUDIT_DATA',
-                'system',
-                context.userId,
-                new mongoose.Types.ObjectId(context.workplaceId),
-                {
-                    format,
-                    dateRange,
-                    recordCount: Array.isArray(exportResult.data) ? exportResult.data.length : 'unknown',
-                },
-                req
-            );
+         // Log audit export
+         await ClinicalInterventionService.logActivity(
+            'EXPORT_AUDIT_DATA',
+            'system',
+            context.userId,
+            new mongoose.Types.ObjectId(context.workplaceId),
+            {
+               format,
+               dateRange,
+               recordCount: Array.isArray(exportResult.data)
+                  ? exportResult.data.length
+                  : 'unknown',
+            },
+            req
+         );
 
-            // Set appropriate headers for download
-            res.setHeader('Content-Disposition', `attachment; filename="${exportResult.filename}"`);
-            res.setHeader('Content-Type', exportResult.contentType);
+         // Set appropriate headers for download
+         res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="${exportResult.filename}"`
+         );
+         res.setHeader('Content-Type', exportResult.contentType);
 
-            if (format === 'json') {
-                res.json(JSON.parse(exportResult.data));
-            } else {
-                res.send(exportResult.data);
-            }
-        } catch (error: any) {
-            logger.error('Error exporting audit data:', error);
-            throw error;
-        }
-    }
+         if (format === 'json') {
+            res.json(JSON.parse(exportResult.data));
+         } else {
+            res.send(exportResult.data);
+         }
+      } catch (error: any) {
+         logger.error('Error exporting audit data:', error);
+         throw error;
+      }
+   }
 );

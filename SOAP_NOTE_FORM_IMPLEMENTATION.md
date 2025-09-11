@@ -13,40 +13,40 @@ This document summarizes the implementation of Task 5: SOAP Note Creation and Ed
 - **Location**: `frontend/src/components/ClinicalNoteForm.tsx`
 - **Description**: A comprehensive SOAP note form with advanced features
 - **Key Features**:
-  - Structured SOAP sections (Subjective, Objective, Assessment, Plan)
-  - Rich text editing with MUI TextareaAutosize
-  - Real-time validation with custom validation functions
-  - Auto-save functionality
-  - Patient selection with autocomplete
-  - Note type selection and priority settings
-  - Confidentiality controls
-  - Follow-up scheduling integration
-  - Collapsible sections for better UX
-  - Unsaved changes dialog
+   - Structured SOAP sections (Subjective, Objective, Assessment, Plan)
+   - Rich text editing with MUI TextareaAutosize
+   - Real-time validation with custom validation functions
+   - Auto-save functionality
+   - Patient selection with autocomplete
+   - Note type selection and priority settings
+   - Confidentiality controls
+   - Follow-up scheduling integration
+   - Collapsible sections for better UX
+   - Unsaved changes dialog
 
 #### SimpleClinicalNoteForm.tsx
 
 - **Location**: `frontend/src/components/SimpleClinicalNoteForm.tsx`
 - **Description**: A simplified version focusing on core SOAP functionality
 - **Key Features**:
-  - Essential SOAP note structure
-  - Basic validation
-  - Patient ID input (simplified)
-  - Note type and priority selection
-  - Confidentiality toggle
-  - Follow-up requirement toggle
-  - Clean, responsive design
+   - Essential SOAP note structure
+   - Basic validation
+   - Patient ID input (simplified)
+   - Note type and priority selection
+   - Confidentiality toggle
+   - Follow-up requirement toggle
+   - Clean, responsive design
 
 #### NoteFileUpload.tsx
 
 - **Location**: `frontend/src/components/NoteFileUpload.tsx`
 - **Description**: File upload component for note attachments
 - **Key Features**:
-  - Drag-and-drop file upload
-  - File type validation
-  - Progress indicators
-  - Multiple file support
-  - File preview and management
+   - Drag-and-drop file upload
+   - File type validation
+   - Progress indicators
+   - Multiple file support
+   - File preview and management
 
 ### 2. Enhanced Query Hooks
 
@@ -54,9 +54,9 @@ This document summarizes the implementation of Task 5: SOAP Note Creation and Ed
 
 - **Location**: `frontend/src/queries/clinicalNoteQueries.ts`
 - **Enhancements**:
-  - Added `useCreateClinicalNote` alias
-  - Added `useUpdateClinicalNote` alias
-  - Maintained compatibility with existing hooks
+   - Added `useCreateClinicalNote` alias
+   - Added `useUpdateClinicalNote` alias
+   - Maintained compatibility with existing hooks
 
 ### 3. Validation System
 
@@ -186,8 +186,8 @@ This document summarizes the implementation of Task 5: SOAP Note Creation and Ed
 import SimpleClinicalNoteForm from './components/SimpleClinicalNoteForm';
 
 <SimpleClinicalNoteForm
-  onSave={(noteData) => console.log('Note saved:', noteData)}
-  onCancel={() => console.log('Form cancelled')}
+   onSave={(noteData) => console.log('Note saved:', noteData)}
+   onCancel={() => console.log('Form cancelled')}
 />;
 ```
 
@@ -195,9 +195,9 @@ import SimpleClinicalNoteForm from './components/SimpleClinicalNoteForm';
 
 ```tsx
 <SimpleClinicalNoteForm
-  patientId="PAT123"
-  onSave={handleSave}
-  onCancel={handleCancel}
+   patientId="PAT123"
+   onSave={handleSave}
+   onCancel={handleCancel}
 />
 ```
 
@@ -205,9 +205,9 @@ import SimpleClinicalNoteForm from './components/SimpleClinicalNoteForm';
 
 ```tsx
 <SimpleClinicalNoteForm
-  noteId="NOTE456"
-  onSave={handleUpdate}
-  onCancel={handleCancel}
+   noteId="NOTE456"
+   onSave={handleUpdate}
+   onCancel={handleCancel}
 />
 ```
 
@@ -215,9 +215,9 @@ import SimpleClinicalNoteForm from './components/SimpleClinicalNoteForm';
 
 ```tsx
 <SimpleClinicalNoteForm
-  noteId="NOTE456"
-  readonly={true}
-  onCancel={handleClose}
+   noteId="NOTE456"
+   readonly={true}
+   onCancel={handleClose}
 />
 ```
 

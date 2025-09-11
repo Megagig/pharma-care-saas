@@ -6,35 +6,35 @@ const router = express.Router();
 
 // Public webhook endpoint (no auth required)
 router.post(
-  '/webhook',
-  express.raw({ type: 'application/json' }),
-  subscriptionController.handleWebhook
+   '/webhook',
+   express.raw({ type: 'application/json' }),
+   subscriptionController.handleWebhook
 );
 
 // Subscription management routes - allow access even without active subscription
 router.get(
-  '/current',
-  authOptionalSubscription,
-  subscriptionController.getCurrentSubscription
+   '/current',
+   authOptionalSubscription,
+   subscriptionController.getCurrentSubscription
 );
 router.get('/plans', subscriptionController.getAvailablePlans);
 router.post(
-  '/checkout',
-  authOptionalSubscription,
-  subscriptionController.createCheckoutSession
+   '/checkout',
+   authOptionalSubscription,
+   subscriptionController.createCheckoutSession
 );
 // Add a route specifically for handling Paystack redirects without requiring authentication
 router.get('/verify', subscriptionController.verifyPaymentByReference);
 
 router.post(
-  '/confirm-payment',
-  authOptionalSubscription,
-  subscriptionController.handleSuccessfulPayment
+   '/confirm-payment',
+   authOptionalSubscription,
+   subscriptionController.handleSuccessfulPayment
 );
 router.post(
-  '/payment-success',
-  authOptionalSubscription,
-  subscriptionController.handleSuccessfulPayment
+   '/payment-success',
+   authOptionalSubscription,
+   subscriptionController.handleSuccessfulPayment
 );
 
 // Routes that require active subscription

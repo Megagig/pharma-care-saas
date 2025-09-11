@@ -1,30 +1,30 @@
 import express from 'express';
 import {
-  getPatients,
-  getPatient,
-  createPatient,
-  updatePatient,
-  deletePatient,
-  searchPatients,
-  getPatientSummary,
-  getPatientInterventions,
-  searchPatientsWithInterventions,
+   getPatients,
+   getPatient,
+   createPatient,
+   updatePatient,
+   deletePatient,
+   searchPatients,
+   getPatientSummary,
+   getPatientInterventions,
+   searchPatientsWithInterventions,
 } from '../controllers/patientController';
 import { auth } from '../middlewares/auth';
 import {
-  requirePatientRead,
-  requirePatientCreate,
-  requirePatientUpdate,
-  requirePatientDelete,
-  checkPharmacyAccess,
-  checkPatientPlanLimits,
+   requirePatientRead,
+   requirePatientCreate,
+   requirePatientUpdate,
+   requirePatientDelete,
+   checkPharmacyAccess,
+   checkPatientPlanLimits,
 } from '../middlewares/patientRBAC';
 import {
-  validateRequest,
-  createPatientSchema,
-  updatePatientSchema,
-  patientParamsSchema,
-  searchSchema,
+   validateRequest,
+   createPatientSchema,
+   updatePatientSchema,
+   patientParamsSchema,
+   searchSchema,
 } from '../validators/patientValidators';
 import { patientManagementErrorHandler } from '../utils/responseHelpers';
 
@@ -36,66 +36,70 @@ router.use(checkPharmacyAccess);
 
 // GET /api/patients - List patients with search and pagination
 router.get(
-  '/',
-  requirePatientRead,
-  validateRequest(searchSchema, 'query'),
-  getPatients
+   '/',
+   requirePatientRead,
+   validateRequest(searchSchema, 'query'),
+   getPatients
 );
 
 // GET /api/patients/search - Search patients
 router.get('/search', requirePatientRead, searchPatients);
 
 // GET /api/patients/search-with-interventions - Search patients with intervention context
-router.get('/search-with-interventions', requirePatientRead, searchPatientsWithInterventions);
+router.get(
+   '/search-with-interventions',
+   requirePatientRead,
+   searchPatientsWithInterventions
+);
 
 // POST /api/patients - Create new patient
 router.post(
-  '/',
-  requirePatientCreate,
-  checkPatientPlanLimits,
-  validateRequest(createPatientSchema, 'body'),
-  createPatient
+   '/',
+   requirePatientCreate,
+   checkPatientPlanLimits,
+   validateRequest(createPatientSchema, 'body'),
+   createPatient
 );
 
 // GET /api/patients/:id - Get patient details
 router.get(
-  '/:id',
-  requirePatientRead,
-  validateRequest(patientParamsSchema, 'params'),
-  getPatient
+   '/:id',
+   requirePatientRead,
+   validateRequest(patientParamsSchema, 'params'),
+   getPatient
 );
 
 // GET /api/patients/:id/summary - Get patient summary
 router.get(
-  '/:id/summary',
-  requirePatientRead,
-  validateRequest(patientParamsSchema, 'params'),
-  getPatientSummary
+   '/:id/summary',
+   requirePatientRead,
+   validateRequest(patientParamsSchema, 'params'),
+   getPatientSummary
 );
 
 // GET /api/patients/:id/interventions - Get patient interventions
 router.get(
-  '/:id/interventions',
-  requirePatientRead,
-  validateRequest(patientParamsSchema, 'params'),
-  getPatientInterventions
+   '/:id/interventions',
+   requirePatientRead,
+   validateRequest(patientParamsSchema, 'params'),
+   getPatientInterventions
 );
 
 // PATCH /api/patients/:id - Update patient
 router.patch(
-  '/:id',
-  requirePatientUpdate,
-  validateRequest(patientParamsSchema, 'params'),
-  validateRequest(updatePatientSchema, 'body'),
-  updatePatient
+   '/:id',
+   requirePatientUpdate,
+   validateRequest(patientParamsSchema, 'params'),
+   validateRequest(updatePatientSchema, 'body'),
+   updatePatient
 );
 
 // DELETE /api/patients/:id - Delete patient (soft delete)
 router.delete(
-  '/:id',
-  requirePatientDelete,
-  validateRequest(patientParamsSchema, 'params'),
-  deletePatient
+   '/:id',
+   requirePatientDelete,
+   validateRequest(patientParamsSchema, 'params'),
+   deletePatient
 );
 
 // Error handling middleware

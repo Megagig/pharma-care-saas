@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import {
-  Typography,
-  Box,
-  Card,
-  Button,
-  Tabs,
-  Tab,
-  CardContent,
+   Typography,
+   Box,
+   Card,
+   Button,
+   Tabs,
+   Tab,
+   CardContent,
 } from '@mui/material';
 import {
-  Add as AddIcon,
-  Medication as MedicationIcon,
+   Add as AddIcon,
+   Medication as MedicationIcon,
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -22,210 +22,222 @@ import MedicationAnalyticsPanel from '../components/medications/MedicationAnalyt
 import MedicationSettingsPanel from '../components/medications/MedicationSettingsPanel';
 
 interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
+   children?: React.ReactNode;
+   index: number;
+   value: number;
 }
 
 const TabPanel = (props: TabPanelProps) => {
-  const { children, value, index, ...other } = props;
+   const { children, value, index, ...other } = props;
 
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`medications-tabpanel-${index}`}
-      aria-labelledby={`medications-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
+   return (
+      <div
+         role="tabpanel"
+         hidden={value !== index}
+         id={`medications-tabpanel-${index}`}
+         aria-labelledby={`medications-tab-${index}`}
+         {...other}
+      >
+         {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      </div>
+   );
 };
 
 const Medications = () => {
-  // Theme not currently used
-  const [tabValue, setTabValue] = useState(0);
-  const { isActive, loading } = useSubscriptionStatus();
+   // Theme not currently used
+   const [tabValue, setTabValue] = useState(0);
+   const { isActive, loading } = useSubscriptionStatus();
 
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
+   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+      setTabValue(newValue);
+   };
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
+   if (loading) {
+      return <LoadingSpinner />;
+   }
 
-  // Implementation for premium users will go here
-  if (!isActive) {
-    return (
+   // Implementation for premium users will go here
+   if (!isActive) {
+      return (
+         <Box sx={{ p: 3 }}>
+            <Helmet>
+               <title>Medications | PharmaCare</title>
+            </Helmet>
+            <Box
+               sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 4,
+               }}
+            >
+               <Box>
+                  <Typography
+                     variant="h4"
+                     component="h1"
+                     sx={{ fontWeight: 600, mb: 1 }}
+                  >
+                     Medications
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                     Manage patient medications, interactions, and adherence
+                     tracking
+                  </Typography>
+               </Box>
+            </Box>
+
+            <Card sx={{ textAlign: 'center', py: 8 }}>
+               <CardContent>
+                  <Box
+                     sx={{
+                        width: 80,
+                        height: 80,
+                        bgcolor: 'secondary.light',
+                        borderRadius: 4,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 3,
+                     }}
+                  >
+                     <MedicationIcon
+                        sx={{ fontSize: 40, color: 'secondary.main' }}
+                     />
+                  </Box>
+                  <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
+                     Premium Feature
+                  </Typography>
+                  <Typography
+                     variant="body1"
+                     color="text.secondary"
+                     sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}
+                  >
+                     Advanced medication tracking, drug interaction checking,
+                     adherence monitoring, and prescription management features
+                     require a premium subscription.
+                  </Typography>
+                  <Box
+                     sx={{
+                        display: 'flex',
+                        gap: 2,
+                        justifyContent: 'center',
+                        flexWrap: 'wrap',
+                     }}
+                  >
+                     <Button
+                        variant="contained"
+                        component={Link}
+                        to="/subscriptions"
+                     >
+                        Upgrade Now
+                     </Button>
+                     <Button
+                        variant="outlined"
+                        component={Link}
+                        to="/dashboard"
+                     >
+                        Back to Dashboard
+                     </Button>
+                  </Box>
+               </CardContent>
+            </Card>
+         </Box>
+      );
+   }
+
+   // For subscribed users, show the full medication management interface
+   return (
       <Box sx={{ p: 3 }}>
-        <Helmet>
-          <title>Medications | PharmaCare</title>
-        </Helmet>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 4,
-          }}
-        >
-          <Box>
-            <Typography
-              variant="h4"
-              component="h1"
-              sx={{ fontWeight: 600, mb: 1 }}
-            >
-              Medications
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Manage patient medications, interactions, and adherence tracking
-            </Typography>
-          </Box>
-        </Box>
-
-        <Card sx={{ textAlign: 'center', py: 8 }}>
-          <CardContent>
-            <Box
-              sx={{
-                width: 80,
-                height: 80,
-                bgcolor: 'secondary.light',
-                borderRadius: 4,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                mx: 'auto',
-                mb: 3,
-              }}
-            >
-              <MedicationIcon sx={{ fontSize: 40, color: 'secondary.main' }} />
+         <Helmet>
+            <title>Medication Management | PharmaCare</title>
+         </Helmet>
+         <Box
+            sx={{
+               display: 'flex',
+               justifyContent: 'space-between',
+               alignItems: 'center',
+               mb: 4,
+            }}
+         >
+            <Box>
+               <Typography
+                  variant="h4"
+                  component="h1"
+                  sx={{ fontWeight: 600, mb: 1 }}
+               >
+                  Medication Management
+               </Typography>
+               <Typography variant="body1" color="text.secondary">
+                  Manage patient medications, interactions, and adherence
+                  tracking
+               </Typography>
             </Box>
-            <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
-              Premium Feature
-            </Typography>
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}
+            <Button
+               variant="contained"
+               color="primary"
+               startIcon={<AddIcon />}
+               component={Link}
+               to="/patients?for=medications"
             >
-              Advanced medication tracking, drug interaction checking, adherence
-              monitoring, and prescription management features require a premium
-              subscription.
-            </Typography>
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 2,
-                justifyContent: 'center',
-                flexWrap: 'wrap',
-              }}
-            >
-              <Button variant="contained" component={Link} to="/subscriptions">
-                Upgrade Now
-              </Button>
-              <Button variant="outlined" component={Link} to="/dashboard">
-                Back to Dashboard
-              </Button>
+               Select Patient
+            </Button>
+         </Box>
+
+         <Card sx={{ mb: 4 }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+               <Tabs
+                  value={tabValue}
+                  onChange={handleTabChange}
+                  aria-label="medication management tabs"
+               >
+                  <Tab label="Dashboard" id="medications-tab-0" />
+                  <Tab label="Analytics" id="medications-tab-1" />
+                  <Tab label="Settings" id="medications-tab-2" />
+               </Tabs>
             </Box>
-          </CardContent>
-        </Card>
+
+            <TabPanel value={tabValue} index={0}>
+               <Typography variant="h6" gutterBottom>
+                  Medication Dashboard
+               </Typography>
+               <Typography paragraph>
+                  Please select a patient to view their medication dashboard.
+               </Typography>
+               <Button
+                  variant="outlined"
+                  component={Link}
+                  to="/patients"
+                  startIcon={<AddIcon />}
+                  sx={{ mr: 2 }}
+               >
+                  Select Patient
+               </Button>
+               <Button
+                  variant="contained"
+                  component={Link}
+                  to="/medications/dashboard"
+               >
+                  View Medications Dashboard
+               </Button>
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={1}>
+               <Box>
+                  {/* Use the MedicationAnalyticsPanel component */}
+                  <MedicationAnalyticsPanel patientId="system" />
+               </Box>
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={2}>
+               <Box>
+                  {/* Use the MedicationSettingsPanel component */}
+                  <MedicationSettingsPanel patientId="system" />
+               </Box>
+            </TabPanel>
+         </Card>
       </Box>
-    );
-  }
-
-  // For subscribed users, show the full medication management interface
-  return (
-    <Box sx={{ p: 3 }}>
-      <Helmet>
-        <title>Medication Management | PharmaCare</title>
-      </Helmet>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 4,
-        }}
-      >
-        <Box>
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{ fontWeight: 600, mb: 1 }}
-          >
-            Medication Management
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Manage patient medications, interactions, and adherence tracking
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          component={Link}
-          to="/patients?for=medications"
-        >
-          Select Patient
-        </Button>
-      </Box>
-
-      <Card sx={{ mb: 4 }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            aria-label="medication management tabs"
-          >
-            <Tab label="Dashboard" id="medications-tab-0" />
-            <Tab label="Analytics" id="medications-tab-1" />
-            <Tab label="Settings" id="medications-tab-2" />
-          </Tabs>
-        </Box>
-
-        <TabPanel value={tabValue} index={0}>
-          <Typography variant="h6" gutterBottom>
-            Medication Dashboard
-          </Typography>
-          <Typography paragraph>
-            Please select a patient to view their medication dashboard.
-          </Typography>
-          <Button
-            variant="outlined"
-            component={Link}
-            to="/patients"
-            startIcon={<AddIcon />}
-            sx={{ mr: 2 }}
-          >
-            Select Patient
-          </Button>
-          <Button
-            variant="contained"
-            component={Link}
-            to="/medications/dashboard"
-          >
-            View Medications Dashboard
-          </Button>
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={1}>
-          <Box>
-            {/* Use the MedicationAnalyticsPanel component */}
-            <MedicationAnalyticsPanel patientId="system" />
-          </Box>
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={2}>
-          <Box>
-            {/* Use the MedicationSettingsPanel component */}
-            <MedicationSettingsPanel patientId="system" />
-          </Box>
-        </TabPanel>
-      </Card>
-    </Box>
-  );
+   );
 };
 
 export default Medications;

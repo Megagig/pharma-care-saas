@@ -1,117 +1,117 @@
 version: '3.8'
 
 services:
-  # MongoDB Database
-  mongo:
-    image: mongo:7.0
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_INITDB_DATABASE: pharma-care-saas
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-      - ./backend/scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-    networks:
-      - pharma-network
+   # MongoDB Database
+   mongo:
+      image: mongo:7.0
+      restart: unless-stopped
+      environment:
+         MONGO_INITDB_ROOT_USERNAME: admin
+         MONGO_INITDB_ROOT_PASSWORD: password
+         MONGO_INITDB_DATABASE: pharma-care-saas
+      ports:
+         - '27017:27017'
+      volumes:
+         - mongo_data:/data/db
+         - ./backend/scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      networks:
+         - pharma-network
 
-  # Backend API
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: 5000
-      MONGODB_URI: mongodb://admin:password@mongo:27017/pharma-care-saas?authSource=admin
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your-refresh-token-secret}
-      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASS: ${SMTP_PASS}
-      FROM_NAME: ${FROM_NAME:-PharmaCare SaaS}
-      FROM_EMAIL: ${FROM_EMAIL:-noreply@pharmacare.com}
-      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
-      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER}
-      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
-      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
-      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
-      FRONTEND_URL: http://localhost:3000
-    ports:
-      - "5000:5000"
-    depends_on:
-      - mongo
-    volumes:
-      - ./backend/uploads:/app/uploads
-    networks:
-      - pharma-network
+   # Backend API
+   backend:
+      build:
+         context: ./backend
+         dockerfile: Dockerfile
+      restart: unless-stopped
+      environment:
+         NODE_ENV: production
+         PORT: 5000
+         MONGODB_URI: mongodb://admin:password@mongo:27017/pharma-care-saas?authSource=admin
+         JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+         JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your-refresh-token-secret}
+         SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+         SMTP_PORT: ${SMTP_PORT:-587}
+         SMTP_USER: ${SMTP_USER}
+         SMTP_PASS: ${SMTP_PASS}
+         FROM_NAME: ${FROM_NAME:-PharmaCare SaaS}
+         FROM_EMAIL: ${FROM_EMAIL:-noreply@pharmacare.com}
+         TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+         TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+         TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER}
+         CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+         CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+         CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+         STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+         STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+         FRONTEND_URL: http://localhost:3000
+      ports:
+         - '5000:5000'
+      depends_on:
+         - mongo
+      volumes:
+         - ./backend/uploads:/app/uploads
+      networks:
+         - pharma-network
 
-  # Frontend React App
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        REACT_APP_API_URL: http://localhost:5000/api
-    restart: unless-stopped
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    networks:
-      - pharma-network
+   # Frontend React App
+   frontend:
+      build:
+         context: ./frontend
+         dockerfile: Dockerfile
+         args:
+            REACT_APP_API_URL: http://localhost:5000/api
+      restart: unless-stopped
+      ports:
+         - '3000:80'
+      depends_on:
+         - backend
+      networks:
+         - pharma-network
 
-  # Redis for Caching (Optional)
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - pharma-network
+   # Redis for Caching (Optional)
+   redis:
+      image: redis:7-alpine
+      restart: unless-stopped
+      ports:
+         - '6379:6379'
+      volumes:
+         - redis_data:/data
+      networks:
+         - pharma-network
 
-  # Nginx Reverse Proxy (Production)
-  nginx:
-    image: nginx:alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - pharma-network
-    profiles:
-      - production
+   # Nginx Reverse Proxy (Production)
+   nginx:
+      image: nginx:alpine
+      restart: unless-stopped
+      ports:
+         - '80:80'
+         - '443:443'
+      volumes:
+         - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+         - ./nginx/ssl:/etc/nginx/ssl:ro
+      depends_on:
+         - frontend
+         - backend
+      networks:
+         - pharma-network
+      profiles:
+         - production
 
 volumes:
-  mongo_data:
-    driver: local
-  redis_data:
-    driver: local
+   mongo_data:
+      driver: local
+   redis_data:
+      driver: local
 
 networks:
-  pharma-network:
-    driver: bridge
+   pharma-network:
+      driver: bridge
 
 # Health checks and monitoring
 healthcheck:
-  backend:
-    test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
-    interval: 30s
-    timeout: 10s
-    retries: 3
-    start_period: 40s
+   backend:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

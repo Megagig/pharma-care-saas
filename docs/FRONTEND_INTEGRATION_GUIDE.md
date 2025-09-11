@@ -58,104 +58,104 @@ import axios, { AxiosError, AxiosResponse } from 'axios';
 import { toast } from 'react-hot-toast';
 
 export interface APIError {
-  success: false;
-  message: string;
-  code?: string;
-  details?: any;
-  upgradeRequired?: boolean;
-  upgradeTo?: string;
-  retryAfter?: number;
+   success: false;
+   message: string;
+   code?: string;
+   details?: any;
+   upgradeRequired?: boolean;
+   upgradeTo?: string;
+   retryAfter?: number;
 }
 
 export interface APISuccess<T = any> {
-  success: true;
-  message?: string;
-  data: T;
+   success: true;
+   message?: string;
+   data: T;
 }
 
 export type APIResponse<T = any> = APISuccess<T> | APIError;
 
 class APIClient {
-  private client = axios.create({
-    baseURL: process.env.REACT_APP_API_URL,
-    timeout: 30000,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  constructor() {
-    this.setupInterceptors();
-  }
-
-  private setupInterceptors() {
-    // Request interceptor - add auth token
-    this.client.interceptors.request.use(
-      (config) => {
-        const token = localStorage.getItem('authToken');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
+   private client = axios.create({
+      baseURL: process.env.REACT_APP_API_URL,
+      timeout: 30000,
+      headers: {
+         'Content-Type': 'application/json',
       },
-      (error) => Promise.reject(error)
-    );
+   });
 
-    // Response interceptor - handle errors
-    this.client.interceptors.response.use(
-      (response: AxiosResponse) => response,
-      (error: AxiosError<APIError>) => {
-        const apiError = error.response?.data;
+   constructor() {
+      this.setupInterceptors();
+   }
 
-        // Handle authentication errors
-        if (error.response?.status === 401) {
-          localStorage.removeItem('authToken');
-          window.location.href = '/login';
-          return Promise.reject(error);
-        }
+   private setupInterceptors() {
+      // Request interceptor - add auth token
+      this.client.interceptors.request.use(
+         (config) => {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+               config.headers.Authorization = `Bearer ${token}`;
+            }
+            return config;
+         },
+         (error) => Promise.reject(error)
+      );
 
-        // Handle rate limiting
-        if (error.response?.status === 429) {
-          const retryAfter = apiError?.retryAfter || 60;
-          toast.error(
-            `Rate limit exceeded. Please try again in ${retryAfter} seconds.`
-          );
-          return Promise.reject(error);
-        }
+      // Response interceptor - handle errors
+      this.client.interceptors.response.use(
+         (response: AxiosResponse) => response,
+         (error: AxiosError<APIError>) => {
+            const apiError = error.response?.data;
 
-        // Handle upgrade required errors
-        if (apiError?.upgradeRequired) {
-          toast.error(
-            `${apiError.message}. Please upgrade to ${apiError.upgradeTo} plan.`,
-            { duration: 5000 }
-          );
-        }
+            // Handle authentication errors
+            if (error.response?.status === 401) {
+               localStorage.removeItem('authToken');
+               window.location.href = '/login';
+               return Promise.reject(error);
+            }
 
-        return Promise.reject(error);
-      }
-    );
-  }
+            // Handle rate limiting
+            if (error.response?.status === 429) {
+               const retryAfter = apiError?.retryAfter || 60;
+               toast.error(
+                  `Rate limit exceeded. Please try again in ${retryAfter} seconds.`
+               );
+               return Promise.reject(error);
+            }
 
-  // Generic request methods
-  async get<T>(url: string, params?: any): Promise<T> {
-    const response = await this.client.get(url, { params });
-    return response.data;
-  }
+            // Handle upgrade required errors
+            if (apiError?.upgradeRequired) {
+               toast.error(
+                  `${apiError.message}. Please upgrade to ${apiError.upgradeTo} plan.`,
+                  { duration: 5000 }
+               );
+            }
 
-  async post<T>(url: string, data?: any): Promise<T> {
-    const response = await this.client.post(url, data);
-    return response.data;
-  }
+            return Promise.reject(error);
+         }
+      );
+   }
 
-  async put<T>(url: string, data?: any): Promise<T> {
-    const response = await this.client.put(url, data);
-    return response.data;
-  }
+   // Generic request methods
+   async get<T>(url: string, params?: any): Promise<T> {
+      const response = await this.client.get(url, { params });
+      return response.data;
+   }
 
-  async delete<T>(url: string): Promise<T> {
-    const response = await this.client.delete(url);
-    return response.data;
-  }
+   async post<T>(url: string, data?: any): Promise<T> {
+      const response = await this.client.post(url, data);
+      return response.data;
+   }
+
+   async put<T>(url: string, data?: any): Promise<T> {
+      const response = await this.client.put(url, data);
+      return response.data;
+   }
+
+   async delete<T>(url: string): Promise<T> {
+      const response = await this.client.delete(url);
+      return response.data;
+   }
 }
 
 export const apiClient = new APIClient();
@@ -418,95 +418,99 @@ import { apiClient } from '../lib/apiClient';
 import { toast } from 'react-hot-toast';
 
 interface CreateInvitationData {
-  email: string;
-  role: 'Owner' | 'Pharmacist' | 'Technician' | 'Intern';
-  customMessage?: string;
+   email: string;
+   role: 'Owner' | 'Pharmacist' | 'Technician' | 'Intern';
+   customMessage?: string;
 }
 
 interface Invitation {
-  id: string;
-  email: string;
-  code: string;
-  role: string;
-  status: 'active' | 'expired' | 'used' | 'canceled';
-  expiresAt: string;
-  createdAt: string;
-  metadata: {
-    inviterName: string;
-    workspaceName: string;
-    customMessage?: string;
-  };
+   id: string;
+   email: string;
+   code: string;
+   role: string;
+   status: 'active' | 'expired' | 'used' | 'canceled';
+   expiresAt: string;
+   createdAt: string;
+   metadata: {
+      inviterName: string;
+      workspaceName: string;
+      customMessage?: string;
+   };
 }
 
 export const useInvitations = (workspaceId: string) => {
-  const queryClient = useQueryClient();
+   const queryClient = useQueryClient();
 
-  // Get invitations
-  const {
-    data: invitations,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['invitations', workspaceId],
-    queryFn: () =>
-      apiClient.get<
-        APISuccess<{
-          invitations: Invitation[];
-          pagination: any;
-          stats: any;
-        }>
-      >(`/api/workspaces/${workspaceId}/invitations`),
-    enabled: !!workspaceId,
-  });
+   // Get invitations
+   const {
+      data: invitations,
+      isLoading,
+      error,
+   } = useQuery({
+      queryKey: ['invitations', workspaceId],
+      queryFn: () =>
+         apiClient.get<
+            APISuccess<{
+               invitations: Invitation[];
+               pagination: any;
+               stats: any;
+            }>
+         >(`/api/workspaces/${workspaceId}/invitations`),
+      enabled: !!workspaceId,
+   });
 
-  // Create invitation
-  const createInvitation = useMutation({
-    mutationFn: (data: CreateInvitationData) =>
-      apiClient.post(`/api/workspaces/${workspaceId}/invitations`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invitations', workspaceId] });
-      toast.success('Invitation sent successfully!');
-    },
-    onError: (error: any) => {
-      const message =
-        error.response?.data?.message || 'Failed to send invitation';
-      toast.error(message);
-    },
-  });
+   // Create invitation
+   const createInvitation = useMutation({
+      mutationFn: (data: CreateInvitationData) =>
+         apiClient.post(`/api/workspaces/${workspaceId}/invitations`, data),
+      onSuccess: () => {
+         queryClient.invalidateQueries({
+            queryKey: ['invitations', workspaceId],
+         });
+         toast.success('Invitation sent successfully!');
+      },
+      onError: (error: any) => {
+         const message =
+            error.response?.data?.message || 'Failed to send invitation';
+         toast.error(message);
+      },
+   });
 
-  // Cancel invitation
-  const cancelInvitation = useMutation({
-    mutationFn: (invitationId: string) =>
-      apiClient.delete(`/api/invitations/${invitationId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invitations', workspaceId] });
-      toast.success('Invitation canceled');
-    },
-    onError: () => {
-      toast.error('Failed to cancel invitation');
-    },
-  });
+   // Cancel invitation
+   const cancelInvitation = useMutation({
+      mutationFn: (invitationId: string) =>
+         apiClient.delete(`/api/invitations/${invitationId}`),
+      onSuccess: () => {
+         queryClient.invalidateQueries({
+            queryKey: ['invitations', workspaceId],
+         });
+         toast.success('Invitation canceled');
+      },
+      onError: () => {
+         toast.error('Failed to cancel invitation');
+      },
+   });
 
-  // Resend invitation
-  const resendInvitation = useMutation({
-    mutationFn: (invitationId: string) =>
-      apiClient.post(`/api/invitations/${invitationId}/resend`),
-    onSuccess: () => {
-      toast.success('Invitation resent successfully!');
-    },
-    onError: () => {
-      toast.error('Failed to resend invitation');
-    },
-  });
+   // Resend invitation
+   const resendInvitation = useMutation({
+      mutationFn: (invitationId: string) =>
+         apiClient.post(`/api/invitations/${invitationId}/resend`),
+      onSuccess: () => {
+         toast.success('Invitation resent successfully!');
+      },
+      onError: () => {
+         toast.error('Failed to resend invitation');
+      },
+   });
 
-  return {
-    invitations: invitations?.data,
-    isLoading,
-    error,
-    createInvitation,
-    cancelInvitation,
-    resendInvitation,
-  };
+   return {
+      invitations: invitations?.data,
+      isLoading,
+      error,
+      createInvitation,
+      cancelInvitation,
+      resendInvitation,
+   };
 };
 ```
 
@@ -841,56 +845,57 @@ import { apiClient } from '../lib/apiClient';
 import { toast } from 'react-hot-toast';
 
 export const useSubscription = (workspaceId: string) => {
-  const queryClient = useQueryClient();
+   const queryClient = useQueryClient();
 
-  // Get subscription details
-  const {
-    data: subscription,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['subscription', workspaceId],
-    queryFn: () => apiClient.get(`/api/subscriptions/workspace/${workspaceId}`),
-    enabled: !!workspaceId,
-  });
+   // Get subscription details
+   const {
+      data: subscription,
+      isLoading,
+      error,
+   } = useQuery({
+      queryKey: ['subscription', workspaceId],
+      queryFn: () =>
+         apiClient.get(`/api/subscriptions/workspace/${workspaceId}`),
+      enabled: !!workspaceId,
+   });
 
-  // Upgrade subscription
-  const upgradeSubscription = useMutation({
-    mutationFn: (data: { planId: string; billingInterval: string }) =>
-      apiClient.post('/api/subscriptions/workspace/upgrade', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['subscription', workspaceId],
-      });
-      toast.success('Subscription upgraded successfully!');
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Upgrade failed');
-    },
-  });
+   // Upgrade subscription
+   const upgradeSubscription = useMutation({
+      mutationFn: (data: { planId: string; billingInterval: string }) =>
+         apiClient.post('/api/subscriptions/workspace/upgrade', data),
+      onSuccess: () => {
+         queryClient.invalidateQueries({
+            queryKey: ['subscription', workspaceId],
+         });
+         toast.success('Subscription upgraded successfully!');
+      },
+      onError: (error: any) => {
+         toast.error(error.response?.data?.message || 'Upgrade failed');
+      },
+   });
 
-  // Downgrade subscription
-  const downgradeSubscription = useMutation({
-    mutationFn: (data: { planId: string }) =>
-      apiClient.post('/api/subscriptions/workspace/downgrade', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['subscription', workspaceId],
-      });
-      toast.success('Downgrade scheduled for end of billing period');
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Downgrade failed');
-    },
-  });
+   // Downgrade subscription
+   const downgradeSubscription = useMutation({
+      mutationFn: (data: { planId: string }) =>
+         apiClient.post('/api/subscriptions/workspace/downgrade', data),
+      onSuccess: () => {
+         queryClient.invalidateQueries({
+            queryKey: ['subscription', workspaceId],
+         });
+         toast.success('Downgrade scheduled for end of billing period');
+      },
+      onError: (error: any) => {
+         toast.error(error.response?.data?.message || 'Downgrade failed');
+      },
+   });
 
-  return {
-    subscription: subscription?.data,
-    isLoading,
-    error,
-    upgradeSubscription,
-    downgradeSubscription,
-  };
+   return {
+      subscription: subscription?.data,
+      isLoading,
+      error,
+      upgradeSubscription,
+      downgradeSubscription,
+   };
 };
 ```
 
@@ -1201,68 +1206,70 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 
 export const useErrorHandler = () => {
-  const { logout } = useAuth();
+   const { logout } = useAuth();
 
-  const handleError = useCallback(
-    (error: any) => {
-      const response = error.response;
-      const data = response?.data;
+   const handleError = useCallback(
+      (error: any) => {
+         const response = error.response;
+         const data = response?.data;
 
-      // Handle authentication errors
-      if (response?.status === 401) {
-        toast.error('Session expired. Please log in again.');
-        logout();
-        return;
-      }
+         // Handle authentication errors
+         if (response?.status === 401) {
+            toast.error('Session expired. Please log in again.');
+            logout();
+            return;
+         }
 
-      // Handle permission errors
-      if (response?.status === 403) {
-        toast.error(
-          data?.message || "You don't have permission to perform this action."
-        );
-        return;
-      }
+         // Handle permission errors
+         if (response?.status === 403) {
+            toast.error(
+               data?.message ||
+                  "You don't have permission to perform this action."
+            );
+            return;
+         }
 
-      // Handle upgrade required errors
-      if (data?.upgradeRequired) {
-        toast.error(
-          `${data.message}. Please upgrade to ${data.upgradeTo} plan.`,
-          {
-            duration: 5000,
-            action: {
-              label: 'Upgrade',
-              onClick: () => (window.location.href = '/subscription/upgrade'),
-            },
-          }
-        );
-        return;
-      }
+         // Handle upgrade required errors
+         if (data?.upgradeRequired) {
+            toast.error(
+               `${data.message}. Please upgrade to ${data.upgradeTo} plan.`,
+               {
+                  duration: 5000,
+                  action: {
+                     label: 'Upgrade',
+                     onClick: () =>
+                        (window.location.href = '/subscription/upgrade'),
+                  },
+               }
+            );
+            return;
+         }
 
-      // Handle rate limiting
-      if (response?.status === 429) {
-        const retryAfter = data?.retryAfter || 60;
-        toast.error(
-          `Too many requests. Please try again in ${retryAfter} seconds.`
-        );
-        return;
-      }
+         // Handle rate limiting
+         if (response?.status === 429) {
+            const retryAfter = data?.retryAfter || 60;
+            toast.error(
+               `Too many requests. Please try again in ${retryAfter} seconds.`
+            );
+            return;
+         }
 
-      // Handle validation errors
-      if (response?.status === 400 && data?.details) {
-        const validationErrors = Object.values(data.details).join(', ');
-        toast.error(`Validation error: ${validationErrors}`);
-        return;
-      }
+         // Handle validation errors
+         if (response?.status === 400 && data?.details) {
+            const validationErrors = Object.values(data.details).join(', ');
+            toast.error(`Validation error: ${validationErrors}`);
+            return;
+         }
 
-      // Generic error handling
-      const message =
-        data?.message || error.message || 'An unexpected error occurred';
-      toast.error(message);
-    },
-    [logout]
-  );
+         // Generic error handling
+         const message =
+            data?.message || error.message || 'An unexpected error occurred';
+         toast.error(message);
+      },
+      [logout]
+   );
 
-  return { handleError };
+   return { handleError };
 };
 ```
 

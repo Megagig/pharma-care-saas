@@ -1,15 +1,15 @@
 import express from 'express';
 import {
-  getPayments,
-  createPayment,
-  getPayment,
-  processWebhook,
-  getPaymentMethods,
-  addPaymentMethod,
-  removePaymentMethod,
-  setDefaultPaymentMethod,
-  createSetupIntent,
-  generateInvoice
+   getPayments,
+   createPayment,
+   getPayment,
+   processWebhook,
+   getPaymentMethods,
+   addPaymentMethod,
+   removePaymentMethod,
+   setDefaultPaymentMethod,
+   createSetupIntent,
+   generateInvoice,
 } from '../controllers/paymentController';
 import { auth } from '../middlewares/auth';
 
@@ -19,9 +19,7 @@ router.post('/webhook', processWebhook); // Webhook doesn't need auth
 router.use(auth); // All other payment routes require authentication
 
 // Payment history routes
-router.route('/')
-  .get(getPayments)
-  .post(createPayment);
+router.route('/').get(getPayments).post(createPayment);
 
 router.get('/:id', getPayment);
 router.get('/:paymentId/invoice', generateInvoice);

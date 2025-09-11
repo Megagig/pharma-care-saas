@@ -2,79 +2,79 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 
 // Create axios instance with base configuration
 const getBaseURL = () => {
-  try {
-    // Use environment variables in a TypeScript-compatible way
-    const fallbackUrl = 'http://localhost:5000/api';
+   try {
+      // Use environment variables in a TypeScript-compatible way
+      const fallbackUrl = 'http://localhost:5000/api';
 
-    // In browser environments, Vite injects environment variables at build time
-    // We'll use a simple check for the environment variable
-    if (
-      typeof process !== 'undefined' &&
-      process.env &&
-      process.env.VITE_API_BASE_URL
-    ) {
-      return process.env.VITE_API_BASE_URL;
-    }
+      // In browser environments, Vite injects environment variables at build time
+      // We'll use a simple check for the environment variable
+      if (
+         typeof process !== 'undefined' &&
+         process.env &&
+         process.env.VITE_API_BASE_URL
+      ) {
+         return process.env.VITE_API_BASE_URL;
+      }
 
-    return fallbackUrl;
-  } catch {
-    return 'http://localhost:5000/api';
-  }
+      return fallbackUrl;
+   } catch {
+      return 'http://localhost:5000/api';
+   }
 };
 
 const api = axios.create({
-  baseURL: getBaseURL(),
-  timeout: 30000,
-  withCredentials: true, // Include httpOnly cookies
-  headers: {
-    'Content-Type': 'application/json',
-  },
+   baseURL: getBaseURL(),
+   timeout: 30000,
+   withCredentials: true, // Include httpOnly cookies
+   headers: {
+      'Content-Type': 'application/json',
+   },
 });
 
 // Request interceptor to ensure credentials are included
 api.interceptors.request.use(
-  (config) => {
-    // Ensure credentials are included for httpOnly cookies
-    config.withCredentials = true;
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
+   (config) => {
+      // Ensure credentials are included for httpOnly cookies
+      config.withCredentials = true;
+      return config;
+   },
+   (error) => {
+      return Promise.reject(error);
+   }
 );
 
 // Response interceptor to handle errors
 api.interceptors.response.use(
-  (response: AxiosResponse) => {
-    return response;
-  },
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // Unauthorized - redirect to login (cookies will be cleared by server)
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
+   (response: AxiosResponse) => {
+      return response;
+   },
+   (error: AxiosError) => {
+      if (error.response?.status === 401) {
+         // Unauthorized - redirect to login (cookies will be cleared by server)
+         window.location.href = '/login';
+      }
+      return Promise.reject(error);
+   }
 );
 
 // Generic API response type
 export interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
+   success: boolean;
+   data?: T;
+   message?: string;
+   error?: string;
 }
 
 // API helper functions
 export const apiHelpers = {
-  get: <T = unknown>(url: string) => api.get<ApiResponse<T>>(url),
-  post: <T = unknown>(url: string, data?: unknown) =>
-    api.post<ApiResponse<T>>(url, data),
-  put: <T = unknown>(url: string, data?: unknown) =>
-    api.put<ApiResponse<T>>(url, data),
-  patch: <T = unknown>(url: string, data?: unknown) =>
-    api.patch<ApiResponse<T>>(url, data),
-  delete: <T = unknown>(url: string) => api.delete<ApiResponse<T>>(url),
+   get: <T = unknown>(url: string) => api.get<ApiResponse<T>>(url),
+   post: <T = unknown>(url: string, data?: unknown) =>
+      api.post<ApiResponse<T>>(url, data),
+   put: <T = unknown>(url: string, data?: unknown) =>
+      api.put<ApiResponse<T>>(url, data),
+   patch: <T = unknown>(url: string, data?: unknown) =>
+      api.patch<ApiResponse<T>>(url, data),
+   delete: <T = unknown>(url: string) => api.delete<ApiResponse<T>>(url),
 };
 
 // Export both as named and default export

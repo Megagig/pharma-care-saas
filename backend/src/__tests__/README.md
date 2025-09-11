@@ -30,74 +30,71 @@ __tests__/
 #### Models (`models/`)
 
 - **MedicationTherapyReview.test.ts**: Tests for the main MTR model
-
-  - Model creation and validation
-  - Workflow step management
-  - Virtual properties and methods
-  - Pre-save middleware
-  - Static methods
-  - Clinical outcomes tracking
+   - Model creation and validation
+   - Workflow step management
+   - Virtual properties and methods
+   - Pre-save middleware
+   - Static methods
+   - Clinical outcomes tracking
 
 - **DrugTherapyProblem.test.ts**: Tests for drug therapy problem model
-
-  - Problem creation and validation
-  - Severity and priority calculations
-  - Resolution tracking
-  - Instance methods (resolve, reopen, isOverdue)
-  - Static methods for querying
+   - Problem creation and validation
+   - Severity and priority calculations
+   - Resolution tracking
+   - Instance methods (resolve, reopen, isOverdue)
+   - Static methods for querying
 
 - **MTRIntervention.test.ts**: Tests for intervention model
-
-  - Intervention creation and validation
-  - Follow-up management
-  - Outcome tracking
-  - Virtual properties
-  - Static methods for reporting
+   - Intervention creation and validation
+   - Follow-up management
+   - Outcome tracking
+   - Virtual properties
+   - Static methods for reporting
 
 - **MTRFollowUp.test.ts**: Tests for follow-up model
-  - Follow-up scheduling and validation
-  - Reminder system
-  - Status tracking and completion
-  - Rescheduling functionality
-  - Static methods for querying
+   - Follow-up scheduling and validation
+   - Reminder system
+   - Status tracking and completion
+   - Rescheduling functionality
+   - Static methods for querying
 
 #### Controllers (`controllers/`)
 
 - **mtrController.test.ts**: Tests for MTR API endpoints
-  - CRUD operations for MTR sessions
-  - Workflow step management
-  - Problem, intervention, and follow-up operations
-  - Patient-specific operations
-  - Error handling and validation
-  - Authentication and authorization
+   - CRUD operations for MTR sessions
+   - Workflow step management
+   - Problem, intervention, and follow-up operations
+   - Patient-specific operations
+   - Error handling and validation
+   - Authentication and authorization
 
 #### Services (`services/`)
 
 - **mtrService.test.ts**: Tests for business logic services
-  - MTR workflow validation
-  - Drug interaction checking
-  - Problem generation from interactions
-  - Step validation logic
-  - Audit logging
+   - MTR workflow validation
+   - Drug interaction checking
+   - Problem generation from interactions
+   - Step validation logic
+   - Audit logging
 
 #### Validators (`validators/`)
 
 - **mtrValidators.test.ts**: Tests for input validation
-  - Schema validation for all MTR operations
-  - Field validation and constraints
-  - Enum value validation
-  - Length and format validation
-  - Error message verification
+   - Schema validation for all MTR operations
+   - Field validation and constraints
+   - Enum value validation
+   - Length and format validation
+   - Error message verification
 
 ### Integration Tests (`integration/`)
 
 - **mtrIntegration.test.ts**: End-to-end workflow tests
-  - Complete MTR workflow from creation to completion
-  - Drug interaction checking integration
-  - Reporting and analytics
-  - Error scenario handling
-  - Pagination and filtering
-  - Performance and scalability tests
+   - Complete MTR workflow from creation to completion
+   - Drug interaction checking integration
+   - Reporting and analytics
+   - Error scenario handling
+   - Pagination and filtering
+   - Performance and scalability tests
 
 ## Running Tests
 

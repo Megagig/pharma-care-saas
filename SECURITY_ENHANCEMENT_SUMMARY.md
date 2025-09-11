@@ -33,17 +33,17 @@ Successfully implemented secure authentication system replacing vulnerable local
 ```typescript
 // Login endpoint - Set both tokens as HTTP-only cookies
 res.cookie('accessToken', accessToken, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-  maxAge: 15 * 60 * 1000, // 15 minutes
+   httpOnly: true,
+   secure: process.env.NODE_ENV === 'production',
+   sameSite: 'strict',
+   maxAge: 15 * 60 * 1000, // 15 minutes
 });
 
 res.cookie('refreshToken', refreshToken, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+   httpOnly: true,
+   secure: process.env.NODE_ENV === 'production',
+   sameSite: 'strict',
+   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 });
 ```
 
@@ -51,24 +51,24 @@ res.cookie('refreshToken', refreshToken, {
 
 ```typescript
 export const auth = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
+   req: AuthRequest,
+   res: Response,
+   next: NextFunction
 ) => {
-  try {
-    // Try cookie first, fallback to header for API compatibility
-    const token =
-      req.cookies.accessToken ||
-      req.header('Authorization')?.replace('Bearer ', '');
+   try {
+      // Try cookie first, fallback to header for API compatibility
+      const token =
+         req.cookies.accessToken ||
+         req.header('Authorization')?.replace('Bearer ', '');
 
-    if (!token) {
-      res.status(401).json({ message: 'Access denied. No token provided.' });
-      return;
-    }
-    // ... validation logic
-  } catch (error) {
-    // Handle token expiration and invalid tokens
-  }
+      if (!token) {
+         res.status(401).json({ message: 'Access denied. No token provided.' });
+         return;
+      }
+      // ... validation logic
+   } catch (error) {
+      // Handle token expiration and invalid tokens
+   }
 };
 ```
 
@@ -76,14 +76,14 @@ export const auth = async (
 
 ```typescript
 export const logout = async (req: Request, res: Response) => {
-  // Clear both cookies
-  res.clearCookie('refreshToken');
-  res.clearCookie('accessToken');
+   // Clear both cookies
+   res.clearCookie('refreshToken');
+   res.clearCookie('accessToken');
 
-  res.json({
-    success: true,
-    message: 'Logged out successfully',
-  });
+   res.json({
+      success: true,
+      message: 'Logged out successfully',
+   });
 };
 ```
 
@@ -106,11 +106,11 @@ credentials: 'include'; // Include HTTP-only cookies in all requests
 ```typescript
 // All API instances now use credentials: 'include'
 const api = axios.create({
-  baseURL: API_URL,
-  withCredentials: true, // Include HTTP-only cookies
-  headers: {
-    'Content-Type': 'application/json',
-  },
+   baseURL: API_URL,
+   withCredentials: true, // Include HTTP-only cookies
+   headers: {
+      'Content-Type': 'application/json',
+   },
 });
 ```
 

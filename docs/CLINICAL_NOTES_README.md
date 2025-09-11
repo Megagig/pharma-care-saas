@@ -123,12 +123,10 @@ The Clinical Notes module is a comprehensive documentation system designed speci
 ### Basic Usage
 
 1. **Access Clinical Notes**
-
    - Navigate to `/clinical-notes` in your application
    - Or access from patient profiles via the "Clinical Notes" tab
 
 2. **Create a Note**
-
    - Click "New Note" button
    - Select patient and note type
    - Fill in SOAP sections

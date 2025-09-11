@@ -17,28 +17,28 @@ Successfully implemented enhanced file upload component and attachment managemen
 - **File Size Validation**: Configurable file size limits with clear error messages
 - **Progress Indicators**: Real-time upload progress with visual feedback
 - **Preview Capabilities**:
-  - Image preview with thumbnail display
-  - PDF preview in modal dialog
-  - File type icons for different document types
+   - Image preview with thumbnail display
+   - PDF preview in modal dialog
+   - File type icons for different document types
 - **Attachment Management**:
-  - View existing attachments in card layout
-  - Download attachments with proper file naming
-  - Delete attachments with confirmation dialog
-  - Security validation for all operations
+   - View existing attachments in card layout
+   - Download attachments with proper file naming
+   - Delete attachments with confirmation dialog
+   - Security validation for all operations
 
 #### Enhanced Props Interface:
 
 ```typescript
 interface NoteFileUploadProps {
-  onFilesUploaded: (files: UploadedFile[]) => void;
-  onAttachmentDeleted?: (attachmentId: string) => void;
-  existingAttachments?: Attachment[];
-  noteId?: string; // For existing notes
-  maxFiles?: number;
-  acceptedTypes?: string[];
-  maxFileSize?: number;
-  disabled?: boolean;
-  showPreview?: boolean;
+   onFilesUploaded: (files: UploadedFile[]) => void;
+   onAttachmentDeleted?: (attachmentId: string) => void;
+   existingAttachments?: Attachment[];
+   noteId?: string; // For existing notes
+   maxFiles?: number;
+   acceptedTypes?: string[];
+   maxFileSize?: number;
+   disabled?: boolean;
+   showPreview?: boolean;
 }
 ```
 
@@ -131,9 +131,9 @@ const onSubmit = async (data: ClinicalNoteFormData) => {
 - **Card-based Layout**: Modern card layout for attachment display
 - **File Type Icons**: Appropriate icons for different file types
 - **Preview Functionality**:
-  - Image thumbnails with click-to-enlarge
-  - PDF preview in modal
-  - File information display
+   - Image thumbnails with click-to-enlarge
+   - PDF preview in modal
+   - File information display
 - **Progress Indicators**: Upload progress with percentage
 - **Status Indicators**: Upload status chips (pending, uploading, completed, error)
 

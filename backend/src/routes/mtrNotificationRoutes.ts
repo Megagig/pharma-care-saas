@@ -1,17 +1,17 @@
 import express from 'express';
 import {
-    scheduleFollowUpReminder,
-    sendCriticalAlert,
-    checkOverdueFollowUps,
-    updateNotificationPreferences,
-    getNotificationPreferences,
-    getNotificationStatistics,
-    processPendingReminders,
-    sendTestNotification,
-    getFollowUpReminders,
-    cancelScheduledReminder,
-    checkDrugInteractions,
-    notifyHighSeverityDTP
+   scheduleFollowUpReminder,
+   sendCriticalAlert,
+   checkOverdueFollowUps,
+   updateNotificationPreferences,
+   getNotificationPreferences,
+   getNotificationStatistics,
+   processPendingReminders,
+   sendTestNotification,
+   getFollowUpReminders,
+   cancelScheduledReminder,
+   checkDrugInteractions,
+   notifyHighSeverityDTP,
 } from '../controllers/mtrNotificationController';
 import { auth } from '../middlewares/auth';
 
@@ -23,7 +23,10 @@ router.use(auth);
 // Follow-up reminder routes
 router.post('/follow-up/:followUpId/reminder', scheduleFollowUpReminder);
 router.get('/follow-up/:followUpId/reminders', getFollowUpReminders);
-router.delete('/follow-up/:followUpId/reminder/:reminderId', cancelScheduledReminder);
+router.delete(
+   '/follow-up/:followUpId/reminder/:reminderId',
+   cancelScheduledReminder
+);
 
 // Critical alert routes
 router.post('/alert/critical', sendCriticalAlert);

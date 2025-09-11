@@ -13,33 +13,33 @@ const router = Router();
  * @access Public
  */
 router.get('/monograph/:id', async (req, res) => {
-  console.log('=== PUBLIC MONOGRAPH API CALLED ===');
+   console.log('=== PUBLIC MONOGRAPH API CALLED ===');
 
-  try {
-    const { id } = req.params;
+   try {
+      const { id } = req.params;
 
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        error: 'Monograph ID is required',
+      if (!id) {
+         return res.status(400).json({
+            success: false,
+            error: 'Monograph ID is required',
+         });
+      }
+
+      const monograph = await dailymedService.getMonographById(id);
+
+      return res.json({
+         success: true,
+         data: monograph,
       });
-    }
+   } catch (error: any) {
+      logger.error('Public monograph fetch error:', error);
 
-    const monograph = await dailymedService.getMonographById(id);
-
-    return res.json({
-      success: true,
-      data: monograph,
-    });
-  } catch (error: any) {
-    logger.error('Public monograph fetch error:', error);
-
-    return res.status(500).json({
-      success: false,
-      error: 'Error fetching monograph',
-      message: error.message,
-    });
-  }
+      return res.status(500).json({
+         success: false,
+         error: 'Error fetching monograph',
+         message: error.message,
+      });
+   }
 });
 
 /**
@@ -48,42 +48,41 @@ router.get('/monograph/:id', async (req, res) => {
  * @access Public
  */
 router.post('/interactions', async (req, res) => {
-  console.log('=== PUBLIC INTERACTIONS API CALLED ===');
+   console.log('=== PUBLIC INTERACTIONS API CALLED ===');
 
-  try {
-    const { rxcui, rxcuis } = req.body;
+   try {
+      const { rxcui, rxcuis } = req.body;
 
-    if (!rxcui && (!rxcuis || !Array.isArray(rxcuis))) {
-      return res.status(400).json({
-        success: false,
-        error: 'Valid rxcui or rxcuis array is required',
+      if (!rxcui && (!rxcuis || !Array.isArray(rxcuis))) {
+         return res.status(400).json({
+            success: false,
+            error: 'Valid rxcui or rxcuis array is required',
+         });
+      }
+
+      let results;
+      if (rxcui) {
+         // Single drug interaction check
+         results = await interactionService.getInteractionsForDrug(rxcui);
+      } else if (rxcuis && Array.isArray(rxcuis)) {
+         // Multiple drug interaction check
+         results =
+            await interactionService.getInteractionsForMultipleDrugs(rxcuis);
+      }
+
+      return res.json({
+         success: true,
+         data: results,
       });
-    }
+   } catch (error: any) {
+      logger.error('Public interaction check error:', error);
 
-    let results;
-    if (rxcui) {
-      // Single drug interaction check
-      results = await interactionService.getInteractionsForDrug(rxcui);
-    } else if (rxcuis && Array.isArray(rxcuis)) {
-      // Multiple drug interaction check
-      results = await interactionService.getInteractionsForMultipleDrugs(
-        rxcuis
-      );
-    }
-
-    return res.json({
-      success: true,
-      data: results,
-    });
-  } catch (error: any) {
-    logger.error('Public interaction check error:', error);
-
-    return res.status(500).json({
-      success: false,
-      error: 'Error checking interactions',
-      message: error.message,
-    });
-  }
+      return res.status(500).json({
+         success: false,
+         error: 'Error checking interactions',
+         message: error.message,
+      });
+   }
 });
 
 /**
@@ -92,58 +91,58 @@ router.post('/interactions', async (req, res) => {
  * @access Public
  */
 router.get('/adverse-effects/:id', async (req, res) => {
-  console.log('=== PUBLIC ADVERSE EFFECTS API CALLED ===');
+   console.log('=== PUBLIC ADVERSE EFFECTS API CALLED ===');
 
-  try {
-    const { id } = req.params;
-    const { limit } = req.query;
+   try {
+      const { id } = req.params;
+      const { limit } = req.query;
 
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        error: 'Drug identifier is required',
-      });
-    }
-
-    // First try to get RxCUI if id is a name
-    let drugName: string = id;
-    try {
-      const rxCuiData = await rxnormService.getRxCuiByName(id);
-      if (
-        rxCuiData &&
-        rxCuiData.idGroup &&
-        rxCuiData.idGroup.rxnormId &&
-        rxCuiData.idGroup.rxnormId.length > 0
-      ) {
-        const firstRxCui = rxCuiData.idGroup.rxnormId[0];
-        if (firstRxCui) {
-          drugName = firstRxCui;
-        }
+      if (!id) {
+         return res.status(400).json({
+            success: false,
+            error: 'Drug identifier is required',
+         });
       }
-    } catch (e) {
-      // If we can't get RxCUI, use the provided ID as name
-      logger.info('Could not resolve RxCUI, using provided ID as name');
-    }
 
-    const limitNum = limit ? parseInt(limit as string, 10) : 10;
-    const adverseEffects = await openfdaService.getAdverseEffects(
-      drugName,
-      limitNum
-    );
+      // First try to get RxCUI if id is a name
+      let drugName: string = id;
+      try {
+         const rxCuiData = await rxnormService.getRxCuiByName(id);
+         if (
+            rxCuiData &&
+            rxCuiData.idGroup &&
+            rxCuiData.idGroup.rxnormId &&
+            rxCuiData.idGroup.rxnormId.length > 0
+         ) {
+            const firstRxCui = rxCuiData.idGroup.rxnormId[0];
+            if (firstRxCui) {
+               drugName = firstRxCui;
+            }
+         }
+      } catch (e) {
+         // If we can't get RxCUI, use the provided ID as name
+         logger.info('Could not resolve RxCUI, using provided ID as name');
+      }
 
-    return res.json({
-      success: true,
-      data: adverseEffects,
-    });
-  } catch (error: any) {
-    logger.error('Public adverse effects fetch error:', error);
+      const limitNum = limit ? parseInt(limit as string, 10) : 10;
+      const adverseEffects = await openfdaService.getAdverseEffects(
+         drugName,
+         limitNum
+      );
 
-    return res.status(500).json({
-      success: false,
-      error: 'Error fetching adverse effects',
-      message: error.message,
-    });
-  }
+      return res.json({
+         success: true,
+         data: adverseEffects,
+      });
+   } catch (error: any) {
+      logger.error('Public adverse effects fetch error:', error);
+
+      return res.status(500).json({
+         success: false,
+         error: 'Error fetching adverse effects',
+         message: error.message,
+      });
+   }
 });
 
 /**
@@ -152,53 +151,53 @@ router.get('/adverse-effects/:id', async (req, res) => {
  * @access Public
  */
 router.get('/formulary/:id', async (req, res) => {
-  console.log('=== PUBLIC FORMULARY API CALLED ===');
+   console.log('=== PUBLIC FORMULARY API CALLED ===');
 
-  try {
-    const { id } = req.params;
+   try {
+      const { id } = req.params;
 
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        error: 'Drug identifier is required',
-      });
-    }
-
-    // Add error handling for RxNav API
-    try {
-      const equivalents = await rxnormService.getTherapeuticEquivalents(id);
-
-      return res.json({
-        success: true,
-        data: equivalents,
-      });
-    } catch (error: any) {
-      // Check if it's a 404 error from RxNav API
-      if (error.message && error.message.includes('404')) {
-        return res.json({
-          success: true,
-          data: {
-            // Return an empty but valid response structure
-            relatedGroup: {
-              rxcui: id,
-              name: 'Unknown drug',
-              conceptGroup: [],
-            },
-          },
-        });
+      if (!id) {
+         return res.status(400).json({
+            success: false,
+            error: 'Drug identifier is required',
+         });
       }
 
-      throw error; // Re-throw other errors to be caught by the outer try/catch
-    }
-  } catch (error: any) {
-    logger.error('Public formulary fetch error:', error);
+      // Add error handling for RxNav API
+      try {
+         const equivalents = await rxnormService.getTherapeuticEquivalents(id);
 
-    return res.status(500).json({
-      success: false,
-      error: 'Error fetching formulary',
-      message: error.message,
-    });
-  }
+         return res.json({
+            success: true,
+            data: equivalents,
+         });
+      } catch (error: any) {
+         // Check if it's a 404 error from RxNav API
+         if (error.message && error.message.includes('404')) {
+            return res.json({
+               success: true,
+               data: {
+                  // Return an empty but valid response structure
+                  relatedGroup: {
+                     rxcui: id,
+                     name: 'Unknown drug',
+                     conceptGroup: [],
+                  },
+               },
+            });
+         }
+
+         throw error; // Re-throw other errors to be caught by the outer try/catch
+      }
+   } catch (error: any) {
+      logger.error('Public formulary fetch error:', error);
+
+      return res.status(500).json({
+         success: false,
+         error: 'Error fetching formulary',
+         message: error.message,
+      });
+   }
 });
 
 export default router;

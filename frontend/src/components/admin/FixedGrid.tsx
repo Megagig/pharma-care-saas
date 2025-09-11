@@ -9,46 +9,46 @@ import { Grid } from '@mui/material';
 type GridProps = any;
 
 interface FixedGridItemProps {
-  children?: React.ReactNode;
-  xs?: number;
-  sm?: number;
-  md?: number;
-  lg?: number;
-  xl?: number;
-  spacing?: number;
-  sx?: Record<string, unknown> | { [key: string]: unknown };
+   children?: React.ReactNode;
+   xs?: number;
+   sm?: number;
+   md?: number;
+   lg?: number;
+   xl?: number;
+   spacing?: number;
+   sx?: Record<string, unknown> | { [key: string]: unknown };
 }
 
 export const FixedGridItem: React.FC<FixedGridItemProps> = ({
-  children,
-  ...props
+   children,
+   ...props
 }) => {
-  // Cast the Grid component to any to bypass type checking
-  const TypedGrid = Grid as React.ComponentType<GridProps>;
+   // Cast the Grid component to any to bypass type checking
+   const TypedGrid = Grid as React.ComponentType<GridProps>;
 
-  return (
-    <TypedGrid component="div" item {...props}>
-      {children}
-    </TypedGrid>
-  );
+   return (
+      <TypedGrid component="div" item {...props}>
+         {children}
+      </TypedGrid>
+   );
 };
 
 interface FixedGridContainerProps {
-  children?: React.ReactNode;
-  spacing?: number;
-  sx?: Record<string, unknown> | { [key: string]: unknown };
+   children?: React.ReactNode;
+   spacing?: number;
+   sx?: Record<string, unknown> | { [key: string]: unknown };
 }
 
 export const FixedGridContainer: React.FC<FixedGridContainerProps> = ({
-  children,
-  ...props
+   children,
+   ...props
 }) => {
-  // Cast the Grid component to any to bypass type checking
-  const TypedGrid = Grid as React.ComponentType<GridProps>;
+   // Cast the Grid component to any to bypass type checking
+   const TypedGrid = Grid as React.ComponentType<GridProps>;
 
-  return (
-    <TypedGrid component="div" container {...props}>
-      {children}
-    </TypedGrid>
-  );
+   return (
+      <TypedGrid component="div" container {...props}>
+         {children}
+      </TypedGrid>
+   );
 };

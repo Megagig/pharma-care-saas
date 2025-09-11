@@ -1,24 +1,24 @@
 import express from 'express';
 import {
-  createMedication,
-  getMedicationsByPatient,
-  getMedicationById,
-  updateMedication,
-  archiveMedication,
-  logAdherence,
-  getAdherenceLogs,
-  checkInteractions,
-  getMedicationDashboardStats,
-  getMedicationAdherenceTrends,
-  getRecentPatientsWithMedications,
+   createMedication,
+   getMedicationsByPatient,
+   getMedicationById,
+   updateMedication,
+   archiveMedication,
+   logAdherence,
+   getAdherenceLogs,
+   checkInteractions,
+   getMedicationDashboardStats,
+   getMedicationAdherenceTrends,
+   getRecentPatientsWithMedications,
 } from '../controllers/medicationManagementController';
 import {
-  createMedicationSchema,
-  updateMedicationSchema,
-  getMedicationsByPatientSchema,
-  createAdherenceLogSchema,
-  getAdherenceByPatientSchema,
-  checkInteractionsSchema,
+   createMedicationSchema,
+   updateMedicationSchema,
+   getMedicationsByPatientSchema,
+   createAdherenceLogSchema,
+   getAdherenceByPatientSchema,
+   checkInteractionsSchema,
 } from '../validators/medicationValidators';
 import { auth } from '../middlewares/auth';
 import { body, validationResult } from 'express-validator';
@@ -30,15 +30,15 @@ router.use(auth);
 
 // Middleware for validation
 const validate = (
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction
+   req: express.Request,
+   res: express.Response,
+   next: express.NextFunction
 ): express.Response | void => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-  return next();
+   const errors = validationResult(req);
+   if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+   }
+   return next();
 };
 
 // Medication Management Routes
@@ -56,10 +56,10 @@ router.put('/:id', updateMedicationSchema, validate, updateMedication);
 
 // PATCH /api/medication-management/:id/archive - Archive a medication
 router.patch(
-  '/:id/archive',
-  [body('reason').optional().isString().trim()],
-  validate,
-  archiveMedication
+   '/:id/archive',
+   [body('reason').optional().isString().trim()],
+   validate,
+   archiveMedication
 );
 
 // Adherence Log Routes
@@ -72,10 +72,10 @@ router.get('/adherence/patient/:patientId', getAdherenceLogs);
 // Drug Interaction Routes
 // POST /api/medication-management/check-interactions - Check medication interactions
 router.post(
-  '/check-interactions',
-  checkInteractionsSchema,
-  validate,
-  checkInteractions
+   '/check-interactions',
+   checkInteractionsSchema,
+   validate,
+   checkInteractions
 );
 
 // Dashboard Routes

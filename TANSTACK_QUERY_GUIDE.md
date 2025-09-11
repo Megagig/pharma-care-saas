@@ -18,7 +18,7 @@ The query client is configured with optimized defaults in `src/lib/queryClient.t
 ```typescript
 // Optimized caching and retry configuration
 staleTime: 5 * 60 * 1000,      // 5 minutes
-gcTime: 10 * 60 * 1000,        // 10 minutes  
+gcTime: 10 * 60 * 1000,        // 10 minutes
 retry: 3,                       // Retry failed requests 3 times
 refetchOnWindowFocus: false,    // Prevent unnecessary refetches
 ```
@@ -29,12 +29,12 @@ Centralized query key management ensures consistency and easier cache invalidati
 
 ```typescript
 export const queryKeys = {
-  patients: {
-    all: ['patients'],
-    list: (filters) => [...queryKeys.patients.all, 'list', { filters }],
-    detail: (id) => [...queryKeys.patients.all, 'detail', id],
-  },
-  // ... similar patterns for medications and clinical notes
+   patients: {
+      all: ['patients'],
+      list: (filters) => [...queryKeys.patients.all, 'list', { filters }],
+      detail: (id) => [...queryKeys.patients.all, 'detail', id],
+   },
+   // ... similar patterns for medications and clinical notes
 };
 ```
 
@@ -43,6 +43,7 @@ export const queryKeys = {
 ### Patient Hooks (`src/queries/usePatients.ts`)
 
 #### Query Hooks
+
 - `usePatients(filters?)` - Fetch all patients with optional filtering
 - `usePatient(patientId)` - Fetch single patient by ID
 - `useSearchPatients(searchQuery)` - Search patients (min 2 characters)
@@ -50,6 +51,7 @@ export const queryKeys = {
 - `usePatientNotes(patientId)` - Fetch patient's clinical notes
 
 #### Mutation Hooks
+
 - `useCreatePatient()` - Create new patient
 - `useUpdatePatient()` - Update patient information
 - `useDeletePatient()` - Delete patient
@@ -57,11 +59,13 @@ export const queryKeys = {
 ### Medication Hooks (`src/queries/useMedications.ts`)
 
 #### Query Hooks
+
 - `useMedications(filters?)` - Fetch all medications with optional filtering
 - `useMedication(medicationId)` - Fetch single medication by ID
 - `useMedicationsByPatient(patientId)` - Fetch medications for specific patient
 
 #### Mutation Hooks
+
 - `useCreateMedication()` - Create new medication
 - `useUpdateMedication()` - Update medication information
 - `useUpdateMedicationStatus()` - Update medication status (with optimistic updates)
@@ -70,12 +74,14 @@ export const queryKeys = {
 ### Clinical Notes Hooks (`src/queries/useClinicalNotes.ts`)
 
 #### Query Hooks
+
 - `useClinicalNotes(filters?)` - Fetch all clinical notes with optional filtering
 - `useClinicalNote(noteId)` - Fetch single clinical note by ID
 - `useClinicalNotesByPatient(patientId)` - Fetch notes for specific patient
 - `useSearchClinicalNotes(searchQuery)` - Search clinical notes
 
 #### Mutation Hooks
+
 - `useCreateClinicalNote()` - Create new clinical note
 - `useUpdateClinicalNote()` - Update clinical note
 - `useToggleNotePrivacy()` - Toggle note privacy status (with optimistic updates)
@@ -91,10 +97,10 @@ import { usePatients, useCreatePatient } from '../queries/usePatients';
 const PatientsPage = () => {
   // Fetch patients with loading and error states
   const { data: patients, isLoading, error } = usePatients();
-  
+
   // Create patient mutation
   const createPatientMutation = useCreatePatient();
-  
+
   const handleCreatePatient = async (patientData) => {
     try {
       await createPatientMutation.mutateAsync(patientData);
@@ -124,7 +130,7 @@ import { useUpdateMedicationStatus } from '../queries/useMedications';
 
 const MedicationStatusButton = ({ medication }) => {
   const updateStatusMutation = useUpdateMedicationStatus();
-  
+
   const handleStatusChange = (newStatus) => {
     updateStatusMutation.mutate({
       medicationId: medication.id,
@@ -132,9 +138,9 @@ const MedicationStatusButton = ({ medication }) => {
     });
     // UI updates immediately, rolls back on error
   };
-  
+
   return (
-    <button 
+    <button
       onClick={() => handleStatusChange('active')}
       disabled={updateStatusMutation.isLoading}
     >
@@ -152,18 +158,18 @@ import { usePatients, useSearchPatients } from '../queries/usePatients';
 const PatientSearch = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({ status: 'active' });
-  
+
   // Regular filtered query
   const { data: allPatients } = usePatients(filters);
-  
+
   // Search query (only runs when searchTerm has 2+ characters)
   const { data: searchResults } = useSearchPatients(searchTerm);
-  
+
   const displayData = searchTerm.length >= 2 ? searchResults : allPatients;
-  
+
   return (
     <div>
-      <input 
+      <input
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         placeholder="Search patients..."
@@ -181,16 +187,18 @@ const PatientSearch = () => {
 If you want to migrate existing Zustand server state to TanStack Query:
 
 #### Before (Zustand)
+
 ```typescript
 // In component
 const { patients, loading, fetchPatients } = usePatientManagement();
 
 useEffect(() => {
-  fetchPatients();
+   fetchPatients();
 }, []);
 ```
 
 #### After (TanStack Query)
+
 ```typescript
 // In component
 const { data: patients, isLoading } = usePatients();
@@ -205,11 +213,11 @@ You can use both systems simultaneously:
 const MyComponent = () => {
   // TanStack Query for server state
   const { data: patients } = usePatients();
-  
+
   // Zustand for client state
   const sidebarOpen = useUIStore(state => state.sidebarOpen);
   const addNotification = useUIStore(state => state.addNotification);
-  
+
   return (
     <div>
       {/* Component JSX */}
@@ -221,11 +229,13 @@ const MyComponent = () => {
 ## Key Features
 
 ### Automatic Cache Management
+
 - Data is automatically cached and shared across components
 - Smart background refetching keeps data fresh
 - Stale data is served immediately while fresh data loads
 
 ### Built-in Loading States
+
 ```typescript
 const { data, isLoading, isFetching, error } = usePatients();
 
@@ -235,6 +245,7 @@ const { data, isLoading, isFetching, error } = usePatients();
 ```
 
 ### Optimistic Updates
+
 Status changes and other quick updates happen instantly in the UI, with automatic rollback on failure:
 
 ```typescript
@@ -243,6 +254,7 @@ const mutation = useUpdateMedicationStatus();
 ```
 
 ### Smart Invalidation
+
 When data changes, related queries are automatically invalidated:
 
 ```typescript
@@ -252,6 +264,7 @@ When data changes, related queries are automatically invalidated:
 ```
 
 ### Error Handling
+
 All mutations include automatic error handling with notifications:
 
 ```typescript
@@ -263,32 +276,36 @@ const mutation = useCreatePatient();
 ## Best Practices
 
 ### 1. Use Enabled Queries for Conditional Fetching
+
 ```typescript
 const { data } = usePatient(patientId, {
-  enabled: !!patientId, // Only fetch when patientId exists
+   enabled: !!patientId, // Only fetch when patientId exists
 });
 ```
 
 ### 2. Leverage Select for Data Transformation
+
 ```typescript
 const { data: patientNames } = usePatients({
-  select: (data) => data.map(patient => patient.name)
+   select: (data) => data.map((patient) => patient.name),
 });
 ```
 
 ### 3. Use Query Keys Consistently
+
 ```typescript
 // Always use the query keys factory
 import { queryKeys } from '../lib/queryClient';
 
 // Good
-queryKey: queryKeys.patients.detail(id)
+queryKey: queryKeys.patients.detail(id);
 
 // Avoid
-queryKey: ['patients', id]
+queryKey: ['patients', id];
 ```
 
 ### 4. Handle Loading States Appropriately
+
 ```typescript
 if (isLoading) return <Skeleton />;
 if (error) return <ErrorMessage error={error} />;
@@ -298,6 +315,7 @@ return <DataDisplay data={data} />;
 ## Development Tools
 
 React Query DevTools are available in development mode:
+
 - Press the TanStack Query logo in the bottom-left corner
 - Inspect queries, mutations, and cache state
 - Monitor network requests and cache invalidations
@@ -305,11 +323,13 @@ React Query DevTools are available in development mode:
 ## Service Layer
 
 API services are located in `src/services/`:
+
 - `patientService.ts` - Patient API operations
-- `medicationService.ts` - Medication API operations  
+- `medicationService.ts` - Medication API operations
 - `clinicalNoteService.ts` - Clinical notes API operations
 
 All services include:
+
 - Automatic authentication token handling
 - Consistent error handling
 - TypeScript support

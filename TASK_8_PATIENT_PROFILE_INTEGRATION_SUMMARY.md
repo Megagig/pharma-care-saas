@@ -32,8 +32,8 @@ Successfully implemented the Patient Profile Integration Component for the Clini
 ### 4. Enhanced App Routing
 
 - **New Routes Added**:
-  - `/notes/new` - Create new clinical note
-  - `/notes/:id/edit` - Edit existing clinical note
+   - `/notes/new` - Create new clinical note
+   - `/notes/:id/edit` - Edit existing clinical note
 - **Protected Routes**: All routes properly protected with feature flags and subscription requirements
 - **Patient Context Routes**: Support for creating notes from patient context
 

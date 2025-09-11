@@ -28,9 +28,9 @@ Replace your MUI Grid components with our wrapper components:
 
 ```tsx
 <Grid container spacing={2}>
-  <Grid item xs={12} md={6}>
-    {/* content */}
-  </Grid>
+   <Grid item xs={12} md={6}>
+      {/* content */}
+   </Grid>
 </Grid>
 ```
 
@@ -38,9 +38,9 @@ Replace your MUI Grid components with our wrapper components:
 
 ```tsx
 <GridContainer spacing={2}>
-  <GridItem xs={12} md={6}>
-    {/* content */}
-  </GridItem>
+   <GridItem xs={12} md={6}>
+      {/* content */}
+   </GridItem>
 </GridContainer>
 ```
 
@@ -73,15 +73,15 @@ The wrapper components support all common Grid props:
 
 ```tsx
 <GridContainer spacing={3} sx={{ mt: 2 }}>
-  <GridItem xs={12} md={6}>
-    <TextField fullWidth label="Name" />
-  </GridItem>
-  <GridItem xs={12} md={6}>
-    <TextField fullWidth label="Email" />
-  </GridItem>
-  <GridItem xs={12}>
-    <Button variant="contained">Submit</Button>
-  </GridItem>
+   <GridItem xs={12} md={6}>
+      <TextField fullWidth label="Name" />
+   </GridItem>
+   <GridItem xs={12} md={6}>
+      <TextField fullWidth label="Email" />
+   </GridItem>
+   <GridItem xs={12}>
+      <Button variant="contained">Submit</Button>
+   </GridItem>
 </GridContainer>
 ```
 

@@ -1,13 +1,13 @@
 import express from 'express';
 import {
-    getWorkspaceLocations,
-    getLocationById,
-    createLocation,
-    updateLocation,
-    deleteLocation,
-    setPrimaryLocation,
-    getLocationStats,
-    bulkUpdateLocations
+   getWorkspaceLocations,
+   getLocationById,
+   createLocation,
+   updateLocation,
+   deleteLocation,
+   setPrimaryLocation,
+   getLocationStats,
+   bulkUpdateLocations,
 } from '../controllers/locationController';
 import { authWithWorkspace } from '../middlewares/authWithWorkspace';
 import { requirePermission } from '../middlewares/rbac';
@@ -23,30 +23,25 @@ router.use(authWithWorkspace);
  * @desc Get all locations for the current workspace
  * @access Private (All workspace members with multi-location feature)
  */
-router.get('/',
-    requirePermission('location.read'),
-    getWorkspaceLocations
-);
+router.get('/', requirePermission('location.read'), getWorkspaceLocations);
 
 /**
  * @route GET /api/locations/:locationId
  * @desc Get a specific location by ID
  * @access Private (All workspace members with multi-location feature)
  */
-router.get('/:locationId',
-    requirePermission('location.read'),
-    getLocationById
-);
+router.get('/:locationId', requirePermission('location.read'), getLocationById);
 
 /**
  * @route POST /api/locations
  * @desc Create a new location
  * @access Private (Workspace owners only)
  */
-router.post('/',
-    requirePermission('location.create'),
-    enforcePlanLimit('locations'),
-    createLocation
+router.post(
+   '/',
+   requirePermission('location.create'),
+   enforcePlanLimit('locations'),
+   createLocation
 );
 
 /**
@@ -54,9 +49,10 @@ router.post('/',
  * @desc Update an existing location
  * @access Private (Workspace owners only)
  */
-router.put('/:locationId',
-    requirePermission('location.update'),
-    updateLocation
+router.put(
+   '/:locationId',
+   requirePermission('location.update'),
+   updateLocation
 );
 
 /**
@@ -64,9 +60,10 @@ router.put('/:locationId',
  * @desc Delete a location
  * @access Private (Workspace owners only)
  */
-router.delete('/:locationId',
-    requirePermission('location.delete'),
-    deleteLocation
+router.delete(
+   '/:locationId',
+   requirePermission('location.delete'),
+   deleteLocation
 );
 
 /**
@@ -74,9 +71,10 @@ router.delete('/:locationId',
  * @desc Set a location as primary
  * @access Private (Workspace owners only)
  */
-router.post('/:locationId/set-primary',
-    requirePermission('location.manage'),
-    setPrimaryLocation
+router.post(
+   '/:locationId/set-primary',
+   requirePermission('location.manage'),
+   setPrimaryLocation
 );
 
 /**
@@ -84,9 +82,10 @@ router.post('/:locationId/set-primary',
  * @desc Get location statistics
  * @access Private (Workspace owners and pharmacists)
  */
-router.get('/:locationId/stats',
-    requirePermission('location.read'),
-    getLocationStats
+router.get(
+   '/:locationId/stats',
+   requirePermission('location.read'),
+   getLocationStats
 );
 
 /**
@@ -94,9 +93,6 @@ router.get('/:locationId/stats',
  * @desc Bulk update locations
  * @access Private (Workspace owners only)
  */
-router.put('/bulk',
-    requirePermission('location.manage'),
-    bulkUpdateLocations
-);
+router.put('/bulk', requirePermission('location.manage'), bulkUpdateLocations);
 
 export default router;

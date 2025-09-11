@@ -12,15 +12,15 @@ This document summarizes the implementation of comprehensive security features f
 
 - **Purpose**: Provides granular access control for clinical note operations
 - **Key Functions**:
-  - `canCreateClinicalNote`: Validates note creation permissions
-  - `canReadClinicalNote`: Validates note reading permissions
-  - `canUpdateClinicalNote`: Validates note modification permissions
-  - `canDeleteClinicalNote`: Validates note deletion permissions
-  - `canAccessConfidentialNotes`: Special permissions for confidential notes
-  - `validateNoteAccess`: Validates individual note access with workplace isolation
-  - `validatePatientAccess`: Validates patient access for note operations
-  - `validateBulkNoteAccess`: Validates bulk operations with security checks
-  - `canModifyNote`: Checks if user can modify specific notes (creator or higher role)
+   - `canCreateClinicalNote`: Validates note creation permissions
+   - `canReadClinicalNote`: Validates note reading permissions
+   - `canUpdateClinicalNote`: Validates note modification permissions
+   - `canDeleteClinicalNote`: Validates note deletion permissions
+   - `canAccessConfidentialNotes`: Special permissions for confidential notes
+   - `validateNoteAccess`: Validates individual note access with workplace isolation
+   - `validatePatientAccess`: Validates patient access for note operations
+   - `validateBulkNoteAccess`: Validates bulk operations with security checks
+   - `canModifyNote`: Checks if user can modify specific notes (creator or higher role)
 
 #### Permission Matrix Updates
 
@@ -38,11 +38,11 @@ Enhanced `permissionMatrix.ts` with new clinical notes permissions:
 
 - **Purpose**: Ensures strict multi-tenant data isolation
 - **Key Features**:
-  - Automatic workplace ID filtering in all queries
-  - Cross-resource relationship validation
-  - Clinical note specific tenancy rules
-  - Attachment access validation within tenancy
-  - Secure aggregation pipelines with tenancy filters
+   - Automatic workplace ID filtering in all queries
+   - Cross-resource relationship validation
+   - Clinical note specific tenancy rules
+   - Attachment access validation within tenancy
+   - Secure aggregation pipelines with tenancy filters
 
 #### Middleware Integration
 
@@ -57,13 +57,13 @@ Enhanced `permissionMatrix.ts` with new clinical notes permissions:
 
 - **Purpose**: Manages additional privacy controls for confidential notes
 - **Key Features**:
-  - Permission validation for confidential note access
-  - Confidential note creation validation
-  - Modification permission checks
-  - Query filtering based on confidentiality
-  - Audit log sanitization for confidential data
-  - Access justification requirements
-  - Statistical reporting for confidential notes
+   - Permission validation for confidential note access
+   - Confidential note creation validation
+   - Modification permission checks
+   - Query filtering based on confidentiality
+   - Audit log sanitization for confidential data
+   - Access justification requirements
+   - Statistical reporting for confidential notes
 
 #### Security Measures
 

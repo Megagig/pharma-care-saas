@@ -22,7 +22,9 @@ frontend/src/stores/
 ## Store Architecture
 
 ### 1. UI Store (`uiStore.ts`)
+
 Manages global UI state including:
+
 - Notifications and alerts
 - Modal states
 - Loading states
@@ -30,33 +32,41 @@ Manages global UI state including:
 - Theme preferences
 
 **Key Features:**
+
 - Persistent theme and sidebar preferences
 - Auto-dismissing notifications
 - Centralized modal management
 - Global loading state coordination
 
 ### 2. Patient Store (`patientStore.ts`)
+
 Handles all patient-related state and operations:
+
 - Patient CRUD operations
 - Search and filtering
 - Pagination
 - Patient selection
 
 **Key Features:**
+
 - Optimistic updates
 - Error handling
 - Bulk operations
 - Local state synchronization
 
 ### 3. Medication Store (`medicationStore.ts`)
+
 Manages medication data and operations:
+
 - Medication CRUD operations
 - Status management (active, completed, discontinued)
 - Patient-specific filtering
 - Analytics and insights
 
 ### 4. Clinical Note Store (`clinicalNoteStore.ts`)
+
 Handles clinical notes management:
+
 - Note CRUD operations
 - Privacy controls
 - Tag management
@@ -158,18 +168,21 @@ const MyComponent = () => {
 ## Available Hooks
 
 ### Core Store Hooks
+
 - `useUIStore` - Full UI store access
 - `usePatientStore` - Full patient store access
 - `useMedicationStore` - Full medication store access
 - `useClinicalNoteStore` - Full clinical note store access
 
 ### Specialized Hooks
+
 - `useNotifications` - Notification management
 - `useModals` - Modal state management
 - `useTheme` - Theme management
 - `useSidebar` - Sidebar state management
 
 ### Enhanced Functionality Hooks
+
 - `usePatientManagement` - Enhanced patient operations with notifications
 - `useMedicationManagement` - Enhanced medication operations
 - `useClinicalNoteManagement` - Enhanced note operations
@@ -182,6 +195,7 @@ const MyComponent = () => {
 ## Best Practices
 
 ### 1. Use Specialized Hooks
+
 Instead of accessing stores directly, use the specialized hooks:
 
 ```typescript
@@ -189,11 +203,12 @@ Instead of accessing stores directly, use the specialized hooks:
 const { patients, loading } = usePatients();
 
 // ❌ Avoid
-const patients = usePatientStore(state => state.patients);
-const loading = usePatientStore(state => state.loading.fetchPatients);
+const patients = usePatientStore((state) => state.patients);
+const loading = usePatientStore((state) => state.loading.fetchPatients);
 ```
 
 ### 2. Use Enhanced Hooks for Operations
+
 Enhanced hooks provide automatic notifications and error handling:
 
 ```typescript
@@ -201,10 +216,11 @@ Enhanced hooks provide automatic notifications and error handling:
 const { createPatient } = usePatientManagement();
 
 // ❌ Basic - Manual notification handling
-const createPatient = usePatientStore(state => state.createPatient);
+const createPatient = usePatientStore((state) => state.createPatient);
 ```
 
 ### 3. Handle Loading States
+
 Always handle loading states for better UX:
 
 ```typescript
@@ -216,21 +232,23 @@ return <PatientList patients={patients} />;
 ```
 
 ### 4. Use Error Management
+
 Utilize the centralized error management:
 
 ```typescript
 const { allErrors, hasErrors, clearAllErrors } = useErrorManagement();
 
 useEffect(() => {
-  if (hasErrors) {
-    console.error('Store errors:', allErrors);
-  }
+   if (hasErrors) {
+      console.error('Store errors:', allErrors);
+   }
 }, [hasErrors, allErrors]);
 ```
 
 ## Persistence
 
 The following data is automatically persisted to localStorage:
+
 - UI preferences (theme, sidebar state)
 - Current filters and search terms
 - Selected items (patients, medications, notes)
@@ -247,10 +265,10 @@ The stores are automatically initialized in `App.tsx`:
 import { initializeStores } from './stores';
 
 function App() {
-  useEffect(() => {
-    initializeStores();
-  }, []);
-  // ...
+   useEffect(() => {
+      initializeStores();
+   }, []);
+   // ...
 }
 ```
 
@@ -260,16 +278,13 @@ All stores are composed in `stores/index.ts` for easy importing:
 
 ```typescript
 // Single import for all store functionality
-import { 
-  usePatients, 
-  useNotifications, 
-  useDashboardData 
-} from '../stores';
+import { usePatients, useNotifications, useDashboardData } from '../stores';
 ```
 
 ## Error Handling
 
 Each store includes comprehensive error handling:
+
 - Network errors are caught and stored
 - User-friendly error messages
 - Automatic error clearing
@@ -299,11 +314,11 @@ Zustand stores can be easily tested by accessing store state directly:
 import { usePatientStore } from '../stores';
 
 test('should add patient', () => {
-  const { addPatientToState } = usePatientStore.getState();
-  addPatientToState(mockPatient);
-  
-  const { patients } = usePatientStore.getState();
-  expect(patients).toContain(mockPatient);
+   const { addPatientToState } = usePatientStore.getState();
+   addPatientToState(mockPatient);
+
+   const { patients } = usePatientStore.getState();
+   expect(patients).toContain(mockPatient);
 });
 ```
 
@@ -322,6 +337,7 @@ This provides information about persisted data and store health.
 ## Future Enhancements
 
 Potential future improvements:
+
 - Add middleware for logging and debugging
 - Implement optimistic updates for better UX
 - Add real-time synchronization with WebSockets

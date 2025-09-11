@@ -14,18 +14,18 @@ const router = express.Router();
  * @access  Private (Super Admin or Workspace Owner only)
  */
 router.get(
-    '/threats',
-    generalRateLimiters.api,
-    authWithWorkspace,
-    requirePermission('audit.security'),
-    auditMiddleware({
-        action: 'SECURITY_THREATS_VIEWED',
-        category: 'security',
-        severity: 'medium',
-        resourceType: 'SecurityThreat',
-    }),
-    monitorSecurityEvents('security_data_access'),
-    securityController.getSecurityThreats.bind(securityController)
+   '/threats',
+   generalRateLimiters.api,
+   authWithWorkspace,
+   requirePermission('audit.security'),
+   auditMiddleware({
+      action: 'SECURITY_THREATS_VIEWED',
+      category: 'security',
+      severity: 'medium',
+      resourceType: 'SecurityThreat',
+   }),
+   monitorSecurityEvents('security_data_access'),
+   securityController.getSecurityThreats.bind(securityController)
 );
 
 /**
@@ -34,18 +34,18 @@ router.get(
  * @access  Private (Super Admin or Workspace Owner only)
  */
 router.get(
-    '/dashboard',
-    generalRateLimiters.api,
-    authWithWorkspace,
-    requirePermission('audit.security'),
-    auditMiddleware({
-        action: 'SECURITY_DASHBOARD_VIEWED',
-        category: 'security',
-        severity: 'low',
-        resourceType: 'SecurityDashboard',
-    }),
-    monitorSecurityEvents('security_data_access'),
-    securityController.getSecurityDashboard.bind(securityController)
+   '/dashboard',
+   generalRateLimiters.api,
+   authWithWorkspace,
+   requirePermission('audit.security'),
+   auditMiddleware({
+      action: 'SECURITY_DASHBOARD_VIEWED',
+      category: 'security',
+      severity: 'low',
+      resourceType: 'SecurityDashboard',
+   }),
+   monitorSecurityEvents('security_data_access'),
+   securityController.getSecurityDashboard.bind(securityController)
 );
 
 /**
@@ -54,19 +54,19 @@ router.get(
  * @access  Private (Super Admin only)
  */
 router.post(
-    '/threats/:threatId/resolve',
-    generalRateLimiters.sensitive,
-    authWithWorkspace,
-    requirePermission('admin.system_settings'),
-    auditMiddleware({
-        action: 'SECURITY_THREAT_RESOLVED',
-        category: 'security',
-        severity: 'high',
-        resourceType: 'SecurityThreat',
-        includeRequestBody: true,
-    }),
-    monitorSecurityEvents('threat_resolution'),
-    securityController.resolveThreat.bind(securityController)
+   '/threats/:threatId/resolve',
+   generalRateLimiters.sensitive,
+   authWithWorkspace,
+   requirePermission('admin.system_settings'),
+   auditMiddleware({
+      action: 'SECURITY_THREAT_RESOLVED',
+      category: 'security',
+      severity: 'high',
+      resourceType: 'SecurityThreat',
+      includeRequestBody: true,
+   }),
+   monitorSecurityEvents('threat_resolution'),
+   securityController.resolveThreat.bind(securityController)
 );
 
 /**
@@ -75,17 +75,17 @@ router.post(
  * @access  Private (User can view own status, Super Admin can view any)
  */
 router.get(
-    '/users/:userId/status',
-    generalRateLimiters.api,
-    authWithWorkspace,
-    auditMiddleware({
-        action: 'USER_SECURITY_STATUS_VIEWED',
-        category: 'security',
-        severity: 'low',
-        resourceType: 'UserSecurityStatus',
-    }),
-    monitorSecurityEvents('security_data_access'),
-    securityController.getUserSecurityStatus.bind(securityController)
+   '/users/:userId/status',
+   generalRateLimiters.api,
+   authWithWorkspace,
+   auditMiddleware({
+      action: 'USER_SECURITY_STATUS_VIEWED',
+      category: 'security',
+      severity: 'low',
+      resourceType: 'UserSecurityStatus',
+   }),
+   monitorSecurityEvents('security_data_access'),
+   securityController.getUserSecurityStatus.bind(securityController)
 );
 
 /**
@@ -94,18 +94,18 @@ router.get(
  * @access  Private (Super Admin only)
  */
 router.get(
-    '/blocked-ips',
-    generalRateLimiters.api,
-    authWithWorkspace,
-    requirePermission('admin.system_settings'),
-    auditMiddleware({
-        action: 'BLOCKED_IPS_VIEWED',
-        category: 'security',
-        severity: 'medium',
-        resourceType: 'BlockedIP',
-    }),
-    monitorSecurityEvents('security_data_access'),
-    securityController.getBlockedIPs.bind(securityController)
+   '/blocked-ips',
+   generalRateLimiters.api,
+   authWithWorkspace,
+   requirePermission('admin.system_settings'),
+   auditMiddleware({
+      action: 'BLOCKED_IPS_VIEWED',
+      category: 'security',
+      severity: 'medium',
+      resourceType: 'BlockedIP',
+   }),
+   monitorSecurityEvents('security_data_access'),
+   securityController.getBlockedIPs.bind(securityController)
 );
 
 export default router;

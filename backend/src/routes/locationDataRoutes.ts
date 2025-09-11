@@ -1,24 +1,24 @@
 import express from 'express';
 import {
-    getLocationPatients,
-    getSharedPatients,
-    getLocationAnalytics,
-    assignPatientToLocation,
-    bulkAssignPatientsToLocation,
-    transferPatientsBetweenLocations,
-    removeLocationAssignment,
-    getLocationDistribution,
-    getLocationVisits,
-    getLocationClinicalNotes,
-    assignVisitToLocation,
-    assignClinicalNoteToLocation,
-    sharePatientWithLocations,
-    revokeSharedPatientAccess,
-    getPatientsAccessibleFromLocation,
-    createPatientTransferWorkflow,
-    completePatientTransfer,
-    getLocationAccessSummary,
-    checkPatientAccess
+   getLocationPatients,
+   getSharedPatients,
+   getLocationAnalytics,
+   assignPatientToLocation,
+   bulkAssignPatientsToLocation,
+   transferPatientsBetweenLocations,
+   removeLocationAssignment,
+   getLocationDistribution,
+   getLocationVisits,
+   getLocationClinicalNotes,
+   assignVisitToLocation,
+   assignClinicalNoteToLocation,
+   sharePatientWithLocations,
+   revokeSharedPatientAccess,
+   getPatientsAccessibleFromLocation,
+   createPatientTransferWorkflow,
+   completePatientTransfer,
+   getLocationAccessSummary,
+   checkPatientAccess,
 } from '../controllers/locationDataController';
 import { authWithWorkspace } from '../middlewares/authWithWorkspace';
 import { requirePermission } from '../middlewares/rbac';
@@ -33,9 +33,10 @@ router.use(authWithWorkspace);
  * @desc Get patients for a specific location
  * @access Private (All workspace members with multi-location feature)
  */
-router.get('/patients/:locationId',
-    requirePermission('location.read'),
-    getLocationPatients
+router.get(
+   '/patients/:locationId',
+   requirePermission('location.read'),
+   getLocationPatients
 );
 
 /**
@@ -43,9 +44,10 @@ router.get('/patients/:locationId',
  * @desc Get shared patients (not assigned to any location)
  * @access Private (All workspace members with multi-location feature)
  */
-router.get('/patients/shared',
-    requirePermission('location.read'),
-    getSharedPatients
+router.get(
+   '/patients/shared',
+   requirePermission('location.read'),
+   getSharedPatients
 );
 
 /**
@@ -53,9 +55,10 @@ router.get('/patients/shared',
  * @desc Get location analytics (specific location or all locations)
  * @access Private (Workspace owners and pharmacists)
  */
-router.get('/analytics/:locationId?',
-    requirePermission('location.read'),
-    getLocationAnalytics
+router.get(
+   '/analytics/:locationId?',
+   requirePermission('location.read'),
+   getLocationAnalytics
 );
 
 /**
@@ -63,9 +66,10 @@ router.get('/analytics/:locationId?',
  * @desc Assign patient to location
  * @access Private (Workspace owners and pharmacists)
  */
-router.post('/assign',
-    requirePermission('location.manage'),
-    assignPatientToLocation
+router.post(
+   '/assign',
+   requirePermission('location.manage'),
+   assignPatientToLocation
 );
 
 /**
@@ -73,9 +77,10 @@ router.post('/assign',
  * @desc Bulk assign patients to location
  * @access Private (Workspace owners and pharmacists)
  */
-router.post('/bulk-assign',
-    requirePermission('location.manage'),
-    bulkAssignPatientsToLocation
+router.post(
+   '/bulk-assign',
+   requirePermission('location.manage'),
+   bulkAssignPatientsToLocation
 );
 
 /**
@@ -83,9 +88,10 @@ router.post('/bulk-assign',
  * @desc Transfer patients between locations
  * @access Private (Workspace owners and pharmacists)
  */
-router.post('/transfer',
-    requirePermission('location.manage'),
-    transferPatientsBetweenLocations
+router.post(
+   '/transfer',
+   requirePermission('location.manage'),
+   transferPatientsBetweenLocations
 );
 
 /**
@@ -93,9 +99,10 @@ router.post('/transfer',
  * @desc Remove location assignment (make patients shared)
  * @access Private (Workspace owners and pharmacists)
  */
-router.post('/remove-assignment',
-    requirePermission('location.manage'),
-    removeLocationAssignment
+router.post(
+   '/remove-assignment',
+   requirePermission('location.manage'),
+   removeLocationAssignment
 );
 
 /**
@@ -103,9 +110,10 @@ router.post('/remove-assignment',
  * @desc Get location distribution summary
  * @access Private (Workspace owners and pharmacists)
  */
-router.get('/distribution',
-    requirePermission('location.read'),
-    getLocationDistribution
+router.get(
+   '/distribution',
+   requirePermission('location.read'),
+   getLocationDistribution
 );
 
 /**
@@ -113,9 +121,10 @@ router.get('/distribution',
  * @desc Get visits for a specific location
  * @access Private (All workspace members with multi-location feature)
  */
-router.get('/visits/:locationId',
-    requirePermission('location.read'),
-    getLocationVisits
+router.get(
+   '/visits/:locationId',
+   requirePermission('location.read'),
+   getLocationVisits
 );
 
 /**
@@ -123,9 +132,10 @@ router.get('/visits/:locationId',
  * @desc Get clinical notes for a specific location
  * @access Private (All workspace members with multi-location feature)
  */
-router.get('/clinical-notes/:locationId',
-    requirePermission('location.read'),
-    getLocationClinicalNotes
+router.get(
+   '/clinical-notes/:locationId',
+   requirePermission('location.read'),
+   getLocationClinicalNotes
 );
 
 /**
@@ -133,9 +143,10 @@ router.get('/clinical-notes/:locationId',
  * @desc Assign visit to location
  * @access Private (Workspace owners and pharmacists)
  */
-router.post('/assign-visit',
-    requirePermission('location.manage'),
-    assignVisitToLocation
+router.post(
+   '/assign-visit',
+   requirePermission('location.manage'),
+   assignVisitToLocation
 );
 
 /**
@@ -143,9 +154,10 @@ router.post('/assign-visit',
  * @desc Assign clinical note to location
  * @access Private (Workspace owners and pharmacists)
  */
-router.post('/assign-clinical-note',
-    requirePermission('location.manage'),
-    assignClinicalNoteToLocation
+router.post(
+   '/assign-clinical-note',
+   requirePermission('location.manage'),
+   assignClinicalNoteToLocation
 );
 
 /**
@@ -153,9 +165,10 @@ router.post('/assign-clinical-note',
  * @desc Share patient with other locations
  * @access Private (Workspace owners and pharmacists)
  */
-router.post('/share-patient',
-    requirePermission('location.manage'),
-    sharePatientWithLocations
+router.post(
+   '/share-patient',
+   requirePermission('location.manage'),
+   sharePatientWithLocations
 );
 
 /**
@@ -163,9 +176,10 @@ router.post('/share-patient',
  * @desc Revoke shared patient access
  * @access Private (Workspace owners and pharmacists)
  */
-router.post('/revoke-shared-access',
-    requirePermission('location.manage'),
-    revokeSharedPatientAccess
+router.post(
+   '/revoke-shared-access',
+   requirePermission('location.manage'),
+   revokeSharedPatientAccess
 );
 
 /**
@@ -173,9 +187,10 @@ router.post('/revoke-shared-access',
  * @desc Get patients accessible from a specific location
  * @access Private (All workspace members with multi-location feature)
  */
-router.get('/accessible-patients/:locationId',
-    requirePermission('location.read'),
-    getPatientsAccessibleFromLocation
+router.get(
+   '/accessible-patients/:locationId',
+   requirePermission('location.read'),
+   getPatientsAccessibleFromLocation
 );
 
 /**
@@ -183,9 +198,10 @@ router.get('/accessible-patients/:locationId',
  * @desc Create patient transfer workflow
  * @access Private (Workspace owners and pharmacists)
  */
-router.post('/create-transfer',
-    requirePermission('location.manage'),
-    createPatientTransferWorkflow
+router.post(
+   '/create-transfer',
+   requirePermission('location.manage'),
+   createPatientTransferWorkflow
 );
 
 /**
@@ -193,9 +209,10 @@ router.post('/create-transfer',
  * @desc Complete patient transfer
  * @access Private (Workspace owners and pharmacists)
  */
-router.post('/complete-transfer',
-    requirePermission('location.manage'),
-    completePatientTransfer
+router.post(
+   '/complete-transfer',
+   requirePermission('location.manage'),
+   completePatientTransfer
 );
 
 /**
@@ -203,9 +220,10 @@ router.post('/complete-transfer',
  * @desc Get location access summary
  * @access Private (Workspace owners and pharmacists)
  */
-router.get('/access-summary',
-    requirePermission('location.read'),
-    getLocationAccessSummary
+router.get(
+   '/access-summary',
+   requirePermission('location.read'),
+   getLocationAccessSummary
 );
 
 /**
@@ -213,9 +231,10 @@ router.get('/access-summary',
  * @desc Check patient access from location
  * @access Private (All workspace members with multi-location feature)
  */
-router.get('/check-access/:patientId/:locationId',
-    requirePermission('location.read'),
-    checkPatientAccess
+router.get(
+   '/check-access/:patientId/:locationId',
+   requirePermission('location.read'),
+   checkPatientAccess
 );
 
 export default router;

@@ -13,17 +13,17 @@ const router = express.Router();
  * @access  Private (Super Admin or Workspace Owner only)
  */
 router.get(
-    '/logs',
-    generalRateLimiters.api,
-    authWithWorkspace,
-    requirePermission('audit.view'),
-    auditMiddleware({
-        action: 'AUDIT_LOGS_VIEWED',
-        category: 'security',
-        severity: 'medium',
-        resourceType: 'AuditLog',
-    }),
-    auditController.getAuditLogs.bind(auditController)
+   '/logs',
+   generalRateLimiters.api,
+   authWithWorkspace,
+   requirePermission('audit.view'),
+   auditMiddleware({
+      action: 'AUDIT_LOGS_VIEWED',
+      category: 'security',
+      severity: 'medium',
+      resourceType: 'AuditLog',
+   }),
+   auditController.getAuditLogs.bind(auditController)
 );
 
 /**
@@ -32,17 +32,17 @@ router.get(
  * @access  Private (Super Admin or Workspace Owner only)
  */
 router.get(
-    '/summary',
-    generalRateLimiters.api,
-    authWithWorkspace,
-    requirePermission('audit.view'),
-    auditMiddleware({
-        action: 'AUDIT_SUMMARY_VIEWED',
-        category: 'security',
-        severity: 'low',
-        resourceType: 'AuditSummary',
-    }),
-    auditController.getAuditSummary.bind(auditController)
+   '/summary',
+   generalRateLimiters.api,
+   authWithWorkspace,
+   requirePermission('audit.view'),
+   auditMiddleware({
+      action: 'AUDIT_SUMMARY_VIEWED',
+      category: 'security',
+      severity: 'low',
+      resourceType: 'AuditSummary',
+   }),
+   auditController.getAuditSummary.bind(auditController)
 );
 
 /**
@@ -51,17 +51,17 @@ router.get(
  * @access  Private (Super Admin or Workspace Owner only)
  */
 router.get(
-    '/security-alerts',
-    generalRateLimiters.api,
-    authWithWorkspace,
-    requirePermission('audit.security'),
-    auditMiddleware({
-        action: 'SECURITY_ALERTS_VIEWED',
-        category: 'security',
-        severity: 'medium',
-        resourceType: 'SecurityAlert',
-    }),
-    auditController.getSecurityAlerts.bind(auditController)
+   '/security-alerts',
+   generalRateLimiters.api,
+   authWithWorkspace,
+   requirePermission('audit.security'),
+   auditMiddleware({
+      action: 'SECURITY_ALERTS_VIEWED',
+      category: 'security',
+      severity: 'medium',
+      resourceType: 'SecurityAlert',
+   }),
+   auditController.getSecurityAlerts.bind(auditController)
 );
 
 /**
@@ -70,19 +70,19 @@ router.get(
  * @access  Private (Super Admin or Workspace Owner only)
  */
 router.get(
-    '/export',
-    generalRateLimiters.sensitive,
-    authWithWorkspace,
-    requirePermission('audit.export'),
-    auditMiddleware({
-        action: 'AUDIT_LOGS_EXPORTED',
-        category: 'security',
-        severity: 'high',
-        resourceType: 'AuditExport',
-        includeRequestBody: false,
-        includeResponseBody: false, // Don't log the actual export data
-    }),
-    auditController.exportAuditLogs.bind(auditController)
+   '/export',
+   generalRateLimiters.sensitive,
+   authWithWorkspace,
+   requirePermission('audit.export'),
+   auditMiddleware({
+      action: 'AUDIT_LOGS_EXPORTED',
+      category: 'security',
+      severity: 'high',
+      resourceType: 'AuditExport',
+      includeRequestBody: false,
+      includeResponseBody: false, // Don't log the actual export data
+   }),
+   auditController.exportAuditLogs.bind(auditController)
 );
 
 export default router;

@@ -1,10 +1,10 @@
 import express from 'express';
 import {
-    getWorkspaceUsageStats,
-    getUsageAnalytics,
-    getUsageAlerts,
-    recalculateUsageStats,
-    getUsageComparison
+   getWorkspaceUsageStats,
+   getUsageAnalytics,
+   getUsageAlerts,
+   recalculateUsageStats,
+   getUsageComparison,
 } from '../controllers/usageMonitoringController';
 import { authWithWorkspace } from '../middlewares/authWithWorkspace';
 import { requirePermission } from '../middlewares/rbac';
@@ -26,7 +26,11 @@ router.get('/stats', getWorkspaceUsageStats);
  * @desc Get detailed usage analytics (owners only)
  * @access Private (Workspace owners only)
  */
-router.get('/analytics', requirePermission('workspace.analytics'), getUsageAnalytics);
+router.get(
+   '/analytics',
+   requirePermission('workspace.analytics'),
+   getUsageAnalytics
+);
 
 /**
  * @route GET /api/usage/alerts
@@ -40,7 +44,11 @@ router.get('/alerts', getUsageAlerts);
  * @desc Manually trigger usage statistics recalculation
  * @access Private (Workspace owners only)
  */
-router.post('/recalculate', requirePermission('workspace.manage'), recalculateUsageStats);
+router.post(
+   '/recalculate',
+   requirePermission('workspace.manage'),
+   recalculateUsageStats
+);
 
 /**
  * @route GET /api/usage/comparison

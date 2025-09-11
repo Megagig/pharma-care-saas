@@ -13,36 +13,36 @@ const router = Router();
  * @access Public
  */
 router.get('/drug-search', async (req: any, res: any) => {
-  try {
-    const { name } = req.query;
-    if (!name || typeof name !== 'string') {
-      return res.status(400).json({
-        success: false,
-        error: 'Drug name is required',
+   try {
+      const { name } = req.query;
+      if (!name || typeof name !== 'string') {
+         return res.status(400).json({
+            success: false,
+            error: 'Drug name is required',
+         });
+      }
+
+      const results = await rxnormService.searchDrugs(name);
+
+      // Set response headers explicitly
+      res.setHeader('Content-Type', 'application/json');
+
+      return res.json({
+         success: true,
+         data: results,
       });
-    }
+   } catch (error: any) {
+      logger.error('Public drug search error:', error);
 
-    const results = await rxnormService.searchDrugs(name);
+      // Set response headers explicitly
+      res.setHeader('Content-Type', 'application/json');
 
-    // Set response headers explicitly
-    res.setHeader('Content-Type', 'application/json');
-
-    return res.json({
-      success: true,
-      data: results,
-    });
-  } catch (error: any) {
-    logger.error('Public drug search error:', error);
-
-    // Set response headers explicitly
-    res.setHeader('Content-Type', 'application/json');
-
-    return res.status(500).json({
-      success: false,
-      error: 'Error searching for drugs',
-      message: error.message,
-    });
-  }
+      return res.status(500).json({
+         success: false,
+         error: 'Error searching for drugs',
+         message: error.message,
+      });
+   }
 });
 
 /**
@@ -51,35 +51,35 @@ router.get('/drug-search', async (req: any, res: any) => {
  * @access Public
  */
 router.get('/drug-monograph/:id', async (req: any, res: any) => {
-  try {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        error: 'Drug id is required',
+   try {
+      const { id } = req.params;
+      if (!id) {
+         return res.status(400).json({
+            success: false,
+            error: 'Drug id is required',
+         });
+      }
+      const monograph = await dailymedService.getMonographById(id);
+
+      // Set response headers explicitly
+      res.setHeader('Content-Type', 'application/json');
+
+      return res.json({
+         success: true,
+         data: monograph,
       });
-    }
-    const monograph = await dailymedService.getMonographById(id);
+   } catch (error: any) {
+      logger.error('Public drug monograph error:', error);
 
-    // Set response headers explicitly
-    res.setHeader('Content-Type', 'application/json');
+      // Set response headers explicitly
+      res.setHeader('Content-Type', 'application/json');
 
-    return res.json({
-      success: true,
-      data: monograph,
-    });
-  } catch (error: any) {
-    logger.error('Public drug monograph error:', error);
-
-    // Set response headers explicitly
-    res.setHeader('Content-Type', 'application/json');
-
-    return res.status(500).json({
-      success: false,
-      error: 'Error retrieving drug monograph',
-      message: error.message,
-    });
-  }
+      return res.status(500).json({
+         success: false,
+         error: 'Error retrieving drug monograph',
+         message: error.message,
+      });
+   }
 });
 
 /**
@@ -88,36 +88,36 @@ router.get('/drug-monograph/:id', async (req: any, res: any) => {
  * @access Public
  */
 router.get('/drug-indications/:id', async (req: any, res: any) => {
-  try {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        error: 'Drug id is required',
+   try {
+      const { id } = req.params;
+      if (!id) {
+         return res.status(400).json({
+            success: false,
+            error: 'Drug id is required',
+         });
+      }
+
+      const indications = await openfdaService.getDrugIndications(id);
+
+      // Set response headers explicitly
+      res.setHeader('Content-Type', 'application/json');
+
+      return res.json({
+         success: true,
+         data: indications,
       });
-    }
+   } catch (error: any) {
+      logger.error('Public drug indications error:', error);
 
-    const indications = await openfdaService.getDrugIndications(id);
+      // Set response headers explicitly
+      res.setHeader('Content-Type', 'application/json');
 
-    // Set response headers explicitly
-    res.setHeader('Content-Type', 'application/json');
-
-    return res.json({
-      success: true,
-      data: indications,
-    });
-  } catch (error: any) {
-    logger.error('Public drug indications error:', error);
-
-    // Set response headers explicitly
-    res.setHeader('Content-Type', 'application/json');
-
-    return res.status(500).json({
-      success: false,
-      error: 'Error retrieving drug indications',
-      message: error.message,
-    });
-  }
+      return res.status(500).json({
+         success: false,
+         error: 'Error retrieving drug indications',
+         message: error.message,
+      });
+   }
 });
 
 /**
@@ -126,44 +126,43 @@ router.get('/drug-indications/:id', async (req: any, res: any) => {
  * @access Public
  */
 router.post('/drug-interactions', async (req: any, res: any) => {
-  try {
-    const { rxcui, rxcuis } = req.body;
+   try {
+      const { rxcui, rxcuis } = req.body;
 
-    let results;
-    if (rxcui) {
-      // Single drug interaction check
-      results = await interactionService.getInteractionsForDrug(rxcui);
-    } else if (rxcuis && Array.isArray(rxcuis)) {
-      // Multiple drug interaction check
-      results = await interactionService.getInteractionsForMultipleDrugs(
-        rxcuis
-      );
-    } else {
-      return res.status(400).json({
-        success: false,
-        error: 'Either rxcui or rxcuis array is required',
+      let results;
+      if (rxcui) {
+         // Single drug interaction check
+         results = await interactionService.getInteractionsForDrug(rxcui);
+      } else if (rxcuis && Array.isArray(rxcuis)) {
+         // Multiple drug interaction check
+         results =
+            await interactionService.getInteractionsForMultipleDrugs(rxcuis);
+      } else {
+         return res.status(400).json({
+            success: false,
+            error: 'Either rxcui or rxcuis array is required',
+         });
+      }
+
+      // Set response headers explicitly
+      res.setHeader('Content-Type', 'application/json');
+
+      return res.json({
+         success: true,
+         data: results,
       });
-    }
+   } catch (error: any) {
+      logger.error('Public drug interactions error:', error);
 
-    // Set response headers explicitly
-    res.setHeader('Content-Type', 'application/json');
+      // Set response headers explicitly
+      res.setHeader('Content-Type', 'application/json');
 
-    return res.json({
-      success: true,
-      data: results,
-    });
-  } catch (error: any) {
-    logger.error('Public drug interactions error:', error);
-
-    // Set response headers explicitly
-    res.setHeader('Content-Type', 'application/json');
-
-    return res.status(500).json({
-      success: false,
-      error: 'Error checking drug interactions',
-      message: error.message,
-    });
-  }
+      return res.status(500).json({
+         success: false,
+         error: 'Error checking drug interactions',
+         message: error.message,
+      });
+   }
 });
 
 /**
@@ -172,61 +171,61 @@ router.post('/drug-interactions', async (req: any, res: any) => {
  * @access Public
  */
 router.get('/drug-adverse-effects/:id', async (req: any, res: any) => {
-  try {
-    const { id } = req.params;
-    const { limit } = req.query;
+   try {
+      const { id } = req.params;
+      const { limit } = req.query;
 
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        error: 'Drug id is required',
-      });
-    }
-
-    // First try to get RxCUI if id is a name
-    let drugName: string = id;
-    try {
-      const rxCuiData = await rxnormService.getRxCuiByName(id);
-      if (
-        rxCuiData &&
-        rxCuiData.idGroup &&
-        rxCuiData.idGroup.rxnormId &&
-        rxCuiData.idGroup.rxnormId.length > 0
-      ) {
-        const firstRxCui = rxCuiData.idGroup.rxnormId[0];
-        if (firstRxCui) {
-          drugName = firstRxCui;
-        }
+      if (!id) {
+         return res.status(400).json({
+            success: false,
+            error: 'Drug id is required',
+         });
       }
-    } catch (e) {
-      // If we can't get RxCUI, use the provided ID as name
-      logger.info('Could not resolve RxCUI, using provided ID as name');
-    }
-    const limitNum = limit ? parseInt(limit as string, 10) : 10;
-    const adverseEffects = await openfdaService.getAdverseEffects(
-      drugName,
-      limitNum
-    );
 
-    // Set response headers explicitly
-    res.setHeader('Content-Type', 'application/json');
+      // First try to get RxCUI if id is a name
+      let drugName: string = id;
+      try {
+         const rxCuiData = await rxnormService.getRxCuiByName(id);
+         if (
+            rxCuiData &&
+            rxCuiData.idGroup &&
+            rxCuiData.idGroup.rxnormId &&
+            rxCuiData.idGroup.rxnormId.length > 0
+         ) {
+            const firstRxCui = rxCuiData.idGroup.rxnormId[0];
+            if (firstRxCui) {
+               drugName = firstRxCui;
+            }
+         }
+      } catch (e) {
+         // If we can't get RxCUI, use the provided ID as name
+         logger.info('Could not resolve RxCUI, using provided ID as name');
+      }
+      const limitNum = limit ? parseInt(limit as string, 10) : 10;
+      const adverseEffects = await openfdaService.getAdverseEffects(
+         drugName,
+         limitNum
+      );
 
-    return res.json({
-      success: true,
-      data: adverseEffects,
-    });
-  } catch (error: any) {
-    logger.error('Public drug adverse effects error:', error);
+      // Set response headers explicitly
+      res.setHeader('Content-Type', 'application/json');
 
-    // Set response headers explicitly
-    res.setHeader('Content-Type', 'application/json');
+      return res.json({
+         success: true,
+         data: adverseEffects,
+      });
+   } catch (error: any) {
+      logger.error('Public drug adverse effects error:', error);
 
-    return res.status(500).json({
-      success: false,
-      error: 'Error retrieving adverse effects',
-      message: error.message,
-    });
-  }
+      // Set response headers explicitly
+      res.setHeader('Content-Type', 'application/json');
+
+      return res.status(500).json({
+         success: false,
+         error: 'Error retrieving adverse effects',
+         message: error.message,
+      });
+   }
 });
 
 /**
@@ -235,35 +234,35 @@ router.get('/drug-adverse-effects/:id', async (req: any, res: any) => {
  * @access Public
  */
 router.get('/drug-formulary/:id', async (req: any, res: any) => {
-  try {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        error: 'Drug id is required',
+   try {
+      const { id } = req.params;
+      if (!id) {
+         return res.status(400).json({
+            success: false,
+            error: 'Drug id is required',
+         });
+      }
+      const equivalents = await rxnormService.getTherapeuticEquivalents(id);
+
+      // Set response headers explicitly
+      res.setHeader('Content-Type', 'application/json');
+
+      return res.json({
+         success: true,
+         data: equivalents,
       });
-    }
-    const equivalents = await rxnormService.getTherapeuticEquivalents(id);
+   } catch (error: any) {
+      logger.error('Public drug formulary error:', error);
 
-    // Set response headers explicitly
-    res.setHeader('Content-Type', 'application/json');
+      // Set response headers explicitly
+      res.setHeader('Content-Type', 'application/json');
 
-    return res.json({
-      success: true,
-      data: equivalents,
-    });
-  } catch (error: any) {
-    logger.error('Public drug formulary error:', error);
-
-    // Set response headers explicitly
-    res.setHeader('Content-Type', 'application/json');
-
-    return res.status(500).json({
-      success: false,
-      error: 'Error retrieving formulary information',
-      message: error.message,
-    });
-  }
+      return res.status(500).json({
+         success: false,
+         error: 'Error retrieving formulary information',
+         message: error.message,
+      });
+   }
 });
 
 export default router;

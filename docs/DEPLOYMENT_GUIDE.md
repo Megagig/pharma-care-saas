@@ -259,7 +259,6 @@ npm run feature-flags:test-conditions
    ```
 
 2. **Monitor key metrics**
-
    - Response times
    - Error rates
    - Database performance

@@ -100,27 +100,27 @@ Intern Pharmacist (limited access)
 
 ### Tier Structure
 
-| Feature | Free Trial | Basic | Pro | Enterprise |
-|---------|------------|-------|-----|------------|
-| Patient Limit | 10 | 100 | 500 | Unlimited |
-| Team Size | 1 | 1 | 5 | Unlimited |
-| SMS Reminders | 5/month | 50/month | 200/month | Unlimited |
-| Reports Export | ❌ | ✅ | ✅ | ✅ |
-| Advanced Analytics | ❌ | ❌ | ✅ | ✅ |
-| API Access | ❌ | ❌ | ❌ | ✅ |
-| Priority Support | ❌ | ❌ | ❌ | ✅ |
+| Feature            | Free Trial | Basic    | Pro       | Enterprise |
+| ------------------ | ---------- | -------- | --------- | ---------- |
+| Patient Limit      | 10         | 100      | 500       | Unlimited  |
+| Team Size          | 1          | 1        | 5         | Unlimited  |
+| SMS Reminders      | 5/month    | 50/month | 200/month | Unlimited  |
+| Reports Export     | ❌         | ✅       | ✅        | ✅         |
+| Advanced Analytics | ❌         | ❌       | ✅        | ✅         |
+| API Access         | ❌         | ❌       | ❌        | ✅         |
+| Priority Support   | ❌         | ❌       | ❌        | ✅         |
 
 ### Feature Mapping
 
 ```typescript
 const featureMapping = {
-  'patient_management': ['free_trial', 'basic', 'pro', 'enterprise'],
-  'medication_management': ['free_trial', 'basic', 'pro', 'enterprise'],
-  'clinical_notes': ['basic', 'pro', 'enterprise'],
-  'advanced_analytics': ['pro', 'enterprise'],
-  'team_management': ['pro', 'enterprise'],
-  'api_access': ['enterprise'],
-  'user_management': ['enterprise'] // Super admin only
+   patient_management: ['free_trial', 'basic', 'pro', 'enterprise'],
+   medication_management: ['free_trial', 'basic', 'pro', 'enterprise'],
+   clinical_notes: ['basic', 'pro', 'enterprise'],
+   advanced_analytics: ['pro', 'enterprise'],
+   team_management: ['pro', 'enterprise'],
+   api_access: ['enterprise'],
+   user_management: ['enterprise'], // Super admin only
 };
 ```
 
@@ -130,22 +130,23 @@ const featureMapping = {
 
 ```typescript
 interface FeatureFlag {
-  key: string;                    // Unique identifier
-  name: string;                   // Display name
-  description: string;            // Feature description
-  isEnabled: boolean;             // Global toggle
-  allowedTiers: string[];         // Subscription tiers
-  allowedRoles: string[];         // User roles
-  customRules: {                  // Additional validation
-    field: string;
-    operator: string;
-    value: any;
-  }[];
-  metadata: {
-    category: string;             // Feature category
-    priority: string;             // Implementation priority
-    tags: string[];               // Search tags
-  };
+   key: string; // Unique identifier
+   name: string; // Display name
+   description: string; // Feature description
+   isEnabled: boolean; // Global toggle
+   allowedTiers: string[]; // Subscription tiers
+   allowedRoles: string[]; // User roles
+   customRules: {
+      // Additional validation
+      field: string;
+      operator: string;
+      value: any;
+   }[];
+   metadata: {
+      category: string; // Feature category
+      priority: string; // Implementation priority
+      tags: string[]; // Search tags
+   };
 }
 ```
 
@@ -153,16 +154,17 @@ interface FeatureFlag {
 
 ```typescript
 // Backend middleware
-app.get('/api/patients', 
-  auth, 
-  requireFeature('patient_management'),
-  getPatients
+app.get(
+   '/api/patients',
+   auth,
+   requireFeature('patient_management'),
+   getPatients
 );
 
 // Frontend hook
 const { hasFeature } = useRBAC();
 if (hasFeature('advanced_analytics')) {
-  // Show analytics dashboard
+   // Show analytics dashboard
 }
 ```
 
@@ -173,20 +175,20 @@ if (hasFeature('advanced_analytics')) {
 ```typescript
 // Token structure
 interface JWTPayload {
-  userId: string;
-  role: string;
-  permissions: string[];
-  subscriptionTier: string;
-  licenseStatus: string;
+   userId: string;
+   role: string;
+   permissions: string[];
+   subscriptionTier: string;
+   licenseStatus: string;
 }
 
 // Middleware validation
 const auth = async (req, res, next) => {
-  // 1. Validate JWT token
-  // 2. Check user status
-  // 3. Verify subscription
-  // 4. Validate license (if required)
-  // 5. Attach user to request
+   // 1. Validate JWT token
+   // 2. Check user status
+   // 3. Verify subscription
+   // 4. Validate license (if required)
+   // 5. Attach user to request
 };
 ```
 
@@ -195,21 +197,21 @@ const auth = async (req, res, next) => {
 ```typescript
 // Permission format: resource:action
 const permissions = [
-  'patient:read',
-  'patient:write',
-  'patient:delete',
-  'medication:read',
-  'medication:write',
-  'team:manage',
-  'admin:all'
+   'patient:read',
+   'patient:write',
+   'patient:delete',
+   'medication:read',
+   'medication:write',
+   'team:manage',
+   'admin:all',
 ];
 
 // Role-based permissions
 const rolePermissions = {
-  pharmacist: ['patient:*', 'medication:*'],
-  pharmacy_team: ['patient:*', 'medication:*', 'team:read'],
-  pharmacy_outlet: ['patient:*', 'medication:*', 'team:*'],
-  super_admin: ['*']
+   pharmacist: ['patient:*', 'medication:*'],
+   pharmacy_team: ['patient:*', 'medication:*', 'team:read'],
+   pharmacy_outlet: ['patient:*', 'medication:*', 'team:*'],
+   super_admin: ['*'],
 };
 ```
 
@@ -227,17 +229,17 @@ const rolePermissions = {
 
 ```typescript
 interface LicenseUpload {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  licenseNumber: string;
-  licenseType: 'pharmacist' | 'intern_pharmacist';
-  issuingAuthority: string;
-  issueDate: string;
-  expiryDate: string;
-  specializations?: string[];
-  licenseDocument: File;
+   firstName: string;
+   lastName: string;
+   email: string;
+   phone: string;
+   licenseNumber: string;
+   licenseType: 'pharmacist' | 'intern_pharmacist';
+   issuingAuthority: string;
+   issueDate: string;
+   expiryDate: string;
+   specializations?: string[];
+   licenseDocument: File;
 }
 ```
 
@@ -249,7 +251,7 @@ interface LicenseUpload {
 // Webhook events handled
 const webhookEvents = [
   'subscription.created',
-  'subscription.updated', 
+  'subscription.updated',
   'subscription.deleted',
   'invoice.payment_succeeded',
   'invoice.payment_failed'
@@ -290,11 +292,11 @@ return (
     {hasFeature('advanced_analytics') && (
       <AnalyticsDashboard />
     )}
-    
+
     {hasRole('super_admin') && (
       <AdminControls />
     )}
-    
+
     {!subscriptionStatus.isActive && (
       <SubscriptionAlert />
     )}
@@ -393,16 +395,16 @@ MAX_FILE_SIZE=5MB
 
 ```json
 {
-  "patient_management": {
-    "enabled": true,
-    "tiers": ["free_trial", "basic", "pro", "enterprise"],
-    "roles": ["pharmacist", "pharmacy_team", "pharmacy_outlet"]
-  },
-  "advanced_analytics": {
-    "enabled": true,
-    "tiers": ["pro", "enterprise"],
-    "roles": ["pharmacist", "pharmacy_team", "pharmacy_outlet"]
-  }
+   "patient_management": {
+      "enabled": true,
+      "tiers": ["free_trial", "basic", "pro", "enterprise"],
+      "roles": ["pharmacist", "pharmacy_team", "pharmacy_outlet"]
+   },
+   "advanced_analytics": {
+      "enabled": true,
+      "tiers": ["pro", "enterprise"],
+      "roles": ["pharmacist", "pharmacy_team", "pharmacy_outlet"]
+   }
 }
 ```
 
@@ -495,4 +497,4 @@ For technical support or questions about the RBAC implementation:
 
 ---
 
-*This documentation is maintained by the PharmaCareSaaS development team.*
+_This documentation is maintained by the PharmaCareSaaS development team._

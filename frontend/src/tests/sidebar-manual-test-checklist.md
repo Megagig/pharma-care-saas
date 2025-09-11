@@ -13,26 +13,22 @@
 #### Test Steps:
 
 1. **Initial State Check**
-
    - [ ] Sidebar starts in expanded state (280px width)
    - [ ] "PharmaCare" logo is visible in header
    - [ ] All section headers are visible ("MAIN MENU", "PHARMACY TOOLS", "ADMINISTRATION", "ACCOUNT")
 
 2. **Toggle Button Visibility**
-
    - [ ] Main toggle button in header is visible and styled (blue with pulsing animation)
    - [ ] Secondary toggle button next to "MAIN MENU" is visible when expanded
    - [ ] Toggle buttons have proper hover effects
 
 3. **Collapse Functionality**
-
    - [ ] Click main toggle button → sidebar collapses to 56px width
    - [ ] Logo disappears, only toggle button remains in header
    - [ ] All text labels disappear, only icons remain
    - [ ] Transition is smooth (check CSS transitions)
 
 4. **Expand Functionality**
-
    - [ ] Click toggle button when collapsed → sidebar expands to 280px width
    - [ ] Logo reappears in header
    - [ ] All text labels reappear
@@ -48,25 +44,23 @@
 #### Expanded State Tests:
 
 1. **Main Menu Section**
-
    - [ ] "MAIN MENU" header is visible
    - [ ] Dashboard, Patients, Clinical Notes, Medications, Reports, Subscriptions are visible
    - [ ] Icons and text are properly aligned
    - [ ] Badges ("Premium", "Pro", "License Required") are visible where applicable
 
 2. **Pharmacy Tools Section**
-
    - [ ] "PHARMACY TOOLS" header is visible
    - [ ] All 9 pharmacy modules are visible:
-     - [ ] Medication Therapy Review
-     - [ ] Clinical Interventions
-     - [ ] Lab Result Integration
-     - [ ] Communication Hub
-     - [ ] Drug Information Center
-     - [ ] Clinical Decision Support
-     - [ ] Reports & Analytics
-     - [ ] User Management
-     - [ ] Settings & Config
+      - [ ] Medication Therapy Review
+      - [ ] Clinical Interventions
+      - [ ] Lab Result Integration
+      - [ ] Communication Hub
+      - [ ] Drug Information Center
+      - [ ] Clinical Decision Support
+      - [ ] Reports & Analytics
+      - [ ] User Management
+      - [ ] Settings & Config
    - [ ] All modules show "Coming Soon" badges
    - [ ] Icons are appropriate for each module
 
@@ -77,7 +71,6 @@
 #### Collapsed State Tests:
 
 1. **Icon Visibility**
-
    - [ ] All main menu icons are visible and centered
    - [ ] All pharmacy module icons are visible and centered
    - [ ] Icons maintain proper spacing
@@ -93,7 +86,6 @@
 #### Tooltip Tests:
 
 1. **Main Menu Tooltips**
-
    - [ ] Hover over Dashboard icon → "Dashboard" tooltip appears on right
    - [ ] Hover over Patients icon → "Patients" tooltip appears on right
    - [ ] Hover over Clinical Notes icon → "Clinical Notes" tooltip appears on right
@@ -102,7 +94,6 @@
    - [ ] Hover over Subscriptions icon → "Subscriptions" tooltip appears on right
 
 2. **Pharmacy Module Tooltips**
-
    - [ ] Hover over Reviews icon → "Medication Therapy Review" tooltip
    - [ ] Hover over MedicalServices icon → "Clinical Interventions" tooltip
    - [ ] Hover over Science icon → "Lab Result Integration" tooltip
@@ -124,19 +115,16 @@
 #### Mobile Detection Tests:
 
 1. **Screen Size Detection**
-
    - [ ] Open browser dev tools
    - [ ] Set viewport to mobile size (375x667)
    - [ ] Check if `isMobile` is detected correctly
 
 2. **Auto-close Behavior**
-
    - [ ] Navigate to different pages on mobile
    - [ ] Sidebar should auto-close when route changes
    - [ ] Test with multiple page navigations
 
 3. **Touch Interactions**
-
    - [ ] Toggle button responds to touch
    - [ ] Touch targets are appropriately sized (minimum 44px)
    - [ ] No accidental activations

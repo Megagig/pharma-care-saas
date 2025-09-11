@@ -1,21 +1,21 @@
 import express from 'express';
 import {
-  createCondition,
-  getConditions,
-  updateCondition,
-  deleteCondition,
+   createCondition,
+   getConditions,
+   updateCondition,
+   deleteCondition,
 } from '../controllers/patientResourcesController';
 import { auth } from '../middlewares/auth';
 import {
-  requirePatientPermission,
-  checkPharmacyAccess,
+   requirePatientPermission,
+   checkPharmacyAccess,
 } from '../middlewares/patientRBAC';
 import {
-  validateRequest,
-  createConditionSchema,
-  updateConditionSchema,
-  conditionParamsSchema,
-  paginationSchema,
+   validateRequest,
+   createConditionSchema,
+   updateConditionSchema,
+   conditionParamsSchema,
+   paginationSchema,
 } from '../validators/patientValidators';
 
 const router = express.Router();
@@ -35,13 +35,13 @@ const router = express.Router();
  * Add new condition to patient
  */
 router.post(
-  '/:id/conditions',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('create'),
-  validateRequest(conditionParamsSchema, 'params'),
-  validateRequest(createConditionSchema, 'body'),
-  createCondition
+   '/:id/conditions',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('create'),
+   validateRequest(conditionParamsSchema, 'params'),
+   validateRequest(createConditionSchema, 'body'),
+   createCondition
 );
 
 /**
@@ -49,13 +49,13 @@ router.post(
  * Get all conditions for a patient with pagination and filtering
  */
 router.get(
-  '/:id/conditions',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('read'),
-  validateRequest(conditionParamsSchema, 'params'),
-  validateRequest(paginationSchema, 'query'),
-  getConditions
+   '/:id/conditions',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('read'),
+   validateRequest(conditionParamsSchema, 'params'),
+   validateRequest(paginationSchema, 'query'),
+   getConditions
 );
 
 // ===============================
@@ -67,13 +67,13 @@ router.get(
  * Update condition information
  */
 router.patch(
-  '/conditions/:conditionId',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('update'),
-  validateRequest(conditionParamsSchema.pick({ conditionId: true }), 'params'),
-  validateRequest(updateConditionSchema, 'body'),
-  updateCondition
+   '/conditions/:conditionId',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('update'),
+   validateRequest(conditionParamsSchema.pick({ conditionId: true }), 'params'),
+   validateRequest(updateConditionSchema, 'body'),
+   updateCondition
 );
 
 /**
@@ -81,12 +81,12 @@ router.patch(
  * Delete condition (soft delete)
  */
 router.delete(
-  '/conditions/:conditionId',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('delete'),
-  validateRequest(conditionParamsSchema.pick({ conditionId: true }), 'params'),
-  deleteCondition
+   '/conditions/:conditionId',
+   auth,
+   checkPharmacyAccess,
+   requirePatientPermission('delete'),
+   validateRequest(conditionParamsSchema.pick({ conditionId: true }), 'params'),
+   deleteCondition
 );
 
 export default router;

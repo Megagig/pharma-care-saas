@@ -1,18 +1,21 @@
 import express from 'express';
 import {
-    createInvitation,
-    getWorkspaceInvitations,
-    cancelInvitation,
-    acceptInvitation,
-    acceptInvitationPublic,
-    validateInvitation,
-    getInvitationAnalytics,
-    getInvitationStats,
-    checkInvitationLimits,
+   createInvitation,
+   getWorkspaceInvitations,
+   cancelInvitation,
+   acceptInvitation,
+   acceptInvitationPublic,
+   validateInvitation,
+   getInvitationAnalytics,
+   getInvitationStats,
+   checkInvitationLimits,
 } from '../controllers/invitationController';
 import { authWithWorkspace } from '../middlewares/authWithWorkspace';
 import { requirePermission } from '../middlewares/rbac';
-import { invitationRateLimiters, abuseDetection } from '../middlewares/rateLimiting';
+import {
+   invitationRateLimiters,
+   abuseDetection,
+} from '../middlewares/rateLimiting';
 
 const router = express.Router();
 
@@ -22,13 +25,13 @@ const router = express.Router();
  * @access  Private (Workspace Owner only)
  */
 router.post(
-    '/workspaces/:id/invitations',
-    invitationRateLimiters.createInvitation,
-    authWithWorkspace,
-    invitationRateLimiters.createInvitationUser,
-    abuseDetection.invitationSpam,
-    requirePermission('invitation.create'),
-    createInvitation
+   '/workspaces/:id/invitations',
+   invitationRateLimiters.createInvitation,
+   authWithWorkspace,
+   invitationRateLimiters.createInvitationUser,
+   abuseDetection.invitationSpam,
+   requirePermission('invitation.create'),
+   createInvitation
 );
 
 /**
@@ -37,10 +40,10 @@ router.post(
  * @access  Private (Workspace Owner only)
  */
 router.get(
-    '/workspaces/:id/invitations',
-    authWithWorkspace,
-    requirePermission('invitation.view'),
-    getWorkspaceInvitations
+   '/workspaces/:id/invitations',
+   authWithWorkspace,
+   requirePermission('invitation.view'),
+   getWorkspaceInvitations
 );
 
 /**
@@ -49,10 +52,10 @@ router.get(
  * @access  Private (Workspace Owner or Inviter only)
  */
 router.delete(
-    '/invitations/:id',
-    authWithWorkspace,
-    requirePermission('invitation.delete'),
-    cancelInvitation
+   '/invitations/:id',
+   authWithWorkspace,
+   requirePermission('invitation.delete'),
+   cancelInvitation
 );
 
 /**
@@ -60,10 +63,7 @@ router.delete(
  * @desc    Accept an invitation with new user registration
  * @access  Public
  */
-router.post(
-    '/invitations/accept',
-    acceptInvitationPublic
-);
+router.post('/invitations/accept', acceptInvitationPublic);
 
 /**
  * @route   POST /api/invitations/:code/accept
@@ -71,10 +71,10 @@ router.post(
  * @access  Private (Authenticated user only)
  */
 router.post(
-    '/invitations/:code/accept',
-    invitationRateLimiters.acceptInvitation,
-    authWithWorkspace,
-    acceptInvitation
+   '/invitations/:code/accept',
+   invitationRateLimiters.acceptInvitation,
+   authWithWorkspace,
+   acceptInvitation
 );
 
 /**
@@ -83,9 +83,9 @@ router.post(
  * @access  Public
  */
 router.get(
-    '/invitations/:code/validate',
-    invitationRateLimiters.validateInvitation,
-    validateInvitation
+   '/invitations/:code/validate',
+   invitationRateLimiters.validateInvitation,
+   validateInvitation
 );
 
 /**
@@ -94,10 +94,10 @@ router.get(
  * @access  Private (Workspace Owner only)
  */
 router.get(
-    '/workspaces/:id/invitations/analytics',
-    authWithWorkspace,
-    requirePermission('invitation.view'),
-    getInvitationAnalytics
+   '/workspaces/:id/invitations/analytics',
+   authWithWorkspace,
+   requirePermission('invitation.view'),
+   getInvitationAnalytics
 );
 
 /**
@@ -106,10 +106,10 @@ router.get(
  * @access  Private (Workspace Owner only)
  */
 router.get(
-    '/workspaces/:id/invitations/limits',
-    authWithWorkspace,
-    requirePermission('invitation.view'),
-    checkInvitationLimits
+   '/workspaces/:id/invitations/limits',
+   authWithWorkspace,
+   requirePermission('invitation.view'),
+   checkInvitationLimits
 );
 
 /**
@@ -117,10 +117,6 @@ router.get(
  * @desc    Get invitation statistics
  * @access  Private (Workspace Owner only)
  */
-router.get(
-    '/invitations/stats',
-    authWithWorkspace,
-    getInvitationStats
-);
+router.get('/invitations/stats', authWithWorkspace, getInvitationStats);
 
 export default router;

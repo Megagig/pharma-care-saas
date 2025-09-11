@@ -1,29 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
-  Divider,
-  FormControl,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Select,
-  Typography,
-  Alert,
-  Button,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  LinearProgress,
-  Tabs,
-  Tab,
+   Box,
+   Card,
+   CardContent,
+   Chip,
+   CircularProgress,
+   Divider,
+   FormControl,
+   Grid,
+   InputLabel,
+   MenuItem,
+   Select,
+   Typography,
+   Alert,
+   Button,
+   Paper,
+   Table,
+   TableBody,
+   TableCell,
+   TableContainer,
+   TableHead,
+   TableRow,
+   LinearProgress,
+   Tabs,
+   Tab,
 } from '@mui/material';
 // Import icons with default imports
 import AnalyticsIcon from '@mui/icons-material/Analytics';
@@ -38,715 +38,780 @@ import PieChartIcon from '@mui/icons-material/PieChart';
 import { useUIStore } from '../../stores';
 
 interface RevenueData {
-  date: string;
-  amount: number;
-  subscriptions: number;
-  churnRate: number;
+   date: string;
+   amount: number;
+   subscriptions: number;
+   churnRate: number;
 }
 
 interface SubscriptionData {
-  tier: string;
-  count: number;
-  percentage: number;
-  revenue: number;
-  mrr: number;
-  churnRate: number;
+   tier: string;
+   count: number;
+   percentage: number;
+   revenue: number;
+   mrr: number;
+   churnRate: number;
 }
 
 interface FeatureUsage {
-  feature: string;
-  usage: number;
-  limit?: number;
-  percentage: number;
+   feature: string;
+   usage: number;
+   limit?: number;
+   percentage: number;
 }
 
 interface AdvancedAnalytics {
-  revenueTrend: RevenueData[];
-  subscriptionDistribution: SubscriptionData[];
-  featureUsage: FeatureUsage[];
-  keyMetrics: {
-    mrr: number;
-    arr: number;
-    churnRate: number;
-    ltv: number;
-    arpu: number;
-  };
+   revenueTrend: RevenueData[];
+   subscriptionDistribution: SubscriptionData[];
+   featureUsage: FeatureUsage[];
+   keyMetrics: {
+      mrr: number;
+      arr: number;
+      churnRate: number;
+      ltv: number;
+      arpu: number;
+   };
 }
 
 const AdvancedSubscriptionAnalytics: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [analytics, setAnalytics] = useState<AdvancedAnalytics | null>(null);
-  const [period, setPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>(
-    'month'
-  );
-  const [activeTab, setActiveTab] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+   const [loading, setLoading] = useState(true);
+   const [analytics, setAnalytics] = useState<AdvancedAnalytics | null>(null);
+   const [period, setPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>(
+      'month'
+   );
+   const [activeTab, setActiveTab] = useState(0);
+   const [error, setError] = useState<string | null>(null);
 
-  const addNotification = useUIStore((state) => state.addNotification);
+   const addNotification = useUIStore((state) => state.addNotification);
 
-  const loadAnalyticsData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+   const loadAnalyticsData = async () => {
+      try {
+         setLoading(true);
+         setError(null);
 
-      // In a real implementation, this would call the subscriptionService
-      // For now, we'll mock the data structure
-      const mockAnalytics: AdvancedAnalytics = {
-        revenueTrend: [
-          {
-            date: '2023-05-01',
-            amount: 12500,
-            subscriptions: 85,
-            churnRate: 2.5,
-          },
-          {
-            date: '2023-06-01',
-            amount: 14200,
-            subscriptions: 92,
-            churnRate: 2.1,
-          },
-          {
-            date: '2023-07-01',
-            amount: 16800,
-            subscriptions: 105,
-            churnRate: 1.8,
-          },
-          {
-            date: '2023-08-01',
-            amount: 18900,
-            subscriptions: 118,
-            churnRate: 1.5,
-          },
-          {
-            date: '2023-09-01',
-            amount: 21500,
-            subscriptions: 132,
-            churnRate: 1.2,
-          },
-          {
-            date: '2023-10-01',
-            amount: 24800,
-            subscriptions: 148,
-            churnRate: 1.0,
-          },
-        ],
-        subscriptionDistribution: [
-          {
-            tier: 'Free Trial',
-            count: 120,
-            percentage: 15,
-            revenue: 0,
-            mrr: 0,
-            churnRate: 85,
-          },
-          {
-            tier: 'Basic',
-            count: 280,
-            percentage: 35,
-            revenue: 280000,
-            mrr: 28000,
-            churnRate: 8,
-          },
-          {
-            tier: 'Pro',
-            count: 250,
-            percentage: 31,
-            revenue: 375000,
-            mrr: 37500,
-            churnRate: 5,
-          },
-          {
-            tier: 'Enterprise',
-            count: 150,
-            percentage: 19,
-            revenue: 450000,
-            mrr: 45000,
-            churnRate: 2,
-          },
-        ],
-        featureUsage: [
-          {
-            feature: 'Patient Management',
-            usage: 95,
-            limit: 100,
-            percentage: 95,
-          },
-          {
-            feature: 'Medication Tracking',
-            usage: 87,
-            limit: 100,
-            percentage: 87,
-          },
-          { feature: 'Clinical Notes', usage: 72, limit: 100, percentage: 72 },
-          { feature: 'ADR Module', usage: 45, limit: 100, percentage: 45 },
-          { feature: 'Reports Export', usage: 68, limit: 100, percentage: 68 },
-        ],
-        keyMetrics: {
-          mrr: 110500,
-          arr: 1326000,
-          churnRate: 4.1,
-          ltv: 26800,
-          arpu: 138,
-        },
-      };
+         // In a real implementation, this would call the subscriptionService
+         // For now, we'll mock the data structure
+         const mockAnalytics: AdvancedAnalytics = {
+            revenueTrend: [
+               {
+                  date: '2023-05-01',
+                  amount: 12500,
+                  subscriptions: 85,
+                  churnRate: 2.5,
+               },
+               {
+                  date: '2023-06-01',
+                  amount: 14200,
+                  subscriptions: 92,
+                  churnRate: 2.1,
+               },
+               {
+                  date: '2023-07-01',
+                  amount: 16800,
+                  subscriptions: 105,
+                  churnRate: 1.8,
+               },
+               {
+                  date: '2023-08-01',
+                  amount: 18900,
+                  subscriptions: 118,
+                  churnRate: 1.5,
+               },
+               {
+                  date: '2023-09-01',
+                  amount: 21500,
+                  subscriptions: 132,
+                  churnRate: 1.2,
+               },
+               {
+                  date: '2023-10-01',
+                  amount: 24800,
+                  subscriptions: 148,
+                  churnRate: 1.0,
+               },
+            ],
+            subscriptionDistribution: [
+               {
+                  tier: 'Free Trial',
+                  count: 120,
+                  percentage: 15,
+                  revenue: 0,
+                  mrr: 0,
+                  churnRate: 85,
+               },
+               {
+                  tier: 'Basic',
+                  count: 280,
+                  percentage: 35,
+                  revenue: 280000,
+                  mrr: 28000,
+                  churnRate: 8,
+               },
+               {
+                  tier: 'Pro',
+                  count: 250,
+                  percentage: 31,
+                  revenue: 375000,
+                  mrr: 37500,
+                  churnRate: 5,
+               },
+               {
+                  tier: 'Enterprise',
+                  count: 150,
+                  percentage: 19,
+                  revenue: 450000,
+                  mrr: 45000,
+                  churnRate: 2,
+               },
+            ],
+            featureUsage: [
+               {
+                  feature: 'Patient Management',
+                  usage: 95,
+                  limit: 100,
+                  percentage: 95,
+               },
+               {
+                  feature: 'Medication Tracking',
+                  usage: 87,
+                  limit: 100,
+                  percentage: 87,
+               },
+               {
+                  feature: 'Clinical Notes',
+                  usage: 72,
+                  limit: 100,
+                  percentage: 72,
+               },
+               { feature: 'ADR Module', usage: 45, limit: 100, percentage: 45 },
+               {
+                  feature: 'Reports Export',
+                  usage: 68,
+                  limit: 100,
+                  percentage: 68,
+               },
+            ],
+            keyMetrics: {
+               mrr: 110500,
+               arr: 1326000,
+               churnRate: 4.1,
+               ltv: 26800,
+               arpu: 138,
+            },
+         };
 
-      setAnalytics(mockAnalytics);
-    } catch {
-      setError('Failed to load analytics data');
-      addNotification({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to load advanced subscription analytics',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+         setAnalytics(mockAnalytics);
+      } catch {
+         setError('Failed to load analytics data');
+         addNotification({
+            type: 'error',
+            title: 'Error',
+            message: 'Failed to load advanced subscription analytics',
+         });
+      } finally {
+         setLoading(false);
+      }
+   };
 
-  useEffect(() => {
-    loadAnalyticsData();
-  }, [period]);
+   useEffect(() => {
+      loadAnalyticsData();
+   }, [period]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+   const formatCurrency = (amount: number) => {
+      return new Intl.NumberFormat('en-NG', {
+         style: 'currency',
+         currency: 'NGN',
+         minimumFractionDigits: 0,
+         maximumFractionDigits: 0,
+      }).format(amount);
+   };
 
-  const getTrendIcon = (current: number, previous: number) => {
-    if (current > previous) {
+   const getTrendIcon = (current: number, previous: number) => {
+      if (current > previous) {
+         return (
+            <TrendingUpIcon sx={{ color: 'success.main', fontSize: '1rem' }} />
+         );
+      } else if (current < previous) {
+         return (
+            <TrendingDownIcon sx={{ color: 'error.main', fontSize: '1rem' }} />
+         );
+      }
+      return null;
+   };
+
+   const getTrendColor = (current: number, previous: number) => {
+      if (current > previous) return 'success.main';
+      if (current < previous) return 'error.main';
+      return 'text.primary';
+   };
+
+   if (loading) {
       return (
-        <TrendingUpIcon sx={{ color: 'success.main', fontSize: '1rem' }} />
+         <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            minHeight="200px"
+         >
+            <CircularProgress />
+         </Box>
       );
-    } else if (current < previous) {
+   }
+
+   if (error) {
       return (
-        <TrendingDownIcon sx={{ color: 'error.main', fontSize: '1rem' }} />
+         <Alert severity="error" sx={{ m: 2 }}>
+            {error}
+         </Alert>
       );
-    }
-    return null;
-  };
+   }
 
-  const getTrendColor = (current: number, previous: number) => {
-    if (current > previous) return 'success.main';
-    if (current < previous) return 'error.main';
-    return 'text.primary';
-  };
+   return (
+      <Box>
+         <Box
+            sx={{
+               display: 'flex',
+               justifyContent: 'space-between',
+               alignItems: 'center',
+               mb: 3,
+            }}
+         >
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+               <AnalyticsIcon sx={{ mr: 1, color: 'primary.main' }} />
+               <Typography variant="h5" component="h1">
+                  Advanced Subscription Analytics
+               </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+               <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>Period</InputLabel>
+                  <Select
+                     value={period}
+                     label="Period"
+                     onChange={(e) =>
+                        setPeriod(
+                           e.target.value as
+                              | 'week'
+                              | 'month'
+                              | 'quarter'
+                              | 'year'
+                        )
+                     }
+                  >
+                     <MenuItem value="week">This Week</MenuItem>
+                     <MenuItem value="month">This Month</MenuItem>
+                     <MenuItem value="quarter">This Quarter</MenuItem>
+                     <MenuItem value="year">This Year</MenuItem>
+                  </Select>
+               </FormControl>
+               <Button
+                  variant="outlined"
+                  startIcon={<RefreshIcon />}
+                  onClick={loadAnalyticsData}
+               >
+                  Refresh
+               </Button>
+            </Box>
+         </Box>
 
-  if (loading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+         {/* Key Metrics */}
+         <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+               <Card>
+                  <CardContent>
+                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <AttachMoneyIcon
+                           sx={{ mr: 1, color: 'primary.main' }}
+                        />
+                        <Typography variant="body2" color="textSecondary">
+                           MRR
+                        </Typography>
+                     </Box>
+                     <Typography variant="h4" gutterBottom>
+                        {formatCurrency(analytics?.keyMetrics.mrr || 0)}
+                     </Typography>
+                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {getTrendIcon(
+                           analytics?.keyMetrics.mrr || 0,
+                           (analytics?.keyMetrics.mrr || 0) * 0.95
+                        )}
+                        <Typography
+                           variant="body2"
+                           sx={{
+                              color: getTrendColor(
+                                 analytics?.keyMetrics.mrr || 0,
+                                 (analytics?.keyMetrics.mrr || 0) * 0.95
+                              ),
+                              ml: 0.5,
+                           }}
+                        >
+                           +5.2%
+                        </Typography>
+                        <Typography
+                           variant="body2"
+                           color="textSecondary"
+                           sx={{ ml: 0.5 }}
+                        >
+                           vs last period
+                        </Typography>
+                     </Box>
+                  </CardContent>
+               </Card>
+            </Grid>
 
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        {error}
-      </Alert>
-    );
-  }
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+               <Card>
+                  <CardContent>
+                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <AttachMoneyIcon
+                           sx={{ mr: 1, color: 'success.main' }}
+                        />
+                        <Typography variant="body2" color="textSecondary">
+                           ARR
+                        </Typography>
+                     </Box>
+                     <Typography variant="h4" gutterBottom>
+                        {formatCurrency(analytics?.keyMetrics.arr || 0)}
+                     </Typography>
+                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {getTrendIcon(
+                           analytics?.keyMetrics.arr || 0,
+                           (analytics?.keyMetrics.arr || 0) * 0.92
+                        )}
+                        <Typography
+                           variant="body2"
+                           sx={{
+                              color: getTrendColor(
+                                 analytics?.keyMetrics.arr || 0,
+                                 (analytics?.keyMetrics.arr || 0) * 0.92
+                              ),
+                              ml: 0.5,
+                           }}
+                        >
+                           +8.7%
+                        </Typography>
+                        <Typography
+                           variant="body2"
+                           color="textSecondary"
+                           sx={{ ml: 0.5 }}
+                        >
+                           vs last period
+                        </Typography>
+                     </Box>
+                  </CardContent>
+               </Card>
+            </Grid>
 
-  return (
-    <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <AnalyticsIcon sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="h5" component="h1">
-            Advanced Subscription Analytics
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Period</InputLabel>
-            <Select
-              value={period}
-              label="Period"
-              onChange={(e) =>
-                setPeriod(
-                  e.target.value as 'week' | 'month' | 'quarter' | 'year'
-                )
-              }
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+               <Card>
+                  <CardContent>
+                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <PeopleIcon sx={{ mr: 1, color: 'info.main' }} />
+                        <Typography variant="body2" color="textSecondary">
+                           Churn Rate
+                        </Typography>
+                     </Box>
+                     <Typography variant="h4" gutterBottom>
+                        {(analytics?.keyMetrics.churnRate || 0).toFixed(1)}%
+                     </Typography>
+                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {getTrendIcon(
+                           analytics?.keyMetrics.churnRate || 0,
+                           (analytics?.keyMetrics.churnRate || 0) * 1.2
+                        )}
+                        <Typography
+                           variant="body2"
+                           sx={{
+                              color: getTrendColor(
+                                 (analytics?.keyMetrics.churnRate || 0) * 1.2,
+                                 analytics?.keyMetrics.churnRate || 0
+                              ),
+                              ml: 0.5,
+                           }}
+                        >
+                           -17.1%
+                        </Typography>
+                        <Typography
+                           variant="body2"
+                           color="textSecondary"
+                           sx={{ ml: 0.5 }}
+                        >
+                           improvement
+                        </Typography>
+                     </Box>
+                  </CardContent>
+               </Card>
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+               <Card>
+                  <CardContent>
+                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <TimelineIcon sx={{ mr: 1, color: 'warning.main' }} />
+                        <Typography variant="body2" color="textSecondary">
+                           LTV
+                        </Typography>
+                     </Box>
+                     <Typography variant="h4" gutterBottom>
+                        {formatCurrency(analytics?.keyMetrics.ltv || 0)}
+                     </Typography>
+                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {getTrendIcon(
+                           analytics?.keyMetrics.ltv || 0,
+                           (analytics?.keyMetrics.ltv || 0) * 0.9
+                        )}
+                        <Typography
+                           variant="body2"
+                           sx={{
+                              color: getTrendColor(
+                                 analytics?.keyMetrics.ltv || 0,
+                                 (analytics?.keyMetrics.ltv || 0) * 0.9
+                              ),
+                              ml: 0.5,
+                           }}
+                        >
+                           +11.1%
+                        </Typography>
+                        <Typography
+                           variant="body2"
+                           color="textSecondary"
+                           sx={{ ml: 0.5 }}
+                        >
+                           vs last period
+                        </Typography>
+                     </Box>
+                  </CardContent>
+               </Card>
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+               <Card>
+                  <CardContent>
+                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <BarChartIcon sx={{ mr: 1, color: 'secondary.main' }} />
+                        <Typography variant="body2" color="textSecondary">
+                           ARPU
+                        </Typography>
+                     </Box>
+                     <Typography variant="h4" gutterBottom>
+                        {formatCurrency(analytics?.keyMetrics.arpu || 0)}
+                     </Typography>
+                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {getTrendIcon(
+                           analytics?.keyMetrics.arpu || 0,
+                           (analytics?.keyMetrics.arpu || 0) * 0.95
+                        )}
+                        <Typography
+                           variant="body2"
+                           sx={{
+                              color: getTrendColor(
+                                 analytics?.keyMetrics.arpu || 0,
+                                 (analytics?.keyMetrics.arpu || 0) * 0.95
+                              ),
+                              ml: 0.5,
+                           }}
+                        >
+                           +5.3%
+                        </Typography>
+                        <Typography
+                           variant="body2"
+                           color="textSecondary"
+                           sx={{ ml: 0.5 }}
+                        >
+                           vs last period
+                        </Typography>
+                     </Box>
+                  </CardContent>
+               </Card>
+            </Grid>
+         </Grid>
+
+         {/* Analytics Tabs */}
+         <Card>
+            <Tabs
+               value={activeTab}
+               onChange={(e, newValue) => setActiveTab(newValue)}
+               variant="scrollable"
+               scrollButtons="auto"
             >
-              <MenuItem value="week">This Week</MenuItem>
-              <MenuItem value="month">This Month</MenuItem>
-              <MenuItem value="quarter">This Quarter</MenuItem>
-              <MenuItem value="year">This Year</MenuItem>
-            </Select>
-          </FormControl>
-          <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={loadAnalyticsData}
-          >
-            Refresh
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Key Metrics */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-          <Card>
+               <Tab icon={<BarChartIcon />} label="Revenue Trend" />
+               <Tab icon={<PieChartIcon />} label="Subscription Distribution" />
+               <Tab icon={<TimelineIcon />} label="Feature Usage" />
+            </Tabs>
+            <Divider />
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <AttachMoneyIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="body2" color="textSecondary">
-                  MRR
-                </Typography>
-              </Box>
-              <Typography variant="h4" gutterBottom>
-                {formatCurrency(analytics?.keyMetrics.mrr || 0)}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                {getTrendIcon(
-                  analytics?.keyMetrics.mrr || 0,
-                  (analytics?.keyMetrics.mrr || 0) * 0.95
-                )}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: getTrendColor(
-                      analytics?.keyMetrics.mrr || 0,
-                      (analytics?.keyMetrics.mrr || 0) * 0.95
-                    ),
-                    ml: 0.5,
-                  }}
-                >
-                  +5.2%
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  sx={{ ml: 0.5 }}
-                >
-                  vs last period
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <AttachMoneyIcon sx={{ mr: 1, color: 'success.main' }} />
-                <Typography variant="body2" color="textSecondary">
-                  ARR
-                </Typography>
-              </Box>
-              <Typography variant="h4" gutterBottom>
-                {formatCurrency(analytics?.keyMetrics.arr || 0)}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                {getTrendIcon(
-                  analytics?.keyMetrics.arr || 0,
-                  (analytics?.keyMetrics.arr || 0) * 0.92
-                )}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: getTrendColor(
-                      analytics?.keyMetrics.arr || 0,
-                      (analytics?.keyMetrics.arr || 0) * 0.92
-                    ),
-                    ml: 0.5,
-                  }}
-                >
-                  +8.7%
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  sx={{ ml: 0.5 }}
-                >
-                  vs last period
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <PeopleIcon sx={{ mr: 1, color: 'info.main' }} />
-                <Typography variant="body2" color="textSecondary">
-                  Churn Rate
-                </Typography>
-              </Box>
-              <Typography variant="h4" gutterBottom>
-                {(analytics?.keyMetrics.churnRate || 0).toFixed(1)}%
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                {getTrendIcon(
-                  analytics?.keyMetrics.churnRate || 0,
-                  (analytics?.keyMetrics.churnRate || 0) * 1.2
-                )}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: getTrendColor(
-                      (analytics?.keyMetrics.churnRate || 0) * 1.2,
-                      analytics?.keyMetrics.churnRate || 0
-                    ),
-                    ml: 0.5,
-                  }}
-                >
-                  -17.1%
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  sx={{ ml: 0.5 }}
-                >
-                  improvement
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <TimelineIcon sx={{ mr: 1, color: 'warning.main' }} />
-                <Typography variant="body2" color="textSecondary">
-                  LTV
-                </Typography>
-              </Box>
-              <Typography variant="h4" gutterBottom>
-                {formatCurrency(analytics?.keyMetrics.ltv || 0)}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                {getTrendIcon(
-                  analytics?.keyMetrics.ltv || 0,
-                  (analytics?.keyMetrics.ltv || 0) * 0.9
-                )}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: getTrendColor(
-                      analytics?.keyMetrics.ltv || 0,
-                      (analytics?.keyMetrics.ltv || 0) * 0.9
-                    ),
-                    ml: 0.5,
-                  }}
-                >
-                  +11.1%
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  sx={{ ml: 0.5 }}
-                >
-                  vs last period
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <BarChartIcon sx={{ mr: 1, color: 'secondary.main' }} />
-                <Typography variant="body2" color="textSecondary">
-                  ARPU
-                </Typography>
-              </Box>
-              <Typography variant="h4" gutterBottom>
-                {formatCurrency(analytics?.keyMetrics.arpu || 0)}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                {getTrendIcon(
-                  analytics?.keyMetrics.arpu || 0,
-                  (analytics?.keyMetrics.arpu || 0) * 0.95
-                )}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: getTrendColor(
-                      analytics?.keyMetrics.arpu || 0,
-                      (analytics?.keyMetrics.arpu || 0) * 0.95
-                    ),
-                    ml: 0.5,
-                  }}
-                >
-                  +5.3%
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  sx={{ ml: 0.5 }}
-                >
-                  vs last period
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Analytics Tabs */}
-      <Card>
-        <Tabs
-          value={activeTab}
-          onChange={(e, newValue) => setActiveTab(newValue)}
-          variant="scrollable"
-          scrollButtons="auto"
-        >
-          <Tab icon={<BarChartIcon />} label="Revenue Trend" />
-          <Tab icon={<PieChartIcon />} label="Subscription Distribution" />
-          <Tab icon={<TimelineIcon />} label="Feature Usage" />
-        </Tabs>
-        <Divider />
-        <CardContent>
-          {activeTab === 0 && (
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                Revenue Trend
-              </Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Date</TableCell>
-                      <TableCell align="right">Revenue</TableCell>
-                      <TableCell align="right">Subscriptions</TableCell>
-                      <TableCell align="right">Churn Rate</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {analytics?.revenueTrend.map((data, index) => (
-                      <TableRow key={index}>
-                        <TableCell component="th" scope="row">
-                          {new Date(data.date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </TableCell>
-                        <TableCell align="right">
-                          {formatCurrency(data.amount)}
-                        </TableCell>
-                        <TableCell align="right">
-                          {data.subscriptions}
-                        </TableCell>
-                        <TableCell align="right">{data.churnRate}%</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Box>
-          )}
-
-          {activeTab === 1 && (
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                Subscription Distribution
-              </Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Plan Tier</TableCell>
-                      <TableCell align="right">Subscriptions</TableCell>
-                      <TableCell align="right">Percentage</TableCell>
-                      <TableCell align="right">Revenue</TableCell>
-                      <TableCell align="right">MRR</TableCell>
-                      <TableCell align="right">Churn Rate</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {analytics?.subscriptionDistribution.map((data, index) => (
-                      <TableRow key={index}>
-                        <TableCell component="th" scope="row">
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Typography variant="body2">{data.tier}</Typography>
-                            {data.tier === 'Enterprise' && (
-                              <Chip
-                                label="Premium"
-                                size="small"
-                                color="primary"
-                                variant="outlined"
-                                sx={{ ml: 1 }}
-                              />
-                            )}
-                          </Box>
-                        </TableCell>
-                        <TableCell align="right">{data.count}</TableCell>
-                        <TableCell align="right">{data.percentage}%</TableCell>
-                        <TableCell align="right">
-                          {formatCurrency(data.revenue)}
-                        </TableCell>
-                        <TableCell align="right">
-                          {formatCurrency(data.mrr)}
-                        </TableCell>
-                        <TableCell align="right">{data.churnRate}%</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              {/* Subscription Distribution Visualization */}
-              <Box sx={{ mt: 3 }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Distribution by Plan Tier
-                </Typography>
-                {analytics?.subscriptionDistribution.map((data, index) => (
-                  <Box key={index} sx={{ mb: 2 }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        mb: 0.5,
-                      }}
-                    >
-                      <Typography variant="body2">{data.tier}</Typography>
-                      <Typography variant="body2">
-                        {data.percentage}%
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={data.percentage}
-                      sx={{
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: 'grey.200',
-                        '& .MuiLinearProgress-bar': {
-                          backgroundColor:
-                            index === 0
-                              ? 'primary.main'
-                              : index === 1
-                              ? 'secondary.main'
-                              : index === 2
-                              ? 'success.main'
-                              : 'warning.main',
-                        },
-                      }}
-                    />
+               {activeTab === 0 && (
+                  <Box>
+                     <Typography variant="h6" gutterBottom>
+                        Revenue Trend
+                     </Typography>
+                     <TableContainer component={Paper}>
+                        <Table>
+                           <TableHead>
+                              <TableRow>
+                                 <TableCell>Date</TableCell>
+                                 <TableCell align="right">Revenue</TableCell>
+                                 <TableCell align="right">
+                                    Subscriptions
+                                 </TableCell>
+                                 <TableCell align="right">Churn Rate</TableCell>
+                              </TableRow>
+                           </TableHead>
+                           <TableBody>
+                              {analytics?.revenueTrend.map((data, index) => (
+                                 <TableRow key={index}>
+                                    <TableCell component="th" scope="row">
+                                       {new Date(data.date).toLocaleDateString(
+                                          'en-US',
+                                          {
+                                             month: 'short',
+                                             year: 'numeric',
+                                          }
+                                       )}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                       {formatCurrency(data.amount)}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                       {data.subscriptions}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                       {data.churnRate}%
+                                    </TableCell>
+                                 </TableRow>
+                              ))}
+                           </TableBody>
+                        </Table>
+                     </TableContainer>
                   </Box>
-                ))}
-              </Box>
-            </Box>
-          )}
+               )}
 
-          {activeTab === 2 && (
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                Feature Usage
-              </Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Feature</TableCell>
-                      <TableCell align="right">Usage</TableCell>
-                      <TableCell align="right">Limit</TableCell>
-                      <TableCell align="right">Percentage</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {analytics?.featureUsage.map((data, index) => (
-                      <TableRow key={index}>
-                        <TableCell component="th" scope="row">
-                          {data.feature}
-                        </TableCell>
-                        <TableCell align="right">{data.usage}</TableCell>
-                        <TableCell align="right">
-                          {data.limit || 'Unlimited'}
-                        </TableCell>
-                        <TableCell align="right">
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Box sx={{ width: '100%', mr: 1 }}>
-                              <LinearProgress
-                                variant="determinate"
-                                value={data.percentage}
-                                sx={{
-                                  height: 6,
-                                  borderRadius: 3,
-                                  backgroundColor: 'grey.200',
-                                  '& .MuiLinearProgress-bar': {
-                                    backgroundColor:
-                                      data.percentage > 80
-                                        ? 'error.main'
-                                        : data.percentage > 60
-                                        ? 'warning.main'
-                                        : 'success.main',
-                                  },
-                                }}
-                              />
-                            </Box>
-                            <Typography variant="body2" sx={{ minWidth: 40 }}>
-                              {data.percentage}%
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+               {activeTab === 1 && (
+                  <Box>
+                     <Typography variant="h6" gutterBottom>
+                        Subscription Distribution
+                     </Typography>
+                     <TableContainer component={Paper}>
+                        <Table>
+                           <TableHead>
+                              <TableRow>
+                                 <TableCell>Plan Tier</TableCell>
+                                 <TableCell align="right">
+                                    Subscriptions
+                                 </TableCell>
+                                 <TableCell align="right">Percentage</TableCell>
+                                 <TableCell align="right">Revenue</TableCell>
+                                 <TableCell align="right">MRR</TableCell>
+                                 <TableCell align="right">Churn Rate</TableCell>
+                              </TableRow>
+                           </TableHead>
+                           <TableBody>
+                              {analytics?.subscriptionDistribution.map(
+                                 (data, index) => (
+                                    <TableRow key={index}>
+                                       <TableCell component="th" scope="row">
+                                          <Box
+                                             sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                             }}
+                                          >
+                                             <Typography variant="body2">
+                                                {data.tier}
+                                             </Typography>
+                                             {data.tier === 'Enterprise' && (
+                                                <Chip
+                                                   label="Premium"
+                                                   size="small"
+                                                   color="primary"
+                                                   variant="outlined"
+                                                   sx={{ ml: 1 }}
+                                                />
+                                             )}
+                                          </Box>
+                                       </TableCell>
+                                       <TableCell align="right">
+                                          {data.count}
+                                       </TableCell>
+                                       <TableCell align="right">
+                                          {data.percentage}%
+                                       </TableCell>
+                                       <TableCell align="right">
+                                          {formatCurrency(data.revenue)}
+                                       </TableCell>
+                                       <TableCell align="right">
+                                          {formatCurrency(data.mrr)}
+                                       </TableCell>
+                                       <TableCell align="right">
+                                          {data.churnRate}%
+                                       </TableCell>
+                                    </TableRow>
+                                 )
+                              )}
+                           </TableBody>
+                        </Table>
+                     </TableContainer>
 
-              {/* Feature Usage Insights */}
-              <Box sx={{ mt: 3 }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Usage Insights
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Paper sx={{ p: 2, height: '100%' }}>
-                      <Typography variant="subtitle2" gutterBottom>
-                        High Usage Features
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        Patient Management and Medication Tracking are the most
-                        utilized features, indicating strong core adoption.
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Paper sx={{ p: 2, height: '100%' }}>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Underutilized Features
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        ADR Module has low adoption. Consider promoting this
-                        feature to improve patient safety outcomes.
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                </Grid>
-              </Box>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
-    </Box>
-  );
+                     {/* Subscription Distribution Visualization */}
+                     <Box sx={{ mt: 3 }}>
+                        <Typography variant="subtitle1" gutterBottom>
+                           Distribution by Plan Tier
+                        </Typography>
+                        {analytics?.subscriptionDistribution.map(
+                           (data, index) => (
+                              <Box key={index} sx={{ mb: 2 }}>
+                                 <Box
+                                    sx={{
+                                       display: 'flex',
+                                       justifyContent: 'space-between',
+                                       mb: 0.5,
+                                    }}
+                                 >
+                                    <Typography variant="body2">
+                                       {data.tier}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                       {data.percentage}%
+                                    </Typography>
+                                 </Box>
+                                 <LinearProgress
+                                    variant="determinate"
+                                    value={data.percentage}
+                                    sx={{
+                                       height: 8,
+                                       borderRadius: 4,
+                                       backgroundColor: 'grey.200',
+                                       '& .MuiLinearProgress-bar': {
+                                          backgroundColor:
+                                             index === 0
+                                                ? 'primary.main'
+                                                : index === 1
+                                                  ? 'secondary.main'
+                                                  : index === 2
+                                                    ? 'success.main'
+                                                    : 'warning.main',
+                                       },
+                                    }}
+                                 />
+                              </Box>
+                           )
+                        )}
+                     </Box>
+                  </Box>
+               )}
+
+               {activeTab === 2 && (
+                  <Box>
+                     <Typography variant="h6" gutterBottom>
+                        Feature Usage
+                     </Typography>
+                     <TableContainer component={Paper}>
+                        <Table>
+                           <TableHead>
+                              <TableRow>
+                                 <TableCell>Feature</TableCell>
+                                 <TableCell align="right">Usage</TableCell>
+                                 <TableCell align="right">Limit</TableCell>
+                                 <TableCell align="right">Percentage</TableCell>
+                              </TableRow>
+                           </TableHead>
+                           <TableBody>
+                              {analytics?.featureUsage.map((data, index) => (
+                                 <TableRow key={index}>
+                                    <TableCell component="th" scope="row">
+                                       {data.feature}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                       {data.usage}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                       {data.limit || 'Unlimited'}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                       <Box
+                                          sx={{
+                                             display: 'flex',
+                                             alignItems: 'center',
+                                          }}
+                                       >
+                                          <Box sx={{ width: '100%', mr: 1 }}>
+                                             <LinearProgress
+                                                variant="determinate"
+                                                value={data.percentage}
+                                                sx={{
+                                                   height: 6,
+                                                   borderRadius: 3,
+                                                   backgroundColor: 'grey.200',
+                                                   '& .MuiLinearProgress-bar': {
+                                                      backgroundColor:
+                                                         data.percentage > 80
+                                                            ? 'error.main'
+                                                            : data.percentage >
+                                                                60
+                                                              ? 'warning.main'
+                                                              : 'success.main',
+                                                   },
+                                                }}
+                                             />
+                                          </Box>
+                                          <Typography
+                                             variant="body2"
+                                             sx={{ minWidth: 40 }}
+                                          >
+                                             {data.percentage}%
+                                          </Typography>
+                                       </Box>
+                                    </TableCell>
+                                 </TableRow>
+                              ))}
+                           </TableBody>
+                        </Table>
+                     </TableContainer>
+
+                     {/* Feature Usage Insights */}
+                     <Box sx={{ mt: 3 }}>
+                        <Typography variant="subtitle1" gutterBottom>
+                           Usage Insights
+                        </Typography>
+                        <Grid container spacing={2}>
+                           <Grid size={{ xs: 12, md: 6 }}>
+                              <Paper sx={{ p: 2, height: '100%' }}>
+                                 <Typography variant="subtitle2" gutterBottom>
+                                    High Usage Features
+                                 </Typography>
+                                 <Typography
+                                    variant="body2"
+                                    color="textSecondary"
+                                 >
+                                    Patient Management and Medication Tracking
+                                    are the most utilized features, indicating
+                                    strong core adoption.
+                                 </Typography>
+                              </Paper>
+                           </Grid>
+                           <Grid size={{ xs: 12, md: 6 }}>
+                              <Paper sx={{ p: 2, height: '100%' }}>
+                                 <Typography variant="subtitle2" gutterBottom>
+                                    Underutilized Features
+                                 </Typography>
+                                 <Typography
+                                    variant="body2"
+                                    color="textSecondary"
+                                 >
+                                    ADR Module has low adoption. Consider
+                                    promoting this feature to improve patient
+                                    safety outcomes.
+                                 </Typography>
+                              </Paper>
+                           </Grid>
+                        </Grid>
+                     </Box>
+                  </Box>
+               )}
+            </CardContent>
+         </Card>
+      </Box>
+   );
 };
 
 export default AdvancedSubscriptionAnalytics;

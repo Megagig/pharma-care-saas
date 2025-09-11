@@ -7,27 +7,27 @@ import axios from 'axios';
  */
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+   import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const hasAuthenticationCookies = async (): Promise<boolean> => {
-  try {
-    // Make a lightweight request to check if auth cookies exist
-    const response = await axios.get(`${API_BASE_URL}/auth/check-cookies`, {
-      withCredentials: true,
-    });
+   try {
+      // Make a lightweight request to check if auth cookies exist
+      const response = await axios.get(`${API_BASE_URL}/auth/check-cookies`, {
+         withCredentials: true,
+      });
 
-    // Check if the response indicates cookies exist
-    if (response.status === 200 && response.data.hasCookies) {
-      console.log('Cookie check: Authentication cookies found');
-      return true;
-    }
+      // Check if the response indicates cookies exist
+      if (response.status === 200 && response.data.hasCookies) {
+         console.log('Cookie check: Authentication cookies found');
+         return true;
+      }
 
-    console.log('Cookie check: No authentication cookies found');
-    return false;
-  } catch (error) {
-    console.error('Cookie check failed:', error);
-    return false;
-  }
+      console.log('Cookie check: No authentication cookies found');
+      return false;
+   } catch (error) {
+      console.error('Cookie check failed:', error);
+      return false;
+   }
 };
 
 /**
@@ -35,34 +35,34 @@ export const hasAuthenticationCookies = async (): Promise<boolean> => {
  * This is a fallback for when the server check fails
  */
 export const hasSessionState = (): boolean => {
-  try {
-    // Check if we have any session indicators
-    // Since we're using HTTP-only cookies, we can't read them directly
-    // But we can check browser session storage or other indicators
-    return sessionStorage.getItem('auth_attempted') === 'true';
-  } catch {
-    return false;
-  }
+   try {
+      // Check if we have any session indicators
+      // Since we're using HTTP-only cookies, we can't read them directly
+      // But we can check browser session storage or other indicators
+      return sessionStorage.getItem('auth_attempted') === 'true';
+   } catch {
+      return false;
+   }
 };
 
 /**
  * Mark that authentication has been attempted in this session
  */
 export const markAuthAttempted = (): void => {
-  try {
-    sessionStorage.setItem('auth_attempted', 'true');
-  } catch {
-    // Ignore if sessionStorage is not available
-  }
+   try {
+      sessionStorage.setItem('auth_attempted', 'true');
+   } catch {
+      // Ignore if sessionStorage is not available
+   }
 };
 
 /**
  * Clear session markers on logout
  */
 export const clearSessionState = (): void => {
-  try {
-    sessionStorage.removeItem('auth_attempted');
-  } catch {
-    // Ignore if sessionStorage is not available
-  }
+   try {
+      sessionStorage.removeItem('auth_attempted');
+   } catch {
+      // Ignore if sessionStorage is not available
+   }
 };

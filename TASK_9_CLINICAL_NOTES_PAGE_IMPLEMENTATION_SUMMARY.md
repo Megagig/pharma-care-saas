@@ -66,12 +66,12 @@ Successfully implemented task 9 from the clinical notes integration spec: "Repla
 
 ```typescript
 interface ClinicalNotesDashboardProps {
-  patientId?: string;
-  embedded?: boolean;
-  maxHeight?: number;
-  onNoteSelect?: (noteId: string) => void;
-  onNoteEdit?: (noteId: string) => void;
-  onNoteCreate?: () => void;
+   patientId?: string;
+   embedded?: boolean;
+   maxHeight?: number;
+   onNoteSelect?: (noteId: string) => void;
+   onNoteEdit?: (noteId: string) => void;
+   onNoteCreate?: () => void;
 }
 ```
 

@@ -82,16 +82,14 @@ Select an appropriate patient for medication therapy review and initialize the M
 #### Process
 
 1. **Search for Patient**
-
    - Use the search bar to find patients by name, ID, or phone number
    - Apply filters to find patients who may benefit from MTR:
-     - Patients with multiple medications (5+ drugs)
-     - Patients with recent hospitalizations
-     - Patients with chronic conditions
-     - Patients who haven't had recent MTR
+      - Patients with multiple medications (5+ drugs)
+      - Patients with recent hospitalizations
+      - Patients with chronic conditions
+      - Patients who haven't had recent MTR
 
 2. **Review Patient Information**
-
    - Verify patient demographics
    - Check for active MTR sessions
    - Review medication count and complexity
@@ -119,31 +117,27 @@ Gather comprehensive information about all medications the patient is taking, in
 #### Process
 
 1. **Review Existing Records**
-
    - Import medications from patient's pharmacy records
    - Review previous MTR sessions
    - Check for recent prescription changes
 
 2. **Collect Medication Information**
-
    - **Prescription Medications**: Include all current prescriptions with:
-
-     - Drug name (brand and generic)
-     - Strength and dosage form
-     - Directions for use
-     - Prescribing physician
-     - Start date and indication
+      - Drug name (brand and generic)
+      - Strength and dosage form
+      - Directions for use
+      - Prescribing physician
+      - Start date and indication
 
    - **Over-the-Counter Medications**: Document all OTC drugs including:
-
-     - Pain relievers, antacids, vitamins
-     - Frequency and duration of use
-     - Self-medication patterns
+      - Pain relievers, antacids, vitamins
+      - Frequency and duration of use
+      - Self-medication patterns
 
    - **Herbal and Supplements**: Record all natural products:
-     - Herbal remedies and supplements
-     - Dosages and frequency
-     - Perceived benefits or effects
+      - Herbal remedies and supplements
+      - Dosages and frequency
+      - Perceived benefits or effects
 
 3. **Verify Medication Details**
    - Confirm dosing accuracy
@@ -168,24 +162,21 @@ Systematically evaluate the medication regimen to identify drug-related problems
 #### Process
 
 1. **Automated Screening**
-
    - The system automatically checks for:
-     - Drug-drug interactions
-     - Drug-disease contraindications
-     - Duplicate therapies
-     - Dosing concerns
-     - Monitoring requirements
+      - Drug-drug interactions
+      - Drug-disease contraindications
+      - Duplicate therapies
+      - Dosing concerns
+      - Monitoring requirements
 
 2. **Clinical Assessment**
-
    - Review each identified problem:
-     - Assess clinical significance
-     - Determine severity level
-     - Evaluate patient-specific factors
-     - Consider risk vs. benefit
+      - Assess clinical significance
+      - Determine severity level
+      - Evaluate patient-specific factors
+      - Consider risk vs. benefit
 
 3. **Problem Categories**
-
    - **Indication Problems**: Untreated conditions, unnecessary therapy
    - **Effectiveness Problems**: Suboptimal therapy, wrong drug
    - **Safety Problems**: Adverse effects, interactions, contraindications
@@ -213,20 +204,17 @@ Create evidence-based recommendations to address identified drug-related problem
 #### Process
 
 1. **Prioritize Problems**
-
    - Address critical and major problems first
    - Consider patient preferences and goals
    - Evaluate feasibility of interventions
 
 2. **Develop Recommendations**
-
    - **Medication Changes**: Discontinuation, dose adjustments, therapy switches
    - **Monitoring Plans**: Lab tests, clinical assessments, follow-up schedules
    - **Patient Education**: Counseling points, adherence strategies
    - **Provider Communication**: Recommendations for prescribers
 
 3. **Create Therapy Goals**
-
    - Set specific, measurable outcomes
    - Establish timelines for goal achievement
    - Define success criteria
@@ -252,21 +240,18 @@ Record all pharmacist actions, communications, and outcomes related to the thera
 #### Process
 
 1. **Document Interventions**
-
    - Record each action taken
    - Specify target audience (patient, prescriber, caregiver)
    - Note communication method (verbal, written, phone, email)
    - Include date, time, and pharmacist involved
 
 2. **Track Outcomes**
-
    - Monitor recommendation acceptance
    - Document implementation status
    - Record any modifications to original plan
    - Note patient and provider responses
 
 3. **Communication Templates**
-
    - Use standardized formats for consistency
    - Include relevant clinical information
    - Provide clear, actionable recommendations
@@ -293,21 +278,18 @@ Ensure continuity of care through appropriate follow-up activities and ongoing m
 #### Process
 
 1. **Schedule Follow-up Activities**
-
    - Determine appropriate follow-up intervals
    - Set reminders for critical monitoring
    - Assign follow-up responsibilities
    - Create calendar entries and alerts
 
 2. **Monitor Outcomes**
-
    - Track therapy goal achievement
    - Assess intervention effectiveness
    - Monitor for new drug-related problems
    - Document progress and changes
 
 3. **Ongoing Assessment**
-
    - Review lab results and clinical data
    - Evaluate adherence and patient satisfaction
    - Assess need for additional interventions
@@ -331,19 +313,16 @@ Ensure continuity of care through appropriate follow-up activities and ongoing m
 ### General Guidelines
 
 1. **Preparation is Key**
-
    - Review patient records before starting
    - Gather all necessary information
    - Set aside adequate time for thorough review
 
 2. **Patient-Centered Approach**
-
    - Involve patients in decision-making
    - Consider patient preferences and goals
    - Address concerns and questions
 
 3. **Evidence-Based Practice**
-
    - Use current clinical guidelines
    - Reference peer-reviewed literature
    - Consider patient-specific factors

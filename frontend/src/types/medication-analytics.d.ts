@@ -1,8 +1,8 @@
 declare module '../components/medications/MedicationAnalyticsPanel' {
-  interface MedicationAnalyticsPanelProps {
-    patientId: string;
-  }
+   interface MedicationAnalyticsPanelProps {
+      patientId: string;
+   }
 
-  const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps>;
-  export default MedicationAnalyticsPanel;
+   const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps>;
+   export default MedicationAnalyticsPanel;
 }

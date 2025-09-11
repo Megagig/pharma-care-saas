@@ -15,7 +15,7 @@ This guide provides comprehensive troubleshooting information for common issues 
 7. [Performance Issues](#performance-issues)
 8. [Database and Migration Issues](#database-and-migration-issues)
 9. [API Integration Problems](#api-integration-problems)
-10. [Monitoring and Logging](#monitoring-and-logging)
+10.   [Monitoring and Logging](#monitoring-and-logging)
 
 ---
 
@@ -112,9 +112,9 @@ console.log(jwt.decode(token));
    ```typescript
    // Add to API client
    const refreshToken = async () => {
-     const response = await apiClient.post('/api/auth/refresh');
-     localStorage.setItem('authToken', response.data.token);
-     return response.data.token;
+      const response = await apiClient.post('/api/auth/refresh');
+      localStorage.setItem('authToken', response.data.token);
+      return response.data.token;
    };
    ```
 
@@ -156,16 +156,16 @@ db.users.aggregate([
    ```javascript
    // Migration script to fix associations
    db.users.find({ workspaceId: { $exists: false } }).forEach((user) => {
-     const workspace = db.workplaces.findOne({
-       $or: [{ ownerId: user._id }, { teamMembers: user._id }],
-     });
+      const workspace = db.workplaces.findOne({
+         $or: [{ ownerId: user._id }, { teamMembers: user._id }],
+      });
 
-     if (workspace) {
-       db.users.updateOne(
-         { _id: user._id },
-         { $set: { workspaceId: workspace._id } }
-       );
-     }
+      if (workspace) {
+         db.users.updateOne(
+            { _id: user._id },
+            { $set: { workspaceId: workspace._id } }
+         );
+      }
    });
    ```
 
@@ -289,8 +289,8 @@ db.invitations.getIndexes()
    ```javascript
    // Extend specific invitation
    db.invitations.updateOne(
-     { code: 'ABC12345' },
-     { $set: { expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) } }
+      { code: 'ABC12345' },
+      { $set: { expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) } }
    );
    ```
 
@@ -338,11 +338,11 @@ db.subscriptions.findOne({ workspaceId: ObjectId("workspace_id") })
    ```javascript
    // Mark expired invitations
    db.invitations.updateMany(
-     {
-       status: 'active',
-       expiresAt: { $lt: new Date() },
-     },
-     { $set: { status: 'expired' } }
+      {
+         status: 'active',
+         expiresAt: { $lt: new Date() },
+      },
+      { $set: { status: 'expired' } }
    );
    ```
 
@@ -401,14 +401,14 @@ curl -X GET https://api.paystack.co/transaction/verify/REFERENCE \
    ```javascript
    // Update subscription after verified payment
    db.subscriptions.updateOne(
-     { workspaceId: ObjectId('workspace_id') },
-     {
-       $set: {
-         status: 'active',
-         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-         updatedAt: new Date(),
-       },
-     }
+      { workspaceId: ObjectId('workspace_id') },
+      {
+         $set: {
+            status: 'active',
+            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+            updatedAt: new Date(),
+         },
+      }
    );
    ```
 
@@ -465,13 +465,13 @@ crontab -l | grep expiry
    ```javascript
    // Correct trial end date
    db.workplaces.updateOne(
-     { _id: ObjectId('workspace_id') },
-     {
-       $set: {
-         trialEndDate: new Date('2024-01-15T00:00:00.000Z'),
-         subscriptionStatus: 'trial',
-       },
-     }
+      { _id: ObjectId('workspace_id') },
+      {
+         $set: {
+            trialEndDate: new Date('2024-01-15T00:00:00.000Z'),
+            subscriptionStatus: 'trial',
+         },
+      }
    );
    ```
 
@@ -524,10 +524,10 @@ db.workplaces.findOne(
    ```typescript
    // Check permission configuration
    const PERMISSION_MATRIX = {
-     'patient.create': {
-       workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
-       features: ['patient_management'],
-     },
+      'patient.create': {
+         workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
+         features: ['patient_management'],
+      },
    };
    ```
 
@@ -536,8 +536,8 @@ db.workplaces.findOne(
    ```javascript
    // Update user's workplace role
    db.users.updateOne(
-     { _id: ObjectId('user_id') },
-     { $set: { workplaceRole: 'Pharmacist' } }
+      { _id: ObjectId('user_id') },
+      { $set: { workplaceRole: 'Pharmacist' } }
    );
    ```
 
@@ -580,8 +580,8 @@ grep "requireRole.*admin" backend/src/routes/*.ts
    ```javascript
    // Set user as super admin
    db.users.updateOne(
-     { email: 'admin@pharmacare.com' },
-     { $set: { role: 'super_admin', status: 'active' } }
+      { email: 'admin@pharmacare.com' },
+      { $set: { role: 'super_admin', status: 'active' } }
    );
    ```
 
@@ -589,7 +589,7 @@ grep "requireRole.*admin" backend/src/routes/*.ts
    ```typescript
    // Check RBAC middleware
    if (user.role === 'super_admin') {
-     return next(); // Should bypass all checks
+      return next(); // Should bypass all checks
    }
    ```
 
@@ -636,16 +636,16 @@ ps aux | grep WorkspaceStatsCronService
    ```javascript
    // Recalculate patient count
    db.workplaces.aggregate([
-     { $match: { _id: ObjectId('workspace_id') } },
-     {
-       $lookup: {
-         from: 'patients',
-         localField: '_id',
-         foreignField: 'workspaceId',
-         as: 'patients',
-       },
-     },
-     { $project: { patientCount: { $size: '$patients' } } },
+      { $match: { _id: ObjectId('workspace_id') } },
+      {
+         $lookup: {
+            from: 'patients',
+            localField: '_id',
+            foreignField: 'workspaceId',
+            as: 'patients',
+         },
+      },
+      { $project: { patientCount: { $size: '$patients' } } },
    ]);
    ```
 
@@ -686,10 +686,10 @@ curl -X POST https://api.pharmacare.com/api/patients \
    ```typescript
    // Ensure usage limit middleware is applied
    router.post(
-     '/patients',
-     authWithWorkspace,
-     enforcePlanLimit('patients'), // Must be after auth
-     createPatient
+      '/patients',
+      authWithWorkspace,
+      enforcePlanLimit('patients'), // Must be after auth
+      createPatient
    );
    ```
 
@@ -698,8 +698,8 @@ curl -X POST https://api.pharmacare.com/api/patients \
    ```javascript
    // Fix plan limits if incorrect
    db.subscriptionplans.updateOne(
-     { code: 'basic' },
-     { $set: { 'limits.patients': 100 } }
+      { code: 'basic' },
+      { $set: { 'limits.patients': 100 } }
    );
    ```
 
@@ -758,15 +758,15 @@ cat backend/src/templates/email/workspaceInvitation.html
    <!-- Use proper email structure -->
    <!DOCTYPE html>
    <html>
-     <head>
-       <meta charset="utf-8" />
-       <title>Workspace Invitation</title>
-     </head>
-     <body>
-       <!-- Avoid spam trigger words -->
-       <!-- Include unsubscribe link -->
-       <!-- Use proper text-to-image ratio -->
-     </body>
+      <head>
+         <meta charset="utf-8" />
+         <title>Workspace Invitation</title>
+      </head>
+      <body>
+         <!-- Avoid spam trigger words -->
+         <!-- Include unsubscribe link -->
+         <!-- Use proper text-to-image ratio -->
+      </body>
    </html>
    ```
 
@@ -821,8 +821,8 @@ grep "template" /var/log/pharmacare/combined.log
    `;
 
    const rendered = template
-     .replace('{{name}}', 'John Doe')
-     .replace('{{workspace}}', 'Test Pharmacy');
+      .replace('{{name}}', 'John Doe')
+      .replace('{{workspace}}', 'Test Pharmacy');
 
    console.log(rendered);
    ```
@@ -876,23 +876,23 @@ db.invitations.getIndexes()
    ```javascript
    // Use projection to limit fields
    db.workplaces.find(
-     { _id: ObjectId('workspace_id') },
-     { name: 1, subscriptionStatus: 1, currentPlanId: 1 }
+      { _id: ObjectId('workspace_id') },
+      { name: 1, subscriptionStatus: 1, currentPlanId: 1 }
    );
 
    // Use aggregation for complex queries
    db.workplaces.aggregate([
-     { $match: { _id: ObjectId('workspace_id') } },
-     {
-       $lookup: {
-         from: 'subscriptions',
-         localField: 'currentSubscriptionId',
-         foreignField: '_id',
-         as: 'subscription',
-       },
-     },
-     { $unwind: '$subscription' },
-     { $project: { name: 1, 'subscription.status': 1 } },
+      { $match: { _id: ObjectId('workspace_id') } },
+      {
+         $lookup: {
+            from: 'subscriptions',
+            localField: 'currentSubscriptionId',
+            foreignField: '_id',
+            as: 'subscription',
+         },
+      },
+      { $unwind: '$subscription' },
+      { $project: { name: 1, 'subscription.status': 1 } },
    ]);
    ```
 
@@ -904,16 +904,16 @@ db.invitations.getIndexes()
    const client = redis.createClient();
 
    const getCachedWorkspace = async (workspaceId: string) => {
-     const cached = await client.get(`workspace:${workspaceId}`);
-     if (cached) return JSON.parse(cached);
+      const cached = await client.get(`workspace:${workspaceId}`);
+      if (cached) return JSON.parse(cached);
 
-     const workspace = await Workplace.findById(workspaceId);
-     await client.setex(
-       `workspace:${workspaceId}`,
-       300,
-       JSON.stringify(workspace)
-     );
-     return workspace;
+      const workspace = await Workplace.findById(workspaceId);
+      await client.setex(
+         `workspace:${workspaceId}`,
+         300,
+         JSON.stringify(workspace)
+      );
+      return workspace;
    };
    ```
 
@@ -947,8 +947,8 @@ node -e "console.log(process.listenerCount('uncaughtException'))"
    ```typescript
    // Properly remove event listeners
    const cleanup = () => {
-     process.removeAllListeners('SIGINT');
-     process.removeAllListeners('SIGTERM');
+      process.removeAllListeners('SIGINT');
+      process.removeAllListeners('SIGTERM');
    };
 
    process.on('SIGINT', cleanup);
@@ -960,9 +960,9 @@ node -e "console.log(process.listenerCount('uncaughtException'))"
    ```typescript
    // Use connection pooling
    mongoose.connect(mongoUri, {
-     maxPoolSize: 10,
-     serverSelectionTimeoutMS: 5000,
-     socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
    });
    ```
 
@@ -970,8 +970,8 @@ node -e "console.log(process.listenerCount('uncaughtException'))"
    ```typescript
    // Prevent memory leaks from unhandled promises
    process.on('unhandledRejection', (reason, promise) => {
-     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-     // Don't exit process in production
+      console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      // Don't exit process in production
    });
    ```
 
@@ -1015,17 +1015,17 @@ db.users.countDocuments({ workspaceId: { $exists: false } })
    ```javascript
    // Find and fix orphaned records
    db.users.find({ workspaceId: { $exists: false } }).forEach((user) => {
-     const workspace = db.workplaces.findOne({
-       $or: [{ ownerId: user._id }, { teamMembers: user._id }],
-     });
+      const workspace = db.workplaces.findOne({
+         $or: [{ ownerId: user._id }, { teamMembers: user._id }],
+      });
 
-     if (workspace) {
-       db.users.updateOne(
-         { _id: user._id },
-         { $set: { workspaceId: workspace._id } }
-       );
-       console.log(`Fixed user ${user.email}`);
-     }
+      if (workspace) {
+         db.users.updateOne(
+            { _id: user._id },
+            { $set: { workspaceId: workspace._id } }
+         );
+         console.log(`Fixed user ${user.email}`);
+      }
    });
    ```
 
@@ -1067,12 +1067,12 @@ tail -f /var/log/mongodb/mongod.log
    ```typescript
    // Update connection configuration
    mongoose.connect(mongoUri, {
-     maxPoolSize: 20,
-     minPoolSize: 5,
-     maxIdleTimeMS: 30000,
-     serverSelectionTimeoutMS: 10000,
-     socketTimeoutMS: 45000,
-     bufferMaxEntries: 0,
+      maxPoolSize: 20,
+      minPoolSize: 5,
+      maxIdleTimeMS: 30000,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      bufferMaxEntries: 0,
    });
    ```
 
@@ -1080,13 +1080,13 @@ tail -f /var/log/mongodb/mongod.log
 
    ```typescript
    const connectWithRetry = () => {
-     mongoose
-       .connect(mongoUri, options)
-       .then(() => console.log('MongoDB connected'))
-       .catch((err) => {
-         console.error('MongoDB connection failed:', err);
-         setTimeout(connectWithRetry, 5000);
-       });
+      mongoose
+         .connect(mongoUri, options)
+         .then(() => console.log('MongoDB connected'))
+         .catch((err) => {
+            console.error('MongoDB connection failed:', err);
+            setTimeout(connectWithRetry, 5000);
+         });
    };
    ```
 
@@ -1094,15 +1094,15 @@ tail -f /var/log/mongodb/mongod.log
 
    ```typescript
    mongoose.connection.on('connected', () => {
-     console.log('MongoDB connected');
+      console.log('MongoDB connected');
    });
 
    mongoose.connection.on('error', (err) => {
-     console.error('MongoDB error:', err);
+      console.error('MongoDB error:', err);
    });
 
    mongoose.connection.on('disconnected', () => {
-     console.log('MongoDB disconnected');
+      console.log('MongoDB disconnected');
    });
    ```
 
@@ -1140,16 +1140,16 @@ curl -X GET https://api.pharmacare.com/api/auth/profile \
    ```typescript
    // Update CORS settings
    app.use(
-     cors({
-       origin: [
-         'http://localhost:3000',
-         'https://app.pharmacare.com',
-         'https://pharmacare.com',
-       ],
-       credentials: true,
-       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-       allowedHeaders: ['Content-Type', 'Authorization'],
-     })
+      cors({
+         origin: [
+            'http://localhost:3000',
+            'https://app.pharmacare.com',
+            'https://pharmacare.com',
+         ],
+         credentials: true,
+         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+         allowedHeaders: ['Content-Type', 'Authorization'],
+      })
    );
    ```
 
@@ -1159,7 +1159,7 @@ curl -X GET https://api.pharmacare.com/api/auth/profile \
    // Ensure proper token format
    const token = localStorage.getItem('authToken');
    if (token && !token.startsWith('Bearer ')) {
-     headers.Authorization = `Bearer ${token}`;
+      headers.Authorization = `Bearer ${token}`;
    }
    ```
 
@@ -1205,12 +1205,12 @@ curl -X POST https://api.pharmacare.com/api/webhooks/paystack \
 
    ```typescript
    const verifyWebhookSignature = (payload: string, signature: string) => {
-     const hash = crypto
-       .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY!)
-       .update(payload)
-       .digest('hex');
+      const hash = crypto
+         .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY!)
+         .update(payload)
+         .digest('hex');
 
-     return hash === signature;
+      return hash === signature;
    };
    ```
 
@@ -1221,14 +1221,14 @@ curl -X POST https://api.pharmacare.com/api/webhooks/paystack \
    const processedWebhooks = new Set();
 
    app.post('/webhooks/paystack', (req, res) => {
-     const webhookId = req.headers['x-paystack-signature'];
+      const webhookId = req.headers['x-paystack-signature'];
 
-     if (processedWebhooks.has(webhookId)) {
-       return res.status(200).json({ message: 'Already processed' });
-     }
+      if (processedWebhooks.has(webhookId)) {
+         return res.status(200).json({ message: 'Already processed' });
+      }
 
-     processedWebhooks.add(webhookId);
-     // Process webhook...
+      processedWebhooks.add(webhookId);
+      // Process webhook...
    });
    ```
 
@@ -1252,24 +1252,24 @@ curl -X POST https://api.pharmacare.com/api/webhooks/paystack \
    import winston from 'winston';
 
    const logger = winston.createLogger({
-     level: 'info',
-     format: winston.format.combine(
-       winston.format.timestamp(),
-       winston.format.errors({ stack: true }),
-       winston.format.json()
-     ),
-     transports: [
-       new winston.transports.File({ filename: 'error.log', level: 'error' }),
-       new winston.transports.File({ filename: 'combined.log' }),
-     ],
+      level: 'info',
+      format: winston.format.combine(
+         winston.format.timestamp(),
+         winston.format.errors({ stack: true }),
+         winston.format.json()
+      ),
+      transports: [
+         new winston.transports.File({ filename: 'error.log', level: 'error' }),
+         new winston.transports.File({ filename: 'combined.log' }),
+      ],
    });
 
    // Usage
    logger.info('User login attempt', {
-     userId: user.id,
-     email: user.email,
-     ip: req.ip,
-     userAgent: req.get('User-Agent'),
+      userId: user.id,
+      email: user.email,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
    });
    ```
 
@@ -1278,16 +1278,16 @@ curl -X POST https://api.pharmacare.com/api/webhooks/paystack \
    ```typescript
    // Add correlation ID to requests
    app.use((req, res, next) => {
-     req.correlationId = uuidv4();
-     res.setHeader('X-Correlation-ID', req.correlationId);
-     next();
+      req.correlationId = uuidv4();
+      res.setHeader('X-Correlation-ID', req.correlationId);
+      next();
    });
 
    // Include in all log messages
    logger.info('Processing request', {
-     correlationId: req.correlationId,
-     method: req.method,
-     url: req.url,
+      correlationId: req.correlationId,
+      method: req.method,
+      url: req.url,
    });
    ```
 
@@ -1296,14 +1296,14 @@ curl -X POST https://api.pharmacare.com/api/webhooks/paystack \
    ```typescript
    // Track important metrics
    const metrics = {
-     invitationsSent: 0,
-     subscriptionUpgrades: 0,
-     authFailures: 0,
+      invitationsSent: 0,
+      subscriptionUpgrades: 0,
+      authFailures: 0,
    };
 
    // Log metrics periodically
    setInterval(() => {
-     logger.info('Application metrics', metrics);
+      logger.info('Application metrics', metrics);
    }, 60000);
    ```
 
@@ -1315,41 +1315,42 @@ curl -X POST https://api.pharmacare.com/api/webhooks/paystack \
 
    ```typescript
    app.use((req, res, next) => {
-     const start = Date.now();
+      const start = Date.now();
 
-     res.on('finish', () => {
-       const duration = Date.now() - start;
-       logger.info('Request completed', {
-         method: req.method,
-         url: req.url,
-         statusCode: res.statusCode,
-         duration,
-         correlationId: req.correlationId,
-       });
-     });
+      res.on('finish', () => {
+         const duration = Date.now() - start;
+         logger.info('Request completed', {
+            method: req.method,
+            url: req.url,
+            statusCode: res.statusCode,
+            duration,
+            correlationId: req.correlationId,
+         });
+      });
 
-     next();
+      next();
    });
    ```
 
 2. **Database Query Monitoring:**
+
    ```typescript
    // Monitor slow queries
    mongoose.set('debug', (collectionName, method, query, doc) => {
-     const start = Date.now();
+      const start = Date.now();
 
-     return function () {
-       const duration = Date.now() - start;
-       if (duration > 1000) {
-         // Log slow queries
-         logger.warn('Slow database query', {
-           collection: collectionName,
-           method,
-           query,
-           duration,
-         });
-       }
-     };
+      return function () {
+         const duration = Date.now() - start;
+         if (duration > 1000) {
+            // Log slow queries
+            logger.warn('Slow database query', {
+               collection: collectionName,
+               method,
+               query,
+               duration,
+            });
+         }
+      };
    });
    ```
 

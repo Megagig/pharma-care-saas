@@ -6,486 +6,495 @@ import MTRErrorBoundary from '../MTRErrorBoundary';
 // Mock console.error to avoid noise in test output
 const originalError = console.error;
 beforeEach(() => {
-  console.error = vi.fn();
+   console.error = vi.fn();
 });
 
 afterEach(() => {
-  console.error = originalError;
+   console.error = originalError;
 });
 
 // Component that throws an error for testing
 const ThrowError: React.FC<{
-  shouldThrow?: boolean;
-  errorMessage?: string;
+   shouldThrow?: boolean;
+   errorMessage?: string;
 }> = ({ shouldThrow = false, errorMessage = 'Test error' }) => {
-  if (shouldThrow) {
-    throw new Error(errorMessage);
-  }
-  return <div>No error</div>;
+   if (shouldThrow) {
+      throw new Error(errorMessage);
+   }
+   return <div>No error</div>;
 };
 
 // Component that throws an error in useEffect
 const ThrowErrorInEffect: React.FC<{ shouldThrow?: boolean }> = ({
-  shouldThrow = false,
+   shouldThrow = false,
 }) => {
-  React.useEffect(() => {
-    if (shouldThrow) {
-      throw new Error('Error in useEffect');
-    }
-  }, [shouldThrow]);
+   React.useEffect(() => {
+      if (shouldThrow) {
+         throw new Error('Error in useEffect');
+      }
+   }, [shouldThrow]);
 
-  return <div>Component with effect</div>;
+   return <div>Component with effect</div>;
 };
 
 describe('MTRErrorBoundary', () => {
-  describe('Normal Operation', () => {
-    it('renders children when no error occurs', () => {
-      render(
-        <MTRErrorBoundary>
-          <div>Test content</div>
-        </MTRErrorBoundary>
-      );
+   describe('Normal Operation', () => {
+      it('renders children when no error occurs', () => {
+         render(
+            <MTRErrorBoundary>
+               <div>Test content</div>
+            </MTRErrorBoundary>
+         );
 
-      expect(screen.getByText('Test content')).toBeInTheDocument();
-    });
-
-    it('renders multiple children correctly', () => {
-      render(
-        <MTRErrorBoundary>
-          <div>First child</div>
-          <div>Second child</div>
-        </MTRErrorBoundary>
-      );
-
-      expect(screen.getByText('First child')).toBeInTheDocument();
-      expect(screen.getByText('Second child')).toBeInTheDocument();
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('catches and displays error when child component throws', () => {
-      render(
-        <MTRErrorBoundary>
-          <ThrowError shouldThrow={true} />
-        </MTRErrorBoundary>
-      );
-
-      expect(
-        screen.getByText('Something went wrong with the MTR module')
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/An unexpected error occurred/)
-      ).toBeInTheDocument();
-    });
-
-    it('displays custom error message when provided', () => {
-      const customMessage = 'Custom MTR error occurred';
-
-      render(
-        <MTRErrorBoundary>
-          <ThrowError shouldThrow={true} errorMessage={customMessage} />
-        </MTRErrorBoundary>
-      );
-
-      expect(
-        screen.getByText('Something went wrong with the MTR module')
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/An unexpected error occurred/)
-      ).toBeInTheDocument();
-    });
-
-    it('shows error details in development mode', () => {
-      // Mock development environment
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
-
-      render(
-        <MTRErrorBoundary>
-          <ThrowError
-            shouldThrow={true}
-            errorMessage="Detailed error message"
-          />
-        </MTRErrorBoundary>
-      );
-
-      expect(screen.getByText('Error Details:')).toBeInTheDocument();
-      expect(screen.getByText('Detailed error message')).toBeInTheDocument();
-
-      // Restore environment
-      process.env.NODE_ENV = originalEnv;
-    });
-
-    it('hides error details in production mode', () => {
-      // Mock production environment
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
-
-      render(
-        <MTRErrorBoundary>
-          <ThrowError
-            shouldThrow={true}
-            errorMessage="Detailed error message"
-          />
-        </MTRErrorBoundary>
-      );
-
-      expect(screen.queryByText('Error Details:')).not.toBeInTheDocument();
-      expect(
-        screen.queryByText('Detailed error message')
-      ).not.toBeInTheDocument();
-
-      // Restore environment
-      process.env.NODE_ENV = originalEnv;
-    });
-  });
-
-  describe('Error Recovery', () => {
-    it('provides retry functionality', () => {
-      const { rerender } = render(
-        <MTRErrorBoundary>
-          <ThrowError shouldThrow={true} />
-        </MTRErrorBoundary>
-      );
-
-      // Error should be displayed
-      expect(
-        screen.getByText('Something went wrong with the MTR module')
-      ).toBeInTheDocument();
-
-      // Click retry button
-      const retryButton = screen.getByRole('button', { name: /try again/i });
-      fireEvent.click(retryButton);
-
-      // Rerender with no error
-      rerender(
-        <MTRErrorBoundary>
-          <ThrowError shouldThrow={false} />
-        </MTRErrorBoundary>
-      );
-
-      expect(screen.getByText('No error')).toBeInTheDocument();
-    });
-
-    it('provides refresh page functionality', () => {
-      // Mock window.location.reload
-      const mockReload = vi.fn();
-      Object.defineProperty(window, 'location', {
-        value: { reload: mockReload },
-        writable: true,
+         expect(screen.getByText('Test content')).toBeInTheDocument();
       });
 
-      render(
-        <MTRErrorBoundary>
-          <ThrowError shouldThrow={true} />
-        </MTRErrorBoundary>
-      );
+      it('renders multiple children correctly', () => {
+         render(
+            <MTRErrorBoundary>
+               <div>First child</div>
+               <div>Second child</div>
+            </MTRErrorBoundary>
+         );
 
-      const refreshButton = screen.getByRole('button', {
-        name: /refresh page/i,
+         expect(screen.getByText('First child')).toBeInTheDocument();
+         expect(screen.getByText('Second child')).toBeInTheDocument();
       });
-      fireEvent.click(refreshButton);
+   });
 
-      expect(mockReload).toHaveBeenCalled();
-    });
+   describe('Error Handling', () => {
+      it('catches and displays error when child component throws', () => {
+         render(
+            <MTRErrorBoundary>
+               <ThrowError shouldThrow={true} />
+            </MTRErrorBoundary>
+         );
 
-    it('provides go back functionality', () => {
-      // Mock window.history.back
-      const mockBack = vi.fn();
-      Object.defineProperty(window, 'history', {
-        value: { back: mockBack },
-        writable: true,
+         expect(
+            screen.getByText('Something went wrong with the MTR module')
+         ).toBeInTheDocument();
+         expect(
+            screen.getByText(/An unexpected error occurred/)
+         ).toBeInTheDocument();
       });
 
-      render(
-        <MTRErrorBoundary>
-          <ThrowError shouldThrow={true} />
-        </MTRErrorBoundary>
-      );
+      it('displays custom error message when provided', () => {
+         const customMessage = 'Custom MTR error occurred';
 
-      const backButton = screen.getByRole('button', { name: /go back/i });
-      fireEvent.click(backButton);
+         render(
+            <MTRErrorBoundary>
+               <ThrowError shouldThrow={true} errorMessage={customMessage} />
+            </MTRErrorBoundary>
+         );
 
-      expect(mockBack).toHaveBeenCalled();
-    });
-  });
+         expect(
+            screen.getByText('Something went wrong with the MTR module')
+         ).toBeInTheDocument();
+         expect(
+            screen.getByText(/An unexpected error occurred/)
+         ).toBeInTheDocument();
+      });
 
-  describe('Error Reporting', () => {
-    it('logs error to console in development', () => {
-      const consoleSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
+      it('shows error details in development mode', () => {
+         // Mock development environment
+         const originalEnv = process.env.NODE_ENV;
+         process.env.NODE_ENV = 'development';
 
-      render(
-        <MTRErrorBoundary>
-          <ThrowError
-            shouldThrow={true}
-            errorMessage="Test error for logging"
-          />
-        </MTRErrorBoundary>
-      );
+         render(
+            <MTRErrorBoundary>
+               <ThrowError
+                  shouldThrow={true}
+                  errorMessage="Detailed error message"
+               />
+            </MTRErrorBoundary>
+         );
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
-    });
+         expect(screen.getByText('Error Details:')).toBeInTheDocument();
+         expect(screen.getByText('Detailed error message')).toBeInTheDocument();
 
-    it('calls onError callback when provided', () => {
-      const onErrorSpy = vi.fn();
+         // Restore environment
+         process.env.NODE_ENV = originalEnv;
+      });
 
-      render(
-        <MTRErrorBoundary onError={onErrorSpy}>
-          <ThrowError shouldThrow={true} errorMessage="Callback test error" />
-        </MTRErrorBoundary>
-      );
+      it('hides error details in production mode', () => {
+         // Mock production environment
+         const originalEnv = process.env.NODE_ENV;
+         process.env.NODE_ENV = 'production';
 
-      expect(onErrorSpy).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          componentStack: expect.any(String),
-        })
-      );
-    });
+         render(
+            <MTRErrorBoundary>
+               <ThrowError
+                  shouldThrow={true}
+                  errorMessage="Detailed error message"
+               />
+            </MTRErrorBoundary>
+         );
 
-    it('includes component stack in error info', () => {
-      const onErrorSpy = vi.fn();
+         expect(screen.queryByText('Error Details:')).not.toBeInTheDocument();
+         expect(
+            screen.queryByText('Detailed error message')
+         ).not.toBeInTheDocument();
 
-      render(
-        <MTRErrorBoundary onError={onErrorSpy}>
-          <div>
-            <ThrowError shouldThrow={true} />
-          </div>
-        </MTRErrorBoundary>
-      );
+         // Restore environment
+         process.env.NODE_ENV = originalEnv;
+      });
+   });
 
-      expect(onErrorSpy).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          componentStack: expect.stringContaining('ThrowError'),
-        })
-      );
-    });
-  });
+   describe('Error Recovery', () => {
+      it('provides retry functionality', () => {
+         const { rerender } = render(
+            <MTRErrorBoundary>
+               <ThrowError shouldThrow={true} />
+            </MTRErrorBoundary>
+         );
 
-  describe('Fallback UI Customization', () => {
-    it('renders custom fallback UI when provided', () => {
-      const CustomFallback = ({
-        error,
-        resetError,
-      }: {
-        error: Error;
-        resetError: () => void;
-      }) => (
-        <div>
-          <h2>Custom Error UI</h2>
-          <p>Error: {error.message}</p>
-          <button onClick={resetError}>Reset</button>
-        </div>
-      );
+         // Error should be displayed
+         expect(
+            screen.getByText('Something went wrong with the MTR module')
+         ).toBeInTheDocument();
 
-      render(
-        <MTRErrorBoundary fallback={CustomFallback}>
-          <ThrowError shouldThrow={true} errorMessage="Custom fallback test" />
-        </MTRErrorBoundary>
-      );
+         // Click retry button
+         const retryButton = screen.getByRole('button', { name: /try again/i });
+         fireEvent.click(retryButton);
 
-      expect(screen.getByText('Custom Error UI')).toBeInTheDocument();
-      expect(
-        screen.getByText('Error: Custom fallback test')
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: /reset/i })
-      ).toBeInTheDocument();
-    });
+         // Rerender with no error
+         rerender(
+            <MTRErrorBoundary>
+               <ThrowError shouldThrow={false} />
+            </MTRErrorBoundary>
+         );
 
-    it('passes error and resetError to custom fallback', () => {
-      const CustomFallback = vi.fn(({ resetError }) => (
-        <div>
-          <button onClick={resetError}>Custom Reset</button>
-        </div>
-      ));
+         expect(screen.getByText('No error')).toBeInTheDocument();
+      });
 
-      render(
-        <MTRErrorBoundary fallback={CustomFallback}>
-          <ThrowError shouldThrow={true} errorMessage="Fallback props test" />
-        </MTRErrorBoundary>
-      );
+      it('provides refresh page functionality', () => {
+         // Mock window.location.reload
+         const mockReload = vi.fn();
+         Object.defineProperty(window, 'location', {
+            value: { reload: mockReload },
+            writable: true,
+         });
 
-      expect(CustomFallback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.any(Error),
-          resetError: expect.any(Function),
-        }),
-        {}
-      );
-    });
-  });
+         render(
+            <MTRErrorBoundary>
+               <ThrowError shouldThrow={true} />
+            </MTRErrorBoundary>
+         );
 
-  describe('Error Boundary State Management', () => {
-    it('resets error state when resetError is called', () => {
-      const { rerender } = render(
-        <MTRErrorBoundary>
-          <ThrowError shouldThrow={true} />
-        </MTRErrorBoundary>
-      );
+         const refreshButton = screen.getByRole('button', {
+            name: /refresh page/i,
+         });
+         fireEvent.click(refreshButton);
 
-      // Error should be displayed
-      expect(
-        screen.getByText('Something went wrong with the MTR module')
-      ).toBeInTheDocument();
+         expect(mockReload).toHaveBeenCalled();
+      });
 
-      // Click try again to reset error state
-      const retryButton = screen.getByRole('button', { name: /try again/i });
-      fireEvent.click(retryButton);
+      it('provides go back functionality', () => {
+         // Mock window.history.back
+         const mockBack = vi.fn();
+         Object.defineProperty(window, 'history', {
+            value: { back: mockBack },
+            writable: true,
+         });
 
-      // Rerender with working component
-      rerender(
-        <MTRErrorBoundary>
-          <div>Working component</div>
-        </MTRErrorBoundary>
-      );
+         render(
+            <MTRErrorBoundary>
+               <ThrowError shouldThrow={true} />
+            </MTRErrorBoundary>
+         );
 
-      expect(screen.getByText('Working component')).toBeInTheDocument();
-    });
+         const backButton = screen.getByRole('button', { name: /go back/i });
+         fireEvent.click(backButton);
 
-    it('maintains error state until explicitly reset', () => {
-      const { rerender } = render(
-        <MTRErrorBoundary>
-          <ThrowError shouldThrow={true} />
-        </MTRErrorBoundary>
-      );
+         expect(mockBack).toHaveBeenCalled();
+      });
+   });
 
-      // Error should be displayed
-      expect(
-        screen.getByText('Something went wrong with the MTR module')
-      ).toBeInTheDocument();
+   describe('Error Reporting', () => {
+      it('logs error to console in development', () => {
+         const consoleSpy = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => {});
 
-      // Rerender with different content but don't reset error
-      rerender(
-        <MTRErrorBoundary>
-          <div>New content</div>
-        </MTRErrorBoundary>
-      );
+         render(
+            <MTRErrorBoundary>
+               <ThrowError
+                  shouldThrow={true}
+                  errorMessage="Test error for logging"
+               />
+            </MTRErrorBoundary>
+         );
 
-      // Should still show error
-      expect(
-        screen.getByText('Something went wrong with the MTR module')
-      ).toBeInTheDocument();
-      expect(screen.queryByText('New content')).not.toBeInTheDocument();
-    });
-  });
+         expect(consoleSpy).toHaveBeenCalled();
+         consoleSpy.mockRestore();
+      });
 
-  describe('Error Types', () => {
-    it('handles JavaScript errors', () => {
-      render(
-        <MTRErrorBoundary>
-          <ThrowError shouldThrow={true} errorMessage="JavaScript Error" />
-        </MTRErrorBoundary>
-      );
+      it('calls onError callback when provided', () => {
+         const onErrorSpy = vi.fn();
 
-      expect(
-        screen.getByText('Something went wrong with the MTR module')
-      ).toBeInTheDocument();
-    });
+         render(
+            <MTRErrorBoundary onError={onErrorSpy}>
+               <ThrowError
+                  shouldThrow={true}
+                  errorMessage="Callback test error"
+               />
+            </MTRErrorBoundary>
+         );
 
-    it('handles React errors', () => {
-      const ReactErrorComponent = () => {
-        throw new Error('React component error');
-      };
+         expect(onErrorSpy).toHaveBeenCalledWith(
+            expect.any(Error),
+            expect.objectContaining({
+               componentStack: expect.any(String),
+            })
+         );
+      });
 
-      render(
-        <MTRErrorBoundary>
-          <ReactErrorComponent />
-        </MTRErrorBoundary>
-      );
+      it('includes component stack in error info', () => {
+         const onErrorSpy = vi.fn();
 
-      expect(
-        screen.getByText('Something went wrong with the MTR module')
-      ).toBeInTheDocument();
-    });
+         render(
+            <MTRErrorBoundary onError={onErrorSpy}>
+               <div>
+                  <ThrowError shouldThrow={true} />
+               </div>
+            </MTRErrorBoundary>
+         );
 
-    it('handles async errors in useEffect (note: error boundaries do not catch these)', () => {
-      // Error boundaries don't catch errors in event handlers, async code, or useEffect
-      // This test documents the limitation
-      render(
-        <MTRErrorBoundary>
-          <ThrowErrorInEffect shouldThrow={true} />
-        </MTRErrorBoundary>
-      );
+         expect(onErrorSpy).toHaveBeenCalledWith(
+            expect.any(Error),
+            expect.objectContaining({
+               componentStack: expect.stringContaining('ThrowError'),
+            })
+         );
+      });
+   });
 
-      // Component should render normally since error boundary doesn't catch useEffect errors
-      expect(screen.getByText('Component with effect')).toBeInTheDocument();
-    });
-  });
+   describe('Fallback UI Customization', () => {
+      it('renders custom fallback UI when provided', () => {
+         const CustomFallback = ({
+            error,
+            resetError,
+         }: {
+            error: Error;
+            resetError: () => void;
+         }) => (
+            <div>
+               <h2>Custom Error UI</h2>
+               <p>Error: {error.message}</p>
+               <button onClick={resetError}>Reset</button>
+            </div>
+         );
 
-  describe('Accessibility', () => {
-    it('has proper ARIA attributes for error state', () => {
-      render(
-        <MTRErrorBoundary>
-          <ThrowError shouldThrow={true} />
-        </MTRErrorBoundary>
-      );
+         render(
+            <MTRErrorBoundary fallback={CustomFallback}>
+               <ThrowError
+                  shouldThrow={true}
+                  errorMessage="Custom fallback test"
+               />
+            </MTRErrorBoundary>
+         );
 
-      const errorContainer = screen.getByRole('alert');
-      expect(errorContainer).toBeInTheDocument();
-    });
+         expect(screen.getByText('Custom Error UI')).toBeInTheDocument();
+         expect(
+            screen.getByText('Error: Custom fallback test')
+         ).toBeInTheDocument();
+         expect(
+            screen.getByRole('button', { name: /reset/i })
+         ).toBeInTheDocument();
+      });
 
-    it('has proper heading hierarchy in error state', () => {
-      render(
-        <MTRErrorBoundary>
-          <ThrowError shouldThrow={true} />
-        </MTRErrorBoundary>
-      );
+      it('passes error and resetError to custom fallback', () => {
+         const CustomFallback = vi.fn(({ resetError }) => (
+            <div>
+               <button onClick={resetError}>Custom Reset</button>
+            </div>
+         ));
 
-      const heading = screen.getByRole('heading', { level: 2 });
-      expect(heading).toHaveTextContent(
-        'Something went wrong with the MTR module'
-      );
-    });
+         render(
+            <MTRErrorBoundary fallback={CustomFallback}>
+               <ThrowError
+                  shouldThrow={true}
+                  errorMessage="Fallback props test"
+               />
+            </MTRErrorBoundary>
+         );
 
-    it('has accessible button labels', () => {
-      render(
-        <MTRErrorBoundary>
-          <ThrowError shouldThrow={true} />
-        </MTRErrorBoundary>
-      );
+         expect(CustomFallback).toHaveBeenCalledWith(
+            expect.objectContaining({
+               error: expect.any(Error),
+               resetError: expect.any(Function),
+            }),
+            {}
+         );
+      });
+   });
 
-      expect(
-        screen.getByRole('button', { name: /try again/i })
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: /refresh page/i })
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: /go back/i })
-      ).toBeInTheDocument();
-    });
-  });
+   describe('Error Boundary State Management', () => {
+      it('resets error state when resetError is called', () => {
+         const { rerender } = render(
+            <MTRErrorBoundary>
+               <ThrowError shouldThrow={true} />
+            </MTRErrorBoundary>
+         );
 
-  describe('Performance', () => {
-    it('does not re-render children unnecessarily when no error', () => {
-      const renderSpy = vi.fn();
+         // Error should be displayed
+         expect(
+            screen.getByText('Something went wrong with the MTR module')
+         ).toBeInTheDocument();
 
-      const TestComponent = () => {
-        renderSpy();
-        return <div>Test</div>;
-      };
+         // Click try again to reset error state
+         const retryButton = screen.getByRole('button', { name: /try again/i });
+         fireEvent.click(retryButton);
 
-      const { rerender } = render(
-        <MTRErrorBoundary>
-          <TestComponent />
-        </MTRErrorBoundary>
-      );
+         // Rerender with working component
+         rerender(
+            <MTRErrorBoundary>
+               <div>Working component</div>
+            </MTRErrorBoundary>
+         );
 
-      expect(renderSpy).toHaveBeenCalledTimes(1);
+         expect(screen.getByText('Working component')).toBeInTheDocument();
+      });
 
-      // Rerender with same props
-      rerender(
-        <MTRErrorBoundary>
-          <TestComponent />
-        </MTRErrorBoundary>
-      );
+      it('maintains error state until explicitly reset', () => {
+         const { rerender } = render(
+            <MTRErrorBoundary>
+               <ThrowError shouldThrow={true} />
+            </MTRErrorBoundary>
+         );
 
-      expect(renderSpy).toHaveBeenCalledTimes(2);
-    });
-  });
+         // Error should be displayed
+         expect(
+            screen.getByText('Something went wrong with the MTR module')
+         ).toBeInTheDocument();
+
+         // Rerender with different content but don't reset error
+         rerender(
+            <MTRErrorBoundary>
+               <div>New content</div>
+            </MTRErrorBoundary>
+         );
+
+         // Should still show error
+         expect(
+            screen.getByText('Something went wrong with the MTR module')
+         ).toBeInTheDocument();
+         expect(screen.queryByText('New content')).not.toBeInTheDocument();
+      });
+   });
+
+   describe('Error Types', () => {
+      it('handles JavaScript errors', () => {
+         render(
+            <MTRErrorBoundary>
+               <ThrowError shouldThrow={true} errorMessage="JavaScript Error" />
+            </MTRErrorBoundary>
+         );
+
+         expect(
+            screen.getByText('Something went wrong with the MTR module')
+         ).toBeInTheDocument();
+      });
+
+      it('handles React errors', () => {
+         const ReactErrorComponent = () => {
+            throw new Error('React component error');
+         };
+
+         render(
+            <MTRErrorBoundary>
+               <ReactErrorComponent />
+            </MTRErrorBoundary>
+         );
+
+         expect(
+            screen.getByText('Something went wrong with the MTR module')
+         ).toBeInTheDocument();
+      });
+
+      it('handles async errors in useEffect (note: error boundaries do not catch these)', () => {
+         // Error boundaries don't catch errors in event handlers, async code, or useEffect
+         // This test documents the limitation
+         render(
+            <MTRErrorBoundary>
+               <ThrowErrorInEffect shouldThrow={true} />
+            </MTRErrorBoundary>
+         );
+
+         // Component should render normally since error boundary doesn't catch useEffect errors
+         expect(screen.getByText('Component with effect')).toBeInTheDocument();
+      });
+   });
+
+   describe('Accessibility', () => {
+      it('has proper ARIA attributes for error state', () => {
+         render(
+            <MTRErrorBoundary>
+               <ThrowError shouldThrow={true} />
+            </MTRErrorBoundary>
+         );
+
+         const errorContainer = screen.getByRole('alert');
+         expect(errorContainer).toBeInTheDocument();
+      });
+
+      it('has proper heading hierarchy in error state', () => {
+         render(
+            <MTRErrorBoundary>
+               <ThrowError shouldThrow={true} />
+            </MTRErrorBoundary>
+         );
+
+         const heading = screen.getByRole('heading', { level: 2 });
+         expect(heading).toHaveTextContent(
+            'Something went wrong with the MTR module'
+         );
+      });
+
+      it('has accessible button labels', () => {
+         render(
+            <MTRErrorBoundary>
+               <ThrowError shouldThrow={true} />
+            </MTRErrorBoundary>
+         );
+
+         expect(
+            screen.getByRole('button', { name: /try again/i })
+         ).toBeInTheDocument();
+         expect(
+            screen.getByRole('button', { name: /refresh page/i })
+         ).toBeInTheDocument();
+         expect(
+            screen.getByRole('button', { name: /go back/i })
+         ).toBeInTheDocument();
+      });
+   });
+
+   describe('Performance', () => {
+      it('does not re-render children unnecessarily when no error', () => {
+         const renderSpy = vi.fn();
+
+         const TestComponent = () => {
+            renderSpy();
+            return <div>Test</div>;
+         };
+
+         const { rerender } = render(
+            <MTRErrorBoundary>
+               <TestComponent />
+            </MTRErrorBoundary>
+         );
+
+         expect(renderSpy).toHaveBeenCalledTimes(1);
+
+         // Rerender with same props
+         rerender(
+            <MTRErrorBoundary>
+               <TestComponent />
+            </MTRErrorBoundary>
+         );
+
+         expect(renderSpy).toHaveBeenCalledTimes(2);
+      });
+   });
 });

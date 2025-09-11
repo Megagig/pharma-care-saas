@@ -19,7 +19,6 @@ We implemented a comprehensive response handling approach that:
 1. **Enhanced ID Extraction Logic**: Added checks for multiple possible ID locations, including the new `response.review.session._id` path.
 
 2. **Added Detailed Logging**: Added console logging to show:
-
    - Which path successfully provided the ID
    - Complete response structure when ID extraction fails
    - All paths checked during extraction
@@ -33,9 +32,9 @@ We implemented a comprehensive response handling approach that:
 ## Files Modified
 
 - `/frontend/src/stores/mtrStore.ts`
-  - Updated `createReview` function with enhanced response structure handling
-  - Added comprehensive logging
-  - Added special case handling for session-nested IDs
+   - Updated `createReview` function with enhanced response structure handling
+   - Added comprehensive logging
+   - Added special case handling for session-nested IDs
 
 ## Testing Notes
 

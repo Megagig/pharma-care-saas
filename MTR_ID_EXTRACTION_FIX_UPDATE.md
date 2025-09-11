@@ -16,19 +16,19 @@ The API response structure changed to a new format where the ID is nested deeply
 
 ```json
 {
-  "review": {
-    "session": {
-      "workplaceId": "68b5cb82f1f0f9758b8afadf",
-      "patientId": "68b0b5bdb26019cd8ea86b98",
-      "_id": "68b944ecb1aea7cf77ba1109",
-      "id": "68b944ecb1aea7cf77ba1109",
-      "medications": [],
-      "...": "..."
-    },
-    "steps": { "...": "..." },
-    "completionPercentage": 0,
-    "isOverdue": false
-  }
+   "review": {
+      "session": {
+         "workplaceId": "68b5cb82f1f0f9758b8afadf",
+         "patientId": "68b0b5bdb26019cd8ea86b98",
+         "_id": "68b944ecb1aea7cf77ba1109",
+         "id": "68b944ecb1aea7cf77ba1109",
+         "medications": [],
+         "...": "..."
+      },
+      "steps": { "...": "..." },
+      "completionPercentage": 0,
+      "isOverdue": false
+   }
 }
 ```
 
@@ -37,22 +37,18 @@ The API response structure changed to a new format where the ID is nested deeply
 We implemented a comprehensive response handling approach that:
 
 1. **Enhanced ID Extraction Logic**:
-
    - Added explicit checks for `response.review.session._id` and `response.review.session.id`
    - Created a type-safe extraction system that checks all possible ID locations
 
 2. **Deep Object Construction**:
-
    - When the ID is found in `response.review.session._id`, we properly construct a valid review object using that ID
    - We copy necessary properties from the session object to ensure the constructed review object is valid
 
 3. **Safe Type Handling**:
-
    - Used appropriate type assertions to prevent TypeScript errors
    - Added null checks and default values to handle missing properties safely
 
 4. **Added Final ID Verification**:
-
    - Added explicit check to ensure the review object has an ID before proceeding
    - Added comprehensive logging of the exact extraction path used
 
@@ -63,9 +59,9 @@ We implemented a comprehensive response handling approach that:
 ## Files Modified
 
 - `/frontend/src/stores/mtrStore.ts`
-  - Updated ID extraction logic in `createReview` function
-  - Added comprehensive session object handling
-  - Implemented proper TypeScript type safety measures
+   - Updated ID extraction logic in `createReview` function
+   - Added comprehensive session object handling
+   - Implemented proper TypeScript type safety measures
 
 ## Testing Notes
 

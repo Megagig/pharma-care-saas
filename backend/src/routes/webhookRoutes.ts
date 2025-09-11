@@ -9,8 +9,8 @@ const router = express.Router();
  * @access Public - secured by webhook signature
  */
 router.post(
-  '/nomba',
-  webhookController.handleNombaWebhook.bind(webhookController)
+   '/nomba',
+   webhookController.handleNombaWebhook.bind(webhookController)
 );
 
 /**
@@ -19,8 +19,8 @@ router.post(
  * @access Public - secured by webhook signature
  */
 router.post(
-  '/paystack',
-  webhookController.handlePaystackWebhook.bind(webhookController)
+   '/paystack',
+   webhookController.handlePaystackWebhook.bind(webhookController)
 );
 
 export default router;

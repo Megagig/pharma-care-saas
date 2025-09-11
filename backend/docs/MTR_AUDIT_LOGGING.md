@@ -57,40 +57,40 @@ The MTR (Medication Therapy Review) Audit Logging and Compliance system provides
 
 ```typescript
 interface IMTRAuditLog {
-  // Core audit metadata
-  action: string;
-  resourceType: string;
-  resourceId: ObjectId;
+   // Core audit metadata
+   action: string;
+   resourceType: string;
+   resourceId: ObjectId;
 
-  // User and session context
-  userId: ObjectId;
-  userRole: string;
-  sessionId?: string;
+   // User and session context
+   userId: ObjectId;
+   userRole: string;
+   sessionId?: string;
 
-  // Request information
-  ipAddress?: string;
-  userAgent?: string;
-  requestMethod?: string;
-  requestUrl?: string;
+   // Request information
+   ipAddress?: string;
+   userAgent?: string;
+   requestMethod?: string;
+   requestUrl?: string;
 
-  // Change tracking
-  oldValues?: any;
-  newValues?: any;
-  changedFields?: string[];
+   // Change tracking
+   oldValues?: any;
+   newValues?: any;
+   changedFields?: string[];
 
-  // Clinical context
-  patientId?: ObjectId;
-  reviewId?: ObjectId;
+   // Clinical context
+   patientId?: ObjectId;
+   reviewId?: ObjectId;
 
-  // Compliance classification
-  complianceCategory: ComplianceCategory;
-  riskLevel: RiskLevel;
+   // Compliance classification
+   complianceCategory: ComplianceCategory;
+   riskLevel: RiskLevel;
 
-  // Additional metadata
-  details: any;
-  errorMessage?: string;
-  duration?: number;
-  timestamp: Date;
+   // Additional metadata
+   details: any;
+   errorMessage?: string;
+   duration?: number;
+   timestamp: Date;
 }
 ```
 
@@ -249,9 +249,9 @@ db.mtrauditlogs.createIndex({ workplaceId: 1, timestamp: -1 });
 db.mtrauditlogs.createIndex({ workplaceId: 1, userId: 1, timestamp: -1 });
 db.mtrauditlogs.createIndex({ workplaceId: 1, riskLevel: 1, timestamp: -1 });
 db.mtrauditlogs.createIndex({
-  workplaceId: 1,
-  complianceCategory: 1,
-  timestamp: -1,
+   workplaceId: 1,
+   complianceCategory: 1,
+   timestamp: -1,
 });
 ```
 

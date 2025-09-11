@@ -8,7 +8,11 @@ const router = express.Router();
 router.use(auth);
 
 // License upload and management
-router.post('/upload', upload.single('licenseDocument'), licenseController.uploadLicense);
+router.post(
+   '/upload',
+   upload.single('licenseDocument'),
+   licenseController.uploadLicense
+);
 router.get('/status', licenseController.getLicenseStatus);
 router.delete('/document', licenseController.deleteLicenseDocument);
 router.post('/validate-number', licenseController.validateLicenseNumber);

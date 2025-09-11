@@ -11,12 +11,12 @@ console.log('Drug Information Center module imports successfully!');
 console.log('All components are properly typed and compiled.');
 
 export {
-  drugController,
-  drugRoutes,
-  rxnormService,
-  dailymedService,
-  openfdaService,
-  interactionService,
-  DrugSearchHistory,
-  TherapyPlan
+   drugController,
+   drugRoutes,
+   rxnormService,
+   dailymedService,
+   openfdaService,
+   interactionService,
+   DrugSearchHistory,
+   TherapyPlan,
 };

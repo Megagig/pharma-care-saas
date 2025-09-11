@@ -11,7 +11,7 @@
 7. [Patient Integration](#patient-integration)
 8. [Security and Privacy](#security-and-privacy)
 9. [Best Practices](#best-practices)
-10. [Troubleshooting](#troubleshooting)
+10.   [Troubleshooting](#troubleshooting)
 
 ## Introduction
 

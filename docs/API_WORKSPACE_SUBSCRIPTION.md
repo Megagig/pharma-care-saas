@@ -25,11 +25,11 @@ Authorization: Bearer <jwt_token>
 
 ```json
 {
-  "success": true,
-  "message": "Operation completed successfully",
-  "data": {
-    // Response data
-  }
+   "success": true,
+   "message": "Operation completed successfully",
+   "data": {
+      // Response data
+   }
 }
 ```
 
@@ -37,15 +37,15 @@ Authorization: Bearer <jwt_token>
 
 ```json
 {
-  "success": false,
-  "message": "Error description",
-  "code": "ERROR_CODE",
-  "details": {
-    // Additional error details
-  },
-  "upgradeRequired": false,
-  "upgradeTo": "premium",
-  "retryAfter": 3600
+   "success": false,
+   "message": "Error description",
+   "code": "ERROR_CODE",
+   "details": {
+      // Additional error details
+   },
+   "upgradeRequired": false,
+   "upgradeTo": "premium",
+   "retryAfter": 3600
 }
 ```
 
@@ -106,9 +106,9 @@ Creates a new invitation for a workspace.
 
 ```json
 {
-  "email": "user@example.com",
-  "role": "Pharmacist",
-  "customMessage": "Welcome to our pharmacy team!"
+   "email": "user@example.com",
+   "role": "Pharmacist",
+   "customMessage": "Welcome to our pharmacy team!"
 }
 ```
 
@@ -124,24 +124,24 @@ Creates a new invitation for a workspace.
 
 ```json
 {
-  "success": true,
-  "message": "Invitation created and sent successfully",
-  "data": {
-    "invitation": {
-      "id": "64a1b2c3d4e5f6789012345",
-      "email": "user@example.com",
-      "code": "ABC12345",
-      "role": "Pharmacist",
-      "status": "active",
-      "expiresAt": "2024-01-02T10:00:00.000Z",
-      "createdAt": "2024-01-01T10:00:00.000Z",
-      "metadata": {
-        "inviterName": "John Doe",
-        "workspaceName": "Main Pharmacy",
-        "customMessage": "Welcome to our pharmacy team!"
+   "success": true,
+   "message": "Invitation created and sent successfully",
+   "data": {
+      "invitation": {
+         "id": "64a1b2c3d4e5f6789012345",
+         "email": "user@example.com",
+         "code": "ABC12345",
+         "role": "Pharmacist",
+         "status": "active",
+         "expiresAt": "2024-01-02T10:00:00.000Z",
+         "createdAt": "2024-01-01T10:00:00.000Z",
+         "metadata": {
+            "inviterName": "John Doe",
+            "workspaceName": "Main Pharmacy",
+            "customMessage": "Welcome to our pharmacy team!"
+         }
       }
-    }
-  }
+   }
 }
 ```
 
@@ -178,37 +178,37 @@ Retrieves all invitations for a workspace.
 
 ```json
 {
-  "success": true,
-  "data": {
-    "invitations": [
-      {
-        "id": "64a1b2c3d4e5f6789012345",
-        "email": "user@example.com",
-        "code": "ABC12345",
-        "role": "Pharmacist",
-        "status": "active",
-        "expiresAt": "2024-01-02T10:00:00.000Z",
-        "createdAt": "2024-01-01T10:00:00.000Z",
-        "metadata": {
-          "inviterName": "John Doe",
-          "workspaceName": "Main Pharmacy"
-        }
+   "success": true,
+   "data": {
+      "invitations": [
+         {
+            "id": "64a1b2c3d4e5f6789012345",
+            "email": "user@example.com",
+            "code": "ABC12345",
+            "role": "Pharmacist",
+            "status": "active",
+            "expiresAt": "2024-01-02T10:00:00.000Z",
+            "createdAt": "2024-01-01T10:00:00.000Z",
+            "metadata": {
+               "inviterName": "John Doe",
+               "workspaceName": "Main Pharmacy"
+            }
+         }
+      ],
+      "pagination": {
+         "currentPage": 1,
+         "totalPages": 1,
+         "totalItems": 1,
+         "itemsPerPage": 20
+      },
+      "stats": {
+         "active": 1,
+         "expired": 0,
+         "used": 5,
+         "canceled": 0,
+         "total": 6
       }
-    ],
-    "pagination": {
-      "currentPage": 1,
-      "totalPages": 1,
-      "totalItems": 1,
-      "itemsPerPage": 20
-    },
-    "stats": {
-      "active": 1,
-      "expired": 0,
-      "used": 5,
-      "canceled": 0,
-      "total": 6
-    }
-  }
+   }
 }
 ```
 
@@ -232,11 +232,11 @@ Accepts an invitation and adds user to workspace.
 
 ```json
 {
-  "userData": {
-    "firstName": "Jane",
-    "lastName": "Smith",
-    "phoneNumber": "+2348012345678"
-  }
+   "userData": {
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "phoneNumber": "+2348012345678"
+   }
 }
 ```
 
@@ -253,22 +253,22 @@ Accepts an invitation and adds user to workspace.
 
 ```json
 {
-  "success": true,
-  "message": "Invitation accepted successfully",
-  "data": {
-    "workspace": {
-      "id": "64a1b2c3d4e5f6789012345",
-      "name": "Main Pharmacy",
-      "role": "Pharmacist"
-    },
-    "user": {
-      "id": "64a1b2c3d4e5f6789012346",
-      "email": "user@example.com",
-      "firstName": "Jane",
-      "lastName": "Smith"
-    },
-    "isNewUser": false
-  }
+   "success": true,
+   "message": "Invitation accepted successfully",
+   "data": {
+      "workspace": {
+         "id": "64a1b2c3d4e5f6789012345",
+         "name": "Main Pharmacy",
+         "role": "Pharmacist"
+      },
+      "user": {
+         "id": "64a1b2c3d4e5f6789012346",
+         "email": "user@example.com",
+         "firstName": "Jane",
+         "lastName": "Smith"
+      },
+      "isNewUser": false
+   }
 }
 ```
 
@@ -295,17 +295,17 @@ Validates an invitation code without accepting it.
 
 ```json
 {
-  "success": true,
-  "data": {
-    "valid": true,
-    "invitation": {
-      "workspaceName": "Main Pharmacy",
-      "role": "Pharmacist",
-      "inviterName": "John Doe",
-      "expiresAt": "2024-01-02T10:00:00.000Z",
-      "customMessage": "Welcome to our team!"
-    }
-  }
+   "success": true,
+   "data": {
+      "valid": true,
+      "invitation": {
+         "workspaceName": "Main Pharmacy",
+         "role": "Pharmacist",
+         "inviterName": "John Doe",
+         "expiresAt": "2024-01-02T10:00:00.000Z",
+         "customMessage": "Welcome to our team!"
+      }
+   }
 }
 ```
 
@@ -313,12 +313,12 @@ Validates an invitation code without accepting it.
 
 ```json
 {
-  "success": true,
-  "data": {
-    "valid": false,
-    "reason": "expired",
-    "message": "This invitation has expired"
-  }
+   "success": true,
+   "data": {
+      "valid": false,
+      "reason": "expired",
+      "message": "This invitation has expired"
+   }
 }
 ```
 
@@ -340,65 +340,65 @@ Retrieves subscription details for a workspace.
 
 ```json
 {
-  "success": true,
-  "data": {
-    "subscription": {
-      "id": "64a1b2c3d4e5f6789012345",
-      "workspaceId": "64a1b2c3d4e5f6789012346",
-      "planId": "64a1b2c3d4e5f6789012347",
-      "status": "active",
-      "tier": "premium",
-      "startDate": "2024-01-01T00:00:00.000Z",
-      "endDate": "2024-02-01T00:00:00.000Z",
-      "trialEndDate": null,
-      "priceAtPurchase": 25000,
-      "billingInterval": "monthly",
-      "nextBillingDate": "2024-02-01T00:00:00.000Z",
-      "features": [
-        "dashboard",
-        "patient_management",
-        "clinical_notes",
-        "advanced_reports",
-        "team_management",
-        "api_access"
-      ],
-      "limits": {
-        "patients": 500,
-        "users": 5,
-        "locations": 1,
-        "storage": 5000,
-        "apiCalls": 10000
+   "success": true,
+   "data": {
+      "subscription": {
+         "id": "64a1b2c3d4e5f6789012345",
+         "workspaceId": "64a1b2c3d4e5f6789012346",
+         "planId": "64a1b2c3d4e5f6789012347",
+         "status": "active",
+         "tier": "premium",
+         "startDate": "2024-01-01T00:00:00.000Z",
+         "endDate": "2024-02-01T00:00:00.000Z",
+         "trialEndDate": null,
+         "priceAtPurchase": 25000,
+         "billingInterval": "monthly",
+         "nextBillingDate": "2024-02-01T00:00:00.000Z",
+         "features": [
+            "dashboard",
+            "patient_management",
+            "clinical_notes",
+            "advanced_reports",
+            "team_management",
+            "api_access"
+         ],
+         "limits": {
+            "patients": 500,
+            "users": 5,
+            "locations": 1,
+            "storage": 5000,
+            "apiCalls": 10000
+         }
+      },
+      "workspace": {
+         "id": "64a1b2c3d4e5f6789012346",
+         "name": "Main Pharmacy",
+         "subscriptionStatus": "active",
+         "trialEndDate": null,
+         "isTrialExpired": false
+      },
+      "plan": {
+         "id": "64a1b2c3d4e5f6789012347",
+         "name": "Premium",
+         "code": "premium",
+         "tier": "premium",
+         "priceNGN": 25000,
+         "description": "Advanced features for growing pharmacies"
+      },
+      "usage": {
+         "patients": 245,
+         "users": 3,
+         "locations": 1,
+         "storage": 2500,
+         "apiCalls": 5420
+      },
+      "billing": {
+         "daysRemaining": 15,
+         "isExpired": false,
+         "isInGracePeriod": false,
+         "autoRenew": true
       }
-    },
-    "workspace": {
-      "id": "64a1b2c3d4e5f6789012346",
-      "name": "Main Pharmacy",
-      "subscriptionStatus": "active",
-      "trialEndDate": null,
-      "isTrialExpired": false
-    },
-    "plan": {
-      "id": "64a1b2c3d4e5f6789012347",
-      "name": "Premium",
-      "code": "premium",
-      "tier": "premium",
-      "priceNGN": 25000,
-      "description": "Advanced features for growing pharmacies"
-    },
-    "usage": {
-      "patients": 245,
-      "users": 3,
-      "locations": 1,
-      "storage": 2500,
-      "apiCalls": 5420
-    },
-    "billing": {
-      "daysRemaining": 15,
-      "isExpired": false,
-      "isInGracePeriod": false,
-      "autoRenew": true
-    }
-  }
+   }
 }
 ```
 
@@ -416,8 +416,8 @@ Creates a trial subscription for a new workspace.
 
 ```json
 {
-  "workspaceId": "64a1b2c3d4e5f6789012346",
-  "trialDurationDays": 14
+   "workspaceId": "64a1b2c3d4e5f6789012346",
+   "trialDurationDays": 14
 }
 ```
 
@@ -427,25 +427,25 @@ Creates a trial subscription for a new workspace.
 
 ```json
 {
-  "success": true,
-  "message": "Trial subscription created successfully",
-  "data": {
-    "subscription": {
-      "id": "64a1b2c3d4e5f6789012345",
-      "workspaceId": "64a1b2c3d4e5f6789012346",
-      "status": "trial",
-      "tier": "free_trial",
-      "trialEndDate": "2024-01-15T00:00:00.000Z",
-      "features": ["*"],
-      "limits": {
-        "patients": null,
-        "users": null,
-        "locations": 1,
-        "storage": null,
-        "apiCalls": null
+   "success": true,
+   "message": "Trial subscription created successfully",
+   "data": {
+      "subscription": {
+         "id": "64a1b2c3d4e5f6789012345",
+         "workspaceId": "64a1b2c3d4e5f6789012346",
+         "status": "trial",
+         "tier": "free_trial",
+         "trialEndDate": "2024-01-15T00:00:00.000Z",
+         "features": ["*"],
+         "limits": {
+            "patients": null,
+            "users": null,
+            "locations": 1,
+            "storage": null,
+            "apiCalls": null
+         }
       }
-    }
-  }
+   }
 }
 ```
 
@@ -463,9 +463,9 @@ Upgrades a workspace subscription to a higher tier.
 
 ```json
 {
-  "planId": "64a1b2c3d4e5f6789012347",
-  "billingInterval": "monthly",
-  "paymentMethodId": "pm_1234567890"
+   "planId": "64a1b2c3d4e5f6789012347",
+   "billingInterval": "monthly",
+   "paymentMethodId": "pm_1234567890"
 }
 ```
 
@@ -475,23 +475,23 @@ Upgrades a workspace subscription to a higher tier.
 
 ```json
 {
-  "success": true,
-  "message": "Subscription upgraded successfully",
-  "data": {
-    "subscription": {
-      "id": "64a1b2c3d4e5f6789012345",
-      "status": "active",
-      "tier": "premium",
-      "upgradedAt": "2024-01-01T10:00:00.000Z"
-    },
-    "payment": {
-      "id": "64a1b2c3d4e5f6789012348",
-      "amount": 25000,
-      "status": "succeeded",
-      "proratedAmount": 15000
-    },
-    "featuresActivated": ["advanced_reports", "team_management", "api_access"]
-  }
+   "success": true,
+   "message": "Subscription upgraded successfully",
+   "data": {
+      "subscription": {
+         "id": "64a1b2c3d4e5f6789012345",
+         "status": "active",
+         "tier": "premium",
+         "upgradedAt": "2024-01-01T10:00:00.000Z"
+      },
+      "payment": {
+         "id": "64a1b2c3d4e5f6789012348",
+         "amount": 25000,
+         "status": "succeeded",
+         "proratedAmount": 15000
+      },
+      "featuresActivated": ["advanced_reports", "team_management", "api_access"]
+   }
 }
 ```
 
@@ -513,61 +513,61 @@ Retrieves current usage statistics for a workspace.
 
 ```json
 {
-  "success": true,
-  "data": {
-    "workspace": {
-      "id": "64a1b2c3d4e5f6789012346",
-      "name": "Main Pharmacy"
-    },
-    "plan": {
-      "name": "Premium",
-      "tier": "premium"
-    },
-    "usage": {
-      "patients": {
-        "current": 245,
-        "limit": 500,
-        "percentage": 49,
-        "unlimited": false
+   "success": true,
+   "data": {
+      "workspace": {
+         "id": "64a1b2c3d4e5f6789012346",
+         "name": "Main Pharmacy"
       },
-      "users": {
-        "current": 3,
-        "limit": 5,
-        "percentage": 60,
-        "unlimited": false
+      "plan": {
+         "name": "Premium",
+         "tier": "premium"
       },
-      "locations": {
-        "current": 1,
-        "limit": 1,
-        "percentage": 100,
-        "unlimited": false
+      "usage": {
+         "patients": {
+            "current": 245,
+            "limit": 500,
+            "percentage": 49,
+            "unlimited": false
+         },
+         "users": {
+            "current": 3,
+            "limit": 5,
+            "percentage": 60,
+            "unlimited": false
+         },
+         "locations": {
+            "current": 1,
+            "limit": 1,
+            "percentage": 100,
+            "unlimited": false
+         },
+         "storage": {
+            "current": 2500,
+            "limit": 5000,
+            "percentage": 50,
+            "unlimited": false,
+            "unit": "MB"
+         },
+         "apiCalls": {
+            "current": 5420,
+            "limit": 10000,
+            "percentage": 54.2,
+            "unlimited": false,
+            "period": "monthly"
+         }
       },
-      "storage": {
-        "current": 2500,
-        "limit": 5000,
-        "percentage": 50,
-        "unlimited": false,
-        "unit": "MB"
-      },
-      "apiCalls": {
-        "current": 5420,
-        "limit": 10000,
-        "percentage": 54.2,
-        "unlimited": false,
-        "period": "monthly"
-      }
-    },
-    "alerts": [
-      {
-        "type": "warning",
-        "resource": "users",
-        "message": "You're using 60% of your user limit",
-        "threshold": 60,
-        "upgradeRecommended": false
-      }
-    ],
-    "lastUpdated": "2024-01-01T10:00:00.000Z"
-  }
+      "alerts": [
+         {
+            "type": "warning",
+            "resource": "users",
+            "message": "You're using 60% of your user limit",
+            "threshold": 60,
+            "upgradeRecommended": false
+         }
+      ],
+      "lastUpdated": "2024-01-01T10:00:00.000Z"
+   }
 }
 ```
 
@@ -594,41 +594,41 @@ Retrieves detailed usage analytics (owners only).
 
 ```json
 {
-  "success": true,
-  "data": {
-    "period": "30d",
-    "trends": {
-      "patients": {
-        "current": 245,
-        "previous": 220,
-        "change": 25,
-        "changePercentage": 11.36,
-        "trend": "increasing"
+   "success": true,
+   "data": {
+      "period": "30d",
+      "trends": {
+         "patients": {
+            "current": 245,
+            "previous": 220,
+            "change": 25,
+            "changePercentage": 11.36,
+            "trend": "increasing"
+         },
+         "users": {
+            "current": 3,
+            "previous": 2,
+            "change": 1,
+            "changePercentage": 50,
+            "trend": "increasing"
+         }
       },
-      "users": {
-        "current": 3,
-        "previous": 2,
-        "change": 1,
-        "changePercentage": 50,
-        "trend": "increasing"
+      "dailyUsage": [
+         {
+            "date": "2024-01-01",
+            "patients": 240,
+            "users": 3,
+            "apiCalls": 450
+         }
+      ],
+      "projections": {
+         "patients": {
+            "nextMonth": 270,
+            "limitReachedDate": "2024-06-15",
+            "upgradeRecommendedDate": "2024-05-15"
+         }
       }
-    },
-    "dailyUsage": [
-      {
-        "date": "2024-01-01",
-        "patients": 240,
-        "users": 3,
-        "apiCalls": 450
-      }
-    ],
-    "projections": {
-      "patients": {
-        "nextMonth": 270,
-        "limitReachedDate": "2024-06-15",
-        "upgradeRecommendedDate": "2024-05-15"
-      }
-    }
-  }
+   }
 }
 ```
 
@@ -650,34 +650,34 @@ Retrieves all locations for a workspace.
 
 ```json
 {
-  "success": true,
-  "data": {
-    "locations": [
-      {
-        "id": "64a1b2c3d4e5f6789012345",
-        "name": "Main Branch",
-        "address": "123 Main Street, Lagos",
-        "isPrimary": true,
-        "isActive": true,
-        "metadata": {
-          "phoneNumber": "+2348012345678",
-          "email": "main@pharmacy.com",
-          "manager": "John Doe"
-        },
-        "stats": {
-          "patientsCount": 150,
-          "usersCount": 2,
-          "lastActivity": "2024-01-01T10:00:00.000Z"
-        },
-        "createdAt": "2024-01-01T00:00:00.000Z"
+   "success": true,
+   "data": {
+      "locations": [
+         {
+            "id": "64a1b2c3d4e5f6789012345",
+            "name": "Main Branch",
+            "address": "123 Main Street, Lagos",
+            "isPrimary": true,
+            "isActive": true,
+            "metadata": {
+               "phoneNumber": "+2348012345678",
+               "email": "main@pharmacy.com",
+               "manager": "John Doe"
+            },
+            "stats": {
+               "patientsCount": 150,
+               "usersCount": 2,
+               "lastActivity": "2024-01-01T10:00:00.000Z"
+            },
+            "createdAt": "2024-01-01T00:00:00.000Z"
+         }
+      ],
+      "summary": {
+         "total": 1,
+         "active": 1,
+         "primary": 1
       }
-    ],
-    "summary": {
-      "total": 1,
-      "active": 1,
-      "primary": 1
-    }
-  }
+   }
 }
 ```
 
@@ -695,13 +695,13 @@ Creates a new location for the workspace.
 
 ```json
 {
-  "name": "Branch 2",
-  "address": "456 Second Street, Abuja",
-  "metadata": {
-    "phoneNumber": "+2348087654321",
-    "email": "branch2@pharmacy.com",
-    "manager": "Jane Smith"
-  }
+   "name": "Branch 2",
+   "address": "456 Second Street, Abuja",
+   "metadata": {
+      "phoneNumber": "+2348087654321",
+      "email": "branch2@pharmacy.com",
+      "manager": "Jane Smith"
+   }
 }
 ```
 
@@ -711,23 +711,23 @@ Creates a new location for the workspace.
 
 ```json
 {
-  "success": true,
-  "message": "Location created successfully",
-  "data": {
-    "location": {
-      "id": "64a1b2c3d4e5f6789012346",
-      "name": "Branch 2",
-      "address": "456 Second Street, Abuja",
-      "isPrimary": false,
-      "isActive": true,
-      "metadata": {
-        "phoneNumber": "+2348087654321",
-        "email": "branch2@pharmacy.com",
-        "manager": "Jane Smith"
-      },
-      "createdAt": "2024-01-01T10:00:00.000Z"
-    }
-  }
+   "success": true,
+   "message": "Location created successfully",
+   "data": {
+      "location": {
+         "id": "64a1b2c3d4e5f6789012346",
+         "name": "Branch 2",
+         "address": "456 Second Street, Abuja",
+         "isPrimary": false,
+         "isActive": true,
+         "metadata": {
+            "phoneNumber": "+2348087654321",
+            "email": "branch2@pharmacy.com",
+            "manager": "Jane Smith"
+         },
+         "createdAt": "2024-01-01T10:00:00.000Z"
+      }
+   }
 }
 ```
 
@@ -749,29 +749,29 @@ Creates a new location for the workspace.
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
-  timeout: 10000,
+   baseURL: process.env.REACT_APP_API_URL,
+   timeout: 10000,
 });
 
 // Add auth token to requests
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+   const token = localStorage.getItem('authToken');
+   if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+   }
+   return config;
 });
 
 // Handle auth errors
 apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Redirect to login
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
+   (response) => response,
+   (error) => {
+      if (error.response?.status === 401) {
+         // Redirect to login
+         window.location.href = '/login';
+      }
+      return Promise.reject(error);
+   }
 );
 ```
 
@@ -780,33 +780,35 @@ apiClient.interceptors.response.use(
 ```typescript
 // Create invitation
 const createInvitation = async (
-  workspaceId: string,
-  invitationData: {
-    email: string;
-    role: string;
-    customMessage?: string;
-  }
+   workspaceId: string,
+   invitationData: {
+      email: string;
+      role: string;
+      customMessage?: string;
+   }
 ) => {
-  try {
-    const response = await apiClient.post(
-      `/api/workspaces/${workspaceId}/invitations`,
-      invitationData
-    );
-    return response.data;
-  } catch (error) {
-    if (error.response?.status === 409) {
-      throw new Error('Invitation limit exceeded. Please upgrade your plan.');
-    }
-    throw error;
-  }
+   try {
+      const response = await apiClient.post(
+         `/api/workspaces/${workspaceId}/invitations`,
+         invitationData
+      );
+      return response.data;
+   } catch (error) {
+      if (error.response?.status === 409) {
+         throw new Error(
+            'Invitation limit exceeded. Please upgrade your plan.'
+         );
+      }
+      throw error;
+   }
 };
 
 // Accept invitation
 const acceptInvitation = async (code: string, userData?: any) => {
-  const response = await apiClient.post(`/api/invitations/${code}/accept`, {
-    userData,
-  });
-  return response.data;
+   const response = await apiClient.post(`/api/invitations/${code}/accept`, {
+      userData,
+   });
+   return response.data;
 };
 ```
 
@@ -849,22 +851,22 @@ const UsageWarning: React.FC = () => {
 ```typescript
 // Get subscription details
 const getSubscription = async (workspaceId: string) => {
-  const response = await apiClient.get(
-    `/api/subscriptions/workspace/${workspaceId}`
-  );
-  return response.data;
+   const response = await apiClient.get(
+      `/api/subscriptions/workspace/${workspaceId}`
+   );
+   return response.data;
 };
 
 // Upgrade subscription
 const upgradeSubscription = async (planId: string, billingInterval: string) => {
-  const response = await apiClient.post(
-    '/api/subscriptions/workspace/upgrade',
-    {
-      planId,
-      billingInterval,
-    }
-  );
-  return response.data;
+   const response = await apiClient.post(
+      '/api/subscriptions/workspace/upgrade',
+      {
+         planId,
+         billingInterval,
+      }
+   );
+   return response.data;
 };
 ```
 
@@ -875,19 +877,19 @@ const upgradeSubscription = async (planId: string, billingInterval: string) => {
 ```typescript
 // Webhook endpoint for subscription updates
 app.post('/webhooks/subscription', (req, res) => {
-  const { workspaceId, status, planId } = req.body;
+   const { workspaceId, status, planId } = req.body;
 
-  // Update local subscription cache
-  updateSubscriptionCache(workspaceId, { status, planId });
+   // Update local subscription cache
+   updateSubscriptionCache(workspaceId, { status, planId });
 
-  // Notify connected users via WebSocket
-  notifyWorkspaceUsers(workspaceId, {
-    type: 'subscription_updated',
-    status,
-    planId,
-  });
+   // Notify connected users via WebSocket
+   notifyWorkspaceUsers(workspaceId, {
+      type: 'subscription_updated',
+      status,
+      planId,
+   });
 
-  res.status(200).json({ received: true });
+   res.status(200).json({ received: true });
 });
 ```
 
@@ -935,21 +937,21 @@ const AdvancedReports: React.FC = () => {
 ```typescript
 // Handle rate limits with exponential backoff
 const apiClientWithRetry = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
+   baseURL: process.env.REACT_APP_API_URL,
 });
 
 apiClientWithRetry.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 429) {
-      const retryAfter = error.response.headers['retry-after'];
-      const delay = retryAfter ? parseInt(retryAfter) * 1000 : 1000;
+   (response) => response,
+   async (error) => {
+      if (error.response?.status === 429) {
+         const retryAfter = error.response.headers['retry-after'];
+         const delay = retryAfter ? parseInt(retryAfter) * 1000 : 1000;
 
-      await new Promise((resolve) => setTimeout(resolve, delay));
-      return apiClientWithRetry.request(error.config);
-    }
-    return Promise.reject(error);
-  }
+         await new Promise((resolve) => setTimeout(resolve, delay));
+         return apiClientWithRetry.request(error.config);
+      }
+      return Promise.reject(error);
+   }
 );
 ```
 
@@ -1048,16 +1050,16 @@ curl -X GET \
 
 ```json
 {
-  "success": false,
-  "message": "Invitation limit exceeded",
-  "code": "INVITATION_LIMIT_EXCEEDED",
-  "details": {
-    "currentPendingInvitations": 20,
-    "maxAllowed": 20,
-    "planTier": "basic"
-  },
-  "upgradeRequired": true,
-  "upgradeTo": "premium"
+   "success": false,
+   "message": "Invitation limit exceeded",
+   "code": "INVITATION_LIMIT_EXCEEDED",
+   "details": {
+      "currentPendingInvitations": 20,
+      "maxAllowed": 20,
+      "planTier": "basic"
+   },
+   "upgradeRequired": true,
+   "upgradeTo": "premium"
 }
 ```
 
@@ -1065,17 +1067,17 @@ curl -X GET \
 
 ```json
 {
-  "success": false,
-  "message": "Patient limit exceeded",
-  "code": "USAGE_LIMIT_EXCEEDED",
-  "details": {
-    "resource": "patients",
-    "currentUsage": 100,
-    "limit": 100,
-    "planTier": "basic"
-  },
-  "upgradeRequired": true,
-  "upgradeTo": "premium"
+   "success": false,
+   "message": "Patient limit exceeded",
+   "code": "USAGE_LIMIT_EXCEEDED",
+   "details": {
+      "resource": "patients",
+      "currentUsage": 100,
+      "limit": 100,
+      "planTier": "basic"
+   },
+   "upgradeRequired": true,
+   "upgradeTo": "premium"
 }
 ```
 
@@ -1083,15 +1085,15 @@ curl -X GET \
 
 ```json
 {
-  "success": false,
-  "message": "Workspace subscription has expired",
-  "code": "SUBSCRIPTION_EXPIRED",
-  "details": {
-    "expiredDate": "2024-01-01T00:00:00.000Z",
-    "gracePeriodEnds": "2024-01-08T00:00:00.000Z",
-    "isInGracePeriod": true
-  },
-  "upgradeRequired": true
+   "success": false,
+   "message": "Workspace subscription has expired",
+   "code": "SUBSCRIPTION_EXPIRED",
+   "details": {
+      "expiredDate": "2024-01-01T00:00:00.000Z",
+      "gracePeriodEnds": "2024-01-08T00:00:00.000Z",
+      "isInGracePeriod": true
+   },
+   "upgradeRequired": true
 }
 ```
 
