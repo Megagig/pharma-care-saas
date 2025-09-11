@@ -43,6 +43,10 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useFeatureFlags } from '../context/FeatureFlagContext';
+import { usePatients, useSearchPatients } from '../queries/usePatients';
+import type { Patient } from '../types/patientManagement';
+import { Autocomplete } from '@mui/material';
+import { apiHelpers } from '../services/api';
 
 interface Symptom {
   type: 'subjective' | 'objective';
@@ -121,6 +125,20 @@ const DiagnosticModule: React.FC = () => {
   const [consentDialog, setConsentDialog] = useState(false);
   const [patientConsent, setPatientConsent] = useState(false);
 
+  // Patient search state
+  const [patientSearchQuery, setPatientSearchQuery] = useState('');
+  const [selectedPatientObject, setSelectedPatientObject] = useState<Patient | null>(null);
+  
+  // Load patients for dropdown and search
+  const { data: patientsData, isLoading: patientsLoading } = usePatients({ limit: 100 });
+  const { data: searchData, isLoading: searchLoading } = useSearchPatients(patientSearchQuery);
+  
+  const patients = patientsData?.data?.results || [];
+  const searchResults = searchData?.data?.results || [];
+  
+  // Combine regular patients with search results
+  const availablePatients = patientSearchQuery.length >= 2 ? searchResults : patients;
+
   // Form state
   const [selectedPatient, setSelectedPatient] = useState('');
   const [symptoms, setSymptoms] = useState<Symptom[]>([
@@ -182,37 +200,25 @@ const DiagnosticModule: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/diagnostics/ai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await apiHelpers.post('/diagnostics/ai', {
+        patientId: selectedPatient,
+        symptoms: {
+          subjective: symptoms.filter(s => s.type === 'subjective').map(s => s.description).filter(Boolean),
+          objective: symptoms.filter(s => s.type === 'objective').map(s => s.description).filter(Boolean),
+          duration,
+          severity,
+          onset,
         },
-        credentials: 'include',
-        body: JSON.stringify({
-          patientId: selectedPatient,
-          symptoms: {
-            subjective: symptoms.filter(s => s.type === 'subjective').map(s => s.description).filter(Boolean),
-            objective: symptoms.filter(s => s.type === 'objective').map(s => s.description).filter(Boolean),
-            duration,
-            severity,
-            onset,
-          },
-          labResults: labResults.filter(lr => lr.testName && lr.value),
-          currentMedications: medications.filter(m => m.name && m.dosage),
-          vitalSigns,
-          patientConsent: {
-            provided: true,
-            method: 'electronic'
-          }
-        }),
+        labResults: labResults.filter(lr => lr.testName && lr.value),
+        currentMedications: medications.filter(m => m.name && m.dosage),
+        vitalSigns,
+        patientConsent: {
+          provided: true,
+          method: 'electronic'
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate diagnostic analysis');
-      }
-
-      const data = await response.json();
-      setAnalysis(data.data);
+      setAnalysis(response.data.data);
       setActiveTab(1); // Switch to results tab
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -223,19 +229,65 @@ const DiagnosticModule: React.FC = () => {
 
   const renderInputForm = () => (
     <Grid container spacing={3}>
-      {/* Patient Selection */}
+      {/* Patient Selection with Search */}
       <Grid item xs={12}>
-        <FormControl fullWidth>
-          <InputLabel>Select Patient</InputLabel>
-          <Select
-            value={selectedPatient}
-            onChange={(e) => setSelectedPatient(e.target.value)}
-            required
-          >
-            {/* This would be populated from actual patient data */}
-            <MenuItem value="">Select a patient...</MenuItem>
-          </Select>
-        </FormControl>
+        <Autocomplete
+          fullWidth
+          options={availablePatients}
+          getOptionLabel={(patient: Patient) => 
+            `${patient.displayName || `${patient.firstName} ${patient.lastName}`} - ${patient.mrn}${patient.age ? ` (${patient.age} years)` : ''}`
+          }
+          value={selectedPatientObject}
+          onChange={(_, newValue) => {
+            setSelectedPatientObject(newValue);
+            setSelectedPatient(newValue ? newValue._id : '');
+          }}
+          inputValue={patientSearchQuery}
+          onInputChange={(_, newInputValue) => {
+            setPatientSearchQuery(newInputValue);
+          }}
+          loading={patientsLoading || searchLoading}
+          filterOptions={(x) => x} // Disable client-side filtering since we're using server-side search
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Search and Select Patient"
+              placeholder="Type patient name, MRN, or phone number..."
+              required
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {patientsLoading || searchLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              }}
+            />
+          )}
+          renderOption={(props, patient: Patient) => (
+            <Box component="li" {...props}>
+              <Box>
+                <Typography variant="body1">
+                  {patient.displayName || `${patient.firstName} ${patient.lastName}`}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  MRN: {patient.mrn} {patient.age && `• Age: ${patient.age}`} {patient.phone && `• ${patient.phone}`}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+          noOptionsText={
+            patientSearchQuery.length < 2 
+              ? "Type at least 2 characters to search patients" 
+              : "No patients found"
+          }
+        />
+        {availablePatients.length === 0 && !patientsLoading && !searchLoading && patientSearchQuery.length < 2 && (
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            No patients found. Please add patients to the system first.
+          </Typography>
+        )}
       </Grid>
 
       {/* Symptoms */}

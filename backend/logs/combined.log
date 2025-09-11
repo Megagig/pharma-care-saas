@@ -4135,3 +4135,6 @@
 {"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-11 12:35:53"}
 {"alertId":"xzsywc1dz","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 89.60326528532136%, threshold is 85%","metric":"memory_heap_usage_percent","ruleId":"tk9bglj1p","service":"pharma-care-api","threshold":85,"timestamp":"2025-09-11 12:36:19","value":89.60326528532136}
 {"action":"USER_LOGIN_SUCCESS","auditId":"68c2b51cb00db7919a31d8a3","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-11 12:40:12","userId":"68b5cb81f1f0f9758b8afadd"}
+{"level":"info","message":"Cleaned up old performance metrics and alerts","service":"pharma-care-api","timestamp":"2025-09-11 13:35:49"}
+{"alertsRemoved":0,"level":"info","message":"Security monitoring cleanup completed","service":"security-monitoring","threatsRemoved":0,"timestamp":"2025-09-11 13:35:50"}
+{"action":"USER_LOGIN_SUCCESS","auditId":"68c2c248b00db7919a31d97e","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-11 13:36:24","userId":"68b5cb81f1f0f9758b8afadd"}
