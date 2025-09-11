@@ -2,7 +2,9 @@ import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import DiagnosticCase, { IDiagnosticCase } from '../models/DiagnosticCase';
 import Patient from '../models/Patient';
-import openRouterService, { DiagnosticInput } from '../services/openRouterService';
+import openRouterService, {
+  DiagnosticInput,
+} from '../services/openRouterService';
 import { AuthRequest } from '../middlewares/auth';
 import logger from '../utils/logger';
 import { createAuditLog } from '../utils/responseHelpers';
@@ -22,12 +24,19 @@ export const generateDiagnosticAnalysis = async (
       res.status(400).json({
         success: false,
         message: 'Validation failed',
-        errors: errors.array()
+        errors: errors.array(),
       });
       return;
     }
 
-    const { patientId, symptoms, labResults, currentMedications, vitalSigns, patientConsent } = req.body;
+    const {
+      patientId,
+      symptoms,
+      labResults,
+      currentMedications,
+      vitalSigns,
+      patientConsent,
+    } = req.body;
     const userId = req.user!._id;
     const workplaceId = req.user!.workplaceId;
 
@@ -35,7 +44,7 @@ export const generateDiagnosticAnalysis = async (
     if (!workplaceId) {
       res.status(400).json({
         success: false,
-        message: 'User workplace is required for diagnostic analysis'
+        message: 'User workplace is required for diagnostic analysis',
       });
       return;
     }
@@ -44,7 +53,7 @@ export const generateDiagnosticAnalysis = async (
     if (!patientConsent?.provided) {
       res.status(400).json({
         success: false,
-        message: 'Patient consent is required for AI diagnostic analysis'
+        message: 'Patient consent is required for AI diagnostic analysis',
       });
       return;
     }
@@ -52,13 +61,13 @@ export const generateDiagnosticAnalysis = async (
     // Verify patient exists and belongs to the workplace
     const patient = await Patient.findOne({
       _id: patientId,
-      pharmacyId: workplaceId
+      workplaceId: workplaceId,
     });
 
     if (!patient) {
       res.status(404).json({
         success: false,
-        message: 'Patient not found or access denied'
+        message: 'Patient not found or access denied',
       });
       return;
     }
@@ -71,19 +80,24 @@ export const generateDiagnosticAnalysis = async (
       vitalSigns,
       patientAge: patient.age,
       patientGender: patient.gender,
-      allergies: (patient as any).allergies?.map((allergy: any) => allergy.allergen) || [],
-      medicalHistory: (patient as any).conditions?.map((condition: any) => condition.name) || []
+      allergies:
+        (patient as any).allergies?.map((allergy: any) => allergy.allergen) ||
+        [],
+      medicalHistory:
+        (patient as any).conditions?.map((condition: any) => condition.name) ||
+        [],
     };
 
     logger.info('Starting AI diagnostic analysis', {
       patientId,
       pharmacistId: userId,
       workplaceId,
-      symptomsCount: symptoms.subjective.length + symptoms.objective.length
+      symptomsCount: symptoms.subjective.length + symptoms.objective.length,
     });
 
     // Generate AI analysis
-    const aiResult = await openRouterService.generateDiagnosticAnalysis(diagnosticInput);
+    const aiResult =
+      await openRouterService.generateDiagnosticAnalysis(diagnosticInput);
 
     // Check for drug interactions if medications are provided
     const drugInteractions: any[] = [];
@@ -93,7 +107,7 @@ export const generateDiagnosticAnalysis = async (
         // drugInteractions = await drugInteractionService.checkInteractions(currentMedications);
       } catch (error) {
         logger.warn('Drug interaction check failed', {
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
@@ -109,29 +123,29 @@ export const generateDiagnosticAnalysis = async (
       vitalSigns,
       aiAnalysis: {
         ...aiResult.analysis,
-        processingTime: aiResult.processingTime
+        processingTime: aiResult.processingTime,
       },
       drugInteractions,
       patientConsent: {
         provided: patientConsent.provided,
         consentDate: new Date(),
-        consentMethod: patientConsent.method || 'electronic'
+        consentMethod: patientConsent.method || 'electronic',
       },
       aiRequestData: {
-        model: 'deepseek/deepseek-reasoner',
+        model: 'deepseek/deepseek-chat-v3.1:free',
         promptTokens: aiResult.usage.prompt_tokens,
         completionTokens: aiResult.usage.completion_tokens,
         totalTokens: aiResult.usage.total_tokens,
         requestId: aiResult.requestId,
-        processingTime: aiResult.processingTime
+        processingTime: aiResult.processingTime,
       },
       pharmacistDecision: {
         accepted: false,
         modifications: '',
         finalRecommendation: '',
         counselingPoints: [],
-        followUpRequired: false
-      }
+        followUpRequired: false,
+      },
     });
 
     await diagnosticCase.save();
@@ -146,7 +160,7 @@ export const generateDiagnosticAnalysis = async (
       canManage: (req as any).canManage || false,
       timestamp: new Date().toISOString(),
     };
-    
+
     createAuditLog(
       'AI_DIAGNOSTIC_ANALYSIS',
       'DiagnosticCase',
@@ -157,7 +171,7 @@ export const generateDiagnosticAnalysis = async (
     logger.info('AI diagnostic analysis completed', {
       caseId: diagnosticCase.caseId,
       processingTime: aiResult.processingTime,
-      confidenceScore: aiResult.analysis.confidenceScore
+      confidenceScore: aiResult.analysis.confidenceScore,
     });
 
     res.status(200).json({
@@ -167,22 +181,25 @@ export const generateDiagnosticAnalysis = async (
         analysis: aiResult.analysis,
         drugInteractions,
         processingTime: aiResult.processingTime,
-        tokensUsed: aiResult.usage.total_tokens
-      }
+        tokensUsed: aiResult.usage.total_tokens,
+      },
     });
   } catch (error) {
     logger.error('AI diagnostic analysis failed', {
       error: error instanceof Error ? error.message : 'Unknown error',
       patientId: req.body.patientId,
-      pharmacistId: req.user?._id
+      pharmacistId: req.user?._id,
     });
 
     res.status(500).json({
       success: false,
       message: 'AI diagnostic analysis failed',
-      error: process.env.NODE_ENV === 'development' ? 
-        (error instanceof Error ? error.message : 'Unknown error') : 
-        'Internal server error'
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
     });
   }
 };
@@ -200,32 +217,32 @@ export const saveDiagnosticDecision = async (
       res.status(400).json({
         success: false,
         message: 'Validation failed',
-        errors: errors.array()
+        errors: errors.array(),
       });
       return;
     }
 
     const { caseId } = req.params;
-    const { 
-      accepted, 
-      modifications, 
-      finalRecommendation, 
-      counselingPoints, 
-      followUpRequired, 
-      followUpDate 
+    const {
+      accepted,
+      modifications,
+      finalRecommendation,
+      counselingPoints,
+      followUpRequired,
+      followUpDate,
     } = req.body;
     const userId = req.user!._id;
 
     // Find and verify ownership of diagnostic case
     const diagnosticCase = await DiagnosticCase.findOne({
       caseId,
-      pharmacistId: userId
+      pharmacistId: userId,
     });
 
     if (!diagnosticCase) {
       res.status(404).json({
         success: false,
-        message: 'Diagnostic case not found or access denied'
+        message: 'Diagnostic case not found or access denied',
       });
       return;
     }
@@ -237,7 +254,8 @@ export const saveDiagnosticDecision = async (
       finalRecommendation,
       counselingPoints: counselingPoints || [],
       followUpRequired: followUpRequired || false,
-      followUpDate: followUpRequired && followUpDate ? new Date(followUpDate) : undefined
+      followUpDate:
+        followUpRequired && followUpDate ? new Date(followUpDate) : undefined,
     };
 
     diagnosticCase.status = 'completed';
@@ -255,7 +273,7 @@ export const saveDiagnosticDecision = async (
       canManage: (req as any).canManage || false,
       timestamp: new Date().toISOString(),
     };
-    
+
     createAuditLog(
       'DIAGNOSTIC_DECISION_SAVED',
       'DiagnosticCase',
@@ -268,22 +286,25 @@ export const saveDiagnosticDecision = async (
       data: {
         caseId: diagnosticCase.caseId,
         status: diagnosticCase.status,
-        completedAt: diagnosticCase.completedAt
-      }
+        completedAt: diagnosticCase.completedAt,
+      },
     });
   } catch (error) {
     logger.error('Failed to save diagnostic decision', {
       error: error instanceof Error ? error.message : 'Unknown error',
       caseId: req.params.caseId,
-      pharmacistId: req.user?._id
+      pharmacistId: req.user?._id,
     });
 
     res.status(500).json({
       success: false,
       message: 'Failed to save diagnostic decision',
-      error: process.env.NODE_ENV === 'development' ? 
-        (error instanceof Error ? error.message : 'Unknown error') : 
-        'Internal server error'
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
     });
   }
 };
@@ -304,13 +325,13 @@ export const getDiagnosticHistory = async (
     // Verify patient access
     const patient = await Patient.findOne({
       _id: patientId,
-      pharmacyId: workplaceId
+      workplaceId: workplaceId,
     });
 
     if (!patient) {
       res.status(404).json({
         success: false,
-        message: 'Patient not found or access denied'
+        message: 'Patient not found or access denied',
       });
       return;
     }
@@ -319,17 +340,17 @@ export const getDiagnosticHistory = async (
 
     const diagnosticCases = await DiagnosticCase.find({
       patientId,
-      workplaceId
+      workplaceId,
     })
-    .populate('pharmacistId', 'firstName lastName')
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(Number(limit))
-    .select('-aiRequestData -pharmacistDecision.modifications'); // Exclude sensitive data
+      .populate('pharmacistId', 'firstName lastName')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit))
+      .select('-aiRequestData -pharmacistDecision.modifications'); // Exclude sensitive data
 
     const total = await DiagnosticCase.countDocuments({
       patientId,
-      workplaceId
+      workplaceId,
     });
 
     res.status(200).json({
@@ -340,23 +361,26 @@ export const getDiagnosticHistory = async (
           current: Number(page),
           total: Math.ceil(total / Number(limit)),
           count: diagnosticCases.length,
-          totalCases: total
-        }
-      }
+          totalCases: total,
+        },
+      },
     });
   } catch (error) {
     logger.error('Failed to get diagnostic history', {
       error: error instanceof Error ? error.message : 'Unknown error',
       patientId: req.params.patientId,
-      pharmacistId: req.user?._id
+      pharmacistId: req.user?._id,
     });
 
     res.status(500).json({
       success: false,
       message: 'Failed to get diagnostic history',
-      error: process.env.NODE_ENV === 'development' ? 
-        (error instanceof Error ? error.message : 'Unknown error') : 
-        'Internal server error'
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
     });
   }
 };
@@ -374,36 +398,39 @@ export const getDiagnosticCase = async (
 
     const diagnosticCase = await DiagnosticCase.findOne({
       caseId,
-      workplaceId
+      workplaceId,
     })
-    .populate('patientId', 'firstName lastName age gender')
-    .populate('pharmacistId', 'firstName lastName');
+      .populate('patientId', 'firstName lastName age gender')
+      .populate('pharmacistId', 'firstName lastName');
 
     if (!diagnosticCase) {
       res.status(404).json({
         success: false,
-        message: 'Diagnostic case not found or access denied'
+        message: 'Diagnostic case not found or access denied',
       });
       return;
     }
 
     res.status(200).json({
       success: true,
-      data: diagnosticCase
+      data: diagnosticCase,
     });
   } catch (error) {
     logger.error('Failed to get diagnostic case', {
       error: error instanceof Error ? error.message : 'Unknown error',
       caseId: req.params.caseId,
-      pharmacistId: req.user?._id
+      pharmacistId: req.user?._id,
     });
 
     res.status(500).json({
       success: false,
       message: 'Failed to get diagnostic case',
-      error: process.env.NODE_ENV === 'development' ? 
-        (error instanceof Error ? error.message : 'Unknown error') : 
-        'Internal server error'
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
     });
   }
 };
@@ -421,7 +448,7 @@ export const checkDrugInteractions = async (
       res.status(400).json({
         success: false,
         message: 'Validation failed',
-        errors: errors.array()
+        errors: errors.array(),
       });
       return;
     }
@@ -431,7 +458,8 @@ export const checkDrugInteractions = async (
     if (!medications || medications.length < 2) {
       res.status(400).json({
         success: false,
-        message: 'At least two medications are required for interaction checking'
+        message:
+          'At least two medications are required for interaction checking',
       });
       return;
     }
@@ -446,21 +474,24 @@ export const checkDrugInteractions = async (
       data: {
         interactions,
         medicationsChecked: medications.length,
-        interactionsFound: interactions.length
-      }
+        interactionsFound: interactions.length,
+      },
     });
   } catch (error) {
     logger.error('Drug interaction check failed', {
       error: error instanceof Error ? error.message : 'Unknown error',
-      pharmacistId: req.user?._id
+      pharmacistId: req.user?._id,
     });
 
     res.status(500).json({
       success: false,
       message: 'Drug interaction check failed',
-      error: process.env.NODE_ENV === 'development' ? 
-        (error instanceof Error ? error.message : 'Unknown error') : 
-        'Internal server error'
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
     });
   }
 };
@@ -477,7 +508,7 @@ export const testAIConnection = async (
     if (req.user!.role !== 'super_admin') {
       res.status(403).json({
         success: false,
-        message: 'Access denied. Super admin required.'
+        message: 'Access denied. Super admin required.',
       });
       return;
     }
@@ -489,22 +520,25 @@ export const testAIConnection = async (
       data: {
         connected: isConnected,
         service: 'OpenRouter API',
-        model: 'deepseek/deepseek-reasoner',
-        timestamp: new Date().toISOString()
-      }
+        model: 'deepseek/deepseek-chat-v3.1:free',
+        timestamp: new Date().toISOString(),
+      },
     });
   } catch (error) {
     logger.error('AI connection test failed', {
       error: error instanceof Error ? error.message : 'Unknown error',
-      pharmacistId: req.user?._id
+      pharmacistId: req.user?._id,
     });
 
     res.status(500).json({
       success: false,
       message: 'AI connection test failed',
-      error: process.env.NODE_ENV === 'development' ? 
-        (error instanceof Error ? error.message : 'Unknown error') : 
-        'Internal server error'
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
     });
   }
 };
@@ -515,5 +549,5 @@ export default {
   getDiagnosticHistory,
   getDiagnosticCase,
   checkDrugInteractions,
-  testAIConnection
+  testAIConnection,
 };
