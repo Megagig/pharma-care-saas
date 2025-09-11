@@ -4249,3 +4249,15 @@
 {"level":"info","message":"Sending diagnostic request to OpenRouter","model":"deepseek/deepseek-chat-v3.1:free","promptLength":483,"service":"pharma-care-api","timestamp":"2025-09-11 15:21:00"}
 {"level":"info","message":"Diagnostic analysis completed","processingTime":64829,"requestId":"gen-1757600461-fr1XS9BDHSyftQ97w5Wn","service":"pharma-care-api","timestamp":"2025-09-11 15:22:05","tokensUsed":1548}
 {"error":"DiagnosticCase validation failed: caseId: Path `caseId` is required.","level":"error","message":"AI diagnostic analysis failed","patientId":"68c19c01291fc305b976d6ff","pharmacistId":"68b5cb81f1f0f9758b8afadd","service":"pharma-care-api","timestamp":"2025-09-11 15:22:05"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-11 15:32:59"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-11 15:33:03"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-11 15:33:03"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-11 15:33:03"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-11 15:33:03"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-11 15:33:03"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-11 15:33:03"}
+{"alertId":"alnqoigs8","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 88.63540614743751%, threshold is 85%","metric":"memory_heap_usage_percent","ruleId":"3400zj2qt","service":"pharma-care-api","threshold":85,"timestamp":"2025-09-11 15:33:59","value":88.63540614743751}
+{"level":"info","message":"Starting AI diagnostic analysis","patientId":"68c19c01291fc305b976d6ff","pharmacistId":"68b5cb81f1f0f9758b8afadd","service":"pharma-care-api","symptomsCount":4,"timestamp":"2025-09-11 15:35:22","workplaceId":"68b5cb82f1f0f9758b8afadf"}
+{"level":"info","message":"Sending diagnostic request to OpenRouter","model":"deepseek/deepseek-chat-v3.1:free","promptLength":483,"service":"pharma-care-api","timestamp":"2025-09-11 15:35:22"}
+{"level":"info","message":"Diagnostic analysis completed","processingTime":66450,"requestId":"gen-1757601324-qF8ESe6THJbuQEriuyF8","service":"pharma-care-api","timestamp":"2025-09-11 15:36:29","tokensUsed":1616}
+{"caseId":"DX-MFFIHJF8-XAY20B7Q7OF","confidenceScore":75,"level":"info","message":"AI diagnostic analysis completed","processingTime":66450,"service":"pharma-care-api","timestamp":"2025-09-11 15:36:30"}

@@ -113,7 +113,12 @@ export const generateDiagnosticAnalysis = async (
     }
 
     // Create diagnostic case record
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2);
+    const caseId = `DX-${timestamp}-${random}`.toUpperCase();
+
     const diagnosticCase = new DiagnosticCase({
+      caseId,
       patientId,
       pharmacistId: userId,
       workplaceId,
