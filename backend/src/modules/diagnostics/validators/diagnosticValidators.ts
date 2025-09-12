@@ -1,9 +1,8 @@
 import { z } from 'zod';
-import { Request, Response, NextFunction } from 'express';
 
 /**
  * Diagnostic Module Validation Schemas
- * Comprehensive Zod schemas for AI Diagnostics & Therapeutics API endpoints
+ * Comprehensive Zod schemas for all Diagnostic API endpoints
  */
 
 // Common validation patterns
@@ -12,39 +11,46 @@ const mongoIdSchema = z
     .regex(/^[0-9a-fA-F]{24}$/, 'Invalid MongoDB ObjectId');
 
 const phoneRegex = /^\+234[7-9]\d{9}$/; // Nigerian E.164 format
-const bloodPressureRegex = /^\d{2,3}\/\d{2,3}$/; // BP format like "120/80"
-const loincCodeRegex = /^[0-9]{1,5}-[0-9]$/; // LOINC code format
-const icdCodeRegex = /^[A-Z]\d{2}(\.\d{1,2})?$/; // ICD-10 code format
-const snomedCodeRegex = /^\d{6,18}$/; // SNOMED CT identifier
+
+// Query parameter schemas
+export const paginationSchema = z.object({
+    page: z
+        .string()
+        .optional()
+        .default('1')
+        .transform((val) => Math.max(1, parseInt(val) || 1)),
+    limit: z
+        .string()
+        .optional()
+        .default('20')
+        .transform((val) => Math.min(50, Math.max(1, parseInt(val) || 20))),
+});
 
 // ===============================
-// DIAGNOSTIC REQUEST SCHEMAS
+// SYMPTOM AND CLINICAL DATA SCHEMAS
 // ===============================
 
-// Symptom data schema
-const symptomDataSchema = z.object({
+export const symptomDataSchema = z.object({
     subjective: z
-        .array(z.string().min(1, 'Symptom cannot be empty').max(200, 'Symptom too long'))
+        .array(z.string().min(1, 'Symptom cannot be empty').max(200))
         .min(1, 'At least one subjective symptom is required')
-        .max(20, 'Too many symptoms'),
+        .max(20, 'Maximum 20 symptoms allowed'),
     objective: z
         .array(z.string().min(1).max(200))
-        .max(20, 'Too many objective findings')
+        .max(20, 'Maximum 20 objective findings allowed')
         .default([]),
     duration: z
         .string()
         .min(1, 'Duration is required')
-        .max(100, 'Duration description too long')
-        .trim(),
+        .max(100, 'Duration description too long'),
     severity: z.enum(['mild', 'moderate', 'severe']),
-    onset: z.enum(['acute', 'chronic', 'subacute'])
+    onset: z.enum(['acute', 'chronic', 'subacute']),
 });
 
-// Vital signs schema
-const vitalSignsSchema = z.object({
+export const vitalSignsSchema = z.object({
     bloodPressure: z
         .string()
-        .regex(bloodPressureRegex, 'Blood pressure must be in format "systolic/diastolic" (e.g., 120/80)')
+        .regex(/^\d{2,3}\/\d{2,3}$/, 'Blood pressure must be in format "systolic/diastolic"')
         .optional(),
     heartRate: z
         .number()
@@ -82,635 +88,235 @@ const vitalSignsSchema = z.object({
         .number()
         .min(30, 'Height too low')
         .max(300, 'Height too high')
-        .optional()
-}).refine(
-    (data) => Object.values(data).some(value => value !== undefined),
-    { message: 'At least one vital sign must be provided' }
-);
+        .optional(),
+});
 
-// Medication entry schema
-const medicationEntrySchema = z.object({
+export const medicationEntrySchema = z.object({
     name: z
         .string()
         .min(1, 'Medication name is required')
-        .max(200, 'Medication name too long')
-        .trim(),
+        .max(200, 'Medication name too long'),
     dosage: z
         .string()
         .min(1, 'Dosage is required')
-        .max(100, 'Dosage description too long')
-        .trim(),
+        .max(100, 'Dosage description too long'),
     frequency: z
         .string()
         .min(1, 'Frequency is required')
-        .max(100, 'Frequency description too long')
-        .trim(),
+        .max(100, 'Frequency description too long'),
     route: z
         .string()
         .max(50, 'Route description too long')
-        .trim()
         .optional(),
     startDate: z
         .string()
         .datetime()
-        .transform(val => new Date(val))
-        .optional(),
+        .optional()
+        .transform((val) => (val ? new Date(val) : undefined)),
     indication: z
         .string()
-        .max(200, 'Indication too long')
-        .trim()
-        .optional()
+        .max(200, 'Indication description too long')
+        .optional(),
 });
 
-// Social history schema
-const socialHistorySchema = z.object({
+export const socialHistorySchema = z.object({
     smoking: z.enum(['never', 'former', 'current']).optional(),
     alcohol: z.enum(['never', 'occasional', 'regular', 'heavy']).optional(),
-    exercise: z.enum(['sedentary', 'light', 'moderate', 'active']).optional()
+    exercise: z.enum(['sedentary', 'light', 'moderate', 'active']).optional(),
 });
 
-// Input snapshot schema
-const inputSnapshotSchema = z.object({
+export const inputSnapshotSchema = z.object({
     symptoms: symptomDataSchema,
     vitals: vitalSignsSchema.optional(),
     currentMedications: z
         .array(medicationEntrySchema)
-        .max(50, 'Too many medications')
+        .max(50, 'Maximum 50 medications allowed')
         .default([]),
     allergies: z
-        .array(z.string().min(1, 'Allergy cannot be empty').max(100, 'Allergy name too long'))
-        .max(20, 'Too many allergies')
+        .array(z.string().min(1, 'Allergy cannot be empty').max(100))
+        .max(20, 'Maximum 20 allergies allowed')
         .default([]),
     medicalHistory: z
-        .array(z.string().min(1, 'Medical history item cannot be empty').max(200, 'Medical history item too long'))
-        .max(30, 'Too many medical history items')
+        .array(z.string().min(1, 'Medical history item cannot be empty').max(200))
+        .max(30, 'Maximum 30 medical history items allowed')
         .default([]),
     labResultIds: z
         .array(mongoIdSchema)
-        .max(20, 'Too many lab results')
+        .max(20, 'Maximum 20 lab results allowed')
         .default([]),
     socialHistory: socialHistorySchema.optional(),
     familyHistory: z
-        .array(z.string().min(1, 'Family history item cannot be empty').max(200, 'Family history item too long'))
-        .max(20, 'Too many family history items')
-        .default([])
+        .array(z.string().min(1, 'Family history item cannot be empty').max(200))
+        .max(20, 'Maximum 20 family history items allowed')
+        .default([]),
 });
 
-// Create diagnostic request schema
+// ===============================
+// DIAGNOSTIC REQUEST SCHEMAS
+// ===============================
+
 export const createDiagnosticRequestSchema = z.object({
     patientId: mongoIdSchema,
     inputSnapshot: inputSnapshotSchema,
+    priority: z.enum(['routine', 'urgent', 'stat']).default('routine'),
     consentObtained: z
         .boolean()
-        .refine(val => val === true, { message: 'Patient consent is required for AI diagnostic processing' }),
-    priority: z.enum(['routine', 'urgent', 'stat']).default('routine'),
-    clinicalUrgency: z.enum(['low', 'medium', 'high', 'critical']).optional(),
-    promptVersion: z
-        .string()
-        .max(20, 'Prompt version too long')
-        .default('v1.0')
+        .refine((val) => val === true, {
+            message: 'Patient consent is required for AI diagnostic processing',
+        }),
 });
 
-// Update diagnostic request schema
-export const updateDiagnosticRequestSchema = z.object({
-    status: z.enum(['pending', 'processing', 'completed', 'failed', 'cancelled']).optional(),
-    priority: z.enum(['routine', 'urgent', 'stat']).optional(),
-    clinicalUrgency: z.enum(['low', 'medium', 'high', 'critical']).optional(),
-    errorMessage: z.string().max(1000, 'Error message too long').optional()
+export const diagnosticParamsSchema = z.object({
+    id: mongoIdSchema,
 });
 
-// Diagnostic request params schema
-export const diagnosticRequestParamsSchema = z.object({
-    id: mongoIdSchema
+export const patientHistoryParamsSchema = z.object({
+    patientId: mongoIdSchema,
 });
 
-// Diagnostic request query schema
-export const diagnosticRequestQuerySchema = z.object({
-    page: z
-        .string()
-        .optional()
-        .default('1')
-        .transform(val => Math.max(1, parseInt(val) || 1)),
-    limit: z
-        .string()
-        .optional()
-        .default('10')
-        .transform(val => Math.min(100, Math.max(1, parseInt(val) || 10))),
-    status: z.enum(['pending', 'processing', 'completed', 'failed', 'cancelled']).optional(),
-    priority: z.enum(['routine', 'urgent', 'stat']).optional(),
-    patientId: mongoIdSchema.optional(),
-    pharmacistId: mongoIdSchema.optional(),
-    fromDate: z
-        .string()
-        .datetime()
-        .transform(val => new Date(val))
-        .optional(),
-    toDate: z
-        .string()
-        .datetime()
-        .transform(val => new Date(val))
-        .optional()
-});
+export const diagnosticQuerySchema = z
+    .object({
+        status: z.enum(['pending', 'processing', 'completed', 'failed', 'cancelled']).optional(),
+        priority: z.enum(['routine', 'urgent', 'stat']).optional(),
+        pharmacistId: mongoIdSchema.optional(),
+    })
+    .merge(paginationSchema);
 
 // ===============================
-// DIAGNOSTIC RESULT SCHEMAS
+// PHARMACIST REVIEW SCHEMAS
 // ===============================
 
-// Pharmacist review schema
-const pharmacistReviewSchema = z.object({
-    status: z.enum(['approved', 'modified', 'rejected']),
+export const approveResultSchema = z.object({
     modifications: z
         .string()
-        .max(2000, 'Modifications too long')
-        .optional(),
-    rejectionReason: z
-        .string()
-        .max(1000, 'Rejection reason too long')
+        .max(2000, 'Modifications cannot exceed 2000 characters')
         .optional(),
     reviewNotes: z
         .string()
-        .max(1000, 'Review notes too long')
+        .max(1000, 'Review notes cannot exceed 1000 characters')
         .optional(),
     clinicalJustification: z
         .string()
-        .max(1000, 'Clinical justification too long')
-        .optional()
-}).refine(
-    (data) => {
-        if (data.status === 'rejected' && !data.rejectionReason) {
-            return false;
-        }
-        if (data.status === 'modified' && !data.modifications) {
-            return false;
-        }
-        return true;
-    },
-    {
-        message: 'Rejection reason required for rejected status, modifications required for modified status'
-    }
-);
-
-// Approve diagnostic result schema
-export const approveDiagnosticResultSchema = pharmacistReviewSchema;
-
-// ===============================
-// LAB ORDER SCHEMAS
-// ===============================
-
-// Lab test schema
-const labTestSchema = z.object({
-    code: z
-        .string()
-        .min(1, 'Test code is required')
-        .max(20, 'Test code too long')
-        .trim()
-        .transform(val => val.toUpperCase()),
-    name: z
-        .string()
-        .min(1, 'Test name is required')
-        .max(200, 'Test name too long')
-        .trim(),
-    loincCode: z
-        .string()
-        .regex(loincCodeRegex, 'Invalid LOINC code format')
+        .max(1000, 'Clinical justification cannot exceed 1000 characters')
         .optional(),
-    indication: z
-        .string()
-        .min(1, 'Indication is required')
-        .max(500, 'Indication too long')
-        .trim(),
-    priority: z.enum(['stat', 'urgent', 'routine']),
-    category: z
-        .string()
-        .max(100, 'Category too long')
-        .trim()
-        .optional(),
-    specimen: z
-        .string()
-        .max(100, 'Specimen type too long')
-        .trim()
-        .optional(),
-    expectedTurnaround: z
-        .string()
-        .max(50, 'Expected turnaround too long')
-        .trim()
-        .optional(),
-    estimatedCost: z
-        .number()
-        .min(0, 'Cost cannot be negative')
-        .optional(),
-    clinicalNotes: z
-        .string()
-        .max(500, 'Clinical notes too long')
-        .trim()
-        .optional()
 });
 
-// Create lab order schema
-export const createLabOrderSchema = z.object({
-    patientId: mongoIdSchema,
-    tests: z
-        .array(labTestSchema)
-        .min(1, 'At least one test is required')
-        .max(20, 'Too many tests in single order'),
-    clinicalIndication: z
-        .string()
-        .min(1, 'Clinical indication is required')
-        .max(1000, 'Clinical indication too long')
-        .trim(),
-    urgentReason: z
-        .string()
-        .max(500, 'Urgent reason too long')
-        .trim()
-        .optional(),
-    patientInstructions: z
-        .string()
-        .max(1000, 'Patient instructions too long')
-        .trim()
-        .optional(),
-    labInstructions: z
-        .string()
-        .max(1000, 'Lab instructions too long')
-        .trim()
-        .optional(),
-    expectedDate: z
-        .string()
-        .datetime()
-        .transform(val => new Date(val))
-        .optional(),
-    insurancePreAuth: z.boolean().default(false)
-});
-
-// Update lab order schema
-export const updateLabOrderSchema = z.object({
-    status: z.enum(['ordered', 'collected', 'processing', 'completed', 'cancelled', 'rejected']).optional(),
-    collectionNotes: z
-        .string()
-        .max(500, 'Collection notes too long')
-        .trim()
-        .optional(),
-    specimenType: z
-        .string()
-        .max(100, 'Specimen type too long')
-        .trim()
-        .optional(),
-    collectionSite: z
-        .string()
-        .max(100, 'Collection site too long')
-        .trim()
-        .optional(),
+export const rejectResultSchema = z.object({
     rejectionReason: z
         .string()
-        .max(500, 'Rejection reason too long')
-        .trim()
-        .optional(),
-    trackingNumber: z
-        .string()
-        .max(50, 'Tracking number too long')
-        .trim()
-        .optional()
-});
-
-// Lab order params schema
-export const labOrderParamsSchema = z.object({
-    id: mongoIdSchema
-});
-
-// Lab order query schema
-export const labOrderQuerySchema = z.object({
-    page: z
-        .string()
-        .optional()
-        .default('1')
-        .transform(val => Math.max(1, parseInt(val) || 1)),
-    limit: z
-        .string()
-        .optional()
-        .default('10')
-        .transform(val => Math.min(100, Math.max(1, parseInt(val) || 10))),
-    status: z.enum(['ordered', 'collected', 'processing', 'completed', 'cancelled', 'rejected']).optional(),
-    priority: z.enum(['stat', 'urgent', 'routine']).optional(),
-    patientId: mongoIdSchema.optional(),
-    orderedBy: mongoIdSchema.optional(),
-    fromDate: z
-        .string()
-        .datetime()
-        .transform(val => new Date(val))
-        .optional(),
-    toDate: z
-        .string()
-        .datetime()
-        .transform(val => new Date(val))
-        .optional(),
-    overdue: z
-        .string()
-        .optional()
-        .transform(val => val === 'true')
-});
-
-// ===============================
-// LAB RESULT SCHEMAS
-// ===============================
-
-// Reference range schema
-const referenceRangeSchema = z.object({
-    low: z.number().optional(),
-    high: z.number().optional(),
-    text: z
-        .string()
-        .max(200, 'Reference range text too long')
-        .trim()
-        .optional(),
-    unit: z
-        .string()
-        .max(20, 'Unit too long')
-        .trim()
-        .optional(),
-    ageGroup: z
-        .string()
-        .max(50, 'Age group too long')
-        .trim()
-        .optional(),
-    gender: z.enum(['male', 'female', 'all']).default('all'),
-    condition: z
-        .string()
-        .max(100, 'Condition too long')
-        .trim()
-        .optional()
-}).refine(
-    (data) => data.low !== undefined || data.high !== undefined || data.text,
-    { message: 'Reference range must have numeric range or text description' }
-);
-
-// Create lab result schema
-export const createLabResultSchema = z.object({
-    orderId: mongoIdSchema.optional(),
-    patientId: mongoIdSchema,
-    testCode: z
-        .string()
-        .min(1, 'Test code is required')
-        .max(20, 'Test code too long')
-        .trim()
-        .transform(val => val.toUpperCase()),
-    testName: z
-        .string()
-        .min(1, 'Test name is required')
-        .max(200, 'Test name too long')
-        .trim(),
-    testCategory: z
-        .string()
-        .max(100, 'Test category too long')
-        .trim()
-        .optional(),
-    loincCode: z
-        .string()
-        .regex(loincCodeRegex, 'Invalid LOINC code format')
-        .optional(),
-    value: z
-        .string()
-        .min(1, 'Result value is required')
-        .max(500, 'Result value too long')
-        .trim(),
-    unit: z
-        .string()
-        .max(20, 'Unit too long')
-        .trim()
-        .optional(),
-    referenceRange: referenceRangeSchema,
-    interpretation: z.enum(['low', 'normal', 'high', 'critical', 'abnormal', 'inconclusive']).optional(),
-    flags: z
-        .array(z.string().min(1).max(50))
-        .max(10, 'Too many flags')
-        .default([]),
-    criticalValue: z.boolean().default(false),
-    specimenCollectedAt: z
-        .string()
-        .datetime()
-        .transform(val => new Date(val))
-        .optional(),
-    performedAt: z
-        .string()
-        .datetime()
-        .transform(val => new Date(val)),
-    source: z.enum(['manual', 'fhir', 'lis', 'external', 'imported']).default('manual'),
-    externalResultId: z
-        .string()
-        .max(100, 'External result ID too long')
-        .trim()
-        .optional(),
-    technicalNotes: z
-        .string()
-        .max(1000, 'Technical notes too long')
-        .trim()
-        .optional(),
-    methodUsed: z
-        .string()
-        .max(100, 'Method used too long')
-        .trim()
-        .optional(),
-    instrumentId: z
-        .string()
-        .max(50, 'Instrument ID too long')
-        .trim()
-        .optional(),
-    clinicalNotes: z
-        .string()
-        .max(2000, 'Clinical notes too long')
-        .trim()
-        .optional(),
-    followUpRequired: z.boolean().default(false),
-    followUpInstructions: z
-        .string()
-        .max(1000, 'Follow-up instructions too long')
-        .trim()
-        .optional()
-});
-
-// Update lab result schema
-export const updateLabResultSchema = z.object({
-    value: z
-        .string()
-        .min(1, 'Result value is required')
-        .max(500, 'Result value too long')
-        .trim()
-        .optional(),
-    interpretation: z.enum(['low', 'normal', 'high', 'critical', 'abnormal', 'inconclusive']).optional(),
-    flags: z
-        .array(z.string().min(1).max(50))
-        .max(10, 'Too many flags')
-        .optional(),
-    criticalValue: z.boolean().optional(),
-    reviewStatus: z.enum(['pending', 'reviewed', 'flagged', 'approved']).optional(),
+        .min(1, 'Rejection reason is required')
+        .max(1000, 'Rejection reason cannot exceed 1000 characters'),
     reviewNotes: z
         .string()
-        .max(1000, 'Review notes too long')
-        .trim()
+        .max(1000, 'Review notes cannot exceed 1000 characters')
         .optional(),
-    clinicalNotes: z
+    clinicalJustification: z
         .string()
-        .max(2000, 'Clinical notes too long')
-        .trim()
+        .max(1000, 'Clinical justification cannot exceed 1000 characters')
         .optional(),
-    followUpRequired: z.boolean().optional(),
-    followUpInstructions: z
-        .string()
-        .max(1000, 'Follow-up instructions too long')
-        .trim()
-        .optional()
 });
 
-// Lab result params schema
-export const labResultParamsSchema = z.object({
-    id: mongoIdSchema
-});
-
-// Lab result query schema
-export const labResultQuerySchema = z.object({
-    page: z
-        .string()
-        .optional()
-        .default('1')
-        .transform(val => Math.max(1, parseInt(val) || 1)),
-    limit: z
-        .string()
-        .optional()
-        .default('10')
-        .transform(val => Math.min(100, Math.max(1, parseInt(val) || 10))),
-    patientId: mongoIdSchema.optional(),
-    testCode: z.string().optional(),
-    interpretation: z.enum(['low', 'normal', 'high', 'critical', 'abnormal', 'inconclusive']).optional(),
-    criticalValue: z
-        .string()
-        .optional()
-        .transform(val => val === 'true'),
-    reviewStatus: z.enum(['pending', 'reviewed', 'flagged', 'approved']).optional(),
-    followUpRequired: z
-        .string()
-        .optional()
-        .transform(val => val === 'true'),
-    fromDate: z
-        .string()
-        .datetime()
-        .transform(val => new Date(val))
-        .optional(),
-    toDate: z
-        .string()
-        .datetime()
-        .transform(val => new Date(val))
-        .optional(),
-    source: z.enum(['manual', 'fhir', 'lis', 'external', 'imported']).optional()
-});
+export const pendingReviewsQuerySchema = z
+    .object({
+        priority: z.enum(['routine', 'urgent', 'stat']).optional(),
+        confidenceMin: z
+            .string()
+            .optional()
+            .transform((val) => (val ? parseFloat(val) : undefined))
+            .refine((val) => val === undefined || (val >= 0 && val <= 1), {
+                message: 'Confidence must be between 0 and 1',
+            }),
+        confidenceMax: z
+            .string()
+            .optional()
+            .transform((val) => (val ? parseFloat(val) : undefined))
+            .refine((val) => val === undefined || (val >= 0 && val <= 1), {
+                message: 'Confidence must be between 0 and 1',
+            }),
+        hasRedFlags: z
+            .string()
+            .optional()
+            .transform((val) => {
+                if (val === undefined) return undefined;
+                return val === 'true';
+            }),
+        orderBy: z.enum(['oldest', 'newest', 'priority', 'confidence']).default('oldest'),
+    })
+    .merge(paginationSchema)
+    .refine(
+        (data) => {
+            if (data.confidenceMin !== undefined && data.confidenceMax !== undefined) {
+                return data.confidenceMin <= data.confidenceMax;
+            }
+            return true;
+        },
+        {
+            message: 'Minimum confidence cannot be greater than maximum confidence',
+            path: ['confidenceMin'],
+        }
+    );
 
 // ===============================
-// DRUG INTERACTION SCHEMAS
+// INTERVENTION CREATION SCHEMAS
 // ===============================
 
-// Drug interaction check schema
-export const drugInteractionCheckSchema = z.object({
-    medications: z
-        .array(z.string().min(1, 'Medication name cannot be empty').max(200, 'Medication name too long'))
-        .min(1, 'At least one medication is required')
-        .max(20, 'Too many medications for interaction check'),
-    patientAllergies: z
-        .array(z.string().min(1).max(100))
-        .max(20, 'Too many allergies')
+export const createInterventionSchema = z.object({
+    type: z.enum(['medication_review', 'counseling', 'referral', 'monitoring', 'lifestyle']),
+    title: z
+        .string()
+        .min(1, 'Title is required')
+        .max(200, 'Title cannot exceed 200 characters'),
+    description: z
+        .string()
+        .min(1, 'Description is required')
+        .max(2000, 'Description cannot exceed 2000 characters'),
+    priority: z.enum(['low', 'medium', 'high', 'urgent']),
+    category: z
+        .string()
+        .min(1, 'Category is required')
+        .max(100, 'Category cannot exceed 100 characters'),
+    recommendations: z
+        .array(z.string().min(1, 'Recommendation cannot be empty').max(500))
+        .min(1, 'At least one recommendation is required')
+        .max(10, 'Maximum 10 recommendations allowed'),
+    followUpRequired: z.boolean().default(false),
+    followUpDate: z
+        .string()
+        .datetime()
+        .optional()
+        .transform((val) => (val ? new Date(val) : undefined)),
+    targetOutcome: z
+        .string()
+        .max(500, 'Target outcome cannot exceed 500 characters')
+        .optional(),
+    monitoringParameters: z
+        .array(z.string().min(1).max(200))
+        .max(10, 'Maximum 10 monitoring parameters allowed')
         .default([]),
-    patientAge: z
-        .number()
-        .int()
-        .min(0, 'Age cannot be negative')
-        .max(150, 'Age too high')
-        .optional(),
-    patientWeight: z
-        .number()
-        .min(0.5, 'Weight too low')
-        .max(1000, 'Weight too high')
-        .optional(),
-    renalFunction: z.enum(['normal', 'mild', 'moderate', 'severe', 'dialysis']).optional(),
-    hepaticFunction: z.enum(['normal', 'mild', 'moderate', 'severe']).optional()
 });
 
 // ===============================
-// FHIR IMPORT SCHEMAS
+// ANALYTICS SCHEMAS
 // ===============================
 
-// FHIR import schema
-export const fhirImportSchema = z.object({
-    fhirBundle: z.object({}).passthrough(), // Allow any FHIR bundle structure
-    patientMapping: z.object({
-        externalPatientId: z.string().min(1, 'External patient ID is required'),
-        internalPatientId: mongoIdSchema
-    }).optional(),
-    validateOnly: z.boolean().default(false),
-    overwriteExisting: z.boolean().default(false)
+export const analyticsQuerySchema = z.object({
+    from: z
+        .string()
+        .datetime()
+        .optional()
+        .transform((val) => (val ? new Date(val) : undefined)),
+    to: z
+        .string()
+        .datetime()
+        .optional()
+        .transform((val) => (val ? new Date(val) : undefined)),
 });
-
-// ===============================
-// CLINICAL VALIDATION HELPERS
-// ===============================
-
-// Custom validators for clinical data
-export const clinicalValidators = {
-    // Validate vital signs are within reasonable ranges
-    validateVitalSigns: (vitals: any) => {
-        if (vitals.bloodPressure) {
-            const [systolic, diastolic] = vitals.bloodPressure.split('/').map(Number);
-            if (systolic <= diastolic) {
-                throw new Error('Systolic pressure must be higher than diastolic pressure');
-            }
-        }
-
-        if (vitals.temperature && vitals.temperature > 42) {
-            throw new Error('Temperature above 42°C requires immediate medical attention');
-        }
-
-        if (vitals.heartRate && vitals.oxygenSaturation) {
-            if (vitals.heartRate > 150 && vitals.oxygenSaturation < 90) {
-                throw new Error('Critical vital signs combination detected');
-            }
-        }
-
-        return true;
-    },
-
-    // Validate medication interactions
-    validateMedicationList: (medications: any[]) => {
-        const drugNames = medications.map(med => med.name.toLowerCase());
-        const duplicates = drugNames.filter((name, index) => drugNames.indexOf(name) !== index);
-
-        if (duplicates.length > 0) {
-            throw new Error(`Duplicate medications detected: ${duplicates.join(', ')}`);
-        }
-
-        return true;
-    },
-
-    // Validate lab result values
-    validateLabResult: (result: any) => {
-        if (result.numericValue !== undefined && result.referenceRange) {
-            const { low, high } = result.referenceRange;
-
-            if (low !== undefined && high !== undefined && low >= high) {
-                throw new Error('Reference range low value must be less than high value');
-            }
-
-            // Flag extremely abnormal values
-            if (low !== undefined && result.numericValue < (low * 0.1)) {
-                throw new Error('Result value is extremely low and may indicate data entry error');
-            }
-
-            if (high !== undefined && result.numericValue > (high * 10)) {
-                throw new Error('Result value is extremely high and may indicate data entry error');
-            }
-        }
-
-        return true;
-    }
-};
 
 // ===============================
 // VALIDATION MIDDLEWARE
 // ===============================
+
+import { Request, Response, NextFunction } from 'express';
 
 type ValidationTarget = 'body' | 'params' | 'query';
 
@@ -722,23 +328,6 @@ export const validateRequest = (
         try {
             const data = req[target];
             const validated = schema.parse(data);
-
-            // Apply clinical validations for specific schemas
-            if (target === 'body') {
-                const validatedData = validated as any;
-                if (validatedData.inputSnapshot?.vitals) {
-                    clinicalValidators.validateVitalSigns(validatedData.inputSnapshot.vitals);
-                }
-
-                if (validatedData.inputSnapshot?.currentMedications) {
-                    clinicalValidators.validateMedicationList(validatedData.inputSnapshot.currentMedications);
-                }
-
-                if (validatedData.value && validatedData.referenceRange) {
-                    clinicalValidators.validateLabResult(validatedData);
-                }
-            }
-
             req[target] = validated;
             next();
         } catch (error) {
@@ -747,7 +336,6 @@ export const validateRequest = (
                     field: err.path.join('.'),
                     message: err.message,
                     code: err.code,
-                    received: err.received
                 }));
 
                 res.status(422).json({
@@ -755,14 +343,12 @@ export const validateRequest = (
                     message: 'Validation failed',
                     code: 'VALIDATION_ERROR',
                     errors,
-                    timestamp: new Date().toISOString()
                 });
             } else {
                 res.status(400).json({
                     success: false,
-                    message: error instanceof Error ? error.message : 'Invalid request data',
+                    message: 'Invalid request data',
                     code: 'BAD_REQUEST',
-                    timestamp: new Date().toISOString()
                 });
             }
         }
@@ -770,54 +356,145 @@ export const validateRequest = (
 };
 
 // ===============================
-// SANITIZATION HELPERS
+// CUSTOM VALIDATION FUNCTIONS
 // ===============================
 
-export const sanitizeInput = {
-    // Remove potentially harmful characters from clinical text
-    sanitizeClinicalText: (text: string): string => {
-        return text
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-            .replace(/javascript:/gi, '') // Remove javascript: protocol
-            .replace(/on\w+\s*=/gi, '') // Remove event handlers
-            .trim();
-    },
+/**
+ * Validate that consent timestamp is recent (within last 24 hours)
+ */
+export const validateConsentTimestamp = (timestamp: Date): boolean => {
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    return timestamp >= twentyFourHoursAgo && timestamp <= now;
+};
 
-    // Sanitize medication names
-    sanitizeMedicationName: (name: string): string => {
-        return name
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-            .replace(/[<>\"'&]/g, '') // Remove HTML special characters
-            .replace(/\s+/g, ' ') // Normalize whitespace
-            .trim();
-    },
+/**
+ * Validate that vital signs are within reasonable ranges for the patient's age
+ */
+export const validateVitalSignsForAge = (
+    vitals: any,
+    patientAge: number
+): { valid: boolean; errors: string[] } => {
+    const errors: string[] = [];
 
-    // Sanitize numeric values
-    sanitizeNumericValue: (value: string): string => {
-        return value
-            .replace(/[^\d.-]/g, '') // Keep only digits, decimal point, and minus sign
-            .replace(/^-+/, '-') // Keep only one minus sign at start
-            .replace(/\.+/g, '.'); // Keep only one decimal point
+    // Age-specific heart rate validation
+    if (vitals.heartRate) {
+        let minHR = 60;
+        let maxHR = 100;
+
+        if (patientAge < 1) {
+            minHR = 100;
+            maxHR = 160;
+        } else if (patientAge < 3) {
+            minHR = 90;
+            maxHR = 150;
+        } else if (patientAge < 6) {
+            minHR = 80;
+            maxHR = 140;
+        } else if (patientAge < 12) {
+            minHR = 70;
+            maxHR = 120;
+        } else if (patientAge < 18) {
+            minHR = 60;
+            maxHR = 110;
+        }
+
+        if (vitals.heartRate < minHR || vitals.heartRate > maxHR) {
+            errors.push(`Heart rate ${vitals.heartRate} is outside normal range for age ${patientAge} (${minHR}-${maxHR})`);
+        }
     }
+
+    // Age-specific respiratory rate validation
+    if (vitals.respiratoryRate) {
+        let minRR = 12;
+        let maxRR = 20;
+
+        if (patientAge < 1) {
+            minRR = 30;
+            maxRR = 60;
+        } else if (patientAge < 3) {
+            minRR = 24;
+            maxRR = 40;
+        } else if (patientAge < 6) {
+            minRR = 22;
+            maxRR = 34;
+        } else if (patientAge < 12) {
+            minRR = 18;
+            maxRR = 30;
+        } else if (patientAge < 18) {
+            minRR = 12;
+            maxRR = 16;
+        }
+
+        if (vitals.respiratoryRate < minRR || vitals.respiratoryRate > maxRR) {
+            errors.push(`Respiratory rate ${vitals.respiratoryRate} is outside normal range for age ${patientAge} (${minRR}-${maxRR})`);
+        }
+    }
+
+    return {
+        valid: errors.length === 0,
+        errors,
+    };
+};
+
+/**
+ * Validate medication dosage format
+ */
+export const validateMedicationDosage = (dosage: string): boolean => {
+    // Common dosage patterns: "5mg", "10 mg", "2.5mg", "1-2 tablets", "5ml", etc.
+    const dosagePattern = /^(\d+(\.\d+)?)\s*(mg|g|ml|l|tablets?|capsules?|drops?|units?|iu|mcg|μg)(\s*\/\s*(day|dose|kg|m2))?$/i;
+    return dosagePattern.test(dosage.trim());
+};
+
+/**
+ * Validate medication frequency format
+ */
+export const validateMedicationFrequency = (frequency: string): boolean => {
+    // Common frequency patterns: "once daily", "twice daily", "3 times daily", "every 8 hours", "PRN", etc.
+    const frequencyPatterns = [
+        /^(once|twice|three times?|four times?|\d+\s*times?)\s*(daily|per day|a day)$/i,
+        /^every\s+\d+\s*(hours?|hrs?|minutes?|mins?)$/i,
+        /^(prn|as needed|when required)$/i,
+        /^(bid|tid|qid|qd|od|bd|tds|qds)$/i,
+        /^\d+x\s*(daily|per day)$/i,
+    ];
+
+    return frequencyPatterns.some(pattern => pattern.test(frequency.trim()));
+};
+
+/**
+ * Validate blood pressure format and values
+ */
+export const validateBloodPressure = (bp: string): { valid: boolean; systolic?: number; diastolic?: number; error?: string } => {
+    const bpMatch = bp.match(/^(\d{2,3})\/(\d{2,3})$/);
+
+    if (!bpMatch) {
+        return { valid: false, error: 'Blood pressure must be in format "systolic/diastolic"' };
+    }
+
+    const systolic = parseInt(bpMatch[1]);
+    const diastolic = parseInt(bpMatch[2]);
+
+    if (systolic < 70 || systolic > 250) {
+        return { valid: false, error: 'Systolic pressure must be between 70-250 mmHg' };
+    }
+
+    if (diastolic < 40 || diastolic > 150) {
+        return { valid: false, error: 'Diastolic pressure must be between 40-150 mmHg' };
+    }
+
+    if (systolic <= diastolic) {
+        return { valid: false, error: 'Systolic pressure must be higher than diastolic pressure' };
+    }
+
+    return { valid: true, systolic, diastolic };
 };
 
 export default {
-    createDiagnosticRequestSchema,
-    updateDiagnosticRequestSchema,
-    diagnosticRequestParamsSchema,
-    diagnosticRequestQuerySchema,
-    approveDiagnosticResultSchema,
-    createLabOrderSchema,
-    updateLabOrderSchema,
-    labOrderParamsSchema,
-    labOrderQuerySchema,
-    createLabResultSchema,
-    updateLabResultSchema,
-    labResultParamsSchema,
-    labResultQuerySchema,
-    drugInteractionCheckSchema,
-    fhirImportSchema,
     validateRequest,
-    clinicalValidators,
-    sanitizeInput
+    validateConsentTimestamp,
+    validateVitalSignsForAge,
+    validateMedicationDosage,
+    validateMedicationFrequency,
+    validateBloodPressure,
 };

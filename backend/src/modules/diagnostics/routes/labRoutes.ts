@@ -1,391 +1,426 @@
-import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
-import { auth, requireFeature, requireLicense } from '../../../middlewares/auth';
-import { auditLogger } from '../../../middlewares/auditMiddleware';
-import labController from '../controllers/labController';
+import express from 'express';
 import {
-    validateLabOrder,
-    validateLabResult,
-    validateFHIRImport,
-    formatValidationErrors
-} from '../utils/validators';
+    createLabOrder,
+    getLabOrders,
+    getLabOrder,
+    updateLabOrder,
+    cancelLabOrder,
+    addLabResult,
+    getLabResults,
+    getLabResult,
+    updateLabResult,
+    deleteLabResult,
+    getLabResultTrends,
+    getLabDashboard,
+    importFHIRResults,
+} from '../controllers/labController';
 
-const router = Router();
+// Import middleware
+import { auth } from '../../../middlewares/auth';
+import { authWithWorkspace } from '../../../middlewares/authWithWorkspace';
+import {
+    requirePharmacistRole,
+    requireLabIntegrationFeature,
+    requireDiagnosticRead,
+    requireDiagnosticCreate,
+    checkDiagnosticAccess,
+} from '../middlewares/diagnosticRBAC';
+import { requirePermission, requireActiveSubscription } from '../../../middlewares/rbac';
 
-// Rate limiting for lab endpoints
-const labRateLimit = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.NODE_ENV === 'development' ? 300 : 150, // 150 requests per 15 minutes
-    message: {
-        success: false,
-        message: 'Too many lab requests. Please try again later.',
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
+// Import validators
+import {
+    validateRequest,
+    createLabOrderSchema,
+    updateLabOrderSchema,
+    labOrderParamsSchema,
+    labOrderQuerySchema,
+    createLabResultSchema,
+    updateLabResultSchema,
+    labResultParamsSchema,
+    labResultQuerySchema,
+    labTrendsParamsSchema,
+    labTrendsQuerySchema,
+    importFHIRSchema,
+} from '../validators/labValidators';
 
-// Validation middleware
-const validateRequest = (schema: any) => (req: any, res: any, next: any) => {
-    const { error } = schema(req.body);
-    if (error) {
-        return res.status(400).json({
-            success: false,
-            message: 'Validation failed',
-            errors: formatValidationErrors(error)
-        });
-    }
-    next();
-};
+const router = express.Router();
 
-// =============================================
+// Apply authentication and workspace context to all routes
+router.use(auth);
+router.use(authWithWorkspace);
+
+// ===============================
 // LAB ORDER ROUTES
-// =============================================
+// ===============================
 
 /**
- * @route POST /api/lab/orders
- * @desc Create new lab order
- * @access Private (requires license and lab_integration feature)
+ * POST /api/lab/orders
+ * Create new lab order
  */
 router.post(
     '/orders',
-    labRateLimit,
-    auth,
-    requireLicense,
-    requireFeature('lab_integration'),
-    auditLogger({
-        action: 'CREATE_LAB_ORDER',
-        resourceType: 'LabOrder',
-        complianceCategory: 'clinical_documentation',
-        riskLevel: 'medium'
-    }),
-    validateRequest(validateLabOrder),
-    labController.createOrder
+    requireActiveSubscription,
+    requireLabIntegrationFeature,
+    requirePharmacistRole,
+    requirePermission('lab:create_order'),
+    validateRequest(createLabOrderSchema, 'body'),
+    createLabOrder
 );
 
 /**
- * @route GET /api/lab/orders
- * @desc Get lab orders with optional filters
- * @access Private (requires lab_integration feature)
+ * GET /api/lab/orders
+ * Get lab orders with filtering and pagination
  */
 router.get(
     '/orders',
-    labRateLimit,
-    auth,
-    requireFeature('lab_integration'),
-    auditLogger({
-        action: 'VIEW_LAB_ORDERS',
-        resourceType: 'LabOrder',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    labController.getOrders
+    requirePharmacistRole,
+    requirePermission('lab:read'),
+    validateRequest(labOrderQuerySchema, 'query'),
+    getLabOrders
 );
 
 /**
- * @route GET /api/lab/orders/:orderId
- * @desc Get specific lab order
- * @access Private (requires lab_integration feature)
+ * GET /api/lab/orders/:id
+ * Get lab order details
  */
 router.get(
-    '/orders/:orderId',
-    labRateLimit,
-    auth,
-    requireFeature('lab_integration'),
-    auditLogger({
-        action: 'VIEW_LAB_ORDER',
-        resourceType: 'LabOrder',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    labController.getOrder
+    '/orders/:id',
+    requirePharmacistRole,
+    requirePermission('lab:read'),
+    validateRequest(labOrderParamsSchema, 'params'),
+    getLabOrder
 );
 
 /**
- * @route PATCH /api/lab/orders/:orderId/status
- * @desc Update lab order status
- * @access Private (requires license)
+ * PATCH /api/lab/orders/:id
+ * Update lab order
  */
 router.patch(
-    '/orders/:orderId/status',
-    labRateLimit,
-    auth,
-    requireLicense,
-    auditLogger({
-        action: 'UPDATE_LAB_ORDER_STATUS',
-        resourceType: 'LabOrder',
-        complianceCategory: 'clinical_documentation',
-        riskLevel: 'medium'
-    }),
-    labController.updateOrderStatus
+    '/orders/:id',
+    requirePharmacistRole,
+    requirePermission('lab:update_order'),
+    validateRequest(labOrderParamsSchema, 'params'),
+    validateRequest(updateLabOrderSchema, 'body'),
+    updateLabOrder
 );
 
 /**
- * @route POST /api/lab/orders/:orderId/cancel
- * @desc Cancel lab order
- * @access Private (requires license)
- */
-router.post(
-    '/orders/:orderId/cancel',
-    labRateLimit,
-    auth,
-    requireLicense,
-    auditLogger({
-        action: 'CANCEL_LAB_ORDER',
-        resourceType: 'LabOrder',
-        complianceCategory: 'clinical_documentation',
-        riskLevel: 'medium'
-    }),
-    labController.cancelOrder
-);
-
-/**
- * @route POST /api/lab/orders/:orderId/export
- * @desc Export lab order to FHIR format
- * @access Private (requires license and fhir_integration feature)
- */
-router.post(
-    '/orders/:orderId/export',
-    labRateLimit,
-    auth,
-    requireLicense,
-    requireFeature('fhir_integration'),
-    auditLogger({
-        action: 'EXPORT_LAB_ORDER_FHIR',
-        resourceType: 'LabOrder',
-        complianceCategory: 'data_export',
-        riskLevel: 'medium'
-    }),
-    labController.exportOrder
-);
-
-// =============================================
-// LAB RESULT ROUTES
-// =============================================
-
-/**
- * @route POST /api/lab/results
- * @desc Add new lab result
- * @access Private (requires license and lab_integration feature)
- */
-router.post(
-    '/results',
-    labRateLimit,
-    auth,
-    requireLicense,
-    requireFeature('lab_integration'),
-    auditLogger({
-        action: 'ADD_LAB_RESULT',
-        resourceType: 'LabResult',
-        complianceCategory: 'clinical_documentation',
-        riskLevel: 'high'
-    }),
-    validateRequest(validateLabResult),
-    labController.addResult
-);
-
-/**
- * @route GET /api/lab/results
- * @desc Get lab results with optional filters
- * @access Private (requires lab_integration feature)
- */
-router.get(
-    '/results',
-    labRateLimit,
-    auth,
-    requireFeature('lab_integration'),
-    auditLogger({
-        action: 'VIEW_LAB_RESULTS',
-        resourceType: 'LabResult',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    labController.getResults
-);
-
-/**
- * @route GET /api/lab/results/:resultId
- * @desc Get specific lab result
- * @access Private (requires lab_integration feature)
- */
-router.get(
-    '/results/:resultId',
-    labRateLimit,
-    auth,
-    requireFeature('lab_integration'),
-    auditLogger({
-        action: 'VIEW_LAB_RESULT',
-        resourceType: 'LabResult',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    labController.getResult
-);
-
-/**
- * @route PATCH /api/lab/results/:resultId
- * @desc Update lab result
- * @access Private (requires license)
- */
-router.patch(
-    '/results/:resultId',
-    labRateLimit,
-    auth,
-    requireLicense,
-    auditLogger({
-        action: 'UPDATE_LAB_RESULT',
-        resourceType: 'LabResult',
-        complianceCategory: 'clinical_documentation',
-        riskLevel: 'high'
-    }),
-    validateRequest(validateLabResult),
-    labController.updateResult
-);
-
-/**
- * @route DELETE /api/lab/results/:resultId
- * @desc Delete lab result (soft delete)
- * @access Private (requires license)
+ * DELETE /api/lab/orders/:id
+ * Cancel lab order
  */
 router.delete(
-    '/results/:resultId',
-    labRateLimit,
-    auth,
-    requireLicense,
-    auditLogger({
-        action: 'DELETE_LAB_RESULT',
-        resourceType: 'LabResult',
-        complianceCategory: 'clinical_documentation',
-        riskLevel: 'high'
-    }),
-    labController.deleteResult
+    '/orders/:id',
+    requirePharmacistRole,
+    requirePermission('lab:cancel_order'),
+    validateRequest(labOrderParamsSchema, 'params'),
+    cancelLabOrder
+);
+
+// ===============================
+// LAB RESULT ROUTES
+// ===============================
+
+/**
+ * POST /api/lab/results
+ * Add lab result
+ */
+router.post(
+    '/results',
+    requireActiveSubscription,
+    requireLabIntegrationFeature,
+    requirePharmacistRole,
+    requirePermission('lab:add_result'),
+    validateRequest(createLabResultSchema, 'body'),
+    addLabResult
 );
 
 /**
- * @route GET /api/lab/results/critical
- * @desc Get critical lab results
- * @access Private (requires lab_integration feature)
+ * GET /api/lab/results
+ * Get lab results with filtering and pagination
  */
 router.get(
-    '/results/critical',
-    labRateLimit,
-    auth,
-    requireFeature('lab_integration'),
-    auditLogger({
-        action: 'VIEW_CRITICAL_LAB_RESULTS',
-        resourceType: 'LabResult',
-        complianceCategory: 'data_access',
-        riskLevel: 'medium'
-    }),
-    labController.getCriticalResults
+    '/results',
+    requirePharmacistRole,
+    requirePermission('lab:read'),
+    validateRequest(labResultQuerySchema, 'query'),
+    getLabResults
 );
 
 /**
- * @route GET /api/lab/results/abnormal/:patientId
- * @desc Get abnormal lab results for patient
- * @access Private (requires lab_integration feature)
+ * GET /api/lab/results/:id
+ * Get lab result details
  */
 router.get(
-    '/results/abnormal/:patientId',
-    labRateLimit,
-    auth,
-    requireFeature('lab_integration'),
-    auditLogger({
-        action: 'VIEW_ABNORMAL_LAB_RESULTS',
-        resourceType: 'LabResult',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    labController.getAbnormalResults
+    '/results/:id',
+    requirePharmacistRole,
+    requirePermission('lab:read'),
+    validateRequest(labResultParamsSchema, 'params'),
+    getLabResult
 );
 
-// =============================================
-// TREND ANALYSIS ROUTES
-// =============================================
+/**
+ * PATCH /api/lab/results/:id
+ * Update lab result
+ */
+router.patch(
+    '/results/:id',
+    requirePharmacistRole,
+    requirePermission('lab:update_result'),
+    validateRequest(labResultParamsSchema, 'params'),
+    validateRequest(updateLabResultSchema, 'body'),
+    updateLabResult
+);
 
 /**
- * @route GET /api/lab/trends/:patientId/:testCode
- * @desc Get lab result trends for specific test
- * @access Private (requires lab_integration feature)
+ * DELETE /api/lab/results/:id
+ * Delete lab result
+ */
+router.delete(
+    '/results/:id',
+    requirePharmacistRole,
+    requirePermission('lab:delete_result'),
+    validateRequest(labResultParamsSchema, 'params'),
+    deleteLabResult
+);
+
+// ===============================
+// LAB ANALYTICS AND TRENDS ROUTES
+// ===============================
+
+/**
+ * GET /api/lab/trends/:patientId/:testCode
+ * Get lab result trends for a patient and test
  */
 router.get(
     '/trends/:patientId/:testCode',
-    labRateLimit,
-    auth,
-    requireFeature('lab_integration'),
-    auditLogger({
-        action: 'VIEW_LAB_TRENDS',
-        resourceType: 'LabResult',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    labController.getTrends
+    requirePharmacistRole,
+    requirePermission('lab:read'),
+    validateRequest(labTrendsParamsSchema, 'params'),
+    validateRequest(labTrendsQuerySchema, 'query'),
+    getLabResultTrends
 );
 
-// =============================================
+/**
+ * GET /api/lab/dashboard
+ * Get lab dashboard data
+ */
+router.get(
+    '/dashboard',
+    requirePharmacistRole,
+    requirePermission('lab:read'),
+    getLabDashboard
+);
+
+// ===============================
 // FHIR INTEGRATION ROUTES
-// =============================================
+// ===============================
 
 /**
- * @route POST /api/lab/import/fhir
- * @desc Import lab results from FHIR bundle
- * @access Private (requires license and fhir_integration feature)
+ * POST /api/lab/import/fhir
+ * Import lab results from FHIR bundle
  */
 router.post(
     '/import/fhir',
-    labRateLimit,
-    auth,
-    requireLicense,
-    requireFeature('fhir_integration'),
-    auditLogger({
-        action: 'IMPORT_LAB_RESULTS_FHIR',
-        resourceType: 'LabResult',
-        complianceCategory: 'data_import',
-        riskLevel: 'high'
-    }),
-    validateRequest(validateFHIRImport),
-    labController.importFHIR
+    requireActiveSubscription,
+    requireLabIntegrationFeature,
+    requirePharmacistRole,
+    requirePermission('lab:import_fhir'),
+    validateRequest(importFHIRSchema, 'body'),
+    importFHIRResults
 );
 
-// =============================================
-// REFERENCE DATA ROUTES
-// =============================================
+// ===============================
+// ERROR HANDLING MIDDLEWARE
+// ===============================
 
 /**
- * @route GET /api/lab/catalog
- * @desc Get lab test catalog
- * @access Private (requires lab_integration feature)
+ * Lab-specific error handler
  */
-router.get(
-    '/catalog',
-    labRateLimit,
-    auth,
-    requireFeature('lab_integration'),
-    auditLogger({
-        action: 'VIEW_LAB_CATALOG',
-        resourceType: 'LabCatalog',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    labController.getTestCatalog
-);
+router.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // Log the error
+    console.error('Lab API Error:', {
+        error: error.message,
+        stack: error.stack,
+        path: req.path,
+        method: req.method,
+        body: req.body,
+        params: req.params,
+        query: req.query,
+    });
 
-/**
- * @route GET /api/lab/reference-ranges/:testCode
- * @desc Get reference ranges for specific test
- * @access Private (requires lab_integration feature)
- */
-router.get(
-    '/reference-ranges/:testCode',
-    labRateLimit,
-    auth,
-    requireFeature('lab_integration'),
-    auditLogger({
-        action: 'VIEW_REFERENCE_RANGES',
-        resourceType: 'ReferenceRange',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    labController.getReferenceRanges
-);
+    // Handle specific lab errors
+    if (error.message.includes('lab order')) {
+        return res.status(400).json({
+            success: false,
+            message: 'Lab order operation failed',
+            code: 'LAB_ORDER_ERROR',
+            details: error.message,
+        });
+    }
+
+    if (error.message.includes('lab result')) {
+        return res.status(400).json({
+            success: false,
+            message: 'Lab result operation failed',
+            code: 'LAB_RESULT_ERROR',
+            details: error.message,
+        });
+    }
+
+    if (error.message.includes('FHIR')) {
+        return res.status(400).json({
+            success: false,
+            message: 'FHIR import operation failed',
+            code: 'FHIR_IMPORT_ERROR',
+            details: error.message,
+        });
+    }
+
+    if (error.message.includes('reference range')) {
+        return res.status(422).json({
+            success: false,
+            message: 'Invalid reference range',
+            code: 'REFERENCE_RANGE_ERROR',
+            details: error.message,
+        });
+    }
+
+    if (error.message.includes('LOINC')) {
+        return res.status(422).json({
+            success: false,
+            message: 'Invalid LOINC code',
+            code: 'LOINC_ERROR',
+            details: error.message,
+        });
+    }
+
+    if (error.message.includes('test code')) {
+        return res.status(422).json({
+            success: false,
+            message: 'Invalid test code',
+            code: 'TEST_CODE_ERROR',
+            details: error.message,
+        });
+    }
+
+    if (error.message.includes('interpretation')) {
+        return res.status(422).json({
+            success: false,
+            message: 'Invalid result interpretation',
+            code: 'INTERPRETATION_ERROR',
+            details: error.message,
+        });
+    }
+
+    // Handle external lab system errors
+    if (error.message.includes('external lab')) {
+        return res.status(502).json({
+            success: false,
+            message: 'External lab system error',
+            code: 'EXTERNAL_LAB_ERROR',
+            details: 'Unable to connect to external lab system. Please try again later.',
+        });
+    }
+
+    // Handle FHIR parsing errors
+    if (error.message.includes('FHIR bundle')) {
+        return res.status(422).json({
+            success: false,
+            message: 'Invalid FHIR bundle format',
+            code: 'FHIR_BUNDLE_ERROR',
+            details: error.message,
+        });
+    }
+
+    // Handle patient mapping errors
+    if (error.message.includes('patient mapping')) {
+        return res.status(422).json({
+            success: false,
+            message: 'Invalid patient mapping',
+            code: 'PATIENT_MAPPING_ERROR',
+            details: error.message,
+        });
+    }
+
+    // Handle MongoDB/Mongoose errors
+    if (error.name === 'ValidationError') {
+        return res.status(422).json({
+            success: false,
+            message: 'Data validation failed',
+            code: 'VALIDATION_ERROR',
+            details: Object.values(error.errors).map((err: any) => err.message),
+        });
+    }
+
+    if (error.name === 'CastError') {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid ID format',
+            code: 'INVALID_ID',
+            details: 'The provided ID is not in the correct format',
+        });
+    }
+
+    if (error.code === 11000) {
+        return res.status(409).json({
+            success: false,
+            message: 'Duplicate resource',
+            code: 'DUPLICATE_ERROR',
+            details: 'A resource with this identifier already exists',
+        });
+    }
+
+    // Handle rate limiting errors
+    if (error.status === 429) {
+        return res.status(429).json({
+            success: false,
+            message: 'Rate limit exceeded',
+            code: 'RATE_LIMIT_ERROR',
+            details: 'Too many requests. Please try again later.',
+        });
+    }
+
+    // Handle subscription/plan errors
+    if (error.status === 402) {
+        return res.status(402).json({
+            success: false,
+            message: 'Subscription required',
+            code: 'SUBSCRIPTION_ERROR',
+            details: error.message,
+            upgradeRequired: true,
+        });
+    }
+
+    // Handle file size errors (for FHIR imports)
+    if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({
+            success: false,
+            message: 'File too large',
+            code: 'FILE_SIZE_ERROR',
+            details: 'FHIR bundle file exceeds maximum allowed size',
+        });
+    }
+
+    // Handle timeout errors
+    if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+        return res.status(504).json({
+            success: false,
+            message: 'Operation timeout',
+            code: 'TIMEOUT_ERROR',
+            details: 'The operation took too long to complete. Please try again.',
+        });
+    }
+
+    // Default error response
+    res.status(error.status || 500).json({
+        success: false,
+        message: error.message || 'Internal server error',
+        code: error.code || 'INTERNAL_ERROR',
+        ...(process.env.NODE_ENV === 'development' && {
+            stack: error.stack,
+            details: error,
+        }),
+    });
+});
 
 export default router;
