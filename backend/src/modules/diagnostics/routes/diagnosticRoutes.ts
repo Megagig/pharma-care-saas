@@ -1,247 +1,341 @@
-import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
-import { auth, requireFeature, requireLicense } from '../../../middlewares/auth';
-import { auditLogger } from '../../../middlewares/auditMiddleware';
-import diagnosticController from '../controllers/diagnosticController';
+import express from 'express';
 import {
-    validateDiagnosticRequest,
-    validatePharmacistReview,
-    validateInteractionCheck,
-    formatValidationErrors
-} from '../utils/validators';
+    createDiagnosticRequest,
+    getDiagnosticRequest,
+    retryDiagnosticRequest,
+    cancelDiagnosticRequest,
+    getPatientDiagnosticHistory,
+    getDiagnosticDashboard,
+    approveDiagnosticResult,
+    rejectDiagnosticResult,
+    getPendingReviews,
+    createInterventionFromResult,
+    getReviewWorkflowStatus,
+    getDiagnosticAnalytics,
+} from '../controllers/diagnosticController';
 
-const router = Router();
+// Import middleware
+import { auth } from '../../../middlewares/auth';
+import { authWithWorkspace } from '../../../middlewares/authWithWorkspace';
+import {
+    diagnosticCreateMiddleware,
+    diagnosticProcessMiddleware,
+    diagnosticReviewMiddleware,
+    diagnosticApproveMiddleware,
+    diagnosticAnalyticsMiddleware,
+    requireDiagnosticRead,
+    requireDiagnosticRetry,
+    requireDiagnosticCancel,
+    requireDiagnosticIntervention,
+    requirePharmacistRole,
+    checkDiagnosticAccess,
+    checkDiagnosticResultAccess,
+} from '../middlewares/diagnosticRBAC';
 
-// Rate limiting for AI API calls (more restrictive)
-const aiRateLimit = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.NODE_ENV === 'development' ? 50 : 10, // 10 requests per 15 minutes in production
-    message: {
-        success: false,
-        message: 'Too many AI diagnostic requests. Please try again later.',
-        retryAfter: '15 minutes'
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
+// Import validators
+import {
+    validateRequest,
+    createDiagnosticRequestSchema,
+    diagnosticParamsSchema,
+    patientHistoryParamsSchema,
+    diagnosticQuerySchema,
+    approveResultSchema,
+    rejectResultSchema,
+    pendingReviewsQuerySchema,
+    createInterventionSchema,
+    analyticsQuerySchema,
+} from '../validators/diagnosticValidators';
 
-// Rate limiting for general diagnostic endpoints
-const diagnosticRateLimit = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.NODE_ENV === 'development' ? 200 : 100, // 100 requests per 15 minutes
-    message: {
-        success: false,
-        message: 'Too many diagnostic requests. Please try again later.',
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
+const router = express.Router();
 
-// Validation middleware
-const validateRequest = (schema: any) => (req: any, res: any, next: any) => {
-    const { error } = schema(req.body);
-    if (error) {
-        return res.status(400).json({
-            success: false,
-            message: 'Validation failed',
-            errors: formatValidationErrors(error)
-        });
-    }
-    next();
-};
+// Apply authentication and workspace context to all routes
+router.use(auth);
+router.use(authWithWorkspace);
+
+// ===============================
+// DIAGNOSTIC REQUEST ROUTES
+// ===============================
 
 /**
- * @route POST /api/diagnostics
- * @desc Create new diagnostic request with AI analysis
- * @access Private (requires license and clinical_decision_support feature)
+ * POST /api/diagnostics
+ * Create new diagnostic request
  */
 router.post(
     '/',
-    aiRateLimit,
-    auth,
-    requireLicense,
-    requireFeature('clinical_decision_support'),
-    auditLogger({
-        action: 'CREATE_DIAGNOSTIC_REQUEST',
-        resourceType: 'DiagnosticRequest',
-        complianceCategory: 'clinical_documentation',
-        riskLevel: 'medium'
-    }),
-    validateRequest(validateDiagnosticRequest),
-    diagnosticController.createRequest
+    ...diagnosticCreateMiddleware,
+    validateRequest(createDiagnosticRequestSchema, 'body'),
+    createDiagnosticRequest
 );
 
 /**
- * @route GET /api/diagnostics/:requestId
- * @desc Get diagnostic result by request ID
- * @access Private (requires clinical_decision_support feature)
+ * GET /api/diagnostics/dashboard
+ * Get diagnostic dashboard data
  */
 router.get(
-    '/:requestId',
-    diagnosticRateLimit,
-    auth,
-    requireFeature('clinical_decision_support'),
-    auditLogger({
-        action: 'VIEW_DIAGNOSTIC_RESULT',
-        resourceType: 'DiagnosticResult',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    diagnosticController.getResult
+    '/dashboard',
+    requirePharmacistRole,
+    requireDiagnosticRead,
+    getDiagnosticDashboard
 );
 
 /**
- * @route GET /api/diagnostics/requests/:requestId
- * @desc Get diagnostic request by ID
- * @access Private (requires clinical_decision_support feature)
+ * GET /api/diagnostics/pending-reviews
+ * Get pending diagnostic results for review
  */
 router.get(
-    '/requests/:requestId',
-    diagnosticRateLimit,
-    auth,
-    requireFeature('clinical_decision_support'),
-    auditLogger({
-        action: 'VIEW_DIAGNOSTIC_REQUEST',
-        resourceType: 'DiagnosticRequest',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    diagnosticController.getRequest
+    '/pending-reviews',
+    ...diagnosticReviewMiddleware,
+    validateRequest(pendingReviewsQuerySchema, 'query'),
+    getPendingReviews
 );
 
 /**
- * @route GET /api/diagnostics/history
- * @desc Get diagnostic history with optional patient filter
- * @access Private (requires clinical_decision_support feature)
+ * GET /api/diagnostics/review-workflow-status
+ * Get review workflow status for workplace
  */
 router.get(
-    '/history',
-    diagnosticRateLimit,
-    auth,
-    requireFeature('clinical_decision_support'),
-    auditLogger({
-        action: 'VIEW_DIAGNOSTIC_HISTORY',
-        resourceType: 'DiagnosticRequest',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    diagnosticController.getHistory
+    '/review-workflow-status',
+    ...diagnosticReviewMiddleware,
+    getReviewWorkflowStatus
 );
 
 /**
- * @route POST /api/diagnostics/results/:resultId/approve
- * @desc Approve diagnostic result
- * @access Private (requires license)
- */
-router.post(
-    '/results/:resultId/approve',
-    diagnosticRateLimit,
-    auth,
-    requireLicense,
-    auditLogger({
-        action: 'APPROVE_DIAGNOSTIC_RESULT',
-        resourceType: 'DiagnosticResult',
-        complianceCategory: 'clinical_documentation',
-        riskLevel: 'high'
-    }),
-    diagnosticController.approveResult
-);
-
-/**
- * @route POST /api/diagnostics/results/:resultId/modify
- * @desc Modify diagnostic result
- * @access Private (requires license)
- */
-router.post(
-    '/results/:resultId/modify',
-    diagnosticRateLimit,
-    auth,
-    requireLicense,
-    auditLogger({
-        action: 'MODIFY_DIAGNOSTIC_RESULT',
-        resourceType: 'DiagnosticResult',
-        complianceCategory: 'clinical_documentation',
-        riskLevel: 'high'
-    }),
-    validateRequest(validatePharmacistReview),
-    diagnosticController.modifyResult
-);
-
-/**
- * @route POST /api/diagnostics/results/:resultId/reject
- * @desc Reject diagnostic result
- * @access Private (requires license)
- */
-router.post(
-    '/results/:resultId/reject',
-    diagnosticRateLimit,
-    auth,
-    requireLicense,
-    auditLogger({
-        action: 'REJECT_DIAGNOSTIC_RESULT',
-        resourceType: 'DiagnosticResult',
-        complianceCategory: 'clinical_documentation',
-        riskLevel: 'high'
-    }),
-    validateRequest(validatePharmacistReview),
-    diagnosticController.rejectResult
-);
-
-/**
- * @route POST /api/diagnostics/requests/:requestId/cancel
- * @desc Cancel diagnostic request
- * @access Private (requires license)
- */
-router.post(
-    '/requests/:requestId/cancel',
-    diagnosticRateLimit,
-    auth,
-    requireLicense,
-    auditLogger({
-        action: 'CANCEL_DIAGNOSTIC_REQUEST',
-        resourceType: 'DiagnosticRequest',
-        complianceCategory: 'clinical_documentation',
-        riskLevel: 'medium'
-    }),
-    diagnosticController.cancelRequest
-);
-
-/**
- * @route GET /api/diagnostics/requests/:requestId/status
- * @desc Get processing status of diagnostic request
- * @access Private (requires clinical_decision_support feature)
- */
-router.get(
-    '/requests/:requestId/status',
-    diagnosticRateLimit,
-    auth,
-    requireFeature('clinical_decision_support'),
-    auditLogger({
-        action: 'CHECK_DIAGNOSTIC_STATUS',
-        resourceType: 'DiagnosticRequest',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    diagnosticController.getStatus
-);
-
-/**
- * @route GET /api/diagnostics/analytics
- * @desc Get diagnostic analytics
- * @access Private (requires clinical_decision_support feature)
+ * GET /api/diagnostics/analytics
+ * Get diagnostic analytics for workplace
  */
 router.get(
     '/analytics',
-    diagnosticRateLimit,
-    auth,
-    requireFeature('clinical_decision_support'),
-    auditLogger({
-        action: 'VIEW_DIAGNOSTIC_ANALYTICS',
-        resourceType: 'DiagnosticAnalytics',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    diagnosticController.getAnalytics
+    ...diagnosticAnalyticsMiddleware,
+    validateRequest(analyticsQuerySchema, 'query'),
+    getDiagnosticAnalytics
 );
+
+/**
+ * GET /api/diagnostics/history/:patientId
+ * Get patient diagnostic history with pagination
+ */
+router.get(
+    '/history/:patientId',
+    requirePharmacistRole,
+    requireDiagnosticRead,
+    validateRequest(patientHistoryParamsSchema, 'params'),
+    validateRequest(diagnosticQuerySchema, 'query'),
+    getPatientDiagnosticHistory
+);
+
+/**
+ * GET /api/diagnostics/:id
+ * Get diagnostic request and result with polling support
+ */
+router.get(
+    '/:id',
+    requirePharmacistRole,
+    requireDiagnosticRead,
+    validateRequest(diagnosticParamsSchema, 'params'),
+    checkDiagnosticAccess,
+    getDiagnosticRequest
+);
+
+/**
+ * POST /api/diagnostics/:id/retry
+ * Retry failed diagnostic request
+ */
+router.post(
+    '/:id/retry',
+    ...diagnosticProcessMiddleware,
+    requireDiagnosticRetry,
+    validateRequest(diagnosticParamsSchema, 'params'),
+    retryDiagnosticRequest
+);
+
+/**
+ * DELETE /api/diagnostics/:id
+ * Cancel diagnostic request
+ */
+router.delete(
+    '/:id',
+    requirePharmacistRole,
+    requireDiagnosticCancel,
+    validateRequest(diagnosticParamsSchema, 'params'),
+    checkDiagnosticAccess,
+    cancelDiagnosticRequest
+);
+
+// ===============================
+// DIAGNOSTIC RESULT REVIEW ROUTES
+// ===============================
+
+/**
+ * POST /api/diagnostics/:id/approve
+ * Approve diagnostic result
+ */
+router.post(
+    '/:id/approve',
+    ...diagnosticApproveMiddleware,
+    validateRequest(diagnosticParamsSchema, 'params'),
+    validateRequest(approveResultSchema, 'body'),
+    approveDiagnosticResult
+);
+
+/**
+ * POST /api/diagnostics/:id/reject
+ * Reject diagnostic result
+ */
+router.post(
+    '/:id/reject',
+    ...diagnosticApproveMiddleware,
+    validateRequest(diagnosticParamsSchema, 'params'),
+    validateRequest(rejectResultSchema, 'body'),
+    rejectDiagnosticResult
+);
+
+/**
+ * POST /api/diagnostics/:id/create-intervention
+ * Create clinical intervention from approved diagnostic result
+ */
+router.post(
+    '/:id/create-intervention',
+    requirePharmacistRole,
+    requireDiagnosticIntervention,
+    validateRequest(diagnosticParamsSchema, 'params'),
+    validateRequest(createInterventionSchema, 'body'),
+    checkDiagnosticResultAccess,
+    createInterventionFromResult
+);
+
+// ===============================
+// ERROR HANDLING MIDDLEWARE
+// ===============================
+
+/**
+ * Diagnostic-specific error handler
+ */
+router.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // Log the error
+    console.error('Diagnostic API Error:', {
+        error: error.message,
+        stack: error.stack,
+        path: req.path,
+        method: req.method,
+        body: req.body,
+        params: req.params,
+        query: req.query,
+    });
+
+    // Handle specific diagnostic errors
+    if (error.message.includes('consent')) {
+        return res.status(400).json({
+            success: false,
+            message: 'Patient consent validation failed',
+            code: 'CONSENT_ERROR',
+            details: error.message,
+        });
+    }
+
+    if (error.message.includes('AI service')) {
+        return res.status(502).json({
+            success: false,
+            message: 'AI service temporarily unavailable',
+            code: 'AI_SERVICE_ERROR',
+            details: 'Please try again later or contact support if the issue persists',
+        });
+    }
+
+    if (error.message.includes('processing timeout')) {
+        return res.status(504).json({
+            success: false,
+            message: 'Diagnostic processing timeout',
+            code: 'PROCESSING_TIMEOUT',
+            details: 'The diagnostic analysis is taking longer than expected. You can retry the request.',
+        });
+    }
+
+    if (error.message.includes('retry')) {
+        return res.status(400).json({
+            success: false,
+            message: 'Retry operation failed',
+            code: 'RETRY_ERROR',
+            details: error.message,
+        });
+    }
+
+    if (error.message.includes('review')) {
+        return res.status(400).json({
+            success: false,
+            message: 'Review operation failed',
+            code: 'REVIEW_ERROR',
+            details: error.message,
+        });
+    }
+
+    if (error.message.includes('intervention')) {
+        return res.status(400).json({
+            success: false,
+            message: 'Intervention creation failed',
+            code: 'INTERVENTION_ERROR',
+            details: error.message,
+        });
+    }
+
+    // Handle MongoDB/Mongoose errors
+    if (error.name === 'ValidationError') {
+        return res.status(422).json({
+            success: false,
+            message: 'Data validation failed',
+            code: 'VALIDATION_ERROR',
+            details: Object.values(error.errors).map((err: any) => err.message),
+        });
+    }
+
+    if (error.name === 'CastError') {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid ID format',
+            code: 'INVALID_ID',
+            details: 'The provided ID is not in the correct format',
+        });
+    }
+
+    if (error.code === 11000) {
+        return res.status(409).json({
+            success: false,
+            message: 'Duplicate resource',
+            code: 'DUPLICATE_ERROR',
+            details: 'A resource with this identifier already exists',
+        });
+    }
+
+    // Handle rate limiting errors
+    if (error.status === 429) {
+        return res.status(429).json({
+            success: false,
+            message: 'Rate limit exceeded',
+            code: 'RATE_LIMIT_ERROR',
+            details: 'Too many requests. Please try again later.',
+        });
+    }
+
+    // Handle subscription/plan errors
+    if (error.status === 402) {
+        return res.status(402).json({
+            success: false,
+            message: 'Subscription required',
+            code: 'SUBSCRIPTION_ERROR',
+            details: error.message,
+            upgradeRequired: true,
+        });
+    }
+
+    // Default error response
+    res.status(error.status || 500).json({
+        success: false,
+        message: error.message || 'Internal server error',
+        code: error.code || 'INTERNAL_ERROR',
+        ...(process.env.NODE_ENV === 'development' && {
+            stack: error.stack,
+            details: error,
+        }),
+    });
+});
 
 export default router;
