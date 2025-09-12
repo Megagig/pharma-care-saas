@@ -1,4 +1,4 @@
-import { apiClient } from '../../../lib/api';
+import api from '../../../lib/api';
 import type {
     DiagnosticRequest,
     DiagnosticResult,
@@ -13,17 +13,20 @@ const API_BASE = '/api/diagnostics';
 export const diagnosticApi = {
     // Create new diagnostic request
     createRequest: async (data: DiagnosticRequestForm): Promise<ApiResponse<DiagnosticRequest>> => {
-        return apiClient.post(`${API_BASE}`, data);
+        const response = await api.post(`${API_BASE}`, data);
+        return response.data;
     },
 
     // Get diagnostic result by request ID
     getResult: async (requestId: string): Promise<ApiResponse<DiagnosticResult>> => {
-        return apiClient.get(`${API_BASE}/${requestId}`);
+        const response = await api.get(`${API_BASE}/${requestId}`);
+        return response.data;
     },
 
     // Get diagnostic request by ID
     getRequest: async (requestId: string): Promise<ApiResponse<DiagnosticRequest>> => {
-        return apiClient.get(`${API_BASE}/requests/${requestId}`);
+        const response = await api.get(`${API_BASE}/requests/${requestId}`);
+        return response.data;
     },
 
     // Get patient diagnostic history
@@ -36,12 +39,14 @@ export const diagnosticApi = {
             }
         });
 
-        return apiClient.get(`${API_BASE}/history?${searchParams.toString()}`);
+        const response = await api.get(`${API_BASE}/history?${searchParams.toString()}`);
+        return response.data;
     },
 
     // Approve diagnostic result
     approveResult: async (resultId: string): Promise<ApiResponse<DiagnosticResult>> => {
-        return apiClient.post(`${API_BASE}/results/${resultId}/approve`);
+        const response = await api.post(`${API_BASE}/results/${resultId}/approve`);
+        return response.data;
     },
 
     // Modify diagnostic result
@@ -49,9 +54,10 @@ export const diagnosticApi = {
         resultId: string,
         modifications: string
     ): Promise<ApiResponse<DiagnosticResult>> => {
-        return apiClient.post(`${API_BASE}/results/${resultId}/modify`, {
+        const response = await api.post(`${API_BASE}/results/${resultId}/modify`, {
             modifications
         });
+        return response.data;
     },
 
     // Reject diagnostic result
@@ -59,14 +65,16 @@ export const diagnosticApi = {
         resultId: string,
         rejectionReason: string
     ): Promise<ApiResponse<DiagnosticResult>> => {
-        return apiClient.post(`${API_BASE}/results/${resultId}/reject`, {
+        const response = await api.post(`${API_BASE}/results/${resultId}/reject`, {
             rejectionReason
         });
+        return response.data;
     },
 
     // Cancel diagnostic request
     cancelRequest: async (requestId: string): Promise<ApiResponse<DiagnosticRequest>> => {
-        return apiClient.post(`${API_BASE}/requests/${requestId}/cancel`);
+        const response = await api.post(`${API_BASE}/requests/${requestId}/cancel`);
+        return response.data;
     },
 
     // Get processing status
@@ -76,7 +84,8 @@ export const diagnosticApi = {
         message?: string;
         estimatedCompletion?: string;
     }>> => {
-        return apiClient.get(`${API_BASE}/requests/${requestId}/status`);
+        const response = await api.get(`${API_BASE}/requests/${requestId}/status`);
+        return response.data;
     },
 
     // Get diagnostic analytics
@@ -111,6 +120,7 @@ export const diagnosticApi = {
             });
         }
 
-        return apiClient.get(`${API_BASE}/analytics?${searchParams.toString()}`);
+        const response = await api.get(`${API_BASE}/analytics?${searchParams.toString()}`);
+        return response.data;
     }
 };
