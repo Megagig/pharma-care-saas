@@ -1,4 +1,4 @@
-import { apiClient } from '../../../lib/api';
+import api from '../../../lib/api';
 import type {
     LabOrder,
     LabResult,
@@ -15,7 +15,8 @@ const API_BASE = '/api/lab';
 export const labApi = {
     // Lab Orders
     createOrder: async (data: LabOrderForm): Promise<ApiResponse<LabOrder>> => {
-        return apiClient.post(`${API_BASE}/orders`, data);
+        const response = await api.post(`${API_BASE}/orders`, data);
+        return response.data;
     },
 
     getOrders: async (params: LabOrderParams = {}): Promise<PaginatedResponse<LabOrder>> => {
@@ -27,27 +28,32 @@ export const labApi = {
             }
         });
 
-        return apiClient.get(`${API_BASE}/orders?${searchParams.toString()}`);
+        const response = await api.get(`${API_BASE}/orders?${searchParams.toString()}`);
+        return response.data;
     },
 
     getOrder: async (orderId: string): Promise<ApiResponse<LabOrder>> => {
-        return apiClient.get(`${API_BASE}/orders/${orderId}`);
+        const response = await api.get(`${API_BASE}/orders/${orderId}`);
+        return response.data;
     },
 
     updateOrderStatus: async (
         orderId: string,
         status: LabOrder['status']
     ): Promise<ApiResponse<LabOrder>> => {
-        return apiClient.patch(`${API_BASE}/orders/${orderId}/status`, { status });
+        const response = await api.patch(`${API_BASE}/orders/${orderId}/status`, { status });
+        return response.data;
     },
 
     cancelOrder: async (orderId: string): Promise<ApiResponse<LabOrder>> => {
-        return apiClient.post(`${API_BASE}/orders/${orderId}/cancel`);
+        const response = await api.post(`${API_BASE}/orders/${orderId}/cancel`);
+        return response.data;
     },
 
     // Lab Results
     addResult: async (data: LabResultForm): Promise<ApiResponse<LabResult>> => {
-        return apiClient.post(`${API_BASE}/results`, data);
+        const response = await api.post(`${API_BASE}/results`, data);
+        return response.data;
     },
 
     getResults: async (params: LabResultParams = {}): Promise<PaginatedResponse<LabResult>> => {
@@ -59,22 +65,26 @@ export const labApi = {
             }
         });
 
-        return apiClient.get(`${API_BASE}/results?${searchParams.toString()}`);
+        const response = await api.get(`${API_BASE}/results?${searchParams.toString()}`);
+        return response.data;
     },
 
     getResult: async (resultId: string): Promise<ApiResponse<LabResult>> => {
-        return apiClient.get(`${API_BASE}/results/${resultId}`);
+        const response = await api.get(`${API_BASE}/results/${resultId}`);
+        return response.data;
     },
 
     updateResult: async (
         resultId: string,
         data: Partial<LabResultForm>
     ): Promise<ApiResponse<LabResult>> => {
-        return apiClient.patch(`${API_BASE}/results/${resultId}`, data);
+        const response = await api.patch(`${API_BASE}/results/${resultId}`, data);
+        return response.data;
     },
 
     deleteResult: async (resultId: string): Promise<ApiResponse<null>> => {
-        return apiClient.delete(`${API_BASE}/results/${resultId}`);
+        const response = await api.delete(`${API_BASE}/results/${resultId}`);
+        return response.data;
     },
 
     // Trend Analysis
@@ -107,13 +117,15 @@ export const labApi = {
             totalCount: number;
         };
     }>> => {
-        return apiClient.get(`${API_BASE}/trends/${patientId}/${testCode}?days=${days}`);
+        const response = await api.get(`${API_BASE}/trends/${patientId}/${testCode}?days=${days}`);
+        return response.data;
     },
 
     // Critical Results
     getCriticalResults: async (workplaceId?: string): Promise<ApiResponse<LabResult[]>> => {
         const params = workplaceId ? `?workplaceId=${workplaceId}` : '';
-        return apiClient.get(`${API_BASE}/results/critical${params}`);
+        const response = await api.get(`${API_BASE}/results/critical${params}`);
+        return response.data;
     },
 
     // Abnormal Results
@@ -121,7 +133,8 @@ export const labApi = {
         patientId: string,
         days: number = 30
     ): Promise<ApiResponse<LabResult[]>> => {
-        return apiClient.get(`${API_BASE}/results/abnormal/${patientId}?days=${days}`);
+        const response = await api.get(`${API_BASE}/results/abnormal/${patientId}?days=${days}`);
+        return response.data;
     },
 
     // FHIR Integration
@@ -132,14 +145,16 @@ export const labApi = {
             internalPatientId: string;
         };
     }): Promise<ApiResponse<LabResult[]>> => {
-        return apiClient.post(`${API_BASE}/import/fhir`, data);
+        const response = await api.post(`${API_BASE}/import/fhir`, data);
+        return response.data;
     },
 
     exportOrder: async (orderId: string): Promise<ApiResponse<{
         fhirResource: any;
         exportedAt: string;
     }>> => {
-        return apiClient.post(`${API_BASE}/orders/${orderId}/export`);
+        const response = await api.post(`${API_BASE}/orders/${orderId}/export`);
+        return response.data;
     },
 
     // Lab Test Catalog
@@ -157,7 +172,8 @@ export const labApi = {
         };
     }>>> => {
         const params = search ? `?search=${encodeURIComponent(search)}` : '';
-        return apiClient.get(`${API_BASE}/catalog${params}`);
+        const response = await api.get(`${API_BASE}/catalog${params}`);
+        return response.data;
     },
 
     // Reference Ranges
@@ -173,6 +189,7 @@ export const labApi = {
             text?: string;
         }>;
     }>> => {
-        return apiClient.get(`${API_BASE}/reference-ranges/${testCode}`);
+        const response = await api.get(`${API_BASE}/reference-ranges/${testCode}`);
+        return response.data;
     }
 };
