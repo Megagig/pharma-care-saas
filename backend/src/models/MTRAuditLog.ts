@@ -55,7 +55,8 @@ export interface IMTRAuditLog extends Document {
     | 'MTRFollowUp'
     | 'Patient'
     | 'User'
-    | 'ClinicalNote';
+    | 'ClinicalNote'
+    | 'DiagnosticCase';
   resourceId: mongoose.Types.ObjectId;
 
   // User and session information
@@ -132,6 +133,7 @@ const mtrAuditLogSchema = new Schema(
         'Patient',
         'User',
         'ClinicalNote',
+        'DiagnosticCase',
       ],
       required: [true, 'Resource type is required'],
       index: true,

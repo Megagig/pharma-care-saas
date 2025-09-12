@@ -163,6 +163,7 @@ const Sidebar = () => {
       path: '/pharmacy/decision-support',
       icon: PsychologyIcon,
       show: true,
+      badge: null, // Ensure no badge blocking
     },
     {
       name: 'Reports & Analytics',

@@ -51,6 +51,7 @@ const emailWebhookRoutes_1 = __importDefault(require("./routes/emailWebhookRoute
 const drugRoutes_1 = __importDefault(require("./modules/drug-info/routes/drugRoutes"));
 const publicApiRoutes_1 = __importDefault(require("./routes/publicApiRoutes"));
 const publicDrugDetailsRoutes_1 = __importDefault(require("./routes/publicDrugDetailsRoutes"));
+const diagnosticRoutes_1 = __importDefault(require("./routes/diagnosticRoutes"));
 const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
@@ -120,6 +121,7 @@ app.use('/api', dtpRoutes_1.default);
 app.use('/api', carePlanRoutes_1.default);
 app.use('/api', visitRoutes_1.default);
 app.use('/api/drugs', drugRoutes_1.default);
+app.use('/api/diagnostics', diagnosticRoutes_1.default);
 app.use((req, res, next) => {
     if (req.path.startsWith('/api/notes')) {
         console.log(`[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`);

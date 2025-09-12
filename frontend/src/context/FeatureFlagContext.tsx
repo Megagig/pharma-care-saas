@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import featureFlagService, {
   FeatureFlag,
 } from '../services/featureFlagService';
@@ -10,6 +10,7 @@ interface FeatureFlagContextType {
   error: Error | null;
   refreshFlags: () => Promise<void>;
   isFeatureEnabled: (key: string) => boolean;
+  hasFeature: (key: string) => boolean;
 }
 
 const FeatureFlagContext = createContext<FeatureFlagContextType | undefined>(
@@ -74,11 +75,21 @@ export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({
         error,
         refreshFlags,
         isFeatureEnabled,
+        hasFeature: isFeatureEnabled, // Alias for consistency
       }}
     >
       {children}
     </FeatureFlagContext.Provider>
   );
+};
+
+// Custom hook to use the feature flag context
+export const useFeatureFlags = () => {
+  const context = useContext(FeatureFlagContext);
+  if (context === undefined) {
+    throw new Error('useFeatureFlags must be used within a FeatureFlagProvider');
+  }
+  return context;
 };
 
 export default FeatureFlagContext;

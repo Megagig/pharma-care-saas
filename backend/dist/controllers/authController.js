@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.findWorkplaceByInviteCode = exports.registerWithWorkplace = exports.updateProfile = exports.getMe = exports.logoutAll = exports.checkCookies = exports.clearCookies = exports.logout = exports.refreshToken = exports.resetPassword = exports.forgotPassword = exports.verifyEmail = exports.login = exports.register = void 0;
+exports.checkCookiesStatus = exports.findWorkplaceByInviteCode = exports.registerWithWorkplace = exports.updateThemePreference = exports.updateProfile = exports.getMe = exports.logoutAll = exports.checkCookies = exports.clearCookies = exports.logout = exports.refreshToken = exports.resetPassword = exports.forgotPassword = exports.verifyEmail = exports.login = exports.register = void 0;
 const User_1 = __importDefault(require("../models/User"));
 const Session_1 = __importDefault(require("../models/Session"));
 const SubscriptionPlan_1 = __importDefault(require("../models/SubscriptionPlan"));
@@ -370,7 +370,9 @@ const logout = async (req, res) => {
                 .createHash('sha256')
                 .update(refreshToken)
                 .digest('hex');
-            const session = await Session_1.default.findOne({ refreshToken: hashedToken }).populate('userId');
+            const session = await Session_1.default.findOne({
+                refreshToken: hashedToken,
+            }).populate('userId');
             if (session) {
                 user = session.userId;
             }
@@ -498,6 +500,7 @@ const getMe = async (req, res) => {
                 subscription: subscriptionData,
                 hasSubscription: !!subscriptionData,
                 lastLoginAt: user.lastLoginAt,
+                themePreference: user.themePreference,
             },
         });
     }
@@ -535,6 +538,7 @@ const updateProfile = async (req, res) => {
                 phone: user.phone,
                 role: user.role,
                 status: user.status,
+                themePreference: user.themePreference,
             },
         });
     }
@@ -543,6 +547,34 @@ const updateProfile = async (req, res) => {
     }
 };
 exports.updateProfile = updateProfile;
+const updateThemePreference = async (req, res) => {
+    try {
+        const { themePreference } = req.body;
+        if (!['light', 'dark', 'system'].includes(themePreference)) {
+            res.status(400).json({
+                message: 'Invalid theme preference. Must be light, dark, or system.',
+            });
+            return;
+        }
+        const user = await User_1.default.findByIdAndUpdate(req.user.userId, { themePreference }, {
+            new: true,
+            runValidators: true,
+        }).select('-passwordHash');
+        if (!user) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
+        res.json({
+            success: true,
+            message: 'Theme preference updated successfully',
+            themePreference: user.themePreference,
+        });
+    }
+    catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+exports.updateThemePreference = updateThemePreference;
 const registerWithWorkplace = async (req, res) => {
     const session = await mongoose_1.default.startSession();
     try {
@@ -662,7 +694,7 @@ const registerWithWorkplace = async (req, res) => {
                 });
                 const workplaceSubscription = await Subscription_1.default.findOne({
                     workspaceId: workplaceData._id,
-                    status: { $in: ['active', 'trial', 'grace_period'] }
+                    status: { $in: ['active', 'trial', 'grace_period'] },
                 });
                 if (workplaceSubscription) {
                     await User_1.default.findByIdAndUpdate(createdUser._id, {
@@ -781,7 +813,8 @@ const registerWithWorkplace = async (req, res) => {
             await session.withTransaction(executeRegistration);
         }
         catch (transactionError) {
-            if (transactionError.code === 20 || transactionError.codeName === 'IllegalOperation') {
+            if (transactionError.code === 20 ||
+                transactionError.codeName === 'IllegalOperation') {
                 console.warn('Transactions not supported, falling back to non-transactional execution');
                 await executeRegistration();
             }
@@ -836,61 +869,7 @@ const findWorkplaceByInviteCode = async (req, res) => {
     }
 };
 exports.findWorkplaceByInviteCode = findWorkplaceByInviteCode;
-const refreshToken = async (req, res) => {
-    try {
-        const { refreshToken } = req.cookies;
-        if (!refreshToken) {
-            console.log('Refresh token not found in cookies');
-            res.status(401).json({ message: 'Refresh token not provided' });
-            return;
-        }
-        const hashedToken = crypto_1.default
-            .createHash('sha256')
-            .update(refreshToken)
-            .digest('hex');
-        const session = await Session_1.default.findOne({
-            refreshToken: hashedToken,
-            isActive: true,
-            expiresAt: { $gt: new Date() },
-        });
-        if (!session) {
-            console.log('No valid session found for refresh token');
-            res.status(401).json({ message: 'Invalid or expired refresh token' });
-            return;
-        }
-        const user = await User_1.default.findById(session.userId)
-            .populate('currentPlanId')
-            .select('-passwordHash');
-        if (!user) {
-            console.log('User not found during refresh');
-            res.status(401).json({ message: 'User not found' });
-            return;
-        }
-        const accessToken = generateAccessToken(user._id.toString());
-        res.cookie('accessToken', accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-            maxAge: 60 * 60 * 1000,
-            path: '/',
-        });
-        await auditLogging_1.auditOperations.tokenRefresh(req, user);
-        res.status(200).json({
-            success: true,
-            message: 'Token refreshed successfully',
-            user: {
-                id: user._id,
-                role: user.role,
-            },
-        });
-    }
-    catch (error) {
-        console.error('Token refresh error:', error);
-        res.status(401).json({ message: 'Failed to refresh token' });
-    }
-};
-exports.refreshToken = refreshToken;
-const checkCookies = async (req, res) => {
+const checkCookiesStatus = async (req, res) => {
     try {
         if (req.cookies.accessToken || req.cookies.refreshToken) {
             res.status(200).json({ success: true, hasCookies: true });
@@ -899,13 +878,9 @@ const checkCookies = async (req, res) => {
             res.status(200).json({ success: true, hasCookies: false });
         }
     }
-    catch (error) {
-        res.status(500).json({ message: error.message });
+    catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
-exports.checkCookies = checkCookies;
-message: error.message,
-;
-;
-;
+exports.checkCookiesStatus = checkCookiesStatus;
 //# sourceMappingURL=authController.js.map
