@@ -7,18 +7,25 @@
 import diagnosticRoutes from './routes/diagnosticRoutes';
 import labRoutes from './routes/labRoutes';
 import drugInteractionRoutes from './routes/drugInteractionRoutes';
+import followUpRoutes from './routes/followUp.routes';
+import adherenceRoutes from './routes/adherence.routes';
 
 // Import services
 export { DiagnosticService } from './services/diagnosticService';
 export { PharmacistReviewService } from './services/pharmacistReviewService';
 export { default as labService } from './services/labService';
 export { default as clinicalApiService } from './services/clinicalApiService';
+export { default as diagnosticFollowUpService } from './services/diagnosticFollowUpService';
+export { default as adherenceService } from './services/adherenceService';
+export { default as diagnosticNotificationService } from './services/diagnosticNotificationService';
 
 // Import models
 export { default as DiagnosticRequest } from './models/DiagnosticRequest';
 export { default as DiagnosticResult } from './models/DiagnosticResult';
 export { default as LabOrder } from './models/LabOrder';
 export { default as LabResult } from './models/LabResult';
+export { default as DiagnosticFollowUp } from './models/DiagnosticFollowUp';
+export { default as AdherenceTracking } from './models/AdherenceTracking';
 
 // Import types
 export type {
@@ -50,6 +57,19 @@ export type {
     IReferenceRange,
 } from './models/LabResult';
 
+export type {
+    IDiagnosticFollowUp,
+    IFollowUpOutcome,
+    IFollowUpReminder,
+} from './models/DiagnosticFollowUp';
+
+export type {
+    IAdherenceTracking,
+    IMedicationAdherence,
+    IAdherenceAlert,
+    IAdherenceIntervention,
+} from './models/AdherenceTracking';
+
 // Import middleware
 export { default as diagnosticRBAC } from './middlewares/diagnosticRBAC';
 
@@ -63,6 +83,8 @@ export const routes = {
     diagnostics: diagnosticRoutes,
     lab: labRoutes,
     drugInteractions: drugInteractionRoutes,
+    followUps: followUpRoutes,
+    adherence: adherenceRoutes,
 };
 
 // Module configuration
@@ -75,6 +97,9 @@ export const moduleConfig = {
         'lab_integration',
         'drug_interactions',
         'diagnostic_analytics',
+        'follow_up_tracking',
+        'adherence_monitoring',
+        'automated_notifications',
     ],
     permissions: [
         'diagnostic:read',
@@ -99,11 +124,28 @@ export const moduleConfig = {
         'drug_interactions:allergy_check',
         'drug_interactions:contraindications',
         'drug_interactions:search',
+        'follow_up:read',
+        'follow_up:create',
+        'follow_up:update',
+        'follow_up:complete',
+        'follow_up:reschedule',
+        'follow_up:cancel',
+        'follow_up:analytics',
+        'adherence:read',
+        'adherence:create',
+        'adherence:update',
+        'adherence:add_refill',
+        'adherence:add_intervention',
+        'adherence:acknowledge_alert',
+        'adherence:resolve_alert',
+        'adherence:generate_report',
     ],
     routes: {
         diagnostics: '/api/diagnostics',
         lab: '/api/lab',
         drugInteractions: '/api/interactions',
+        followUps: '/api/diagnostics/follow-ups',
+        adherence: '/api/diagnostics/adherence',
     },
     dependencies: [
         'openRouterService',

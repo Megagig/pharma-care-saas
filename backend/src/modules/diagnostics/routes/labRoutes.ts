@@ -13,7 +13,19 @@ import {
     getLabResultTrends,
     getLabDashboard,
     importFHIRResults,
+    exportLabOrderToFHIR,
+    syncLabResultsFromFHIR,
+    testFHIRConnection,
 } from '../controllers/labController';
+
+import {
+    getFHIRConfigs,
+    getFHIRConfig,
+    testFHIRConfig,
+    getDefaultFHIRConfigs,
+    getFHIRCapabilities,
+    getFHIRStatus,
+} from '../controllers/fhirConfigController';
 
 // Import middleware
 import { auth } from '../../../middlewares/auth';
@@ -227,6 +239,114 @@ router.post(
     requirePermission('lab:import_fhir'),
     validateRequest(importFHIRSchema, 'body'),
     importFHIRResults
+);
+
+/**
+ * POST /api/lab/export/fhir/:orderId
+ * Export lab order to FHIR format
+ */
+router.post(
+    '/export/fhir/:orderId',
+    requireActiveSubscription,
+    requireLabIntegrationFeature,
+    requirePharmacistRole,
+    requirePermission('lab:export_fhir'),
+    validateRequest(labOrderParamsSchema, 'params'),
+    exportLabOrderToFHIR
+);
+
+/**
+ * POST /api/lab/sync/fhir/:patientId
+ * Sync lab results from external FHIR server
+ */
+router.post(
+    '/sync/fhir/:patientId',
+    requireActiveSubscription,
+    requireLabIntegrationFeature,
+    requirePharmacistRole,
+    requirePermission('lab:sync_fhir'),
+    syncLabResultsFromFHIR
+);
+
+/**
+ * GET /api/lab/fhir/test-connection
+ * Test FHIR server connection
+ */
+router.get(
+    '/fhir/test-connection',
+    requirePharmacistRole,
+    requirePermission('lab:test_fhir'),
+    testFHIRConnection
+);
+
+// ===============================
+// FHIR CONFIGURATION ROUTES
+// ===============================
+
+/**
+ * GET /api/lab/fhir/config
+ * Get all FHIR server configurations
+ */
+router.get(
+    '/fhir/config',
+    requirePharmacistRole,
+    requirePermission('lab:read_fhir_config'),
+    getFHIRConfigs
+);
+
+/**
+ * GET /api/lab/fhir/config/defaults
+ * Get default FHIR server configurations
+ */
+router.get(
+    '/fhir/config/defaults',
+    requirePharmacistRole,
+    requirePermission('lab:read_fhir_config'),
+    getDefaultFHIRConfigs
+);
+
+/**
+ * GET /api/lab/fhir/config/:id
+ * Get specific FHIR server configuration
+ */
+router.get(
+    '/fhir/config/:id',
+    requirePharmacistRole,
+    requirePermission('lab:read_fhir_config'),
+    getFHIRConfig
+);
+
+/**
+ * POST /api/lab/fhir/config/test
+ * Test FHIR server configuration
+ */
+router.post(
+    '/fhir/config/test',
+    requirePharmacistRole,
+    requirePermission('lab:test_fhir_config'),
+    testFHIRConfig
+);
+
+/**
+ * GET /api/lab/fhir/capabilities
+ * Get FHIR server capabilities
+ */
+router.get(
+    '/fhir/capabilities',
+    requirePharmacistRole,
+    requirePermission('lab:read_fhir_config'),
+    getFHIRCapabilities
+);
+
+/**
+ * GET /api/lab/fhir/status
+ * Get FHIR integration status
+ */
+router.get(
+    '/fhir/status',
+    requirePharmacistRole,
+    requirePermission('lab:read_fhir_config'),
+    getFHIRStatus
 );
 
 // ===============================

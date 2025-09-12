@@ -3,6 +3,7 @@ import logger from '../../../utils/logger';
 import LabOrder, { ILabOrder } from '../models/LabOrder';
 import LabResult, { ILabResult } from '../models/LabResult';
 import Patient from '../../../models/Patient';
+import FHIRService, { FHIRBundle, PatientMapping, FHIRImportResult } from './fhirService';
 
 export interface CreateLabOrderRequest {
     patientId: string;
@@ -741,6 +742,248 @@ export class LabService {
         } catch (error) {
             logger.error('Failed to get lab result by ID:', error);
             throw new Error(`Failed to get lab result: ${error}`);
+        }
+    }
+
+    /**
+     * Update lab order
+     */
+    async updateLabOrder(
+        orderId: string,
+        updates: Partial<ILabOrder>,
+        updatedBy: string
+    ): Promise<ILabOrder> {
+        try {
+            const updatedOrder = await LabOrder.findByIdAndUpdate(
+                orderId,
+                {
+                    ...updates,
+                    updatedAt: new Date(),
+                    updatedBy: new Types.ObjectId(updatedBy),
+                },
+                { new: true }
+            );
+
+            if (!updatedOrder) {
+                throw new Error('Lab order not found');
+            }
+
+            logger.info('Lab order updated', { orderId, updates: Object.keys(updates) });
+            return updatedOrder;
+        } catch (error) {
+            logger.error('Failed to update lab order:', error);
+            throw new Error(`Failed to update lab order: ${error}`);
+        }
+    }
+
+    /**
+     * Cancel lab order
+     */
+    async cancelLabOrder(orderId: string, cancelledBy: string): Promise<ILabOrder> {
+        try {
+            const cancelledOrder = await LabOrder.findByIdAndUpdate(
+                orderId,
+                {
+                    status: 'cancelled',
+                    updatedAt: new Date(),
+                    updatedBy: new Types.ObjectId(cancelledBy),
+                },
+                { new: true }
+            );
+
+            if (!cancelledOrder) {
+                throw new Error('Lab order not found');
+            }
+
+            logger.info('Lab order cancelled', { orderId, cancelledBy });
+            return cancelledOrder;
+        } catch (error) {
+            logger.error('Failed to cancel lab order:', error);
+            throw new Error(`Failed to cancel lab order: ${error}`);
+        }
+    }
+
+    /**
+     * Update lab result
+     */
+    async updateLabResult(
+        resultId: string,
+        updates: Partial<ILabResult>,
+        updatedBy: string
+    ): Promise<ILabResult> {
+        try {
+            const updatedResult = await LabResult.findByIdAndUpdate(
+                resultId,
+                {
+                    ...updates,
+                    updatedAt: new Date(),
+                    updatedBy: new Types.ObjectId(updatedBy),
+                },
+                { new: true }
+            );
+
+            if (!updatedResult) {
+                throw new Error('Lab result not found');
+            }
+
+            logger.info('Lab result updated', { resultId, updates: Object.keys(updates) });
+            return updatedResult;
+        } catch (error) {
+            logger.error('Failed to update lab result:', error);
+            throw new Error(`Failed to update lab result: ${error}`);
+        }
+    }
+
+    /**
+     * Import lab results from FHIR bundle
+     */
+    async importFHIRResults(
+        fhirBundle: FHIRBundle,
+        patientMappings: PatientMapping[],
+        workplaceId: string,
+        importedBy: string
+    ): Promise<FHIRImportResult> {
+        try {
+            // Create FHIR service instance (configuration would come from environment/settings)
+            const fhirConfig = {
+                baseUrl: process.env.FHIR_BASE_URL || 'http://localhost:8080/fhir',
+                version: 'R4' as const,
+                timeout: 30000,
+                retryAttempts: 3,
+            };
+
+            const fhirService = new FHIRService(fhirConfig);
+
+            // Import the bundle
+            const importResult = await fhirService.importLabResults(fhirBundle, patientMappings);
+
+            logger.info('FHIR lab results import completed', {
+                workplaceId,
+                importedBy,
+                bundleId: fhirBundle.id,
+                imported: importResult.imported.length,
+                failed: importResult.failed.length,
+            });
+
+            return importResult;
+        } catch (error) {
+            logger.error('Failed to import FHIR lab results:', error);
+            throw new Error(`Failed to import FHIR lab results: ${error}`);
+        }
+    }
+
+    /**
+     * Export lab order to FHIR format
+     */
+    async exportLabOrderToFHIR(orderId: string, workplaceId: string): Promise<any> {
+        try {
+            const labOrder = await LabOrder.findOne({
+                _id: orderId,
+                workplaceId: new Types.ObjectId(workplaceId),
+            });
+
+            if (!labOrder) {
+                throw new Error('Lab order not found');
+            }
+
+            // Create FHIR service instance
+            const fhirConfig = {
+                baseUrl: process.env.FHIR_BASE_URL || 'http://localhost:8080/fhir',
+                version: 'R4' as const,
+                timeout: 30000,
+                retryAttempts: 3,
+            };
+
+            const fhirService = new FHIRService(fhirConfig);
+
+            // Export to FHIR format
+            const fhirServiceRequest = await fhirService.exportLabOrder(labOrder);
+
+            logger.info('Lab order exported to FHIR format', {
+                orderId,
+                workplaceId,
+                fhirId: fhirServiceRequest.id,
+            });
+
+            return fhirServiceRequest;
+        } catch (error) {
+            logger.error('Failed to export lab order to FHIR:', error);
+            throw new Error(`Failed to export lab order to FHIR: ${error}`);
+        }
+    }
+
+    /**
+     * Sync lab results from external FHIR server
+     */
+    async syncLabResultsFromFHIR(
+        patientId: string,
+        workplaceId: string,
+        fromDate?: Date,
+        toDate?: Date
+    ): Promise<{ synced: number; errors: string[] }> {
+        try {
+            // Create FHIR service instance
+            const fhirConfig = {
+                baseUrl: process.env.FHIR_BASE_URL || 'http://localhost:8080/fhir',
+                version: 'R4' as const,
+                timeout: 30000,
+                retryAttempts: 3,
+            };
+
+            const fhirService = new FHIRService(fhirConfig);
+
+            // Fetch lab results from FHIR server
+            const fhirBundle = await fhirService.fetchLabResults(patientId, fromDate, toDate);
+
+            // Create patient mapping
+            const patientMappings: PatientMapping[] = [{
+                fhirPatientId: patientId,
+                internalPatientId: patientId,
+                workplaceId,
+            }];
+
+            // Import the results
+            const importResult = await fhirService.importLabResults(fhirBundle, patientMappings);
+
+            logger.info('Lab results synced from FHIR server', {
+                patientId,
+                workplaceId,
+                synced: importResult.imported.length,
+                errors: importResult.failed.length,
+            });
+
+            return {
+                synced: importResult.imported.length,
+                errors: importResult.failed.map(f => f.error),
+            };
+        } catch (error) {
+            logger.error('Failed to sync lab results from FHIR:', error);
+            throw new Error(`Failed to sync lab results from FHIR: ${error}`);
+        }
+    }
+
+    /**
+     * Test FHIR server connection
+     */
+    async testFHIRConnection(): Promise<{ connected: boolean; error?: string }> {
+        try {
+            const fhirConfig = {
+                baseUrl: process.env.FHIR_BASE_URL || 'http://localhost:8080/fhir',
+                version: 'R4' as const,
+                timeout: 30000,
+                retryAttempts: 3,
+            };
+
+            const fhirService = new FHIRService(fhirConfig);
+            const connected = await fhirService.testConnection();
+
+            return { connected };
+        } catch (error) {
+            logger.error('FHIR connection test failed:', error);
+            return {
+                connected: false,
+                error: error instanceof Error ? error.message : 'Unknown error',
+            };
         }
     }
 

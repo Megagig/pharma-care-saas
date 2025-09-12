@@ -898,8 +898,184 @@ export const importFHIRResults = asyncHandler(
             logger.error('Failed to import FHIR lab results:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to import FHIR lab results: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                500
+            );
+        }
+    }
+);
+
+/**
+ * POST /api/lab/export/fhir/:orderId
+ * Export lab order to FHIR format
+ */
+export const exportLabOrderToFHIR = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+        const { orderId } = req.params;
+        const context = getRequestContext(req);
+
+        try {
+            // Export lab order to FHIR
+            const fhirServiceRequest = await labService.exportLabOrderToFHIR(
+                orderId,
+                context.workplaceId
+            );
+
+            // Create audit log
+            console.log(
+                'Lab order exported to FHIR:',
+                createAuditLog(
+                    'EXPORT_LAB_ORDER_FHIR',
+                    'LabOrder',
+                    orderId,
+                    context,
+                    {
+                        fhirId: fhirServiceRequest.id,
+                        resourceType: fhirServiceRequest.resourceType,
+                    }
+                )
+            );
+
+            sendSuccess(
+                res,
+                {
+                    fhirResource: fhirServiceRequest,
+                    resourceType: 'ServiceRequest',
+                    fhirVersion: 'R4',
+                },
+                'Lab order exported to FHIR format successfully'
+            );
+        } catch (error) {
+            logger.error('Failed to export lab order to FHIR:', error);
+            sendError(
+                res,
+                'SERVER_ERROR',
+                `Failed to export lab order to FHIR: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                500
+            );
+        }
+    }
+);
+
+/**
+ * POST /api/lab/sync/fhir/:patientId
+ * Sync lab results from external FHIR server
+ */
+export const syncLabResultsFromFHIR = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+        const { patientId } = req.params;
+        const { fromDate, toDate } = req.body;
+        const context = getRequestContext(req);
+
+        try {
+            // Sync lab results from FHIR
+            const syncResult = await labService.syncLabResultsFromFHIR(
+                patientId,
+                context.workplaceId,
+                fromDate ? new Date(fromDate) : undefined,
+                toDate ? new Date(toDate) : undefined
+            );
+
+            // Create audit log
+            console.log(
+                'Lab results synced from FHIR:',
+                createAuditLog(
+                    'SYNC_LAB_RESULTS_FHIR',
+                    'LabResult',
+                    'bulk_sync',
+                    context,
+                    {
+                        patientId,
+                        syncedCount: syncResult.synced,
+                        errorCount: syncResult.errors.length,
+                        fromDate,
+                        toDate,
+                    }
+                )
+            );
+
+            sendSuccess(
+                res,
+                {
+                    synced: syncResult.synced,
+                    errors: syncResult.errors,
+                    patientId,
+                    dateRange: {
+                        from: fromDate,
+                        to: toDate,
+                    },
+                },
+                `Successfully synced ${syncResult.synced} lab results from FHIR server`
+            );
+        } catch (error) {
+            logger.error('Failed to sync lab results from FHIR:', error);
+            sendError(
+                res,
+                'SERVER_ERROR',
+                `Failed to sync lab results from FHIR: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                500
+            );
+        }
+    }
+);
+
+/**
+ * GET /api/lab/fhir/test-connection
+ * Test FHIR server connection
+ */
+export const testFHIRConnection = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+        const context = getRequestContext(req);
+
+        try {
+            // Test FHIR connection
+            const connectionResult = await labService.testFHIRConnection();
+
+            // Create audit log
+            console.log(
+                'FHIR connection tested:',
+                createAuditLog(
+                    'TEST_FHIR_CONNECTION',
+                    'System',
+                    'fhir_connection',
+                    context,
+                    {
+                        connected: connectionResult.connected,
+                        error: connectionResult.error,
+                    }
+                )
+            );
+
+            if (connectionResult.connected) {
+                sendSuccess(
+                    res,
+                    {
+                        connected: true,
+                        message: 'FHIR server connection successful',
+                        timestamp: new Date().toISOString(),
+                    },
+                    'FHIR server connection test successful'
+                );
+            } else {
+                sendError(
+                    res,
+                    'SERVICE_UNAVAILABLE',
+                    connectionResult.error || 'FHIR server connection failed',
+                    503,
+                    {
+                        connected: false,
+                        error: connectionResult.error,
+                        timestamp: new Date().toISOString(),
+                    }
+                );
+            }
+        } catch (error) {
+            logger.error('Failed to test FHIR connection:', error);
+            sendError(
+                res,
+                'SERVER_ERROR',
+                `Failed to test FHIR connection: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
         }

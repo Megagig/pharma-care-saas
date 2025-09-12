@@ -315,8 +315,93 @@ export const fhirBundleSchema = z.object({
 
 export const importFHIRSchema = z.object({
     fhirBundle: fhirBundleSchema,
-    patientMapping: patientMappingSchema,
+    patientMapping: z.array(z.object({
+        fhirPatientId: z.string().min(1, 'FHIR patient ID is required'),
+        internalPatientId: mongoIdSchema,
+        workplaceId: mongoIdSchema,
+    })).min(1, 'At least one patient mapping is required'),
 });
+
+// ===============================
+// FHIR EXPORT SCHEMAS
+// ===============================
+
+export const exportFHIRParamsSchema = z.object({
+    orderId: mongoIdSchema,
+});
+
+export const syncFHIRParamsSchema = z.object({
+    patientId: mongoIdSchema,
+});
+
+export const syncFHIRBodySchema = z.object({
+    fromDate: z
+        .string()
+        .datetime()
+        .optional()
+        .transform((val) => (val ? new Date(val) : undefined)),
+    toDate: z
+        .string()
+        .datetime()
+        .optional()
+        .transform((val) => (val ? new Date(val) : undefined)),
+}).refine(
+    (data) => {
+        if (data.fromDate && data.toDate) {
+            return data.fromDate <= data.toDate;
+        }
+        return true;
+    },
+    {
+        message: 'From date cannot be after to date',
+        path: ['fromDate'],
+    }
+);
+
+// ===============================
+// FHIR CONFIGURATION SCHEMAS
+// ===============================
+
+export const fhirConfigSchema = z.object({
+    id: z.string().min(1, 'Server ID is required'),
+    name: z.string().min(1, 'Server name is required'),
+    description: z.string().optional(),
+    enabled: z.boolean().default(true),
+    config: z.object({
+        baseUrl: z.string().url('Base URL must be a valid URL'),
+        version: z.enum(['R4', 'STU3', 'DSTU2']).default('R4'),
+        timeout: z.number().min(1000).max(300000).default(30000),
+        retryAttempts: z.number().min(0).max(10).default(3),
+    }),
+    auth: z.object({
+        type: z.enum(['oauth2', 'basic', 'bearer', 'none']),
+        tokenUrl: z.string().url().optional(),
+        clientId: z.string().optional(),
+        clientSecret: z.string().optional(),
+        scope: z.string().optional(),
+        username: z.string().optional(),
+        password: z.string().optional(),
+        bearerToken: z.string().optional(),
+    }).optional(),
+    workplaceId: mongoIdSchema.optional(),
+}).refine(
+    (data) => {
+        if (data.auth?.type === 'oauth2') {
+            return data.auth.tokenUrl && data.auth.clientId && data.auth.clientSecret;
+        }
+        if (data.auth?.type === 'basic') {
+            return data.auth.username && data.auth.password;
+        }
+        if (data.auth?.type === 'bearer') {
+            return data.auth.bearerToken;
+        }
+        return true;
+    },
+    {
+        message: 'Authentication configuration is incomplete for the selected type',
+        path: ['auth'],
+    }
+);
 
 // ===============================
 // VALIDATION MIDDLEWARE
