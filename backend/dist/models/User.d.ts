@@ -46,6 +46,7 @@ export interface IUser extends Document {
         dailyDigest: boolean;
         weeklyReport: boolean;
     };
+    themePreference?: 'light' | 'dark' | 'system';
     createdAt: Date;
     updatedAt: Date;
     comparePassword(password: string): Promise<boolean>;

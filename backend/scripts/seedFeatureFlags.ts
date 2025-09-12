@@ -77,6 +77,22 @@ const featureFlags = [
       tags: ['clinical', 'notes', 'core'],
     },
   },
+  {
+    name: 'Clinical Decision Support',
+    key: 'clinical_decision_support',
+    description: 'AI-powered clinical decision support for diagnostic analysis',
+    isActive: true,
+    allowedTiers: ['pro', 'enterprise'],
+    allowedRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet'],
+    customRules: {
+      requiredLicense: true,
+    },
+    metadata: {
+      category: 'core',
+      priority: 'high',
+      tags: ['ai', 'diagnostics', 'clinical'],
+    },
+  },
 
   // Analytics Features
   {

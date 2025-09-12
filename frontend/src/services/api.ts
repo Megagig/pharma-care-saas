@@ -3,20 +3,18 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 // Create axios instance with base configuration
 const getBaseURL = () => {
   try {
-    // Use environment variables in a TypeScript-compatible way
-    const fallbackUrl = 'http://localhost:5000/api';
-
-    // In browser environments, Vite injects environment variables at build time
-    // We'll use a simple check for the environment variable
-    if (
-      typeof process !== 'undefined' &&
-      process.env &&
-      process.env.VITE_API_BASE_URL
-    ) {
-      return process.env.VITE_API_BASE_URL;
+    // Check for environment variable first
+    if (import.meta.env.VITE_API_BASE_URL) {
+      return import.meta.env.VITE_API_BASE_URL;
+    }
+    
+    // In development, use direct backend URL (proxy isn't working)
+    if (import.meta.env.DEV) {
+      return 'http://localhost:5000/api';
     }
 
-    return fallbackUrl;
+    // Fallback for production
+    return '/api';
   } catch {
     return 'http://localhost:5000/api';
   }
@@ -24,7 +22,7 @@ const getBaseURL = () => {
 
 const api = axios.create({
   baseURL: getBaseURL(),
-  timeout: 30000,
+  timeout: 120000, // Increased from 30000 (30s) to 120000 (120s) for AI analysis
   withCredentials: true, // Include httpOnly cookies
   headers: {
     'Content-Type': 'application/json',
