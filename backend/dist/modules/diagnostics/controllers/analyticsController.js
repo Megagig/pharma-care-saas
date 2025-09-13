@@ -12,7 +12,7 @@ const getDiagnosticMetrics = async (req, res) => {
         const { startDate, endDate } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
-        const metrics = await diagnosticAnalyticsService_1.default.getDiagnosticMetrics(workplaceId, start, end);
+        const metrics = await diagnosticAnalyticsService_1.default.getDiagnosticMetrics(workplaceId.toString(), start, end);
         res.json({
             success: true,
             data: metrics
@@ -37,7 +37,7 @@ const getAIPerformanceMetrics = async (req, res) => {
         const { startDate, endDate } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
-        const metrics = await diagnosticAnalyticsService_1.default.getAIPerformanceMetrics(workplaceId, start, end);
+        const metrics = await diagnosticAnalyticsService_1.default.getAIPerformanceMetrics(workplaceId.toString(), start, end);
         res.json({
             success: true,
             data: metrics
@@ -62,7 +62,7 @@ const getPatientOutcomeMetrics = async (req, res) => {
         const { startDate, endDate } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
-        const metrics = await diagnosticAnalyticsService_1.default.getPatientOutcomeMetrics(workplaceId, start, end);
+        const metrics = await diagnosticAnalyticsService_1.default.getPatientOutcomeMetrics(workplaceId.toString(), start, end);
         res.json({
             success: true,
             data: metrics
@@ -87,7 +87,7 @@ const getUsageAnalytics = async (req, res) => {
         const { startDate, endDate } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
-        const analytics = await diagnosticAnalyticsService_1.default.getUsageAnalytics(workplaceId, start, end);
+        const analytics = await diagnosticAnalyticsService_1.default.getUsageAnalytics(workplaceId.toString(), start, end);
         res.json({
             success: true,
             data: analytics
@@ -112,7 +112,7 @@ const getTrendAnalysis = async (req, res) => {
         const { startDate, endDate } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
-        const trends = await diagnosticAnalyticsService_1.default.getTrendAnalysis(workplaceId, start, end);
+        const trends = await diagnosticAnalyticsService_1.default.getTrendAnalysis(workplaceId.toString(), start, end);
         res.json({
             success: true,
             data: trends
@@ -137,7 +137,7 @@ const getComparisonAnalysis = async (req, res) => {
         const { startDate, endDate } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
-        const comparison = await diagnosticAnalyticsService_1.default.getComparisonAnalysis(workplaceId, start, end);
+        const comparison = await diagnosticAnalyticsService_1.default.getComparisonAnalysis(workplaceId.toString(), start, end);
         res.json({
             success: true,
             data: comparison
@@ -162,7 +162,7 @@ const generateAnalyticsReport = async (req, res) => {
         const { startDate, endDate, format } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
-        const report = await diagnosticAnalyticsService_1.default.generateAnalyticsReport(workplaceId, start, end);
+        const report = await diagnosticAnalyticsService_1.default.generateAnalyticsReport(workplaceId.toString(), start, end);
         if (format === 'pdf') {
             res.status(501).json({
                 success: false,
@@ -211,10 +211,10 @@ const getDashboardSummary = async (req, res) => {
                 startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         }
         const [diagnosticMetrics, aiPerformance, patientOutcomes, usageAnalytics] = await Promise.all([
-            diagnosticAnalyticsService_1.default.getDiagnosticMetrics(workplaceId, startDate, now),
-            diagnosticAnalyticsService_1.default.getAIPerformanceMetrics(workplaceId, startDate, now),
-            diagnosticAnalyticsService_1.default.getPatientOutcomeMetrics(workplaceId, startDate, now),
-            diagnosticAnalyticsService_1.default.getUsageAnalytics(workplaceId, startDate, now)
+            diagnosticAnalyticsService_1.default.getDiagnosticMetrics(workplaceId.toString(), startDate, now),
+            diagnosticAnalyticsService_1.default.getAIPerformanceMetrics(workplaceId.toString(), startDate, now),
+            diagnosticAnalyticsService_1.default.getPatientOutcomeMetrics(workplaceId.toString(), startDate, now),
+            diagnosticAnalyticsService_1.default.getUsageAnalytics(workplaceId.toString(), startDate, now)
         ]);
         const summary = {
             period: period,

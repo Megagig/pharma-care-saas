@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getIntegrationOptions = exports.crossReferenceWithExistingRecords = exports.getUnifiedPatientTimeline = exports.createMTRFromDiagnostic = exports.addDiagnosticDataToMTR = exports.createClinicalNoteFromDiagnostic = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const integrationService_1 = __importDefault(require("../services/integrationService"));
-const logger_1 = require("../../../utils/logger");
+const logger_1 = __importDefault(require("../../../utils/logger"));
 const responseHelpers_1 = require("../../../utils/responseHelpers");
 const createClinicalNoteFromDiagnostic = async (req, res) => {
     try {
@@ -60,7 +60,7 @@ const createClinicalNoteFromDiagnostic = async (req, res) => {
         });
     }
     catch (error) {
-        logger_1.logger.error('Error creating clinical note from diagnostic', {
+        logger_1.default.error('Error creating clinical note from diagnostic', {
             error: error instanceof Error ? error.message : 'Unknown error',
             userId: req.user?._id,
             body: req.body,
@@ -127,7 +127,7 @@ const addDiagnosticDataToMTR = async (req, res) => {
         });
     }
     catch (error) {
-        logger_1.logger.error('Error adding diagnostic data to MTR', {
+        logger_1.default.error('Error adding diagnostic data to MTR', {
             error: error instanceof Error ? error.message : 'Unknown error',
             userId: req.user?._id,
             mtrId: req.params.mtrId,
@@ -195,7 +195,7 @@ const createMTRFromDiagnostic = async (req, res) => {
         });
     }
     catch (error) {
-        logger_1.logger.error('Error creating MTR from diagnostic', {
+        logger_1.default.error('Error creating MTR from diagnostic', {
             error: error instanceof Error ? error.message : 'Unknown error',
             userId: req.user?._id,
             body: req.body,
@@ -254,7 +254,7 @@ const getUnifiedPatientTimeline = async (req, res) => {
         });
     }
     catch (error) {
-        logger_1.logger.error('Error getting unified patient timeline', {
+        logger_1.default.error('Error getting unified patient timeline', {
             error: error instanceof Error ? error.message : 'Unknown error',
             userId: req.user?._id,
             patientId: req.params.patientId,
@@ -300,7 +300,7 @@ const crossReferenceWithExistingRecords = async (req, res) => {
         });
     }
     catch (error) {
-        logger_1.logger.error('Error cross-referencing diagnostic data', {
+        logger_1.default.error('Error cross-referencing diagnostic data', {
             error: error instanceof Error ? error.message : 'Unknown error',
             userId: req.user?._id,
             diagnosticRequestId: req.params.diagnosticRequestId,
@@ -359,7 +359,7 @@ const getIntegrationOptions = async (req, res) => {
         });
     }
     catch (error) {
-        logger_1.logger.error('Error getting integration options', {
+        logger_1.default.error('Error getting integration options', {
             error: error instanceof Error ? error.message : 'Unknown error',
             userId: req.user?._id,
             diagnosticRequestId: req.params.diagnosticRequestId,

@@ -54,7 +54,7 @@ export const getAIPerformanceMetrics = async (req: AuthRequest, res: Response) =
         const end = endDate ? new Date(endDate as string) : undefined;
 
         const metrics = await diagnosticAnalyticsService.getAIPerformanceMetrics(
-            workplaceId,
+            workplaceId.toString(),
             start,
             end
         );
@@ -88,7 +88,7 @@ export const getPatientOutcomeMetrics = async (req: AuthRequest, res: Response) 
         const end = endDate ? new Date(endDate as string) : undefined;
 
         const metrics = await diagnosticAnalyticsService.getPatientOutcomeMetrics(
-            workplaceId,
+            workplaceId.toString(),
             start,
             end
         );
@@ -122,7 +122,7 @@ export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
         const end = endDate ? new Date(endDate as string) : undefined;
 
         const analytics = await diagnosticAnalyticsService.getUsageAnalytics(
-            workplaceId,
+            workplaceId.toString(),
             start,
             end
         );
@@ -156,7 +156,7 @@ export const getTrendAnalysis = async (req: AuthRequest, res: Response) => {
         const end = endDate ? new Date(endDate as string) : undefined;
 
         const trends = await diagnosticAnalyticsService.getTrendAnalysis(
-            workplaceId,
+            workplaceId.toString(),
             start,
             end
         );
@@ -190,7 +190,7 @@ export const getComparisonAnalysis = async (req: AuthRequest, res: Response) => 
         const end = endDate ? new Date(endDate as string) : undefined;
 
         const comparison = await diagnosticAnalyticsService.getComparisonAnalysis(
-            workplaceId,
+            workplaceId.toString(),
             start,
             end
         );
@@ -286,10 +286,10 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response) => {
         }
 
         const [diagnosticMetrics, aiPerformance, patientOutcomes, usageAnalytics] = await Promise.all([
-            diagnosticAnalyticsService.getDiagnosticMetrics(workplaceId, startDate, now),
-            diagnosticAnalyticsService.getAIPerformanceMetrics(workplaceId, startDate, now),
-            diagnosticAnalyticsService.getPatientOutcomeMetrics(workplaceId, startDate, now),
-            diagnosticAnalyticsService.getUsageAnalytics(workplaceId, startDate, now)
+            diagnosticAnalyticsService.getDiagnosticMetrics(workplaceId.toString(), startDate, now),
+            diagnosticAnalyticsService.getAIPerformanceMetrics(workplaceId.toString(), startDate, now),
+            diagnosticAnalyticsService.getPatientOutcomeMetrics(workplaceId.toString(), startDate, now),
+            diagnosticAnalyticsService.getUsageAnalytics(workplaceId.toString(), startDate, now)
         ]);
 
         const summary = {

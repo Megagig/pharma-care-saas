@@ -667,3 +667,12 @@ function generateContraindicationRecommendations(categorizedContraindications: a
 
     return recommendations;
 }
+
+// Default export for the controller
+export default {
+    checkDrugInteractions,
+    getDrugInformation,
+    checkAllergyInteractions,
+    checkContraindications,
+    searchDrugs
+};

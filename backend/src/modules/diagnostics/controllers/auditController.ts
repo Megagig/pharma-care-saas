@@ -31,7 +31,7 @@ export const searchAuditEvents = async (req: AuthRequest, res: Response) => {
         } = req.query;
 
         const criteria: AuditSearchCriteria = {
-            workplaceId,
+            workplaceId: workplaceId?.toString() || '',
             limit: limit ? parseInt(limit as string) : 50,
             offset: offset ? parseInt(offset as string) : 0
         };
@@ -62,7 +62,7 @@ export const searchAuditEvents = async (req: AuthRequest, res: Response) => {
         });
     } catch (error) {
         logger.error('Error searching audit events:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'AUDIT_SEARCH_ERROR',
@@ -94,7 +94,7 @@ export const getEntityAuditTrail = async (req: AuthRequest, res: Response) => {
         const auditTrail = await diagnosticAuditService.getEntityAuditTrail(
             entityType,
             entityId,
-            workplaceId
+            workplaceId?.toString() || ''
         );
 
         res.json({
@@ -107,7 +107,7 @@ export const getEntityAuditTrail = async (req: AuthRequest, res: Response) => {
         });
     } catch (error) {
         logger.error('Error getting entity audit trail:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'AUDIT_TRAIL_ERROR',
@@ -148,11 +148,11 @@ export const generateComplianceReport = async (req: AuthRequest, res: Response) 
         }
 
         const report = await diagnosticAuditService.generateComplianceReport(
-            workplaceId,
+            workplaceId?.toString() || '',
             reportType as ComplianceReport['reportType'],
             new Date(startDate as string),
             new Date(endDate as string),
-            userId
+            userId?.toString() || ''
         );
 
         res.json({
@@ -161,7 +161,7 @@ export const generateComplianceReport = async (req: AuthRequest, res: Response) 
         });
     } catch (error) {
         logger.error('Error generating compliance report:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'COMPLIANCE_REPORT_ERROR',
@@ -208,7 +208,7 @@ export const logSecurityViolation = async (req: AuthRequest, res: Response) => {
         });
     } catch (error) {
         logger.error('Error logging security violation:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'SECURITY_LOG_ERROR',
@@ -311,7 +311,7 @@ export const getAuditStatistics = async (req: AuthRequest, res: Response) => {
         });
     } catch (error) {
         logger.error('Error getting audit statistics:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'AUDIT_STATS_ERROR',
@@ -355,7 +355,7 @@ export const archiveAuditRecords = async (req: AuthRequest, res: Response) => {
         });
     } catch (error) {
         logger.error('Error archiving audit records:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'ARCHIVE_ERROR',
@@ -454,7 +454,7 @@ export const exportAuditData = async (req: AuthRequest, res: Response) => {
         }
     } catch (error) {
         logger.error('Error exporting audit data:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'EXPORT_ERROR',
@@ -508,7 +508,7 @@ export const generateRegulatoryReport = async (req: AuthRequest, res: Response) 
         });
     } catch (error) {
         logger.error('Error generating regulatory report:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'REGULATORY_REPORT_ERROR',
@@ -547,7 +547,7 @@ export const detectAuditAnomalies = async (req: AuthRequest, res: Response) => {
         });
     } catch (error) {
         logger.error('Error detecting audit anomalies:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'ANOMALY_DETECTION_ERROR',
@@ -588,7 +588,7 @@ export const getAuditVisualization = async (req: AuthRequest, res: Response) => 
         });
     } catch (error) {
         logger.error('Error generating audit visualization:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'VISUALIZATION_ERROR',
@@ -650,7 +650,7 @@ export const advancedAuditSearch = async (req: AuthRequest, res: Response) => {
         });
     } catch (error) {
         logger.error('Error performing advanced audit search:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'ADVANCED_SEARCH_ERROR',
@@ -712,7 +712,7 @@ export const exportAuditVisualization = async (req: AuthRequest, res: Response) 
         }
     } catch (error) {
         logger.error('Error exporting audit visualization:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'EXPORT_VISUALIZATION_ERROR',
@@ -740,7 +740,7 @@ export const getDataRetentionPolicies = async (req: AuthRequest, res: Response) 
         });
     } catch (error) {
         logger.error('Error getting data retention policies:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'RETENTION_POLICIES_ERROR',
@@ -797,7 +797,7 @@ export const updateDataRetentionPolicy = async (req: AuthRequest, res: Response)
         });
     } catch (error) {
         logger.error('Error updating data retention policy:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'UPDATE_POLICY_ERROR',

@@ -29,7 +29,8 @@ export interface AuditLogData {
     | 'Patient'
     | 'User'
     | 'ClinicalIntervention'
-    | 'ClinicalNote';
+    | 'ClinicalNote'
+    | 'System';
   resourceId: mongoose.Types.ObjectId;
   patientId?: mongoose.Types.ObjectId;
   reviewId?: mongoose.Types.ObjectId;
@@ -206,7 +207,7 @@ class AuditService {
     context: AuditContext,
     eventData: {
       action: string;
-      resourceType?: string;
+      resourceType?: any;
       resourceId?: mongoose.Types.ObjectId;
       patientId?: mongoose.Types.ObjectId;
       details?: any;

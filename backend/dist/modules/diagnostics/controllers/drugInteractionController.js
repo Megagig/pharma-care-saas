@@ -361,4 +361,11 @@ function generateContraindicationRecommendations(categorizedContraindications) {
     }
     return recommendations;
 }
+exports.default = {
+    checkDrugInteractions: exports.checkDrugInteractions,
+    getDrugInformation: exports.getDrugInformation,
+    checkAllergyInteractions: exports.checkAllergyInteractions,
+    checkContraindications: exports.checkContraindications,
+    searchDrugs: exports.searchDrugs
+};
 //# sourceMappingURL=drugInteractionController.js.map

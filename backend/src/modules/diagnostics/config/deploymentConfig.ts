@@ -465,22 +465,27 @@ class DeploymentConfigManager {
                 const startTime = Date.now();
 
                 // Simple connectivity check (in production, use proper health check endpoints)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
                 const response = await fetch(`${endpoint}/health`, {
                     method: 'GET',
-                    timeout: 5000,
+                    signal: controller.signal,
                 }).catch(() => null);
+
+                clearTimeout(timeoutId);
 
                 const responseTime = Date.now() - startTime;
 
                 results.push({
                     service: serviceName,
-                    status: response?.ok ? 'healthy' : 'unhealthy',
+                    status: response?.ok ? 'healthy' as const : 'unhealthy' as const,
                     responseTime,
                 });
             } catch (error) {
                 results.push({
                     service: serviceName,
-                    status: 'unhealthy',
+                    status: 'unhealthy' as const,
                     error: error instanceof Error ? error.message : 'Unknown error',
                 });
             }

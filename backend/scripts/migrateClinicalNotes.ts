@@ -2,7 +2,7 @@
 
 import mongoose from 'mongoose';
 import { config } from 'dotenv';
-import { logger } from '../src/utils/logger';
+import logger from '../src/utils/logger';
 import {
     runClinicalNotesMigrations,
     rollbackClinicalNotesMigrations,
