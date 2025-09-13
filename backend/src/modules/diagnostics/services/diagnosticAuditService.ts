@@ -30,7 +30,8 @@ export interface DiagnosticAuditEvent {
     | 'data_access'
     | 'data_export'
     | 'consent_obtained'
-    | 'consent_revoked';
+    | 'consent_revoked'
+    | 'data_retention_policy_updated';
 
     entityType: 'diagnostic_request' | 'diagnostic_result' | 'lab_order' | 'lab_result' | 'follow_up' | 'adherence';
     entityId: string;

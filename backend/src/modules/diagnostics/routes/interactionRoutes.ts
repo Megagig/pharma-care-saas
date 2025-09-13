@@ -52,7 +52,7 @@ router.post(
         riskLevel: 'medium'
     }),
     validateRequest(validateInteractionCheck),
-    drugInteractionController.checkInteractions
+    drugInteractionController.checkDrugInteractions
 );
 
 /**
@@ -71,7 +71,7 @@ router.get(
         complianceCategory: 'data_access',
         riskLevel: 'low'
     }),
-    drugInteractionController.getDrugInfo
+    drugInteractionController.getDrugInformation
 );
 
 /**
@@ -109,7 +109,7 @@ router.post(
         complianceCategory: 'clinical_documentation',
         riskLevel: 'medium'
     }),
-    drugInteractionController.checkAllergies
+    drugInteractionController.checkAllergyInteractions
 );
 
 /**

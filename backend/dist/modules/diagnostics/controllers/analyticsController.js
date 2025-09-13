@@ -8,6 +8,15 @@ const diagnosticAnalyticsService_1 = __importDefault(require("../services/diagno
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const getDiagnosticMetrics = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
@@ -33,6 +42,15 @@ const getDiagnosticMetrics = async (req, res) => {
 exports.getDiagnosticMetrics = getDiagnosticMetrics;
 const getAIPerformanceMetrics = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
@@ -58,6 +76,15 @@ const getAIPerformanceMetrics = async (req, res) => {
 exports.getAIPerformanceMetrics = getAIPerformanceMetrics;
 const getPatientOutcomeMetrics = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
@@ -83,6 +110,15 @@ const getPatientOutcomeMetrics = async (req, res) => {
 exports.getPatientOutcomeMetrics = getPatientOutcomeMetrics;
 const getUsageAnalytics = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
@@ -108,6 +144,15 @@ const getUsageAnalytics = async (req, res) => {
 exports.getUsageAnalytics = getUsageAnalytics;
 const getTrendAnalysis = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
@@ -133,6 +178,15 @@ const getTrendAnalysis = async (req, res) => {
 exports.getTrendAnalysis = getTrendAnalysis;
 const getComparisonAnalysis = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
@@ -158,6 +212,15 @@ const getComparisonAnalysis = async (req, res) => {
 exports.getComparisonAnalysis = getComparisonAnalysis;
 const generateAnalyticsReport = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { startDate, endDate, format } = req.query;
         const start = startDate ? new Date(startDate) : undefined;
@@ -193,6 +256,15 @@ const generateAnalyticsReport = async (req, res) => {
 exports.generateAnalyticsReport = generateAnalyticsReport;
 const getDashboardSummary = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { period = '30d' } = req.query;
         const now = new Date();

@@ -13,14 +13,23 @@ import { AuthRequest } from '../../../types/auth';
  */
 export const getDiagnosticMetrics = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
 
         const start = startDate ? new Date(startDate as string) : undefined;
         const end = endDate ? new Date(endDate as string) : undefined;
 
         const metrics = await diagnosticAnalyticsService.getDiagnosticMetrics(
-            workplaceId,
+            workplaceId.toString(),
             start,
             end
         );
@@ -47,7 +56,16 @@ export const getDiagnosticMetrics = async (req: AuthRequest, res: Response) => {
  */
 export const getAIPerformanceMetrics = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
 
         const start = startDate ? new Date(startDate as string) : undefined;
@@ -81,7 +99,16 @@ export const getAIPerformanceMetrics = async (req: AuthRequest, res: Response) =
  */
 export const getPatientOutcomeMetrics = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
 
         const start = startDate ? new Date(startDate as string) : undefined;
@@ -115,7 +142,16 @@ export const getPatientOutcomeMetrics = async (req: AuthRequest, res: Response) 
  */
 export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
 
         const start = startDate ? new Date(startDate as string) : undefined;
@@ -149,7 +185,16 @@ export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
  */
 export const getTrendAnalysis = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
 
         const start = startDate ? new Date(startDate as string) : undefined;
@@ -183,7 +228,16 @@ export const getTrendAnalysis = async (req: AuthRequest, res: Response) => {
  */
 export const getComparisonAnalysis = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
 
         const start = startDate ? new Date(startDate as string) : undefined;
@@ -217,14 +271,23 @@ export const getComparisonAnalysis = async (req: AuthRequest, res: Response) => 
  */
 export const generateAnalyticsReport = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const { startDate, endDate, format } = req.query;
 
         const start = startDate ? new Date(startDate as string) : undefined;
         const end = endDate ? new Date(endDate as string) : undefined;
 
         const report = await diagnosticAnalyticsService.generateAnalyticsReport(
-            workplaceId,
+            workplaceId.toString(),
             start,
             end
         );
@@ -264,7 +327,16 @@ export const generateAnalyticsReport = async (req: AuthRequest, res: Response) =
  */
 export const getDashboardSummary = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const { period = '30d' } = req.query;
 
         // Calculate date range based on period

@@ -14,9 +14,44 @@ import {
     servePDFRequisition,
 } from '../controllers/manualLabController';
 
+// Import compliance controller
+import {
+    generateComplianceReport,
+    getOrderAuditTrail,
+    getComplianceViolations,
+} from '../controllers/manualLabComplianceController';
+
+// Import security controller
+import {
+    getSecurityDashboard,
+    getSecurityThreats,
+    clearUserSecurityMetrics,
+    getUserSecuritySummary,
+} from '../controllers/manualLabSecurityController';
+
 // Import middleware
 import { auth } from '../../../middlewares/auth';
 import rbac from '../../../middlewares/rbac';
+import {
+    auditPDFAccess,
+    auditResultEntry,
+    auditStatusChange,
+    auditTokenResolution,
+    auditManualLabOperation,
+    monitorCompliance
+} from '../middlewares/manualLabAuditMiddleware';
+
+// Import security middleware
+import {
+    enhancedOrderCreationRateLimit,
+    enhancedPDFAccessRateLimit,
+    sanitizeInput,
+    validatePDFAccess,
+    csrfProtection,
+    generateCSRFToken,
+    detectSuspiciousActivity,
+    setSecurityHeaders
+} from '../middlewares/manualLabSecurityMiddleware';
 
 // Import validators
 import {
@@ -36,34 +71,15 @@ import { asyncHandler } from '../../../utils/responseHelpers';
 
 const router = express.Router();
 
-// Apply authentication to all routes
+// Apply authentication, security, and compliance monitoring to all routes
 router.use(auth);
+router.use(setSecurityHeaders);
+router.use(sanitizeInput);
+router.use(detectSuspiciousActivity);
+router.use(generateCSRFToken);
+router.use(monitorCompliance);
 
-// Rate limiting for order creation and PDF generation
-const orderCreationLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // Limit each user to 10 order creations per windowMs
-    message: {
-        success: false,
-        message: 'Too many order creation attempts, please try again later',
-        code: 'RATE_LIMIT_EXCEEDED',
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-
-// Rate limiting for PDF access
-const pdfAccessLimiter = rateLimit({
-    windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 50, // Limit each user to 50 PDF accesses per windowMs
-    message: {
-        success: false,
-        message: 'Too many PDF access attempts, please try again later',
-        code: 'RATE_LIMIT_EXCEEDED',
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
+// Enhanced rate limiting is now handled by security middleware
 
 // Rate limiting for token scanning
 const tokenScanLimiter = rateLimit({
@@ -89,9 +105,11 @@ const tokenScanLimiter = rateLimit({
  */
 router.post(
     '/',
-    orderCreationLimiter,
+    enhancedOrderCreationRateLimit,
     rbac.requireRole('pharmacist', 'owner'),
+    csrfProtection,
     validateRequest(createManualLabOrderSchema, 'body'),
+    auditManualLabOperation('order_creation'),
     createManualLabOrder
 );
 
@@ -117,6 +135,7 @@ router.get(
     tokenScanLimiter,
     rbac.requireRole('pharmacist', 'owner'),
     validateRequest(tokenQuerySchema, 'query'),
+    auditTokenResolution,
     resolveOrderToken
 );
 
@@ -153,8 +172,10 @@ router.get(
 router.put(
     '/:orderId/status',
     rbac.requireRole('pharmacist', 'owner'),
+    csrfProtection,
     validateRequest(orderParamsSchema, 'params'),
     validateRequest(updateOrderStatusSchema, 'body'),
+    auditStatusChange,
     updateOrderStatus
 );
 
@@ -170,8 +191,10 @@ router.put(
 router.post(
     '/:orderId/results',
     rbac.requireRole('pharmacist', 'owner'),
+    csrfProtection,
     validateRequest(orderParamsSchema, 'params'),
     validateRequest(addResultsSchema, 'body'),
+    auditResultEntry,
     addLabResults
 );
 
@@ -198,10 +221,99 @@ router.get(
  */
 router.get(
     '/:orderId/pdf',
-    pdfAccessLimiter,
+    enhancedPDFAccessRateLimit,
     rbac.requireRole('pharmacist', 'owner'),
     validateRequest(orderParamsSchema, 'params'),
+    validatePDFAccess,
+    auditPDFAccess,
     servePDFRequisition
+);
+
+// ===============================
+// COMPLIANCE AND AUDIT ROUTES
+// ===============================
+
+/**
+ * GET /api/manual-lab-orders/compliance/report
+ * Generate compliance report
+ * Requires: pharmacist or owner role
+ */
+router.get(
+    '/compliance/report',
+    rbac.requireRole('pharmacist', 'owner'),
+    generateComplianceReport
+);
+
+/**
+ * GET /api/manual-lab-orders/compliance/audit-trail/:orderId
+ * Get detailed audit trail for specific order
+ * Requires: pharmacist or owner role
+ */
+router.get(
+    '/compliance/audit-trail/:orderId',
+    rbac.requireRole('pharmacist', 'owner'),
+    validateRequest(orderParamsSchema, 'params'),
+    getOrderAuditTrail
+);
+
+/**
+ * GET /api/manual-lab-orders/compliance/violations
+ * Get compliance violations and security incidents
+ * Requires: pharmacist or owner role
+ */
+router.get(
+    '/compliance/violations',
+    rbac.requireRole('pharmacist', 'owner'),
+    getComplianceViolations
+);
+
+// ===============================
+// SECURITY MONITORING ROUTES
+// ===============================
+
+/**
+ * GET /api/manual-lab-orders/security/dashboard
+ * Get security dashboard with metrics and threats
+ * Requires: pharmacist or owner role
+ */
+router.get(
+    '/security/dashboard',
+    rbac.requireRole('pharmacist', 'owner'),
+    getSecurityDashboard
+);
+
+/**
+ * GET /api/manual-lab-orders/security/threats
+ * Get detailed threat information with filtering
+ * Requires: pharmacist or owner role
+ */
+router.get(
+    '/security/threats',
+    rbac.requireRole('pharmacist', 'owner'),
+    getSecurityThreats
+);
+
+/**
+ * GET /api/manual-lab-orders/security/user-summary/:userId
+ * Get security summary for a specific user
+ * Requires: pharmacist or owner role
+ */
+router.get(
+    '/security/user-summary/:userId',
+    rbac.requireRole('pharmacist', 'owner'),
+    getUserSecuritySummary
+);
+
+/**
+ * POST /api/manual-lab-orders/security/clear-user-metrics/:userId
+ * Clear security metrics for a specific user (owner only)
+ * Requires: owner role
+ */
+router.post(
+    '/security/clear-user-metrics/:userId',
+    rbac.requireRole('owner'),
+    csrfProtection,
+    clearUserSecurityMetrics
 );
 
 // ===============================

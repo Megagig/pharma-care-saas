@@ -10,10 +10,19 @@ const auditVisualizationService_1 = __importDefault(require("../services/auditVi
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const searchAuditEvents = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { startDate, endDate, eventTypes, entityTypes, userIds, patientIds, severity, entityId, searchText, limit, offset } = req.query;
         const criteria = {
-            workplaceId,
+            workplaceId: workplaceId.toString(),
             limit: limit ? parseInt(limit) : 50,
             offset: offset ? parseInt(offset) : 0
         };
@@ -36,7 +45,7 @@ const searchAuditEvents = async (req, res) => {
         if (searchText)
             criteria.searchText = searchText;
         const results = await diagnosticAuditService_1.default.searchAuditEvents(criteria);
-        res.json({
+        return res.json({
             success: true,
             data: {
                 events: results.events,
@@ -51,7 +60,7 @@ const searchAuditEvents = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error searching audit events:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'AUDIT_SEARCH_ERROR',
@@ -64,6 +73,15 @@ const searchAuditEvents = async (req, res) => {
 exports.searchAuditEvents = searchAuditEvents;
 const getEntityAuditTrail = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { entityType, entityId } = req.params;
         if (!entityType || !entityId) {
@@ -75,8 +93,8 @@ const getEntityAuditTrail = async (req, res) => {
                 }
             });
         }
-        const auditTrail = await diagnosticAuditService_1.default.getEntityAuditTrail(entityType, entityId, workplaceId);
-        res.json({
+        const auditTrail = await diagnosticAuditService_1.default.getEntityAuditTrail(entityType, entityId, workplaceId.toString());
+        return res.json({
             success: true,
             data: {
                 entityType,
@@ -87,7 +105,7 @@ const getEntityAuditTrail = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error getting entity audit trail:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'AUDIT_TRAIL_ERROR',
@@ -100,6 +118,15 @@ const getEntityAuditTrail = async (req, res) => {
 exports.getEntityAuditTrail = getEntityAuditTrail;
 const generateComplianceReport = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId, _id: userId } = req.user;
         const { reportType, startDate, endDate } = req.query;
         if (!reportType || !startDate || !endDate) {
@@ -121,15 +148,15 @@ const generateComplianceReport = async (req, res) => {
                 }
             });
         }
-        const report = await diagnosticAuditService_1.default.generateComplianceReport(workplaceId, reportType, new Date(startDate), new Date(endDate), userId);
-        res.json({
+        const report = await diagnosticAuditService_1.default.generateComplianceReport(workplaceId.toString(), reportType, new Date(startDate), new Date(endDate), userId.toString());
+        return res.json({
             success: true,
             data: report
         });
     }
     catch (error) {
         logger_1.default.error('Error generating compliance report:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'COMPLIANCE_REPORT_ERROR',
@@ -153,19 +180,19 @@ const logSecurityViolation = async (req, res) => {
                 }
             });
         }
-        await diagnosticAuditService_1.default.logSecurityViolation(userId, workplaceId, violationType, details || {}, {
+        await diagnosticAuditService_1.default.logSecurityViolation(userId.toString(), workplaceId.toString(), violationType, details || {}, {
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
             requestId: req.headers['x-request-id']
         });
-        res.json({
+        return res.json({
             success: true,
             message: 'Security violation logged successfully'
         });
     }
     catch (error) {
         logger_1.default.error('Error logging security violation:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'SECURITY_LOG_ERROR',
@@ -178,6 +205,15 @@ const logSecurityViolation = async (req, res) => {
 exports.logSecurityViolation = logSecurityViolation;
 const getAuditStatistics = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { period = '30d' } = req.query;
         const now = new Date();
@@ -196,7 +232,7 @@ const getAuditStatistics = async (req, res) => {
                 startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         }
         const results = await diagnosticAuditService_1.default.searchAuditEvents({
-            workplaceId,
+            workplaceId: workplaceId.toString(),
             startDate,
             endDate: now,
             limit: 10000
@@ -210,7 +246,7 @@ const getAuditStatistics = async (req, res) => {
             eventsByType[eventType] = (eventsByType[eventType] || 0) + 1;
             const severity = event.details?.severity || 'unknown';
             eventsBySeverity[severity] = (eventsBySeverity[severity] || 0) + 1;
-            const userId = event.userId || 'unknown';
+            const userId = event.userId?.toString() || 'unknown';
             eventsByUser[userId] = (eventsByUser[userId] || 0) + 1;
             const day = new Date(event.timestamp).toISOString().split('T')[0];
             dailyActivity[day] = (dailyActivity[day] || 0) + 1;
@@ -243,14 +279,14 @@ const getAuditStatistics = async (req, res) => {
                     .map(([date, count]) => ({ date, count }))
             }
         };
-        res.json({
+        return res.json({
             success: true,
             data: statistics
         });
     }
     catch (error) {
         logger_1.default.error('Error getting audit statistics:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'AUDIT_STATS_ERROR',
@@ -263,6 +299,15 @@ const getAuditStatistics = async (req, res) => {
 exports.getAuditStatistics = getAuditStatistics;
 const archiveAuditRecords = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { retentionDays } = req.body;
         if (!retentionDays || retentionDays < 1) {
@@ -275,7 +320,7 @@ const archiveAuditRecords = async (req, res) => {
             });
         }
         const result = await diagnosticAuditService_1.default.archiveOldRecords(workplaceId, parseInt(retentionDays));
-        res.json({
+        return res.json({
             success: true,
             data: {
                 archivedCount: result.archivedCount,
@@ -286,7 +331,7 @@ const archiveAuditRecords = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error archiving audit records:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'ARCHIVE_ERROR',
@@ -374,7 +419,7 @@ const exportAuditData = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error exporting audit data:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'EXPORT_ERROR',
@@ -409,14 +454,14 @@ const generateRegulatoryReport = async (req, res) => {
             });
         }
         const report = await complianceReportingService_1.default.generateRegulatoryReport(workplaceId, reportType, new Date(startDate), new Date(endDate), userId);
-        res.json({
+        return res.json({
             success: true,
             data: report
         });
     }
     catch (error) {
         logger_1.default.error('Error generating regulatory report:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'REGULATORY_REPORT_ERROR',
@@ -429,10 +474,19 @@ const generateRegulatoryReport = async (req, res) => {
 exports.generateRegulatoryReport = generateRegulatoryReport;
 const detectAuditAnomalies = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { lookbackDays = 30 } = req.query;
         const anomalies = await complianceReportingService_1.default.detectAnomalies(workplaceId, parseInt(lookbackDays));
-        res.json({
+        return res.json({
             success: true,
             data: {
                 anomalies,
@@ -448,7 +502,7 @@ const detectAuditAnomalies = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error detecting audit anomalies:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'ANOMALY_DETECTION_ERROR',
@@ -461,6 +515,15 @@ const detectAuditAnomalies = async (req, res) => {
 exports.detectAuditAnomalies = detectAuditAnomalies;
 const getAuditVisualization = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
         if (!startDate || !endDate) {
@@ -473,14 +536,14 @@ const getAuditVisualization = async (req, res) => {
             });
         }
         const visualizationData = await auditVisualizationService_1.default.generateVisualizationData(workplaceId, new Date(startDate), new Date(endDate));
-        res.json({
+        return res.json({
             success: true,
             data: visualizationData
         });
     }
     catch (error) {
         logger_1.default.error('Error generating audit visualization:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'VISUALIZATION_ERROR',
@@ -493,6 +556,15 @@ const getAuditVisualization = async (req, res) => {
 exports.getAuditVisualization = getAuditVisualization;
 const advancedAuditSearch = async (req, res) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId } = req.user;
         const { startDate, endDate, userIds, eventTypes, entityTypes, entityIds, riskLevels, searchText, ipAddresses, sessionIds, hasErrors, complianceCategories, page = 1, limit = 50 } = req.query;
         const filters = {
@@ -511,14 +583,14 @@ const advancedAuditSearch = async (req, res) => {
             complianceCategories: complianceCategories ? complianceCategories.split(',') : undefined
         };
         const results = await auditVisualizationService_1.default.searchAuditEvents(filters, parseInt(page), parseInt(limit));
-        res.json({
+        return res.json({
             success: true,
             data: results
         });
     }
     catch (error) {
         logger_1.default.error('Error performing advanced audit search:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'ADVANCED_SEARCH_ERROR',
@@ -568,7 +640,7 @@ const exportAuditVisualization = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error exporting audit visualization:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'EXPORT_VISUALIZATION_ERROR',
@@ -582,7 +654,7 @@ exports.exportAuditVisualization = exportAuditVisualization;
 const getDataRetentionPolicies = async (req, res) => {
     try {
         const policies = complianceReportingService_1.default.getDataRetentionPolicies();
-        res.json({
+        return res.json({
             success: true,
             data: {
                 policies,
@@ -593,7 +665,7 @@ const getDataRetentionPolicies = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error getting data retention policies:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'RETENTION_POLICIES_ERROR',
@@ -632,7 +704,7 @@ const updateDataRetentionPolicy = async (req, res) => {
             timestamp: new Date(),
             severity: 'high'
         });
-        res.json({
+        return res.json({
             success: true,
             message: 'Data retention policy updated successfully',
             data: {
@@ -643,7 +715,7 @@ const updateDataRetentionPolicy = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error updating data retention policy:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'UPDATE_POLICY_ERROR',

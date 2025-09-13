@@ -42,6 +42,7 @@ export const createDiagnosticRequest = asyncHandler(
         const context = getRequestContext(req);
         const {
             patientId,
+            locationId,
             inputSnapshot,
             priority = 'routine',
             consentObtained,
@@ -63,7 +64,7 @@ export const createDiagnosticRequest = asyncHandler(
                 patientId,
                 pharmacistId: context.userId,
                 workplaceId: context.workplaceId,
-                locationId: context.locationId,
+                locationId,
                 inputSnapshot,
                 priority,
                 consentObtained,
@@ -108,7 +109,7 @@ export const createDiagnosticRequest = asyncHandler(
             logger.error('Failed to create diagnostic request:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to create diagnostic request: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -124,6 +125,10 @@ export const getDiagnosticRequest = asyncHandler(
     async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
         const context = getRequestContext(req);
+
+        if (!id) {
+            return sendError(res, 'VALIDATION_ERROR', 'Diagnostic request ID is required', 400);
+        }
 
         try {
             // Get diagnostic request
@@ -171,7 +176,7 @@ export const getDiagnosticRequest = asyncHandler(
             logger.error('Failed to get diagnostic request:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to get diagnostic request: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -187,6 +192,10 @@ export const retryDiagnosticRequest = asyncHandler(
     async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
         const context = getRequestContext(req);
+
+        if (!id) {
+            return sendError(res, 'VALIDATION_ERROR', 'Diagnostic request ID is required', 400);
+        }
 
         try {
             // Get diagnostic request to verify ownership
@@ -241,7 +250,7 @@ export const retryDiagnosticRequest = asyncHandler(
             logger.error('Failed to retry diagnostic request:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to retry diagnostic request: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -257,6 +266,10 @@ export const cancelDiagnosticRequest = asyncHandler(
     async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
         const context = getRequestContext(req);
+
+        if (!id) {
+            return sendError(res, 'VALIDATION_ERROR', 'Diagnostic request ID is required', 400);
+        }
 
         try {
             // Get diagnostic request to verify ownership
@@ -297,12 +310,12 @@ export const cancelDiagnosticRequest = asyncHandler(
                 )
             );
 
-            sendSuccess(res, null, 'Diagnostic request cancelled successfully');
+            sendSuccess(res, {}, 'Diagnostic request cancelled successfully');
         } catch (error) {
             logger.error('Failed to cancel diagnostic request:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to cancel diagnostic request: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -349,7 +362,7 @@ export const getPatientDiagnosticHistory = asyncHandler(
             logger.error('Failed to get patient diagnostic history:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to get patient diagnostic history: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -442,7 +455,7 @@ export const getDiagnosticDashboard = asyncHandler(
             logger.error('Failed to get diagnostic dashboard:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to get diagnostic dashboard: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -463,6 +476,10 @@ export const approveDiagnosticResult = asyncHandler(
         const { id } = req.params;
         const { modifications, reviewNotes, clinicalJustification } = req.body;
         const context = getRequestContext(req);
+
+        if (!id) {
+            return sendError(res, 'VALIDATION_ERROR', 'Diagnostic request ID is required', 400);
+        }
 
         try {
             // Submit review decision
@@ -503,7 +520,7 @@ export const approveDiagnosticResult = asyncHandler(
             logger.error('Failed to approve diagnostic result:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to approve diagnostic result: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -520,6 +537,10 @@ export const rejectDiagnosticResult = asyncHandler(
         const { id } = req.params;
         const { rejectionReason, reviewNotes, clinicalJustification } = req.body;
         const context = getRequestContext(req);
+
+        if (!id) {
+            return sendError(res, 'VALIDATION_ERROR', 'Diagnostic request ID is required', 400);
+        }
 
         // Validate rejection reason
         if (!rejectionReason || rejectionReason.trim().length === 0) {
@@ -569,7 +590,7 @@ export const rejectDiagnosticResult = asyncHandler(
             logger.error('Failed to reject diagnostic result:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to reject diagnostic result: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -633,7 +654,7 @@ export const getPendingReviews = asyncHandler(
             logger.error('Failed to get pending reviews:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to get pending reviews: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -650,6 +671,10 @@ export const createInterventionFromResult = asyncHandler(
         const { id } = req.params;
         const interventionData = req.body;
         const context = getRequestContext(req);
+
+        if (!id) {
+            return sendError(res, 'VALIDATION_ERROR', 'Diagnostic result ID is required', 400);
+        }
 
         try {
             // Create intervention
@@ -688,7 +713,7 @@ export const createInterventionFromResult = asyncHandler(
             logger.error('Failed to create intervention from diagnostic result:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to create intervention: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -719,7 +744,7 @@ export const getReviewWorkflowStatus = asyncHandler(
             logger.error('Failed to get review workflow status:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to get review workflow status: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -759,7 +784,7 @@ export const getDiagnosticAnalytics = asyncHandler(
             logger.error('Failed to get diagnostic analytics:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to get diagnostic analytics: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );

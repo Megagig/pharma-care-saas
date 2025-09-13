@@ -15,7 +15,16 @@ import { AuthRequest } from '../../../types/auth';
  */
 export const searchAuditEvents = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+                if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const {
             startDate,
             endDate,
@@ -31,7 +40,7 @@ export const searchAuditEvents = async (req: AuthRequest, res: Response) => {
         } = req.query;
 
         const criteria: AuditSearchCriteria = {
-            workplaceId: workplaceId?.toString() || '',
+            workplaceId: workplaceId.toString(),
             limit: limit ? parseInt(limit as string) : 50,
             offset: offset ? parseInt(offset as string) : 0
         };
@@ -48,7 +57,7 @@ export const searchAuditEvents = async (req: AuthRequest, res: Response) => {
 
         const results = await diagnosticAuditService.searchAuditEvents(criteria);
 
-        res.json({
+        return res.json({
             success: true,
             data: {
                 events: results.events,
@@ -78,7 +87,16 @@ export const searchAuditEvents = async (req: AuthRequest, res: Response) => {
  */
 export const getEntityAuditTrail = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+                if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const { entityType, entityId } = req.params;
 
         if (!entityType || !entityId) {
@@ -94,10 +112,10 @@ export const getEntityAuditTrail = async (req: AuthRequest, res: Response) => {
         const auditTrail = await diagnosticAuditService.getEntityAuditTrail(
             entityType,
             entityId,
-            workplaceId?.toString() || ''
+            workplaceId.toString()
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: {
                 entityType,
@@ -123,6 +141,15 @@ export const getEntityAuditTrail = async (req: AuthRequest, res: Response) => {
  */
 export const generateComplianceReport = async (req: AuthRequest, res: Response) => {
     try {
+        if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
         const { workplaceId, _id: userId } = req.user!;
         const { reportType, startDate, endDate } = req.query;
 
@@ -148,14 +175,14 @@ export const generateComplianceReport = async (req: AuthRequest, res: Response) 
         }
 
         const report = await diagnosticAuditService.generateComplianceReport(
-            workplaceId?.toString() || '',
+            workplaceId.toString(),
             reportType as ComplianceReport['reportType'],
             new Date(startDate as string),
             new Date(endDate as string),
-            userId?.toString() || ''
+            userId.toString()
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: report
         });
@@ -191,8 +218,8 @@ export const logSecurityViolation = async (req: AuthRequest, res: Response) => {
         }
 
         await diagnosticAuditService.logSecurityViolation(
-            userId,
-            workplaceId,
+            userId.toString(),
+            workplaceId.toString(),
             violationType,
             details || {},
             {
@@ -202,7 +229,7 @@ export const logSecurityViolation = async (req: AuthRequest, res: Response) => {
             }
         );
 
-        res.json({
+        return res.json({
             success: true,
             message: 'Security violation logged successfully'
         });
@@ -224,7 +251,16 @@ export const logSecurityViolation = async (req: AuthRequest, res: Response) => {
  */
 export const getAuditStatistics = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+                if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const { period = '30d' } = req.query;
 
         // Calculate date range based on period
@@ -246,7 +282,7 @@ export const getAuditStatistics = async (req: AuthRequest, res: Response) => {
         }
 
         const results = await diagnosticAuditService.searchAuditEvents({
-            workplaceId,
+            workplaceId: workplaceId.toString(),
             startDate,
             endDate: now,
             limit: 10000 // Get all events for statistics
@@ -268,7 +304,7 @@ export const getAuditStatistics = async (req: AuthRequest, res: Response) => {
             eventsBySeverity[severity] = (eventsBySeverity[severity] || 0) + 1;
 
             // Count by user
-            const userId = event.userId || 'unknown';
+            const userId = event.userId?.toString() || 'unknown';
             eventsByUser[userId] = (eventsByUser[userId] || 0) + 1;
 
             // Count by day
@@ -305,7 +341,7 @@ export const getAuditStatistics = async (req: AuthRequest, res: Response) => {
             }
         };
 
-        res.json({
+        return res.json({
             success: true,
             data: statistics
         });
@@ -327,7 +363,16 @@ export const getAuditStatistics = async (req: AuthRequest, res: Response) => {
  */
 export const archiveAuditRecords = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+                if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const { retentionDays } = req.body;
 
         if (!retentionDays || retentionDays < 1) {
@@ -345,7 +390,7 @@ export const archiveAuditRecords = async (req: AuthRequest, res: Response) => {
             parseInt(retentionDays)
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: {
                 archivedCount: result.archivedCount,
@@ -502,7 +547,7 @@ export const generateRegulatoryReport = async (req: AuthRequest, res: Response) 
             userId
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: report
         });
@@ -524,7 +569,16 @@ export const generateRegulatoryReport = async (req: AuthRequest, res: Response) 
  */
 export const detectAuditAnomalies = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+                if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const { lookbackDays = 30 } = req.query;
 
         const anomalies = await complianceReportingService.detectAnomalies(
@@ -532,7 +586,7 @@ export const detectAuditAnomalies = async (req: AuthRequest, res: Response) => {
             parseInt(lookbackDays as string)
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: {
                 anomalies,
@@ -563,7 +617,16 @@ export const detectAuditAnomalies = async (req: AuthRequest, res: Response) => {
  */
 export const getAuditVisualization = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+                if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const { startDate, endDate } = req.query;
 
         if (!startDate || !endDate) {
@@ -582,7 +645,7 @@ export const getAuditVisualization = async (req: AuthRequest, res: Response) => 
             new Date(endDate as string)
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: visualizationData
         });
@@ -604,7 +667,16 @@ export const getAuditVisualization = async (req: AuthRequest, res: Response) => 
  */
 export const advancedAuditSearch = async (req: AuthRequest, res: Response) => {
     try {
-        const { workplaceId } = req.user!;
+                if (!req.user || !req.user.workplaceId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Workplace ID is required'
+                }
+            });
+        }
+        const { workplaceId } = req.user;
         const {
             startDate,
             endDate,
@@ -644,7 +716,7 @@ export const advancedAuditSearch = async (req: AuthRequest, res: Response) => {
             parseInt(limit as string)
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: results
         });
@@ -730,7 +802,7 @@ export const getDataRetentionPolicies = async (req: AuthRequest, res: Response) 
     try {
         const policies = complianceReportingService.getDataRetentionPolicies();
 
-        res.json({
+        return res.json({
             success: true,
             data: {
                 policies,
@@ -787,7 +859,7 @@ export const updateDataRetentionPolicy = async (req: AuthRequest, res: Response)
             severity: 'high'
         });
 
-        res.json({
+        return res.json({
             success: true,
             message: 'Data retention policy updated successfully',
             data: {

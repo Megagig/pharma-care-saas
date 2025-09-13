@@ -86,6 +86,8 @@ export interface IDiagnosticRequest extends Document {
     updatedBy?: mongoose.Types.ObjectId;
     isDeleted: boolean;
 
+    processingDuration?: number;
+
     // Instance methods
     updateStatus(status: IDiagnosticRequest['status']): Promise<void>;
     markAsProcessing(): Promise<void>;

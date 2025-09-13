@@ -60,7 +60,7 @@ class PerformanceMiddleware {
 
         // Override res.json to capture response metrics
         const originalJson = res.json;
-        res.json = function (body: any) {
+        res.json = (body: any) => {
             const endTime = Date.now();
             const responseTime = endTime - startTime;
             const endCpuUsage = process.cpuUsage(startCpuUsage);
@@ -80,7 +80,7 @@ class PerformanceMiddleware {
                 cacheMisses,
                 timestamp: new Date(startTime),
                 userId: req.user?._id?.toString(),
-                workplaceId: req.workspaceContext?.workspace._id?.toString(),
+                workplaceId: req.workspaceContext?.workspace?._id?.toString(),
             };
 
             // Store metrics
@@ -97,11 +97,11 @@ class PerformanceMiddleware {
                     url: req.originalUrl,
                     responseTime,
                     statusCode: res.statusCode,
-                    userId: req.user?._id,
+                    userId: req.user?._id?.toString(),
                 });
             }
 
-            return originalJson.call(this, body);
+            return originalJson.call(res, body);
         };
 
         next();

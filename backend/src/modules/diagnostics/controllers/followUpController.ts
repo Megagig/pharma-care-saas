@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import logger from '../../../utils/logger';
 import diagnosticFollowUpService, { CreateFollowUpRequest } from '../services/diagnosticFollowUpService';
 import DiagnosticFollowUp, { IDiagnosticFollowUp, IFollowUpOutcome } from '../models/DiagnosticFollowUp';
-import { AuthenticatedRequest } from '../../../types/auth';
+import { AuthRequest } from '../../../types/auth';
 
 /**
  * Create a new diagnostic follow-up
@@ -491,13 +491,20 @@ export const getMyFollowUps = async (req: AuthenticatedRequest, res: Response): 
             skip: skip ? parseInt(skip as string) : undefined
         };
 
-        const followUps = await DiagnosticFollowUp.findByAssignee(
+        const query = DiagnosticFollowUp.findByAssignee(
             new mongoose.Types.ObjectId(userId),
             new mongoose.Types.ObjectId(workplaceId),
             options.status
-        )
-            .limit(options.limit || 50)
-            .skip(options.skip || 0)
+        );
+
+        if (options.limit) {
+            query.limit(options.limit);
+        }
+        if (options.skip) {
+            query.skip(options.skip);
+        }
+
+        const followUps = await query
             .populate('patientId', 'firstName lastName mrn')
             .populate('diagnosticResultId', 'diagnoses riskAssessment')
             .exec();

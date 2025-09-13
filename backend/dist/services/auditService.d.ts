@@ -12,7 +12,7 @@ export interface AuditContext {
 }
 export interface AuditLogData {
     action: string;
-    resourceType: 'MedicationTherapyReview' | 'DrugTherapyProblem' | 'MTRIntervention' | 'MTRFollowUp' | 'Patient' | 'User' | 'ClinicalIntervention' | 'ClinicalNote';
+    resourceType: 'MedicationTherapyReview' | 'DrugTherapyProblem' | 'MTRIntervention' | 'MTRFollowUp' | 'Patient' | 'User' | 'ClinicalIntervention' | 'ClinicalNote' | 'System';
     resourceId: mongoose.Types.ObjectId;
     patientId?: mongoose.Types.ObjectId;
     reviewId?: mongoose.Types.ObjectId;
@@ -49,7 +49,7 @@ declare class AuditService {
     static logPatientAccess(context: AuditContext, patientId: mongoose.Types.ObjectId, accessType: 'view' | 'edit' | 'create' | 'delete', details?: any): Promise<IMTRAuditLog>;
     static logEvent(context: AuditContext, eventData: {
         action: string;
-        resourceType?: string;
+        resourceType?: any;
         resourceId?: mongoose.Types.ObjectId;
         patientId?: mongoose.Types.ObjectId;
         details?: any;

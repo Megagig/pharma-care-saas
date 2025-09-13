@@ -1,5 +1,4 @@
 import { Response } from 'express';
-import { AuthenticatedRequest } from '../../../types/auth';
 export declare const createFollowUp: (req: AuthenticatedRequest, res: Response) => Promise<void>;
 export declare const getPatientFollowUps: (req: AuthenticatedRequest, res: Response) => Promise<void>;
 export declare const getFollowUpById: (req: AuthenticatedRequest, res: Response) => Promise<void>;

@@ -10,7 +10,7 @@ const adherenceService_1 = __importDefault(require("../services/adherenceService
 const AdherenceTracking_1 = __importDefault(require("../models/AdherenceTracking"));
 const createAdherenceTracking = async (req, res) => {
     try {
-        const { workplaceId, userId } = req.user;
+        const { workplaceId, _id: userId } = req.user;
         const trackingData = req.body;
         if (!trackingData.patientId || !trackingData.medications || trackingData.medications.length === 0) {
             res.status(400).json({
@@ -112,12 +112,12 @@ const getPatientAdherenceTracking = async (req, res) => {
     try {
         const { workplaceId } = req.user;
         const { patientId } = req.params;
-        if (!mongoose_1.default.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose_1.default.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -158,12 +158,12 @@ const addRefill = async (req, res) => {
         const { workplaceId } = req.user;
         const { patientId } = req.params;
         const refillData = req.body;
-        if (!mongoose_1.default.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose_1.default.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -239,12 +239,12 @@ const updateMedicationAdherence = async (req, res) => {
         const { workplaceId } = req.user;
         const { patientId, medicationName } = req.params;
         const adherenceData = req.body;
-        if (!mongoose_1.default.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose_1.default.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -310,12 +310,12 @@ const assessPatientAdherence = async (req, res) => {
     try {
         const { workplaceId } = req.user;
         const { patientId } = req.params;
-        if (!mongoose_1.default.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose_1.default.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -353,15 +353,15 @@ const assessPatientAdherence = async (req, res) => {
 exports.assessPatientAdherence = assessPatientAdherence;
 const addIntervention = async (req, res) => {
     try {
-        const { workplaceId, userId } = req.user;
+        const { workplaceId, _id: userId } = req.user;
         const { patientId } = req.params;
         const intervention = req.body;
-        if (!mongoose_1.default.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose_1.default.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -429,12 +429,12 @@ const generateAdherenceReport = async (req, res) => {
         const { workplaceId } = req.user;
         const { patientId } = req.params;
         const { startDate, endDate } = req.query;
-        if (!mongoose_1.default.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose_1.default.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -540,15 +540,15 @@ const getPatientsWithPoorAdherence = async (req, res) => {
 exports.getPatientsWithPoorAdherence = getPatientsWithPoorAdherence;
 const acknowledgeAlert = async (req, res) => {
     try {
-        const { workplaceId, userId } = req.user;
+        const { workplaceId, _id: userId } = req.user;
         const { patientId, alertIndex } = req.params;
         const { actionTaken } = req.body;
-        if (!mongoose_1.default.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose_1.default.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -612,12 +612,12 @@ const resolveAlert = async (req, res) => {
     try {
         const { workplaceId } = req.user;
         const { patientId, alertIndex } = req.params;
-        if (!mongoose_1.default.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose_1.default.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;

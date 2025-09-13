@@ -124,6 +124,7 @@ export interface IAdherenceTracking extends Document {
     addIntervention(intervention: Omit<IAdherenceIntervention, 'implementedAt'>): void;
     assessAdherenceRisk(): 'low' | 'medium' | 'high' | 'critical';
     generateAdherenceReport(): any;
+    calculateMedicationAdherence(medication: IMedicationAdherence): void;
 }
 
 export interface IAdherenceTrackingModel extends mongoose.Model<IAdherenceTracking> {
@@ -633,7 +634,7 @@ adherenceTrackingSchema.methods.acknowledgeAlert = function (
         throw new Error('Invalid alert index');
     }
 
-    const alert = this.alerts[alertIndex];
+    const alert = this.alerts[alertIndex]!;
     alert.acknowledged = true;
     alert.acknowledgedBy = acknowledgedBy;
     alert.acknowledgedAt = new Date();
@@ -650,7 +651,7 @@ adherenceTrackingSchema.methods.resolveAlert = function (
         throw new Error('Invalid alert index');
     }
 
-    const alert = this.alerts[alertIndex];
+    const alert = this.alerts[alertIndex]!;
     alert.resolved = true;
     alert.resolvedAt = new Date();
 };
@@ -718,8 +719,8 @@ adherenceTrackingSchema.methods.calculateMedicationAdherence = function (
     let expectedGaps = 0;
 
     for (let i = 1; i < refills.length; i++) {
-        const previousRefill = refills[i - 1];
-        const currentRefill = refills[i];
+        const previousRefill = refills[i - 1]!;
+        const currentRefill = refills[i]!;
 
         const daysBetween = Math.floor(
             (currentRefill.date.getTime() - previousRefill.date.getTime()) / (1000 * 60 * 60 * 24)

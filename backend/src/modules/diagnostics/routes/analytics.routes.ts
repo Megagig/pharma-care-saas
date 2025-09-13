@@ -7,7 +7,7 @@ import { Router } from 'express';
 import analyticsController from '../controllers/analyticsController';
 import { auth } from '../../../middlewares/auth';
 import diagnosticRBAC from '../middlewares/diagnosticRBAC';
-import { rateLimiting } from '../../../middlewares/rateLimiting';
+import rateLimiting from '../../../middlewares/rateLimiting';
 
 const router = Router();
 

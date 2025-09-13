@@ -1,5 +1,5 @@
 export interface DiagnosticAuditEvent {
-    eventType: 'diagnostic_request_created' | 'diagnostic_processing_started' | 'diagnostic_processing_completed' | 'diagnostic_processing_failed' | 'ai_analysis_requested' | 'ai_analysis_completed' | 'ai_analysis_failed' | 'pharmacist_review_started' | 'pharmacist_review_completed' | 'diagnostic_approved' | 'diagnostic_modified' | 'diagnostic_rejected' | 'intervention_created' | 'lab_order_created' | 'lab_result_added' | 'follow_up_scheduled' | 'adherence_tracked' | 'security_violation' | 'data_access' | 'data_export' | 'consent_obtained' | 'consent_revoked';
+    eventType: 'diagnostic_request_created' | 'diagnostic_processing_started' | 'diagnostic_processing_completed' | 'diagnostic_processing_failed' | 'ai_analysis_requested' | 'ai_analysis_completed' | 'ai_analysis_failed' | 'pharmacist_review_started' | 'pharmacist_review_completed' | 'diagnostic_approved' | 'diagnostic_modified' | 'diagnostic_rejected' | 'intervention_created' | 'lab_order_created' | 'lab_result_added' | 'follow_up_scheduled' | 'adherence_tracked' | 'security_violation' | 'data_access' | 'data_export' | 'consent_obtained' | 'consent_revoked' | 'data_retention_policy_updated';
     entityType: 'diagnostic_request' | 'diagnostic_result' | 'lab_order' | 'lab_result' | 'follow_up' | 'adherence';
     entityId: string;
     userId: string;
