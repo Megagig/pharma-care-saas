@@ -404,9 +404,14 @@ const getMyFollowUps = async (req, res) => {
             limit: limit ? parseInt(limit) : undefined,
             skip: skip ? parseInt(skip) : undefined
         };
-        const followUps = await DiagnosticFollowUp_1.default.findByAssignee(new mongoose_1.default.Types.ObjectId(userId), new mongoose_1.default.Types.ObjectId(workplaceId), options.status)
-            .limit(options.limit || 50)
-            .skip(options.skip || 0)
+        const query = DiagnosticFollowUp_1.default.findByAssignee(new mongoose_1.default.Types.ObjectId(userId), new mongoose_1.default.Types.ObjectId(workplaceId), options.status);
+        if (options.limit) {
+            query.limit(options.limit);
+        }
+        if (options.skip) {
+            query.skip(options.skip);
+        }
+        const followUps = await query
             .populate('patientId', 'firstName lastName mrn')
             .populate('diagnosticResultId', 'diagnoses riskAssessment')
             .exec();

@@ -14,6 +14,7 @@ import Medication from '../../../models/Medication';
 import TokenService, { SecureTokenData } from './tokenService';
 import { pdfGenerationService } from './pdfGenerationService';
 import AuditService, { AuditContext, AuditLogData } from '../../../services/auditService';
+import ManualLabAuditService from './manualLabAuditService';
 import { mtrNotificationService, CriticalAlert } from '../../../services/mtrNotificationService';
 
 // Import diagnostic service for AI integration
@@ -203,22 +204,13 @@ class ManualLabService {
             order.requisitionFormUrl = pdfResult.url;
             await order.save({ session });
 
-            // Log audit event
-            await AuditService.logActivity(auditContext, {
-                action: 'MANUAL_LAB_ORDER_CREATED',
-                resourceType: 'Patient',
-                resourceId: order._id,
-                patientId: orderData.patientId,
-                details: {
-                    orderId: order.orderId,
-                    testCount: order.tests.length,
-                    priority: order.priority,
-                    indication: order.indication,
-                    pdfGenerated: true
-                },
-                complianceCategory: 'clinical_documentation',
-                riskLevel: 'medium'
-            });
+            // Enhanced audit logging for order creation
+            await ManualLabAuditService.logOrderCreation(
+                auditContext,
+                order,
+                true, // PDF generated
+                pdfResult.metadata?.generationTime
+            );
 
             await session.commitTransaction();
 

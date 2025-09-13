@@ -126,8 +126,8 @@ export const diagnosticAuditLogger = (options: {
 
                     if (!consentObtained) {
                         await diagnosticAuditService.logSecurityViolation(
-                            req.user.id,
-                            req.user.workplaceId,
+                            req.user.id.toString(),
+                            req.user.workplaceId.toString(),
                             'missing_consent',
                             {
                                 eventType,
@@ -189,14 +189,14 @@ export const diagnosticAuditLogger = (options: {
                     eventType: eventType as any,
                     entityType: entityType as any,
                     entityId: entityId || 'unknown',
-                    userId: req.user.id,
-                    workplaceId: req.user.workplaceId,
+                    userId: req.user.id.toString(),
+                    workplaceId: req.user.workplaceId.toString(),
                     patientId,
                     details: auditDetails,
                     metadata: {
                         ipAddress: req.ip,
                         userAgent: req.get('User-Agent'),
-                        sessionId: req.sessionID,
+                        // sessionId: req.sessionID, // Removed as it's not directly available on req
                         apiVersion: req.get('API-Version') || '1.0',
                         requestId: req.headers['x-request-id'] as string
                     },
@@ -212,8 +212,8 @@ export const diagnosticAuditLogger = (options: {
                         eventType,
                         entityType,
                         entityId,
-                        userId: req.user.id,
-                        workplaceId: req.user.workplaceId,
+                        userId: req.user.id.toString(),
+                        workplaceId: req.user.workplaceId.toString(),
                         severity,
                         ipAddress: req.ip,
                         userAgent: req.get('User-Agent')

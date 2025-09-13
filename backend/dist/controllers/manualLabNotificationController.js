@@ -29,14 +29,14 @@ const getCriticalAlerts = async (req, res) => {
                 return severityDiff;
             return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
         });
-        res.json({
+        return res.json({
             success: true,
             data: workplaceAlerts,
         });
     }
     catch (error) {
         logger_1.default.error('Error fetching critical alerts:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'FETCH_ALERTS_ERROR',
@@ -50,6 +50,15 @@ const acknowledgeAlert = async (req, res) => {
     try {
         const { alertId } = req.params;
         const { _id: userId } = req.user;
+        if (!alertId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Alert ID is required',
+                },
+            });
+        }
         if (!activeAlerts.has(alertId)) {
             return res.status(404).json({
                 success: false,
@@ -68,7 +77,7 @@ const acknowledgeAlert = async (req, res) => {
             activeAlerts.set(alertId, alert);
         }
         logger_1.default.info(`Alert ${alertId} acknowledged by user ${userId}`);
-        res.json({
+        return res.json({
             success: true,
             message: 'Alert acknowledged successfully',
         });
@@ -89,6 +98,15 @@ const dismissAlert = async (req, res) => {
     try {
         const { alertId } = req.params;
         const { _id: userId } = req.user;
+        if (!alertId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Alert ID is required',
+                },
+            });
+        }
         if (!activeAlerts.has(alertId)) {
             return res.status(404).json({
                 success: false,
@@ -100,7 +118,7 @@ const dismissAlert = async (req, res) => {
         }
         dismissedAlerts.add(alertId);
         logger_1.default.info(`Alert ${alertId} dismissed by user ${userId}`);
-        res.json({
+        return res.json({
             success: true,
             message: 'Alert dismissed successfully',
         });
@@ -168,7 +186,7 @@ const triggerCriticalAlert = async (req, res) => {
             aiInterpretation,
         };
         await manualLabNotificationService_1.manualLabNotificationService.sendCriticalLabAlert(criticalAlert);
-        res.json({
+        return res.json({
             success: true,
             data: { alertId },
             message: 'Critical alert triggered successfully',
@@ -199,7 +217,7 @@ const triggerAIInterpretationComplete = async (req, res) => {
             });
         }
         await manualLabNotificationService_1.manualLabNotificationService.sendAIInterpretationComplete(orderId, new mongoose_1.default.Types.ObjectId(patientId), new mongoose_1.default.Types.ObjectId(pharmacistId), interpretation);
-        res.json({
+        return res.json({
             success: true,
             message: 'AI interpretation notification sent successfully',
         });
@@ -229,7 +247,7 @@ const triggerPatientResultNotification = async (req, res) => {
             });
         }
         await manualLabNotificationService_1.manualLabNotificationService.sendPatientResultNotification(orderId, new mongoose_1.default.Types.ObjectId(patientId), includeInterpretation);
-        res.json({
+        return res.json({
             success: true,
             message: 'Patient result notification sent successfully',
         });
@@ -267,7 +285,7 @@ const getNotificationPreferences = async (req, res) => {
             sms: false,
             push: false,
         };
-        res.json({
+        return res.json({
             success: true,
             data: preferences,
         });
@@ -289,7 +307,7 @@ const updateNotificationPreferences = async (req, res) => {
         const { _id: userId } = req.user;
         const preferences = req.body;
         await manualLabNotificationService_1.manualLabNotificationService.updateNotificationPreferences(new mongoose_1.default.Types.ObjectId(userId), preferences);
-        res.json({
+        return res.json({
             success: true,
             message: 'Notification preferences updated successfully',
         });
@@ -310,7 +328,7 @@ const getNotificationStatistics = async (req, res) => {
     try {
         const { workplaceId } = req.user;
         const stats = await manualLabNotificationService_1.manualLabNotificationService.getNotificationStatistics(new mongoose_1.default.Types.ObjectId(workplaceId));
-        res.json({
+        return res.json({
             success: true,
             data: stats,
         });
@@ -359,7 +377,7 @@ const sendTestNotification = async (req, res) => {
             requiresImmediate: false,
         };
         await manualLabNotificationService_1.manualLabNotificationService.sendCriticalLabAlert(testAlert);
-        res.json({
+        return res.json({
             success: true,
             message: `Test ${type} notification sent successfully`,
         });
@@ -379,6 +397,15 @@ exports.sendTestNotification = sendTestNotification;
 const getNotificationDeliveryStatus = async (req, res) => {
     try {
         const { orderId } = req.params;
+        if (!orderId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Order ID is required',
+                },
+            });
+        }
         const deliveryStatus = {
             orderId,
             notifications: [
@@ -399,7 +426,7 @@ const getNotificationDeliveryStatus = async (req, res) => {
                 },
             ],
         };
-        res.json({
+        return res.json({
             success: true,
             data: deliveryStatus,
         });
@@ -419,15 +446,24 @@ exports.getNotificationDeliveryStatus = getNotificationDeliveryStatus;
 const retryFailedNotifications = async (req, res) => {
     try {
         const { orderId } = req.params;
+        if (!orderId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Order ID is required',
+                },
+            });
+        }
         logger_1.default.info(`Retrying failed notifications for order ${orderId}`);
-        res.json({
+        return res.json({
             success: true,
             message: 'Failed notifications retry initiated',
         });
     }
     catch (error) {
         logger_1.default.error('Error retrying failed notifications:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'RETRY_ERROR',

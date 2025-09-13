@@ -30,7 +30,9 @@ afterEach(async () => {
     const collections = mongoose_1.default.connection.collections;
     for (const key in collections) {
         const collection = collections[key];
-        await collection.deleteMany({});
+        if (collection) {
+            await collection.deleteMany({});
+        }
     }
     globals_1.jest.clearAllMocks();
 });

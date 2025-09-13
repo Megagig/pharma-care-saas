@@ -15,6 +15,7 @@ const Medication_1 = __importDefault(require("../../../models/Medication"));
 const tokenService_1 = __importDefault(require("./tokenService"));
 const pdfGenerationService_1 = require("./pdfGenerationService");
 const auditService_1 = __importDefault(require("../../../services/auditService"));
+const manualLabAuditService_1 = __importDefault(require("./manualLabAuditService"));
 const mtrNotificationService_1 = require("../../../services/mtrNotificationService");
 const services_1 = require("../../diagnostics/services");
 const responseHelpers_1 = require("../../../utils/responseHelpers");
@@ -75,21 +76,7 @@ class ManualLabService {
             const pdfResult = await pdfGenerationService_1.pdfGenerationService.generateRequisitionPDF(order, patient, workplace, pharmacist);
             order.requisitionFormUrl = pdfResult.url;
             await order.save({ session });
-            await auditService_1.default.logActivity(auditContext, {
-                action: 'MANUAL_LAB_ORDER_CREATED',
-                resourceType: 'Patient',
-                resourceId: order._id,
-                patientId: orderData.patientId,
-                details: {
-                    orderId: order.orderId,
-                    testCount: order.tests.length,
-                    priority: order.priority,
-                    indication: order.indication,
-                    pdfGenerated: true
-                },
-                complianceCategory: 'clinical_documentation',
-                riskLevel: 'medium'
-            });
+            await manualLabAuditService_1.default.logOrderCreation(auditContext, order, true, pdfResult.metadata?.generationTime);
             await session.commitTransaction();
             logger_1.default.info('Manual lab order created successfully', {
                 orderId: order.orderId,

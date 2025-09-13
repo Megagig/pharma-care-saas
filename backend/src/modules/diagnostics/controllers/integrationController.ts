@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import DiagnosticIntegrationService, { DiagnosticIntegrationData } from '../services/integrationService';
 import logger from '../../../utils/logger';
-import { validateObjectId } from '../../../utils/responseHelpers';
+import { AuthRequest } from '../../../types/auth';
 
 export interface AuthenticatedRequest extends Request {
     user?: {
@@ -37,7 +37,7 @@ export const createClinicalNoteFromDiagnostic = async (
         }
 
         // Validate ObjectIds
-        if (!validateObjectId(diagnosticRequestId) || !validateObjectId(patientId)) {
+        if (!mongoose.Types.ObjectId.isValid(diagnosticRequestId) || !mongoose.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -48,7 +48,7 @@ export const createClinicalNoteFromDiagnostic = async (
             return;
         }
 
-        if (diagnosticResultId && !validateObjectId(diagnosticResultId)) {
+        if (diagnosticResultId && !mongoose.Types.ObjectId.isValid(diagnosticResultId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -122,7 +122,7 @@ export const addDiagnosticDataToMTR = async (
         }
 
         // Validate ObjectIds
-        if (!validateObjectId(mtrId) || !validateObjectId(diagnosticRequestId) || !validateObjectId(patientId)) {
+        if (!mongoose.Types.ObjectId.isValid(mtrId) || !mongoose.Types.ObjectId.isValid(diagnosticRequestId) || !mongoose.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -133,7 +133,7 @@ export const addDiagnosticDataToMTR = async (
             return;
         }
 
-        if (diagnosticResultId && !validateObjectId(diagnosticResultId)) {
+        if (diagnosticResultId && !mongoose.Types.ObjectId.isValid(diagnosticResultId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -208,7 +208,7 @@ export const createMTRFromDiagnostic = async (
         }
 
         // Validate ObjectIds
-        if (!validateObjectId(diagnosticRequestId) || !validateObjectId(patientId)) {
+        if (!mongoose.Types.ObjectId.isValid(diagnosticRequestId) || !mongoose.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -219,7 +219,7 @@ export const createMTRFromDiagnostic = async (
             return;
         }
 
-        if (diagnosticResultId && !validateObjectId(diagnosticResultId)) {
+        if (diagnosticResultId && !mongoose.Types.ObjectId.isValid(diagnosticResultId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -293,7 +293,7 @@ export const getUnifiedPatientTimeline = async (
         }
 
         // Validate ObjectId
-        if (!validateObjectId(patientId)) {
+        if (!mongoose.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -375,7 +375,7 @@ export const crossReferenceWithExistingRecords = async (
         }
 
         // Validate ObjectId
-        if (!validateObjectId(diagnosticRequestId)) {
+        if (!mongoose.Types.ObjectId.isValid(diagnosticRequestId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -423,7 +423,7 @@ export const getIntegrationOptions = async (
         const { diagnosticRequestId } = req.params;
 
         // Validate ObjectId
-        if (!validateObjectId(diagnosticRequestId)) {
+        if (!mongoose.Types.ObjectId.isValid(diagnosticRequestId)) {
             res.status(400).json({
                 success: false,
                 error: {

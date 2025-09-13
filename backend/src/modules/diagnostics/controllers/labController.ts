@@ -39,7 +39,6 @@ export const createLabOrder = asyncHandler(
         const {
             patientId,
             tests,
-            indication,
             priority = 'routine',
             expectedDate,
             externalOrderId,
@@ -48,12 +47,14 @@ export const createLabOrder = asyncHandler(
         try {
             // Create lab order
             const labOrder = await labService.createLabOrder({
-                patientId,
-                orderedBy: context.userId,
-                workplaceId: context.workplaceId,
+                patientId: patientId.toString(),
+                orderedBy: context.userId.toString(),
+                workplaceId: context.workplaceId.toString(),
                 locationId: context.locationId,
-                tests,
-                indication,
+                tests: tests.map((test: any) => ({
+                    ...test,
+                    indication: test.indication || '', // Ensure indication is present
+                })),
                 priority,
                 expectedDate: expectedDate ? new Date(expectedDate) : undefined,
                 externalOrderId,
@@ -71,7 +72,7 @@ export const createLabOrder = asyncHandler(
                         patientId,
                         testsCount: tests.length,
                         priority,
-                        indication: indication?.substring(0, 100),
+                        indication: tests[0]?.indication?.substring(0, 100) || '', // Get indication from first test
                     }
                 )
             );
@@ -88,7 +89,7 @@ export const createLabOrder = asyncHandler(
             logger.error('Failed to create lab order:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to create lab order: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -121,13 +122,13 @@ export const getLabOrders = asyncHandler(
         try {
             // Build filters
             const filters: any = {
-                workplaceId: context.workplaceId,
+                workplaceId: context.workplaceId.toString(),
             };
 
-            if (patientId) filters.patientId = patientId;
+            if (patientId) filters.patientId = patientId.toString();
             if (status) filters.status = status;
             if (priority) filters.priority = priority;
-            if (orderedBy) filters.orderedBy = orderedBy;
+            if (orderedBy) filters.orderedBy = orderedBy.toString();
 
             if (fromDate || toDate) {
                 filters.orderDate = {};
@@ -137,7 +138,7 @@ export const getLabOrders = asyncHandler(
 
             // Get lab orders
             const orders = await labService.getLabOrders(
-                context.workplaceId,
+                context.workplaceId.toString(),
                 filters,
                 parsedPage,
                 parsedLimit
@@ -155,7 +156,7 @@ export const getLabOrders = asyncHandler(
             logger.error('Failed to get lab orders:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to get lab orders: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -171,6 +172,10 @@ export const getLabOrder = asyncHandler(
     async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
         const context = getRequestContext(req);
+
+        if (!id) {
+            return sendError(res, 'VALIDATION_ERROR', 'Lab order ID is required', 400);
+        }
 
         try {
             // Get lab order
@@ -210,7 +215,7 @@ export const getLabOrder = asyncHandler(
             logger.error('Failed to get lab order:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to get lab order: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -227,6 +232,10 @@ export const updateLabOrder = asyncHandler(
         const { id } = req.params;
         const context = getRequestContext(req);
         const updates = req.body;
+
+        if (!id) {
+            return sendError(res, 'VALIDATION_ERROR', 'Lab order ID is required', 400);
+        }
 
         try {
             // Get lab order
@@ -251,7 +260,7 @@ export const updateLabOrder = asyncHandler(
             }
 
             // Update lab order
-            const updatedOrder = await labService.updateLabOrder(id, updates, context.userId);
+            const updatedOrder = await labService.updateLabOrder(id, updates, context.userId.toString());
 
             // Create audit log
             console.log(
@@ -280,7 +289,7 @@ export const updateLabOrder = asyncHandler(
             logger.error('Failed to update lab order:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to update lab order: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -296,6 +305,10 @@ export const cancelLabOrder = asyncHandler(
     async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
         const context = getRequestContext(req);
+
+        if (!id) {
+            return sendError(res, 'VALIDATION_ERROR', 'Lab order ID is required', 400);
+        }
 
         try {
             // Get lab order
@@ -320,7 +333,7 @@ export const cancelLabOrder = asyncHandler(
             }
 
             // Cancel lab order
-            await labService.cancelLabOrder(id, context.userId);
+            await labService.cancelLabOrder(id, context.userId.toString());
 
             // Create audit log
             console.log(
@@ -337,12 +350,12 @@ export const cancelLabOrder = asyncHandler(
                 )
             );
 
-            sendSuccess(res, null, 'Lab order cancelled successfully');
+            sendSuccess(res, {}, 'Lab order cancelled successfully');
         } catch (error) {
             logger.error('Failed to cancel lab order:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to cancel lab order: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -376,12 +389,31 @@ export const addLabResult = asyncHandler(
             loincCode,
         } = req.body;
 
+        if (!patientId) {
+            return sendError(res, 'VALIDATION_ERROR', 'Patient ID is required', 400);
+        }
+        if (!testCode) {
+            return sendError(res, 'VALIDATION_ERROR', 'Test code is required', 400);
+        }
+        if (!testName) {
+            return sendError(res, 'VALIDATION_ERROR', 'Test name is required', 400);
+        }
+        if (!value) {
+            return sendError(res, 'VALIDATION_ERROR', 'Value is required', 400);
+        }
+        if (!referenceRange) {
+            return sendError(res, 'VALIDATION_ERROR', 'Reference range is required', 400);
+        }
+        if (!interpretation) {
+            return sendError(res, 'VALIDATION_ERROR', 'Interpretation is required', 400);
+        }
+
         try {
             // Create lab result
             const labResult = await labService.addLabResult({
-                orderId: orderId ? new Types.ObjectId(orderId) : undefined,
-                patientId: new Types.ObjectId(patientId),
-                workplaceId: new Types.ObjectId(context.workplaceId),
+                orderId: orderId ? orderId.toString() : undefined,
+                patientId: patientId.toString(),
+                workplaceId: context.workplaceId.toString(),
                 testCode,
                 testName,
                 value,
@@ -392,7 +424,7 @@ export const addLabResult = asyncHandler(
                 source: 'manual',
                 performedAt: performedAt ? new Date(performedAt) : new Date(),
                 recordedAt: new Date(),
-                recordedBy: new Types.ObjectId(context.userId),
+                recordedBy: context.userId.toString(),
                 externalResultId,
                 loincCode,
             });
@@ -432,7 +464,7 @@ export const addLabResult = asyncHandler(
             logger.error('Failed to add lab result:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to add lab result: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -465,11 +497,11 @@ export const getLabResults = asyncHandler(
         try {
             // Build filters
             const filters: any = {
-                workplaceId: context.workplaceId,
+                workplaceId: context.workplaceId.toString(),
             };
 
-            if (patientId) filters.patientId = patientId;
-            if (orderId) filters.orderId = orderId;
+            if (patientId) filters.patientId = patientId.toString();
+            if (orderId) filters.orderId = orderId.toString();
             if (testCode) filters.testCode = testCode;
             if (interpretation) filters.interpretation = interpretation;
 
@@ -481,7 +513,7 @@ export const getLabResults = asyncHandler(
 
             // Get lab results
             const results = await labService.getLabResults(
-                context.workplaceId,
+                context.workplaceId.toString(),
                 filters,
                 parsedPage,
                 parsedLimit
@@ -499,7 +531,7 @@ export const getLabResults = asyncHandler(
             logger.error('Failed to get lab results:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to get lab results: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -515,6 +547,10 @@ export const getLabResult = asyncHandler(
     async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
         const context = getRequestContext(req);
+
+        if (!id) {
+            return sendError(res, 'VALIDATION_ERROR', 'Lab result ID is required', 400);
+        }
 
         try {
             // Get lab result
@@ -542,7 +578,7 @@ export const getLabResult = asyncHandler(
                     trends = await labService.getResultTrends(
                         result.patientId.toString(),
                         result.testCode,
-                        context.workplaceId
+                        context.workplaceId.toString()
                     );
                 } catch (error) {
                     logger.warn('Failed to get result trends:', error);
@@ -562,7 +598,7 @@ export const getLabResult = asyncHandler(
             logger.error('Failed to get lab result:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to get lab result: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -580,6 +616,10 @@ export const updateLabResult = asyncHandler(
         const context = getRequestContext(req);
         const updates = req.body;
 
+        if (!id) {
+            return sendError(res, 'VALIDATION_ERROR', 'Lab result ID is required', 400);
+        }
+
         try {
             // Get lab result
             const result = await LabResult.findOne({
@@ -593,7 +633,7 @@ export const updateLabResult = asyncHandler(
             }
 
             // Update lab result
-            const updatedResult = await labService.updateLabResult(id, updates, context.userId);
+            const updatedResult = await labService.updateLabResult(id, updates, context.userId.toString());
 
             // Validate updated result
             const validation = await labService.validateResult(updatedResult);
@@ -628,7 +668,7 @@ export const updateLabResult = asyncHandler(
             logger.error('Failed to update lab result:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to update lab result: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -644,6 +684,10 @@ export const deleteLabResult = asyncHandler(
     async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
         const context = getRequestContext(req);
+
+        if (!id) {
+            return sendError(res, 'VALIDATION_ERROR', 'Lab result ID is required', 400);
+        }
 
         try {
             // Get lab result
@@ -679,12 +723,12 @@ export const deleteLabResult = asyncHandler(
                 )
             );
 
-            sendSuccess(res, null, 'Lab result deleted successfully');
+            sendSuccess(res, {}, 'Lab result deleted successfully');
         } catch (error) {
             logger.error('Failed to delete lab result:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to delete lab result: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -706,12 +750,19 @@ export const getLabResultTrends = asyncHandler(
         const { months = 12 } = req.query as any;
         const context = getRequestContext(req);
 
+        if (!patientId) {
+            return sendError(res, 'VALIDATION_ERROR', 'Patient ID is required', 400);
+        }
+        if (!testCode) {
+            return sendError(res, 'VALIDATION_ERROR', 'Test code is required', 400);
+        }
+
         try {
             // Get result trends
             const trends = await labService.getResultTrends(
-                patientId,
+                patientId.toString(),
                 testCode,
-                context.workplaceId,
+                context.workplaceId.toString(),
                 parseInt(months)
             );
 
@@ -729,7 +780,7 @@ export const getLabResultTrends = asyncHandler(
             logger.error('Failed to get lab result trends:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to get lab result trends: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -833,7 +884,7 @@ export const getLabDashboard = asyncHandler(
             logger.error('Failed to get lab dashboard:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to get lab dashboard: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -915,11 +966,15 @@ export const exportLabOrderToFHIR = asyncHandler(
         const { orderId } = req.params;
         const context = getRequestContext(req);
 
+        if (!orderId) {
+            return sendError(res, 'VALIDATION_ERROR', 'Lab order ID is required', 400);
+        }
+
         try {
             // Export lab order to FHIR
             const fhirServiceRequest = await labService.exportLabOrderToFHIR(
                 orderId,
-                context.workplaceId
+                context.workplaceId.toString()
             );
 
             // Create audit log
@@ -968,11 +1023,15 @@ export const syncLabResultsFromFHIR = asyncHandler(
         const { fromDate, toDate } = req.body;
         const context = getRequestContext(req);
 
+        if (!patientId) {
+            return sendError(res, 'VALIDATION_ERROR', 'Patient ID is required', 400);
+        }
+
         try {
             // Sync lab results from FHIR
             const syncResult = await labService.syncLabResultsFromFHIR(
-                patientId,
-                context.workplaceId,
+                patientId.toString(),
+                context.workplaceId.toString(),
                 fromDate ? new Date(fromDate) : undefined,
                 toDate ? new Date(toDate) : undefined
             );

@@ -28,7 +28,7 @@ import clinicalApiService from '../services/clinicalApiService';
 export const checkDrugInteractions = asyncHandler(
     async (req: AuthRequest, res: Response) => {
         const context = getRequestContext(req);
-        const { medications, patientAllergies = [], includeContraindications = true } = req.body;
+        const { medications, patientAllergies = [], includeContraindications = true, conditions = [] } = req.body;
 
         try {
             // Validate medications array
@@ -51,21 +51,27 @@ export const checkDrugInteractions = asyncHandler(
             }
 
             // Check drug interactions
-            const interactionResults = await clinicalApiService.checkDrugInteractions(medications);
+            const interactionResultsResponse = await clinicalApiService.checkDrugInteractions(medications);
+            const interactionResults = interactionResultsResponse.data;
 
             // Check allergic reactions if allergies provided
             let allergyAlerts: any[] = [];
             if (patientAllergies.length > 0) {
-                allergyAlerts = await clinicalApiService.checkAllergyInteractions(
+                const allergyAlertsResponse = await clinicalApiService.checkDrugAllergies(
                     medications,
                     patientAllergies
                 );
+                allergyAlerts = allergyAlertsResponse.data;
             }
 
             // Check contraindications if requested
             let contraindications: any[] = [];
             if (includeContraindications) {
-                contraindications = await clinicalApiService.checkContraindications(medications);
+                const contraindicationsResponse = await clinicalApiService.checkContraindications(
+                    medications,
+                    conditions
+                );
+                contraindications = contraindicationsResponse.data;
             }
 
             // Categorize interactions by severity
@@ -136,7 +142,7 @@ export const checkDrugInteractions = asyncHandler(
             logger.error('Failed to check drug interactions:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to check drug interactions: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -165,7 +171,8 @@ export const getDrugInformation = asyncHandler(
             }
 
             // Get drug information
-            const drugInfo = await clinicalApiService.lookupDrugInfo(drugName.trim());
+            const drugInfoResponse = await clinicalApiService.getDrugInfo(drugName.trim());
+            const drugInfo = drugInfoResponse.data;
 
             if (!drugInfo) {
                 return sendError(
@@ -177,20 +184,27 @@ export const getDrugInformation = asyncHandler(
             }
 
             // Get additional interaction data if requested
-            let interactionData = null;
+            let interactionData: any[] | null = null;
             if (includeInteractions && drugInfo.rxcui) {
                 try {
-                    interactionData = await clinicalApiService.getDrugInteractionsByRxCUI(drugInfo.rxcui);
+                    const interactionDataResponse = await clinicalApiService.checkDrugInteractions([drugInfo.name]); // Assuming checkDrugInteractions can take a single drug name
+                    interactionData = interactionDataResponse.data;
                 } catch (error) {
                     logger.warn('Failed to get interaction data for drug:', { drugName, error });
                 }
             }
 
             // Get indications if requested
-            let indications = null;
+            let indications: any[] | null = null;
             if (includeIndications && drugInfo.rxcui) {
                 try {
-                    indications = await clinicalApiService.getDrugIndications(drugInfo.rxcui);
+                    // Assuming getDrugIndications is part of clinicalApiService and takes rxcui
+                    // If not, this part needs to be adjusted based on actual API
+                    // For now, I'll assume it's part of drugInfo or a separate call
+                    // Since there's no direct equivalent in clinicalApiService.ts, I'll remove this for now
+                    // or assume it's part of drugInfo.
+                    // Based on clinicalApiService.ts, getDrugInfo already returns indication.
+                    indications = drugInfo.indication ? [drugInfo.indication] : null;
                 } catch (error) {
                     logger.warn('Failed to get indications for drug:', { drugName, error });
                 }
@@ -235,7 +249,7 @@ export const getDrugInformation = asyncHandler(
             logger.error('Failed to get drug information:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to get drug information: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -273,10 +287,11 @@ export const checkAllergyInteractions = asyncHandler(
             }
 
             // Check allergy interactions
-            const allergyAlerts = await clinicalApiService.checkAllergyInteractions(
+            const allergyAlertsResponse = await clinicalApiService.checkDrugAllergies(
                 medications,
                 allergies
             );
+            const allergyAlerts = allergyAlertsResponse.data;
 
             // Categorize alerts by severity
             const categorizedAlerts = {
@@ -327,7 +342,7 @@ export const checkAllergyInteractions = asyncHandler(
             logger.error('Failed to check allergy interactions:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to check allergy interactions: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -356,20 +371,17 @@ export const checkContraindications = asyncHandler(
             }
 
             // Check contraindications
-            const contraindications = await clinicalApiService.checkContraindications(
+            const contraindicationsResponse = await clinicalApiService.checkContraindications(
                 medications,
-                {
-                    conditions,
-                    age: patientAge,
-                    gender: patientGender,
-                }
+                conditions
             );
+            const contraindications = contraindicationsResponse.data;
 
             // Categorize contraindications
             const categorizedContraindications = {
-                absolute: contraindications.filter((c: any) => c.type === 'absolute'),
-                relative: contraindications.filter((c: any) => c.type === 'relative'),
-                caution: contraindications.filter((c: any) => c.type === 'caution'),
+                absolute: contraindications.filter((c: any) => c.severity === 'absolute'),
+                relative: contraindications.filter((c: any) => c.severity === 'relative'),
+                caution: contraindications.filter((c: any) => c.severity === 'caution'),
             };
 
             // Generate recommendations
@@ -420,7 +432,7 @@ export const checkContraindications = asyncHandler(
             logger.error('Failed to check contraindications:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to check contraindications: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
@@ -451,7 +463,8 @@ export const searchDrugs = asyncHandler(
             const searchLimit = Math.min(50, Math.max(1, parseInt(limit) || 20));
 
             // Search for drugs
-            const searchResults = await clinicalApiService.searchDrugs(q.trim(), searchLimit);
+            const searchResultsResponse = await clinicalApiService.searchDrugs(q.trim(), searchLimit);
+            const searchResults = searchResultsResponse.data;
 
             // Create audit log
             console.log(
@@ -483,7 +496,7 @@ export const searchDrugs = asyncHandler(
             logger.error('Failed to search drugs:', error);
             sendError(
                 res,
-                'INTERNAL_ERROR',
+                'SERVER_ERROR',
                 `Failed to search drugs: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );

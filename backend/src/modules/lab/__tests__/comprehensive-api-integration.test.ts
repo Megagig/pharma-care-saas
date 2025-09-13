@@ -421,7 +421,7 @@ describe('Manual Lab API Integration Tests', () => {
                         }
                     ],
                     indication: `Test indication ${i + 1}`,
-                    priority: i % 2 === 0 ? 'routine' : 'urgent',
+                    priority: (i % 2 === 0 ? 'routine' : 'urgent') as 'routine' | 'urgent' | 'stat',
                     consentObtained: true,
                     consentObtainedBy: testUser._id
                 };
@@ -1165,7 +1165,7 @@ describe('Manual Lab API Integration Tests', () => {
                         }
                     ],
                     indication: 'Test indication',
-                    priority: data.priority as any,
+                    priority: data.priority as 'routine' | 'urgent' | 'stat',
                     consentObtained: true,
                     consentObtainedBy: testUser._id
                 };

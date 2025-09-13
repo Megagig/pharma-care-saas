@@ -302,10 +302,13 @@ class DeploymentConfigManager {
         for (const [serviceName, endpoint] of services) {
             try {
                 const startTime = Date.now();
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
                 const response = await fetch(`${endpoint}/health`, {
                     method: 'GET',
-                    timeout: 5000,
+                    signal: controller.signal,
                 }).catch(() => null);
+                clearTimeout(timeoutId);
                 const responseTime = Date.now() - startTime;
                 results.push({
                     service: serviceName,

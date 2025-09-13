@@ -184,7 +184,7 @@ export const checkDiagnosticLimits = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        if (!req.user || !req.workspaceContext) {
+        if (!req.user || !req.workspaceContext || !req.workspaceContext.workspace || !req.workspaceContext.plan) {
             res.status(401).json({
                 success: false,
                 message: 'Authentication and workspace context required',
@@ -287,7 +287,7 @@ export const checkAIProcessingLimits = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        if (!req.user || !req.workspaceContext) {
+        if (!req.user || !req.workspaceContext || !req.workspaceContext.workspace || !req.workspaceContext.plan) {
             res.status(401).json({
                 success: false,
                 message: 'Authentication and workspace context required',
@@ -374,7 +374,7 @@ export const checkDiagnosticAccess = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        if (!req.user || !req.workspaceContext) {
+        if (!req.user || !req.workspaceContext || !req.workspaceContext.workspace) {
             res.status(401).json({
                 success: false,
                 message: 'Authentication and workspace context required',
@@ -429,7 +429,7 @@ export const checkDiagnosticResultAccess = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        if (!req.user || !req.workspaceContext) {
+        if (!req.user || !req.workspaceContext || !req.workspaceContext.workspace) {
             res.status(401).json({
                 success: false,
                 message: 'Authentication and workspace context required',

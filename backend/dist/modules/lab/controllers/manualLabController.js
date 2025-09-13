@@ -12,7 +12,7 @@ const Patient_1 = __importDefault(require("../../../models/Patient"));
 const Workplace_1 = __importDefault(require("../../../models/Workplace"));
 const User_1 = __importDefault(require("../../../models/User"));
 const responseHelpers_1 = require("../../../utils/responseHelpers");
-const auditService_1 = __importDefault(require("../../../services/auditService"));
+const manualLabAuditService_1 = __importDefault(require("../services/manualLabAuditService"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
 exports.createManualLabOrder = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
@@ -32,7 +32,7 @@ exports.createManualLabOrder = (0, responseHelpers_1.asyncHandler)(async (req, r
         };
         const auditContext = {
             userId: context.userId,
-            workplaceId: context.workplaceId,
+            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
             userRole: context.userRole,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -72,21 +72,24 @@ exports.createManualLabOrder = (0, responseHelpers_1.asyncHandler)(async (req, r
                 return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', error.message, 403);
             }
         }
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', 'Failed to create manual lab order', 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to create manual lab order', 500);
     }
 });
 exports.getManualLabOrder = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { orderId } = req.params;
     const context = (0, responseHelpers_1.getRequestContext)(req);
+    if (!orderId) {
+        return (0, responseHelpers_1.sendError)(res, 'VALIDATION_ERROR', 'Order ID is required', 400);
+    }
     try {
         const auditContext = {
             userId: context.userId,
-            workplaceId: context.workplaceId,
+            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
             userRole: context.userRole,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
         };
-        const order = await manualLabService_1.default.getOrderById(orderId, context.workplaceId, auditContext);
+        const order = await manualLabService_1.default.getOrderById(orderId, new mongoose_1.default.Types.ObjectId(context.workplaceId), auditContext);
         if (!order) {
             return (0, responseHelpers_1.sendError)(res, 'NOT_FOUND', 'Lab order not found', 404);
         }
@@ -113,7 +116,7 @@ exports.getManualLabOrder = (0, responseHelpers_1.asyncHandler)(async (req, res)
             userId: context.userId,
             service: 'manual-lab-api',
         });
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', 'Failed to retrieve lab order', 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to retrieve lab order', 500);
     }
 });
 exports.getPatientLabOrders = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -121,7 +124,7 @@ exports.getPatientLabOrders = (0, responseHelpers_1.asyncHandler)(async (req, re
     const { page, limit, status, sort } = req.query;
     const context = (0, responseHelpers_1.getRequestContext)(req);
     try {
-        const result = await manualLabService_1.default.getOrdersByPatient(new mongoose_1.default.Types.ObjectId(patientId), context.workplaceId, {
+        const result = await manualLabService_1.default.getOrdersByPatient(new mongoose_1.default.Types.ObjectId(patientId), new mongoose_1.default.Types.ObjectId(context.workplaceId), {
             page: parseInt(page) || 1,
             limit: parseInt(limit) || 20,
             status,
@@ -159,13 +162,16 @@ exports.getPatientLabOrders = (0, responseHelpers_1.asyncHandler)(async (req, re
             userId: context.userId,
             service: 'manual-lab-api',
         });
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', 'Failed to retrieve patient lab orders', 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to retrieve patient lab orders', 500);
     }
 });
 exports.updateOrderStatus = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { orderId } = req.params;
     const { status, notes } = req.body;
     const context = (0, responseHelpers_1.getRequestContext)(req);
+    if (!orderId) {
+        return (0, responseHelpers_1.sendError)(res, 'VALIDATION_ERROR', 'Order ID is required', 400);
+    }
     try {
         const statusUpdate = {
             status,
@@ -174,7 +180,7 @@ exports.updateOrderStatus = (0, responseHelpers_1.asyncHandler)(async (req, res)
         };
         const auditContext = {
             userId: context.userId,
-            workplaceId: context.workplaceId,
+            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
             userRole: context.userRole,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -210,10 +216,10 @@ exports.updateOrderStatus = (0, responseHelpers_1.asyncHandler)(async (req, res)
                 return (0, responseHelpers_1.sendError)(res, 'NOT_FOUND', error.message, 404);
             }
             if (error.message.includes('Invalid status transition')) {
-                return (0, responseHelpers_1.sendError)(res, 'BUSINESS_RULE_ERROR', error.message, 409);
+                return (0, responseHelpers_1.sendError)(res, 'BUSINESS_RULE_VIOLATION', error.message, 409);
             }
         }
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', 'Failed to update order status', 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to update order status', 500);
     }
 });
 exports.getManualLabOrders = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -221,7 +227,7 @@ exports.getManualLabOrders = (0, responseHelpers_1.asyncHandler)(async (req, res
     const { page, limit, status, priority, orderedBy, locationId, dateFrom, dateTo, search, sort, } = req.query;
     try {
         const filters = {
-            workplaceId: context.workplaceId,
+            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
             page: parseInt(page) || 1,
             limit: parseInt(limit) || 20,
             sortBy: sort?.replace('-', '') || 'createdAt',
@@ -243,7 +249,7 @@ exports.getManualLabOrders = (0, responseHelpers_1.asyncHandler)(async (req, res
             filters.search = search;
         const auditContext = {
             userId: context.userId,
-            workplaceId: context.workplaceId,
+            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
             userRole: context.userRole,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -280,13 +286,16 @@ exports.getManualLabOrders = (0, responseHelpers_1.asyncHandler)(async (req, res
             userId: context.userId,
             service: 'manual-lab-api',
         });
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', 'Failed to retrieve lab orders', 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to retrieve lab orders', 500);
     }
 });
 exports.addLabResults = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { orderId } = req.params;
     const { values, reviewNotes } = req.body;
     const context = (0, responseHelpers_1.getRequestContext)(req);
+    if (!orderId) {
+        return (0, responseHelpers_1.sendError)(res, 'VALIDATION_ERROR', 'Order ID is required', 400);
+    }
     try {
         const resultsRequest = {
             enteredBy: context.userId,
@@ -295,7 +304,7 @@ exports.addLabResults = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
         };
         const auditContext = {
             userId: context.userId,
-            workplaceId: context.workplaceId,
+            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
             userRole: context.userRole,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -331,30 +340,33 @@ exports.addLabResults = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
                 return (0, responseHelpers_1.sendError)(res, 'NOT_FOUND', error.message, 404);
             }
             if (error.message.includes('already exist')) {
-                return (0, responseHelpers_1.sendError)(res, 'CONFLICT', error.message, 409);
+                return (0, responseHelpers_1.sendError)(res, 'DUPLICATE_RESOURCE', error.message, 409);
             }
             if (error.message.includes('Invalid test codes')) {
                 return (0, responseHelpers_1.sendError)(res, 'VALIDATION_ERROR', error.message, 400);
             }
             if (error.message.includes('status')) {
-                return (0, responseHelpers_1.sendError)(res, 'BUSINESS_RULE_ERROR', error.message, 409);
+                return (0, responseHelpers_1.sendError)(res, 'BUSINESS_RULE_VIOLATION', error.message, 409);
             }
         }
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', 'Failed to add lab results', 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to add lab results', 500);
     }
 });
 exports.getLabResults = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { orderId } = req.params;
     const context = (0, responseHelpers_1.getRequestContext)(req);
+    if (!orderId) {
+        return (0, responseHelpers_1.sendError)(res, 'VALIDATION_ERROR', 'Order ID is required', 400);
+    }
     try {
         const auditContext = {
             userId: context.userId,
-            workplaceId: context.workplaceId,
+            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
             userRole: context.userRole,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
         };
-        const result = await manualLabService_1.default.getResultsByOrder(orderId, context.workplaceId, auditContext);
+        const result = await manualLabService_1.default.getResultsByOrder(orderId, new mongoose_1.default.Types.ObjectId(context.workplaceId), auditContext);
         if (!result) {
             return (0, responseHelpers_1.sendError)(res, 'NOT_FOUND', 'Lab results not found', 404);
         }
@@ -388,7 +400,7 @@ exports.getLabResults = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
         if (error instanceof Error && error.message.includes('not found')) {
             return (0, responseHelpers_1.sendError)(res, 'NOT_FOUND', error.message, 404);
         }
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', 'Failed to retrieve lab results', 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to retrieve lab results', 500);
     }
 });
 exports.resolveOrderToken = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -400,7 +412,7 @@ exports.resolveOrderToken = (0, responseHelpers_1.asyncHandler)(async (req, res)
     try {
         const auditContext = {
             userId: context.userId,
-            workplaceId: context.workplaceId,
+            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
             userRole: context.userRole,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -439,16 +451,19 @@ exports.resolveOrderToken = (0, responseHelpers_1.asyncHandler)(async (req, res)
                 return (0, responseHelpers_1.sendError)(res, 'NOT_FOUND', error.message, 404);
             }
         }
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', 'Failed to resolve token', 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to resolve token', 500);
     }
 });
 exports.servePDFRequisition = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { orderId } = req.params;
     const context = (0, responseHelpers_1.getRequestContext)(req);
+    if (!orderId) {
+        return (0, responseHelpers_1.sendError)(res, 'VALIDATION_ERROR', 'Order ID is required', 400);
+    }
     try {
         const order = await ManualLabOrder_1.default.findOne({
             orderId: orderId.toUpperCase(),
-            workplaceId: context.workplaceId,
+            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
             isDeleted: { $ne: true }
         })
             .populate('patientId')
@@ -469,24 +484,19 @@ exports.servePDFRequisition = (0, responseHelpers_1.asyncHandler)(async (req, re
         const pdfResult = await pdfGenerationService_1.pdfGenerationService.generateRequisitionPDF(order, patient, workplace, pharmacist);
         const auditContext = {
             userId: context.userId,
-            workplaceId: context.workplaceId,
+            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
             userRole: context.userRole,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
         };
-        await auditService_1.default.logActivity(auditContext, {
-            action: 'MANUAL_LAB_PDF_ACCESSED',
-            resourceType: 'ManualLabOrder',
-            resourceId: order._id,
+        await manualLabAuditService_1.default.logPDFAccess(auditContext, {
+            orderId: order.orderId,
             patientId: order.patientId,
-            details: {
-                orderId: order.orderId,
-                pdfFileName: pdfResult.fileName,
-                fileSize: pdfResult.metadata.fileSize,
-                accessType: 'pdf_download'
-            },
-            complianceCategory: 'document_access',
-            riskLevel: 'medium'
+            fileName: pdfResult.fileName,
+            fileSize: pdfResult.metadata.fileSize,
+            downloadMethod: 'direct_link',
+            userAgent: req.get('User-Agent'),
+            referrer: req.get('Referer')
         });
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="${pdfResult.fileName}"`);
@@ -523,10 +533,10 @@ exports.servePDFRequisition = (0, responseHelpers_1.asyncHandler)(async (req, re
                 return (0, responseHelpers_1.sendError)(res, 'VALIDATION_ERROR', error.message, 400);
             }
             if (error.message.includes('PDF generation failed')) {
-                return (0, responseHelpers_1.sendError)(res, 'PDF_GENERATION_ERROR', error.message, 500);
+                return (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', error.message, 500);
             }
         }
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', 'Failed to generate or serve PDF', 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to generate or serve PDF', 500);
     }
 });
 //# sourceMappingURL=manualLabController.js.map

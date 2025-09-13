@@ -29,8 +29,12 @@ import {
     createPaginationMeta,
 } from '../../../utils/responseHelpers';
 
-// Import audit service
+// Import audit services
 import AuditService from '../../../services/auditService';
+import ManualLabAuditService from '../services/manualLabAuditService';
+
+// Import security utilities
+import { generateSecurePDFToken } from '../middlewares/manualLabSecurityMiddleware';
 
 // Import logger
 import logger from '../../../utils/logger';
@@ -80,6 +84,13 @@ export const createManualLabOrder = asyncHandler(
             // Create the order
             const order = await ManualLabService.createOrder(createRequest, auditContext);
 
+            // Generate secure PDF access token
+            const pdfToken = generateSecurePDFToken(
+                order.orderId,
+                context.userId.toString(),
+                24 * 60 * 60 // 24 hours
+            );
+
             // Return success response
             sendSuccess(
                 res,
@@ -87,6 +98,8 @@ export const createManualLabOrder = asyncHandler(
                     order: {
                         ...order.toObject(),
                         testCount: order.tests.length,
+                        pdfAccessToken: pdfToken,
+                        pdfUrl: `/api/manual-lab-orders/${order.orderId}/pdf?token=${pdfToken}`
                     },
                 },
                 'Manual lab order created successfully',
@@ -742,20 +755,15 @@ export const servePDFRequisition = asyncHandler(
                 userAgent: req.get('User-Agent'),
             };
 
-            // Log PDF access
-            await AuditService.logActivity(auditContext, {
-                action: 'MANUAL_LAB_PDF_ACCESSED',
-                resourceType: 'Patient',
-                resourceId: order._id,
+            // Enhanced PDF access audit logging
+            await ManualLabAuditService.logPDFAccess(auditContext, {
+                orderId: order.orderId,
                 patientId: order.patientId,
-                details: {
-                    orderId: order.orderId,
-                    pdfFileName: pdfResult.fileName,
-                    fileSize: pdfResult.metadata.fileSize,
-                    accessType: 'pdf_download'
-                },
-                complianceCategory: 'data_access',
-                riskLevel: 'medium'
+                fileName: pdfResult.fileName,
+                fileSize: pdfResult.metadata.fileSize,
+                downloadMethod: 'direct_link',
+                userAgent: req.get('User-Agent'),
+                referrer: req.get('Referer')
             });
 
             // Set response headers for PDF

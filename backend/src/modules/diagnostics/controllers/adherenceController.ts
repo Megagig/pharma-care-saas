@@ -189,12 +189,12 @@ export const addRefill = async (req: AuthRequest, res: Response): Promise<void> 
         const { patientId } = req.params;
         const refillData: RefillData = req.body;
 
-        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -286,12 +286,12 @@ export const updateMedicationAdherence = async (req: AuthRequest, res: Response)
         const { patientId, medicationName } = req.params;
         const adherenceData = req.body;
 
-        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -373,12 +373,12 @@ export const assessPatientAdherence = async (req: AuthRequest, res: Response): P
         const { workplaceId } = req.user!;
         const { patientId } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -430,12 +430,12 @@ export const addIntervention = async (req: AuthRequest, res: Response): Promise<
         const { patientId } = req.params;
         const intervention: Omit<IAdherenceIntervention, 'implementedAt'> = req.body;
 
-        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -519,12 +519,12 @@ export const generateAdherenceReport = async (req: AuthRequest, res: Response): 
         const { patientId } = req.params;
         const { startDate, endDate } = req.query;
 
-        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -658,12 +658,12 @@ export const acknowledgeAlert = async (req: AuthRequest, res: Response): Promise
         const { patientId, alertIndex } = req.params;
         const { actionTaken } = req.body;
 
-        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -745,12 +745,12 @@ export const resolveAlert = async (req: AuthRequest, res: Response): Promise<voi
         const { workplaceId } = req.user!;
         const { patientId, alertIndex } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;

@@ -9,7 +9,7 @@ const responseHelpers_1 = require("../../../utils/responseHelpers");
 const clinicalApiService_1 = __importDefault(require("../services/clinicalApiService"));
 exports.checkDrugInteractions = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
-    const { medications, patientAllergies = [], includeContraindications = true } = req.body;
+    const { medications, patientAllergies = [], includeContraindications = true, conditions = [] } = req.body;
     try {
         if (!medications || !Array.isArray(medications) || medications.length === 0) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'At least one medication is required', 400);
@@ -17,14 +17,17 @@ exports.checkDrugInteractions = (0, responseHelpers_1.asyncHandler)(async (req, 
         if (medications.length > 50) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Maximum 50 medications allowed per request', 400);
         }
-        const interactionResults = await clinicalApiService_1.default.checkDrugInteractions(medications);
+        const interactionResultsResponse = await clinicalApiService_1.default.checkDrugInteractions(medications);
+        const interactionResults = interactionResultsResponse.data;
         let allergyAlerts = [];
         if (patientAllergies.length > 0) {
-            allergyAlerts = await clinicalApiService_1.default.checkAllergyInteractions(medications, patientAllergies);
+            const allergyAlertsResponse = await clinicalApiService_1.default.checkDrugAllergies(medications, patientAllergies);
+            allergyAlerts = allergyAlertsResponse.data;
         }
         let contraindications = [];
         if (includeContraindications) {
-            contraindications = await clinicalApiService_1.default.checkContraindications(medications);
+            const contraindicationsResponse = await clinicalApiService_1.default.checkContraindications(medications, conditions);
+            contraindications = contraindicationsResponse.data;
         }
         const categorizedInteractions = {
             critical: interactionResults.filter((i) => i.severity === 'contraindicated'),
@@ -64,7 +67,7 @@ exports.checkDrugInteractions = (0, responseHelpers_1.asyncHandler)(async (req, 
     }
     catch (error) {
         logger_1.default.error('Failed to check drug interactions:', error);
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', `Failed to check drug interactions: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', `Failed to check drug interactions: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
 });
 exports.getDrugInformation = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -74,14 +77,16 @@ exports.getDrugInformation = (0, responseHelpers_1.asyncHandler)(async (req, res
         if (!drugName || typeof drugName !== 'string' || drugName.trim().length === 0) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Drug name is required', 400);
         }
-        const drugInfo = await clinicalApiService_1.default.lookupDrugInfo(drugName.trim());
+        const drugInfoResponse = await clinicalApiService_1.default.getDrugInfo(drugName.trim());
+        const drugInfo = drugInfoResponse.data;
         if (!drugInfo) {
             return (0, responseHelpers_1.sendError)(res, 'NOT_FOUND', `Drug information not found for: ${drugName}`, 404);
         }
         let interactionData = null;
         if (includeInteractions && drugInfo.rxcui) {
             try {
-                interactionData = await clinicalApiService_1.default.getDrugInteractionsByRxCUI(drugInfo.rxcui);
+                const interactionDataResponse = await clinicalApiService_1.default.checkDrugInteractions([drugInfo.name]);
+                interactionData = interactionDataResponse.data;
             }
             catch (error) {
                 logger_1.default.warn('Failed to get interaction data for drug:', { drugName, error });
@@ -90,7 +95,7 @@ exports.getDrugInformation = (0, responseHelpers_1.asyncHandler)(async (req, res
         let indications = null;
         if (includeIndications && drugInfo.rxcui) {
             try {
-                indications = await clinicalApiService_1.default.getDrugIndications(drugInfo.rxcui);
+                indications = drugInfo.indication ? [drugInfo.indication] : null;
             }
             catch (error) {
                 logger_1.default.warn('Failed to get indications for drug:', { drugName, error });
@@ -119,7 +124,7 @@ exports.getDrugInformation = (0, responseHelpers_1.asyncHandler)(async (req, res
     }
     catch (error) {
         logger_1.default.error('Failed to get drug information:', error);
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', `Failed to get drug information: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', `Failed to get drug information: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
 });
 exports.checkAllergyInteractions = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -132,7 +137,8 @@ exports.checkAllergyInteractions = (0, responseHelpers_1.asyncHandler)(async (re
         if (!allergies || !Array.isArray(allergies) || allergies.length === 0) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'At least one allergy is required', 400);
         }
-        const allergyAlerts = await clinicalApiService_1.default.checkAllergyInteractions(medications, allergies);
+        const allergyAlertsResponse = await clinicalApiService_1.default.checkDrugAllergies(medications, allergies);
+        const allergyAlerts = allergyAlertsResponse.data;
         const categorizedAlerts = {
             severe: allergyAlerts.filter((a) => a.severity === 'severe'),
             moderate: allergyAlerts.filter((a) => a.severity === 'moderate'),
@@ -162,7 +168,7 @@ exports.checkAllergyInteractions = (0, responseHelpers_1.asyncHandler)(async (re
     }
     catch (error) {
         logger_1.default.error('Failed to check allergy interactions:', error);
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', `Failed to check allergy interactions: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', `Failed to check allergy interactions: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
 });
 exports.checkContraindications = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -172,15 +178,12 @@ exports.checkContraindications = (0, responseHelpers_1.asyncHandler)(async (req,
         if (!medications || !Array.isArray(medications) || medications.length === 0) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'At least one medication is required', 400);
         }
-        const contraindications = await clinicalApiService_1.default.checkContraindications(medications, {
-            conditions,
-            age: patientAge,
-            gender: patientGender,
-        });
+        const contraindicationsResponse = await clinicalApiService_1.default.checkContraindications(medications, conditions);
+        const contraindications = contraindicationsResponse.data;
         const categorizedContraindications = {
-            absolute: contraindications.filter((c) => c.type === 'absolute'),
-            relative: contraindications.filter((c) => c.type === 'relative'),
-            caution: contraindications.filter((c) => c.type === 'caution'),
+            absolute: contraindications.filter((c) => c.severity === 'absolute'),
+            relative: contraindications.filter((c) => c.severity === 'relative'),
+            caution: contraindications.filter((c) => c.severity === 'caution'),
         };
         const recommendations = generateContraindicationRecommendations(categorizedContraindications);
         console.log('Contraindications checked:', (0, responseHelpers_1.createAuditLog)('CHECK_CONTRAINDICATIONS', 'Contraindication', 'contraindication_check', context, {
@@ -212,7 +215,7 @@ exports.checkContraindications = (0, responseHelpers_1.asyncHandler)(async (req,
     }
     catch (error) {
         logger_1.default.error('Failed to check contraindications:', error);
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', `Failed to check contraindications: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', `Failed to check contraindications: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
 });
 exports.searchDrugs = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -223,7 +226,8 @@ exports.searchDrugs = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Search query must be at least 2 characters long', 400);
         }
         const searchLimit = Math.min(50, Math.max(1, parseInt(limit) || 20));
-        const searchResults = await clinicalApiService_1.default.searchDrugs(q.trim(), searchLimit);
+        const searchResultsResponse = await clinicalApiService_1.default.searchDrugs(q.trim(), searchLimit);
+        const searchResults = searchResultsResponse.data;
         console.log('Drug search performed:', (0, responseHelpers_1.createAuditLog)('SEARCH_DRUGS', 'DrugSearch', 'drug_search', context, {
             searchQuery: q.trim(),
             resultsCount: searchResults.length,
@@ -238,7 +242,7 @@ exports.searchDrugs = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Failed to search drugs:', error);
-        (0, responseHelpers_1.sendError)(res, 'INTERNAL_ERROR', `Failed to search drugs: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', `Failed to search drugs: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
 });
 function calculateInteractionRiskScore(interactions, allergyAlerts, contraindications) {
