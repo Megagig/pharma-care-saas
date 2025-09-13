@@ -1,6 +1,6 @@
 import express from 'express';
 import { auth } from '../middlewares/auth';
-import { rbac } from '../middlewares/rbac';
+import rbac from '../middlewares/rbac';
 import {
     getCriticalAlerts,
     acknowledgeAlert,

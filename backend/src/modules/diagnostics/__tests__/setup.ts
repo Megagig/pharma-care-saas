@@ -2,6 +2,10 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { jest } from '@jest/globals';
 
+declare global {
+    var testUtils: any;
+}
+
 // Extend Jest timeout for integration tests
 jest.setTimeout(30000);
 
@@ -40,7 +44,9 @@ afterEach(async () => {
     const collections = mongoose.connection.collections;
     for (const key in collections) {
         const collection = collections[key];
-        await collection.deleteMany({});
+        if (collection) {
+            await collection.deleteMany({});
+        }
     }
 
     // Clear any mocks
@@ -71,19 +77,19 @@ global.testUtils = {
             case 'openrouter':
                 jest.doMock('../services/openRouterService', () => ({
                     generateDiagnosticAnalysis: jest.fn().mockResolvedValue(response),
-                }));
+                } as any));
                 break;
             case 'rxnorm':
                 jest.doMock('../services/rxnormService', () => ({
                     searchDrug: jest.fn().mockResolvedValue(response),
                     getDrugInteractions: jest.fn().mockResolvedValue(response),
-                }));
+                } as any));
                 break;
             case 'openfda':
                 jest.doMock('../services/openfdaService', () => ({
                     getAdverseEvents: jest.fn().mockResolvedValue(response),
                     getDrugLabeling: jest.fn().mockResolvedValue(response),
-                }));
+                } as any));
                 break;
         }
     },

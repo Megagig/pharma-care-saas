@@ -3,14 +3,14 @@ import mongoose from 'mongoose';
 import logger from '../../../utils/logger';
 import adherenceService, { CreateAdherenceTrackingRequest, RefillData } from '../services/adherenceService';
 import AdherenceTracking, { IAdherenceIntervention } from '../models/AdherenceTracking';
-import { AuthenticatedRequest } from '../../../types/auth';
+import { AuthRequest } from '../../../types/auth';
 
 /**
  * Create adherence tracking for a patient
  */
-export const createAdherenceTracking = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const createAdherenceTracking = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { workplaceId, userId } = req.user!;
+        const { workplaceId, _id: userId } = req.user!;
         const trackingData: CreateAdherenceTrackingRequest = req.body;
 
         // Validate required fields
@@ -128,17 +128,17 @@ export const createAdherenceTracking = async (req: AuthenticatedRequest, res: Re
 /**
  * Get adherence tracking for a patient
  */
-export const getPatientAdherenceTracking = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getPatientAdherenceTracking = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { workplaceId } = req.user!;
         const { patientId } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
                     code: 'VALIDATION_ERROR',
-                    message: 'Invalid patient ID'
+                    message: 'Invalid or missing patient ID'
                 }
             });
             return;
@@ -183,7 +183,7 @@ export const getPatientAdherenceTracking = async (req: AuthenticatedRequest, res
 /**
  * Add medication refill
  */
-export const addRefill = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const addRefill = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { workplaceId } = req.user!;
         const { patientId } = req.params;
@@ -280,7 +280,7 @@ export const addRefill = async (req: AuthenticatedRequest, res: Response): Promi
 /**
  * Update medication adherence
  */
-export const updateMedicationAdherence = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const updateMedicationAdherence = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { workplaceId } = req.user!;
         const { patientId, medicationName } = req.params;
@@ -368,7 +368,7 @@ export const updateMedicationAdherence = async (req: AuthenticatedRequest, res: 
 /**
  * Assess patient adherence
  */
-export const assessPatientAdherence = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const assessPatientAdherence = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { workplaceId } = req.user!;
         const { patientId } = req.params;
@@ -424,9 +424,9 @@ export const assessPatientAdherence = async (req: AuthenticatedRequest, res: Res
 /**
  * Add adherence intervention
  */
-export const addIntervention = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const addIntervention = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { workplaceId, userId } = req.user!;
+        const { workplaceId, _id: userId } = req.user!;
         const { patientId } = req.params;
         const intervention: Omit<IAdherenceIntervention, 'implementedAt'> = req.body;
 
@@ -513,7 +513,7 @@ export const addIntervention = async (req: AuthenticatedRequest, res: Response):
 /**
  * Generate adherence report
  */
-export const generateAdherenceReport = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const generateAdherenceReport = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { workplaceId } = req.user!;
         const { patientId } = req.params;
@@ -601,7 +601,7 @@ export const generateAdherenceReport = async (req: AuthenticatedRequest, res: Re
 /**
  * Get patients with poor adherence
  */
-export const getPatientsWithPoorAdherence = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getPatientsWithPoorAdherence = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { workplaceId } = req.user!;
         const { threshold } = req.query;
@@ -652,9 +652,9 @@ export const getPatientsWithPoorAdherence = async (req: AuthenticatedRequest, re
 /**
  * Acknowledge adherence alert
  */
-export const acknowledgeAlert = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const acknowledgeAlert = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { workplaceId, userId } = req.user!;
+        const { workplaceId, _id: userId } = req.user!;
         const { patientId, alertIndex } = req.params;
         const { actionTaken } = req.body;
 
@@ -740,7 +740,7 @@ export const acknowledgeAlert = async (req: AuthenticatedRequest, res: Response)
 /**
  * Resolve adherence alert
  */
-export const resolveAlert = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const resolveAlert = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { workplaceId } = req.user!;
         const { patientId, alertIndex } = req.params;

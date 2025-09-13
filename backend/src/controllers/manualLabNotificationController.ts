@@ -39,18 +39,18 @@ export const getCriticalAlerts = async (req: AuthenticatedRequest, res: Response
             .sort((a, b) => {
                 // Sort by severity and timestamp
                 const severityOrder = { critical: 3, major: 2, moderate: 1 };
-                const severityDiff = severityOrder[b.severity] - severityOrder[a.severity];
+                const severityDiff = (severityOrder[b.severity as keyof typeof severityOrder] || 0) - (severityOrder[a.severity as keyof typeof severityOrder] || 0);
                 if (severityDiff !== 0) return severityDiff;
                 return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
             });
 
-        res.json({
+        return res.json({
             success: true,
             data: workplaceAlerts,
         });
     } catch (error) {
         logger.error('Error fetching critical alerts:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'FETCH_ALERTS_ERROR',
@@ -68,6 +68,16 @@ export const acknowledgeAlert = async (req: AuthenticatedRequest, res: Response)
         const { alertId } = req.params;
         const { _id: userId } = req.user!;
 
+        if (!alertId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Alert ID is required',
+                },
+            });
+        }
+
         if (!activeAlerts.has(alertId)) {
             return res.status(404).json({
                 success: false,
@@ -83,20 +93,22 @@ export const acknowledgeAlert = async (req: AuthenticatedRequest, res: Response)
 
         // Update alert with acknowledgment info
         const alert = activeAlerts.get(alertId);
-        alert.acknowledged = true;
-        alert.acknowledgedBy = userId;
-        alert.acknowledgedAt = new Date().toISOString();
-        activeAlerts.set(alertId, alert);
+        if (alert) {
+            alert.acknowledged = true;
+            alert.acknowledgedBy = userId;
+            alert.acknowledgedAt = new Date().toISOString();
+            activeAlerts.set(alertId, alert);
+        }
 
         logger.info(`Alert ${alertId} acknowledged by user ${userId}`);
 
-        res.json({
+        return res.json({
             success: true,
             message: 'Alert acknowledged successfully',
         });
     } catch (error) {
         logger.error('Error acknowledging alert:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'ACKNOWLEDGE_ERROR',
@@ -114,6 +126,16 @@ export const dismissAlert = async (req: AuthenticatedRequest, res: Response) => 
         const { alertId } = req.params;
         const { _id: userId } = req.user!;
 
+        if (!alertId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Alert ID is required',
+                },
+            });
+        }
+
         if (!activeAlerts.has(alertId)) {
             return res.status(404).json({
                 success: false,
@@ -129,13 +151,13 @@ export const dismissAlert = async (req: AuthenticatedRequest, res: Response) => 
 
         logger.info(`Alert ${alertId} dismissed by user ${userId}`);
 
-        res.json({
+        return res.json({
             success: true,
             message: 'Alert dismissed successfully',
         });
     } catch (error) {
         logger.error('Error dismissing alert:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'DISMISS_ERROR',
@@ -220,14 +242,14 @@ export const triggerCriticalAlert = async (req: AuthenticatedRequest, res: Respo
 
         await manualLabNotificationService.sendCriticalLabAlert(criticalAlert);
 
-        res.json({
+        return res.json({
             success: true,
             data: { alertId },
             message: 'Critical alert triggered successfully',
         });
     } catch (error) {
         logger.error('Error triggering critical alert:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'TRIGGER_ALERT_ERROR',
@@ -262,13 +284,13 @@ export const triggerAIInterpretationComplete = async (req: AuthenticatedRequest,
             interpretation
         );
 
-        res.json({
+        return res.json({
             success: true,
             message: 'AI interpretation notification sent successfully',
         });
     } catch (error) {
         logger.error('Error triggering AI interpretation notification:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'AI_NOTIFICATION_ERROR',
@@ -302,13 +324,13 @@ export const triggerPatientResultNotification = async (req: AuthenticatedRequest
             includeInterpretation
         );
 
-        res.json({
+        return res.json({
             success: true,
             message: 'Patient result notification sent successfully',
         });
     } catch (error) {
         logger.error('Error triggering patient result notification:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'PATIENT_NOTIFICATION_ERROR',
@@ -345,13 +367,13 @@ export const getNotificationPreferences = async (req: AuthenticatedRequest, res:
             push: false,
         };
 
-        res.json({
+        return res.json({
             success: true,
             data: preferences,
         });
     } catch (error) {
         logger.error('Error fetching notification preferences:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'FETCH_PREFERENCES_ERROR',
@@ -374,13 +396,13 @@ export const updateNotificationPreferences = async (req: AuthenticatedRequest, r
             preferences
         );
 
-        res.json({
+        return res.json({
             success: true,
             message: 'Notification preferences updated successfully',
         });
     } catch (error) {
         logger.error('Error updating notification preferences:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'UPDATE_PREFERENCES_ERROR',
@@ -401,13 +423,13 @@ export const getNotificationStatistics = async (req: AuthenticatedRequest, res: 
             new mongoose.Types.ObjectId(workplaceId)
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: stats,
         });
     } catch (error) {
         logger.error('Error fetching notification statistics:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'FETCH_STATS_ERROR',
@@ -459,13 +481,13 @@ export const sendTestNotification = async (req: AuthenticatedRequest, res: Respo
         // Send test notification
         await manualLabNotificationService.sendCriticalLabAlert(testAlert);
 
-        res.json({
+        return res.json({
             success: true,
             message: `Test ${type} notification sent successfully`,
         });
     } catch (error) {
         logger.error('Error sending test notification:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'TEST_NOTIFICATION_ERROR',
@@ -481,6 +503,16 @@ export const sendTestNotification = async (req: AuthenticatedRequest, res: Respo
 export const getNotificationDeliveryStatus = async (req: AuthenticatedRequest, res: Response) => {
     try {
         const { orderId } = req.params;
+
+        if (!orderId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Order ID is required',
+                },
+            });
+        }
 
         // In a real implementation, this would query the notification delivery tracking system
         const deliveryStatus = {
@@ -504,13 +536,13 @@ export const getNotificationDeliveryStatus = async (req: AuthenticatedRequest, r
             ],
         };
 
-        res.json({
+        return res.json({
             success: true,
             data: deliveryStatus,
         });
     } catch (error) {
         logger.error('Error fetching delivery status:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'DELIVERY_STATUS_ERROR',
@@ -527,16 +559,26 @@ export const retryFailedNotifications = async (req: AuthenticatedRequest, res: R
     try {
         const { orderId } = req.params;
 
+        if (!orderId) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Order ID is required',
+                },
+            });
+        }
+
         // In a real implementation, this would retry failed notifications for the order
         logger.info(`Retrying failed notifications for order ${orderId}`);
 
-        res.json({
+        return res.json({
             success: true,
             message: 'Failed notifications retry initiated',
         });
     } catch (error) {
         logger.error('Error retrying failed notifications:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'RETRY_ERROR',

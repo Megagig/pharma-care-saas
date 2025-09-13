@@ -304,10 +304,10 @@ class AdherenceService {
                         .slice(0, 2);
 
                     const daysBetween = Math.floor(
-                        (lastTwoRefills[0].date.getTime() - lastTwoRefills[1].date.getTime()) / (1000 * 60 * 60 * 24)
+                        ((lastTwoRefills[0]?.date?.getTime() || 0) - (lastTwoRefills[1]?.date?.getTime() || 0)) / (1000 * 60 * 60 * 24)
                     );
 
-                    const expectedDays = lastTwoRefills[1].daysSupply;
+                    const expectedDays = lastTwoRefills[1]?.daysSupply || 0;
                     const gap = daysBetween - expectedDays;
 
                     if (gap > 3) {

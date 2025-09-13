@@ -541,6 +541,7 @@ export class AIOrchestrationService {
             await auditService.logEvent({
                 userId: consent.pharmacistId,
                 workplaceId: '', // Will be set by the calling service
+            }, {
                 action: 'ai_diagnostic_request',
                 resourceType: 'AIAnalysis',
                 resourceId: '', // Will be set after processing
@@ -571,6 +572,7 @@ export class AIOrchestrationService {
             await auditService.logEvent({
                 userId: consent.pharmacistId,
                 workplaceId: '', // Will be set by the calling service
+            }, {
                 action: 'ai_diagnostic_response',
                 resourceType: 'AIAnalysis',
                 resourceId: response.metadata.requestId,
@@ -602,6 +604,7 @@ export class AIOrchestrationService {
             await auditService.logEvent({
                 userId: consent.pharmacistId,
                 workplaceId: '', // Will be set by the calling service
+            }, {
                 action: 'ai_diagnostic_error',
                 resourceType: 'AIAnalysis',
                 resourceId: '',

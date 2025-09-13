@@ -24,7 +24,7 @@ const getCriticalAlerts = async (req, res) => {
         }))
             .sort((a, b) => {
             const severityOrder = { critical: 3, major: 2, moderate: 1 };
-            const severityDiff = severityOrder[b.severity] - severityOrder[a.severity];
+            const severityDiff = (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0);
             if (severityDiff !== 0)
                 return severityDiff;
             return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
@@ -61,10 +61,12 @@ const acknowledgeAlert = async (req, res) => {
         }
         acknowledgedAlerts.add(alertId);
         const alert = activeAlerts.get(alertId);
-        alert.acknowledged = true;
-        alert.acknowledgedBy = userId;
-        alert.acknowledgedAt = new Date().toISOString();
-        activeAlerts.set(alertId, alert);
+        if (alert) {
+            alert.acknowledged = true;
+            alert.acknowledgedBy = userId;
+            alert.acknowledgedAt = new Date().toISOString();
+            activeAlerts.set(alertId, alert);
+        }
         logger_1.default.info(`Alert ${alertId} acknowledged by user ${userId}`);
         res.json({
             success: true,
@@ -73,7 +75,7 @@ const acknowledgeAlert = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error acknowledging alert:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'ACKNOWLEDGE_ERROR',
@@ -105,7 +107,7 @@ const dismissAlert = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error dismissing alert:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'DISMISS_ERROR',
@@ -174,7 +176,7 @@ const triggerCriticalAlert = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error triggering critical alert:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'TRIGGER_ALERT_ERROR',
@@ -204,7 +206,7 @@ const triggerAIInterpretationComplete = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error triggering AI interpretation notification:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'AI_NOTIFICATION_ERROR',
@@ -234,7 +236,7 @@ const triggerPatientResultNotification = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error triggering patient result notification:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'PATIENT_NOTIFICATION_ERROR',
@@ -272,7 +274,7 @@ const getNotificationPreferences = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error fetching notification preferences:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'FETCH_PREFERENCES_ERROR',
@@ -294,7 +296,7 @@ const updateNotificationPreferences = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error updating notification preferences:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'UPDATE_PREFERENCES_ERROR',
@@ -315,7 +317,7 @@ const getNotificationStatistics = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error fetching notification statistics:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'FETCH_STATS_ERROR',
@@ -364,7 +366,7 @@ const sendTestNotification = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error sending test notification:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'TEST_NOTIFICATION_ERROR',
@@ -404,7 +406,7 @@ const getNotificationDeliveryStatus = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error fetching delivery status:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'DELIVERY_STATUS_ERROR',

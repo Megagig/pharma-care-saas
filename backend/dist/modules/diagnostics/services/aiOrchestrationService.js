@@ -318,6 +318,7 @@ class AIOrchestrationService {
             await auditService_1.default.logEvent({
                 userId: consent.pharmacistId,
                 workplaceId: '',
+            }, {
                 action: 'ai_diagnostic_request',
                 resourceType: 'AIAnalysis',
                 resourceId: '',
@@ -342,6 +343,7 @@ class AIOrchestrationService {
             await auditService_1.default.logEvent({
                 userId: consent.pharmacistId,
                 workplaceId: '',
+            }, {
                 action: 'ai_diagnostic_response',
                 resourceType: 'AIAnalysis',
                 resourceId: response.metadata.requestId,
@@ -366,6 +368,7 @@ class AIOrchestrationService {
             await auditService_1.default.logEvent({
                 userId: consent.pharmacistId,
                 workplaceId: '',
+            }, {
                 action: 'ai_diagnostic_error',
                 resourceType: 'AIAnalysis',
                 resourceId: '',
