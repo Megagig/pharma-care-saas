@@ -25,7 +25,7 @@ import AuditService from '../../../services/auditService';
 jest.mock('../services/pdfGenerationService');
 jest.mock('../../../services/auditService');
 jest.mock('../../../services/openRouterService');
-jest.mock('../../../services/diagnosticService');
+jest.mock('../../diagnostics/services/diagnosticService');
 
 describe('Manual Lab API Integration Tests', () => {
     let app: express.Application;
@@ -452,11 +452,16 @@ describe('Manual Lab API Integration Tests', () => {
         it('should filter orders by status', async () => {
             // Update one order status
             const orders = await ManualLabOrder.find({ patientId: testPatient._id });
-            await ManualLabService.updateOrderStatus(
-                orders[0].orderId,
-                { status: 'sample_collected', updatedBy: testUser._id },
-                { userId: testUser._id, workplaceId: testWorkplace._id, userRole: 'pharmacist' }
-            );
+            if (orders.length > 0) {
+                const firstOrder = orders[0];
+                if (firstOrder) {
+                    await ManualLabService.updateOrderStatus(
+                        firstOrder.orderId,
+                        { status: 'sample_collected', updatedBy: testUser._id },
+                        { userId: testUser._id, workplaceId: testWorkplace._id, userRole: 'pharmacist' }
+                    );
+                }
+            }
 
             const response = await request(app)
                 .get(`/api/manual-lab-orders/patient/${testPatient._id}`)

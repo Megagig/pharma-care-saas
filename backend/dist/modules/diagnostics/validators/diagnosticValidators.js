@@ -333,7 +333,7 @@ const validateVitalSignsForAge = (vitals, patientAge) => {
             maxHR = 110;
         }
         if (vitals.heartRate < minHR || vitals.heartRate > maxHR) {
-            errors.push(`Heart rate ${vitals.heartRate} is outside normal range for age ${patientAge} (${minHR}-${maxHR})`);
+            errors.push(`Heart rate ${vitals.heartRate.toString()} is outside normal range for age ${patientAge} (${minHR}-${maxHR})`);
         }
     }
     if (vitals.respiratoryRate) {
@@ -360,7 +360,7 @@ const validateVitalSignsForAge = (vitals, patientAge) => {
             maxRR = 16;
         }
         if (vitals.respiratoryRate < minRR || vitals.respiratoryRate > maxRR) {
-            errors.push(`Respiratory rate ${vitals.respiratoryRate} is outside normal range for age ${patientAge} (${minRR}-${maxRR})`);
+            errors.push(`Respiratory rate ${vitals.respiratoryRate.toString()} is outside normal range for age ${patientAge} (${minRR}-${maxRR})`);
         }
     }
     return {

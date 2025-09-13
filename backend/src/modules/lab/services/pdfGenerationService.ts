@@ -9,6 +9,7 @@ import { IManualLabOrder } from '../models/ManualLabOrder';
 import { IPatient } from '../../../models/Patient';
 import { IWorkplace } from '../../../models/Workplace';
 import { IUser } from '../../../models/User';
+import ManualLabCacheService from './manualLabCacheService';
 
 export interface RequisitionTemplateData {
     // Order information
@@ -312,15 +313,21 @@ export class PDFGenerationService {
                 orderId: order.orderId,
                 generatedAt: now,
                 fileSize: pdfBuffer.length,
-                securityHash: this.generateSecurityHash(order.orderId, now)
+                securityHash: this.generateSecurityHash(order.orderId, now),
+                generationTime: Date.now() - now.getTime()
             };
 
-            return {
+            const result = {
                 pdfBuffer,
                 fileName,
                 url,
                 metadata
             };
+
+            // Cache the generated PDF
+            await ManualLabCacheService.cachePDFRequisition(order.orderId, result);
+
+            return result;
 
         } catch (error: any) {
             throw new Error(`PDF generation failed: ${error.message}`);

@@ -211,21 +211,23 @@ class DiagnosticAuditService {
             if (criteria.entityId) {
                 searchCriteria.resource = criteria.entityId;
             }
-            const results = await auditService_1.default.getAuditLogs(new mongoose_1.Types.ObjectId(searchCriteria.workplaceId), {
+            const filters = {
                 startDate: searchCriteria.dateRange?.start,
                 endDate: searchCriteria.dateRange?.end,
                 userId: searchCriteria.userIds?.[0] ? new mongoose_1.Types.ObjectId(searchCriteria.userIds[0]) : undefined,
                 action: searchCriteria.actions?.[0]
-            }, {
+            };
+            const options = {
                 page: Math.floor((searchCriteria.offset || 0) / (searchCriteria.limit || 50)) + 1,
                 limit: searchCriteria.limit || 50
-            });
+            };
+            const results = await auditService_1.default.getAuditLogs(new mongoose_1.Types.ObjectId(searchCriteria.workplaceId), filters, options);
             const diagnosticEvents = results.logs.filter((log) => log.details?.entityType &&
                 ['diagnostic_request', 'diagnostic_result', 'lab_order', 'lab_result', 'follow_up', 'adherence'].includes(log.details.entityType));
             return {
                 events: diagnosticEvents,
                 total: results.total,
-                hasMore: results.hasMore
+                hasMore: (searchCriteria.offset || 0) + diagnosticEvents.length < results.total
             };
         }
         catch (error) {

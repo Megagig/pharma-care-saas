@@ -17,6 +17,7 @@ const pdfGenerationService_1 = require("./pdfGenerationService");
 const auditService_1 = __importDefault(require("../../../services/auditService"));
 const manualLabAuditService_1 = __importDefault(require("./manualLabAuditService"));
 const mtrNotificationService_1 = require("../../../services/mtrNotificationService");
+const manualLabCacheService_1 = __importDefault(require("./manualLabCacheService"));
 const services_1 = require("../../diagnostics/services");
 const responseHelpers_1 = require("../../../utils/responseHelpers");
 class ManualLabService {
@@ -76,8 +77,9 @@ class ManualLabService {
             const pdfResult = await pdfGenerationService_1.pdfGenerationService.generateRequisitionPDF(order, patient, workplace, pharmacist);
             order.requisitionFormUrl = pdfResult.url;
             await order.save({ session });
-            await manualLabAuditService_1.default.logOrderCreation(auditContext, order, true, pdfResult.metadata?.generationTime);
+            await manualLabAuditService_1.default.logOrderCreation(auditContext, order, true, pdfResult.metadata?.generatedAt);
             await session.commitTransaction();
+            await manualLabCacheService_1.default.invalidateOrderCache(orderData.workplaceId, order.orderId, orderData.patientId);
             logger_1.default.info('Manual lab order created successfully', {
                 orderId: order.orderId,
                 patientId: orderData.patientId,
@@ -103,6 +105,26 @@ class ManualLabService {
     }
     static async getOrderById(orderId, workplaceId, auditContext) {
         try {
+            const cachedOrder = await manualLabCacheService_1.default.getCachedOrder(workplaceId, orderId.toUpperCase());
+            if (cachedOrder) {
+                if (auditContext) {
+                    await auditService_1.default.logActivity(auditContext, {
+                        action: 'MANUAL_LAB_ORDER_ACCESSED',
+                        resourceType: 'Patient',
+                        resourceId: cachedOrder._id,
+                        patientId: cachedOrder.patientId,
+                        details: {
+                            orderId: cachedOrder.orderId,
+                            status: cachedOrder.status,
+                            accessType: 'view',
+                            fromCache: true
+                        },
+                        complianceCategory: 'data_access',
+                        riskLevel: 'low'
+                    });
+                }
+                return cachedOrder;
+            }
             const order = await ManualLabOrder_1.default.findOne({
                 orderId: orderId.toUpperCase(),
                 workplaceId,
@@ -112,6 +134,9 @@ class ManualLabService {
                 .populate('orderedBy', 'firstName lastName email role')
                 .populate('createdBy', 'firstName lastName email')
                 .populate('updatedBy', 'firstName lastName email');
+            if (order) {
+                await manualLabCacheService_1.default.cacheOrder(order);
+            }
             if (order && auditContext) {
                 await auditService_1.default.logActivity(auditContext, {
                     action: 'MANUAL_LAB_ORDER_ACCESSED',
@@ -121,7 +146,8 @@ class ManualLabService {
                     details: {
                         orderId: order.orderId,
                         status: order.status,
-                        accessType: 'view'
+                        accessType: 'view',
+                        fromCache: false
                     },
                     complianceCategory: 'data_access',
                     riskLevel: 'low'
@@ -143,6 +169,28 @@ class ManualLabService {
         try {
             const page = Math.max(1, options.page || 1);
             const limit = Math.min(100, Math.max(1, options.limit || 20));
+            if (!options.status && options.sortBy === 'createdAt' && options.sortOrder !== 'asc') {
+                const cachedOrders = await manualLabCacheService_1.default.getCachedPatientOrders(workplaceId, patientId, page, limit);
+                if (cachedOrders) {
+                    const total = await ManualLabOrder_1.default.countDocuments({
+                        patientId,
+                        workplaceId,
+                        isDeleted: { $ne: true }
+                    });
+                    const pages = Math.ceil(total / limit);
+                    return {
+                        data: cachedOrders,
+                        pagination: {
+                            page,
+                            limit,
+                            total,
+                            pages,
+                            hasNext: page < pages,
+                            hasPrev: page > 1
+                        }
+                    };
+                }
+            }
             const skip = (page - 1) * limit;
             const query = {
                 patientId,
@@ -162,6 +210,9 @@ class ManualLabService {
                 .sort(sort)
                 .skip(skip)
                 .limit(limit);
+            if (!options.status && options.sortBy === 'createdAt' && options.sortOrder !== 'asc') {
+                await manualLabCacheService_1.default.cachePatientOrders(workplaceId, patientId, orders, page, limit);
+            }
             const pages = Math.ceil(total / limit);
             return {
                 data: orders,
@@ -307,6 +358,8 @@ class ManualLabService {
                 riskLevel: result.hasAbnormalResults() ? 'high' : 'medium'
             });
             await session.commitTransaction();
+            await manualLabCacheService_1.default.cacheResult(result);
+            await manualLabCacheService_1.default.invalidateOrderCache(order.workplaceId, order.orderId, order.patientId);
             this.triggerAIInterpretation({
                 orderId: order.orderId,
                 patientId: order.patientId,
@@ -345,6 +398,35 @@ class ManualLabService {
     }
     static async getResultsByOrder(orderId, workplaceId, auditContext) {
         try {
+            const cachedResult = await manualLabCacheService_1.default.getCachedResult(orderId.toUpperCase());
+            if (cachedResult) {
+                const order = await ManualLabOrder_1.default.findOne({
+                    orderId: orderId.toUpperCase(),
+                    workplaceId,
+                    isDeleted: { $ne: true }
+                });
+                if (!order) {
+                    throw (0, responseHelpers_1.createNotFoundError)('Lab order not found');
+                }
+                if (auditContext) {
+                    await auditService_1.default.logActivity(auditContext, {
+                        action: 'MANUAL_LAB_RESULTS_ACCESSED',
+                        resourceType: 'Patient',
+                        resourceId: cachedResult._id,
+                        patientId: order.patientId,
+                        details: {
+                            orderId: cachedResult.orderId,
+                            hasAbnormalResults: cachedResult.hasAbnormalResults(),
+                            aiProcessed: cachedResult.aiProcessed,
+                            accessType: 'view',
+                            fromCache: true
+                        },
+                        complianceCategory: 'data_access',
+                        riskLevel: 'low'
+                    });
+                }
+                return cachedResult;
+            }
             const order = await ManualLabOrder_1.default.findOne({
                 orderId: orderId.toUpperCase(),
                 workplaceId,
@@ -360,6 +442,9 @@ class ManualLabService {
                 .populate('enteredBy', 'firstName lastName email role')
                 .populate('reviewedBy', 'firstName lastName email role')
                 .populate('diagnosticResultId');
+            if (result) {
+                await manualLabCacheService_1.default.cacheResult(result);
+            }
             if (result && auditContext) {
                 await auditService_1.default.logActivity(auditContext, {
                     action: 'MANUAL_LAB_RESULTS_ACCESSED',
@@ -370,7 +455,8 @@ class ManualLabService {
                         orderId: result.orderId,
                         hasAbnormalResults: result.hasAbnormalResults(),
                         aiProcessed: result.aiProcessed,
-                        accessType: 'view'
+                        accessType: 'view',
+                        fromCache: false
                     },
                     complianceCategory: 'data_access',
                     riskLevel: 'low'

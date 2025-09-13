@@ -160,12 +160,12 @@ class PerformanceOptimizationService {
 
         // Check for inefficient regex queries
         for (const [key, value] of Object.entries(optimizedQuery)) {
-            if (value && typeof value === 'object' && value.$regex) {
-                if (!value.$options || !value.$options.includes('i')) {
+            if (value && typeof value === 'object' && (value as any).$regex) {
+                if (!(value as any).$options || !(value as any).$options.includes('i')) {
                     recommendations.push(`Consider case-insensitive regex for field: ${key}`);
                 }
 
-                if (typeof value.$regex === 'string' && !value.$regex.startsWith('^')) {
+                if (typeof (value as any).$regex === 'string' && !(value as any).$regex.startsWith('^')) {
                     recommendations.push(`Consider anchoring regex with ^ for field: ${key}`);
                     estimatedImprovement += 30;
                 }
@@ -451,7 +451,7 @@ class PerformanceOptimizationService {
 
         let insertIndex = this.jobQueue.length;
         for (let i = 0; i < this.jobQueue.length; i++) {
-            const queuePriority = priorityOrder[this.jobQueue[i].priority];
+            const queuePriority = priorityOrder[this.jobQueue[i]!.priority];
             if (jobPriority < queuePriority) {
                 insertIndex = i;
                 break;
@@ -708,7 +708,7 @@ class PerformanceOptimizationService {
 
         const totalProcessingTime = completedJobs.reduce((sum, job) => {
             if (job.startedAt && job.completedAt) {
-                return sum + (job.completedAt.getTime() - job.startedAt.getTime());
+                return sum + (job.completedAt!.getTime() - job.startedAt!.getTime());
             }
             return sum;
         }, 0);

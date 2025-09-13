@@ -36,13 +36,13 @@ router.post('/check', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeatu
     resourceType: 'DrugInteraction',
     complianceCategory: 'clinical_documentation',
     riskLevel: 'medium'
-}), validateRequest(validators_1.validateInteractionCheck), drugInteractionController_1.default.checkInteractions);
+}), validateRequest(validators_1.validateInteractionCheck), drugInteractionController_1.default.checkDrugInteractions);
 router.get('/drug-info', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
     action: 'GET_DRUG_INFO',
     resourceType: 'DrugInfo',
     complianceCategory: 'data_access',
     riskLevel: 'low'
-}), drugInteractionController_1.default.getDrugInfo);
+}), drugInteractionController_1.default.getDrugInformation);
 router.get('/search', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
     action: 'SEARCH_DRUGS',
     resourceType: 'DrugSearch',
@@ -54,30 +54,6 @@ router.post('/check-allergies', interactionRateLimit, auth_1.auth, (0, auth_1.re
     resourceType: 'AllergyCheck',
     complianceCategory: 'clinical_documentation',
     riskLevel: 'medium'
-}), drugInteractionController_1.default.checkAllergies);
-router.get('/details', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
-    action: 'GET_INTERACTION_DETAILS',
-    resourceType: 'InteractionDetails',
-    complianceCategory: 'data_access',
-    riskLevel: 'low'
-}), drugInteractionController_1.default.getInteractionDetails);
-router.get('/class-interactions', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
-    action: 'GET_CLASS_INTERACTIONS',
-    resourceType: 'ClassInteractions',
-    complianceCategory: 'data_access',
-    riskLevel: 'low'
-}), drugInteractionController_1.default.getClassInteractions);
-router.get('/food-interactions', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
-    action: 'GET_FOOD_INTERACTIONS',
-    resourceType: 'FoodInteractions',
-    complianceCategory: 'data_access',
-    riskLevel: 'low'
-}), drugInteractionController_1.default.getFoodInteractions);
-router.get('/pregnancy-info', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
-    action: 'GET_PREGNANCY_INFO',
-    resourceType: 'PregnancyInfo',
-    complianceCategory: 'data_access',
-    riskLevel: 'low'
-}), drugInteractionController_1.default.getPregnancyInfo);
+}), drugInteractionController_1.default.checkAllergyInteractions);
 exports.default = router;
 //# sourceMappingURL=interactionRoutes.js.map

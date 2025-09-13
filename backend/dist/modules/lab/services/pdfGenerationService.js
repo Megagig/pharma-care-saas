@@ -11,6 +11,7 @@ const canvas_1 = require("canvas");
 const promises_1 = __importDefault(require("fs/promises"));
 const path_1 = __importDefault(require("path"));
 const crypto_1 = __importDefault(require("crypto"));
+const manualLabCacheService_1 = __importDefault(require("./manualLabCacheService"));
 class PDFGenerationService {
     constructor() {
         this.browser = null;
@@ -192,14 +193,17 @@ class PDFGenerationService {
                 orderId: order.orderId,
                 generatedAt: now,
                 fileSize: pdfBuffer.length,
-                securityHash: this.generateSecurityHash(order.orderId, now)
+                securityHash: this.generateSecurityHash(order.orderId, now),
+                generationTime: Date.now() - now.getTime()
             };
-            return {
+            const result = {
                 pdfBuffer,
                 fileName,
                 url,
                 metadata
             };
+            await manualLabCacheService_1.default.cachePDFRequisition(order.orderId, result);
+            return result;
         }
         catch (error) {
             throw new Error(`PDF generation failed: ${error.message}`);

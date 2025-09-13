@@ -69,7 +69,7 @@ export const getSecurityDashboard = asyncHandler(
                         timestamp: threat.timestamp,
                         userId: threat.userId,
                         ipAddress: threat.ipAddress,
-                        summary: this.getThreatSummary(threat)
+                        summary: getThreatSummary(threat)
                     }))
                 },
                 userSecurity: userSecurity ? {
@@ -80,7 +80,7 @@ export const getSecurityDashboard = asyncHandler(
                     status: userSecurity.riskScore > 7 ? 'high_risk' :
                         userSecurity.riskScore > 4 ? 'medium_risk' : 'low_risk'
                 } : null,
-                recommendations: this.generateSecurityRecommendations(securityStats, recentThreats)
+                recommendations: generateSecurityRecommendations(securityStats, recentThreats)
             };
 
             sendSuccess(
@@ -145,8 +145,8 @@ export const getSecurityThreats = asyncHandler(
                 ipAddress: threat.ipAddress,
                 userAgent: threat.userAgent,
                 details: threat.details,
-                summary: this.getThreatSummary(threat),
-                riskScore: this.calculateThreatRiskScore(threat)
+                summary: getThreatSummary(threat),
+                riskScore: calculateThreatRiskScore(threat)
             }));
 
             // Group threats by type for analysis
@@ -160,7 +160,7 @@ export const getSecurityThreats = asyncHandler(
                     acc[threat.severity] = (acc[threat.severity] || 0) + 1;
                     return acc;
                 }, {}),
-                topUsers: this.getTopThreatUsers(formattedThreats)
+                topUsers: getTopThreatUsers(formattedThreats)
             };
 
             sendSuccess(
@@ -265,12 +265,12 @@ export const getUserSecuritySummary = asyncHandler(
                 riskAssessment: {
                     level: securitySummary.riskScore > 7 ? 'high' :
                         securitySummary.riskScore > 4 ? 'medium' : 'low',
-                    factors: this.getRiskFactors(securitySummary),
-                    recommendations: this.getUserRecommendations(securitySummary)
+                    factors: getRiskFactors(securitySummary),
+                    recommendations: getUserRecommendations(securitySummary)
                 },
                 activityPattern: {
-                    requestsPerHour: this.calculateRequestsPerHour(securitySummary),
-                    mostActiveHours: this.getMostActiveHours(securitySummary),
+                    requestsPerHour: calculateRequestsPerHour(securitySummary),
+                    mostActiveHours: getMostActiveHours(securitySummary),
                     suspiciousPatterns: securitySummary.suspiciousActivities > 0
                 }
             };
@@ -303,7 +303,7 @@ export const getUserSecuritySummary = asyncHandler(
 /**
  * Helper methods
  */
-private static getThreatSummary(threat: any): string {
+const getThreatSummary = (threat: any): string => {
     switch (threat.type) {
         case 'rate_limit_exceeded':
             return `Rate limit exceeded: ${threat.details?.pattern || 'unknown pattern'}`;
@@ -320,7 +320,7 @@ private static getThreatSummary(threat: any): string {
     }
 }
 
-private static calculateThreatRiskScore(threat: any): number {
+const calculateThreatRiskScore = (threat: any): number => {
     let score = 0;
 
     // Base score by severity
@@ -339,7 +339,7 @@ private static calculateThreatRiskScore(threat: any): number {
     return Math.min(score, 10);
 }
 
-private static getTopThreatUsers(threats: any[]): any[] {
+const getTopThreatUsers = (threats: any[]): any[] => {
     const userCounts = threats.reduce((acc: any, threat) => {
         if (threat.userId) {
             const userId = threat.userId.toString();
@@ -354,7 +354,7 @@ private static getTopThreatUsers(threats: any[]): any[] {
         .map(([userId, count]) => ({ userId, threatCount: count }));
 }
 
-private static generateSecurityRecommendations(stats: any, threats: any[]): string[] {
+const generateSecurityRecommendations = (stats: any, threats: any[]): string[] => {
     const recommendations: string[] = [];
 
     if (stats.highRiskUsers > 5) {
@@ -382,7 +382,7 @@ private static generateSecurityRecommendations(stats: any, threats: any[]): stri
     return recommendations;
 }
 
-private static getRiskFactors(summary: any): string[] {
+const getRiskFactors = (summary: any): string[] => {
     const factors: string[] = [];
 
     if (summary.suspiciousActivities > 5) {
@@ -401,7 +401,7 @@ private static getRiskFactors(summary: any): string[] {
     return factors;
 }
 
-private static getUserRecommendations(summary: any): string[] {
+const getUserRecommendations = (summary: any): string[] => {
     const recommendations: string[] = [];
 
     if (summary.riskScore > 7) {
@@ -419,13 +419,13 @@ private static getUserRecommendations(summary: any): string[] {
     return recommendations;
 }
 
-private static calculateRequestsPerHour(summary: any): number {
+const calculateRequestsPerHour = (summary: any): number => {
     // Simplified calculation - in production you'd track actual time windows
     const hoursActive = Math.max(1, (Date.now() - summary.lastActivity.getTime()) / (1000 * 60 * 60));
     return Math.round(summary.totalRequests / hoursActive);
 }
 
-private static getMostActiveHours(summary: any): number[] {
+const getMostActiveHours = (summary: any): number[] => {
     // Simplified - in production you'd track actual hourly patterns
     return [9, 10, 11, 14, 15, 16]; // Typical business hours
 }

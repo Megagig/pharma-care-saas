@@ -126,7 +126,7 @@ export class ClinicalApiService {
                 throw new Error(`No RxCUI found for drug: ${drugName}`);
             }
 
-            const primaryRxcui = rxcuis[0];
+            const primaryRxcui = rxcuis[0]!;
 
             // Get basic drug information from RxNorm
             const [drugDetails, relatedDrugs] = await Promise.all([
@@ -215,8 +215,8 @@ export class ClinicalApiService {
             rxcuiResults.forEach((rxcuis, index) => {
                 if (rxcuis.length > 0) {
                     const rxcui = rxcuis[0];
-                    validRxcuis.push(rxcui);
-                    medicationMap.set(rxcui, medications[index]);
+                    validRxcuis.push(rxcui!);
+                    medicationMap.set(rxcui!, medications[index]);
                 }
             });
 

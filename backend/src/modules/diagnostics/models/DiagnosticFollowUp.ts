@@ -110,10 +110,10 @@ export interface IDiagnosticFollowUp extends Document {
 }
 
 export interface IDiagnosticFollowUpModel extends mongoose.Model<IDiagnosticFollowUp> {
-    findByPatient(patientId: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId): Promise<IDiagnosticFollowUp[]>;
-    findOverdue(workplaceId?: mongoose.Types.ObjectId): Promise<IDiagnosticFollowUp[]>;
-    findScheduled(workplaceId?: mongoose.Types.ObjectId, dateRange?: { start: Date; end: Date }): Promise<IDiagnosticFollowUp[]>;
-    findByAssignee(assignedTo: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId, status?: string): Promise<IDiagnosticFollowUp[]>;
+    findByPatient(patientId: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId): mongoose.Query<IDiagnosticFollowUp[], IDiagnosticFollowUp>;
+    findOverdue(workplaceId?: mongoose.Types.ObjectId): mongoose.Query<IDiagnosticFollowUp[], IDiagnosticFollowUp>;
+    findScheduled(workplaceId?: mongoose.Types.ObjectId, dateRange?: { start: Date; end: Date }): mongoose.Query<IDiagnosticFollowUp[], IDiagnosticFollowUp>;
+    findByAssignee(assignedTo: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId, status?: string): mongoose.Query<IDiagnosticFollowUp[], IDiagnosticFollowUp>;
 }
 
 const followUpReminderSchema = new Schema({

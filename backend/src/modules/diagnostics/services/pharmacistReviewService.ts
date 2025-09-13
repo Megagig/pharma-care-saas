@@ -126,11 +126,13 @@ export class PharmacistReviewService {
 
             // Log audit event
             await auditService.logEvent({
-                userId: reviewData.reviewedBy,
-                workplaceId: reviewData.workplaceId,
+                userId: new Types.ObjectId(reviewData.reviewedBy),
+                workplaceId: new Types.ObjectId(reviewData.workplaceId),
+                userRole: reviewer.role, // Assuming reviewer.role is available
+            }, {
                 action: 'diagnostic_result_reviewed',
                 resourceType: 'DiagnosticResult',
-                resourceId: resultId,
+                resourceId: new Types.ObjectId(resultId),
                 details: {
                     reviewStatus: reviewData.status,
                     hasModifications: !!reviewData.modifications,
@@ -224,11 +226,13 @@ export class PharmacistReviewService {
 
             // Log audit event
             await auditService.logEvent({
-                userId: createdBy,
-                workplaceId,
+                userId: new Types.ObjectId(createdBy),
+                workplaceId: new Types.ObjectId(workplaceId),
+                userRole: 'pharmacist', // Assuming the user creating intervention is a pharmacist
+            }, {
                 action: 'intervention_created_from_diagnostic',
                 resourceType: 'ClinicalIntervention',
-                resourceId: savedIntervention._id.toString(),
+                resourceId: new Types.ObjectId(savedIntervention._id.toString()),
                 details: {
                     diagnosticResultId: resultId,
                     interventionType: interventionData.type,
@@ -720,14 +724,14 @@ export class PharmacistReviewService {
                 { $limit: 5 },
             ]),
             // This would need to be implemented based on actual intervention creation tracking
-            Promise.resolve(0.75), // Placeholder
+            Promise.resolve({ interventionCreationRate: 0.75 }), // Placeholder
         ]);
 
         return {
             averageConfidenceScore: metrics[0]?.avgConfidence || 0,
             averageQualityScore: metrics[0]?.avgQuality || 0,
             commonRejectionReasons: rejectionReasons.map((r: any) => r._id).filter(Boolean),
-            interventionCreationRate: interventionRate,
+            interventionCreationRate: interventionRate.interventionCreationRate,
         };
     }
 

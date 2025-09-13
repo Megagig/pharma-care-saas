@@ -342,17 +342,22 @@ class ComplianceReportingService {
             this.dataRetentionPolicies[index] = {
                 ...this.dataRetentionPolicies[index],
                 ...policy,
-                recordType
+                recordType,
+                retentionPeriod: policy.retentionPeriod || this.dataRetentionPolicies[index].retentionPeriod,
+                archivalRequired: policy.archivalRequired || this.dataRetentionPolicies[index].archivalRequired,
+                deletionMethod: policy.deletionMethod || this.dataRetentionPolicies[index].deletionMethod,
+                legalHold: policy.legalHold || this.dataRetentionPolicies[index].legalHold,
+                regulatoryBasis: policy.regulatoryBasis || this.dataRetentionPolicies[index].regulatoryBasis,
             };
         }
         else {
             this.dataRetentionPolicies.push({
                 recordType,
-                retentionPeriod: 2555,
-                archivalRequired: true,
-                deletionMethod: 'soft',
-                legalHold: false,
-                regulatoryBasis: ['HIPAA'],
+                retentionPeriod: policy.retentionPeriod || 2555,
+                archivalRequired: policy.archivalRequired || true,
+                deletionMethod: policy.deletionMethod || 'soft',
+                legalHold: policy.legalHold || false,
+                regulatoryBasis: policy.regulatoryBasis || ['HIPAA'],
                 ...policy
             });
         }

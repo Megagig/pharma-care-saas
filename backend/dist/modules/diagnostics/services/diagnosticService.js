@@ -62,8 +62,9 @@ class DiagnosticService {
             });
             const savedRequest = await diagnosticRequest.save();
             await auditService_1.default.logEvent({
-                userId: data.pharmacistId,
-                workplaceId: data.workplaceId,
+                userId: new mongoose_1.Types.ObjectId(data.pharmacistId),
+                workplaceId: new mongoose_1.Types.ObjectId(data.workplaceId),
+            }, {
                 action: 'diagnostic_request_created',
                 resourceType: 'DiagnosticRequest',
                 resourceId: savedRequest._id.toString(),
@@ -154,8 +155,9 @@ class DiagnosticService {
             await request.markAsCompleted();
             const processingTime = Date.now() - startTime;
             await auditService_1.default.logEvent({
-                userId: request.pharmacistId.toString(),
-                workplaceId: request.workplaceId.toString(),
+                userId: request.pharmacistId,
+                workplaceId: request.workplaceId,
+            }, {
                 action: 'diagnostic_analysis_completed',
                 resourceType: 'DiagnosticResult',
                 resourceId: diagnosticResult._id.toString(),
@@ -190,8 +192,9 @@ class DiagnosticService {
             }
             if (request) {
                 await auditService_1.default.logEvent({
-                    userId: request.pharmacistId.toString(),
-                    workplaceId: request.workplaceId.toString(),
+                    userId: request.pharmacistId,
+                    workplaceId: request.workplaceId,
+                }, {
                     action: 'diagnostic_analysis_failed',
                     resourceType: 'DiagnosticRequest',
                     resourceId: requestId,
@@ -216,7 +219,7 @@ class DiagnosticService {
             if (!patient) {
                 throw new Error('Patient not found');
             }
-            const age = Math.floor((Date.now() - patient.dateOfBirth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+            const age = patient.dateOfBirth ? Math.floor((Date.now() - patient.dateOfBirth.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : patient.age || 0;
             let labResults = [];
             if (request.inputSnapshot.labResultIds && request.inputSnapshot.labResultIds.length > 0) {
                 labResults = await labService_1.default.getLabResults(request.workplaceId.toString(), {
@@ -262,11 +265,11 @@ class DiagnosticService {
                 `${result.referenceRange.low || ''}-${result.referenceRange.high || ''} ${result.unit || ''}`,
             abnormal: result.interpretation !== 'normal',
         }));
-        const currentMedications = patientData.medications.map(med => ({
+        const currentMedications = patientData.medications ? patientData.medications.map(med => ({
             name: med.name,
             dosage: med.dosage,
             frequency: med.frequency,
-        }));
+        })) : undefined;
         const aiInput = {
             symptoms: patientData.symptoms,
             labResults: labResults.length > 0 ? labResults : undefined,
@@ -543,8 +546,9 @@ class DiagnosticService {
             request.updatedBy = new mongoose_1.Types.ObjectId(cancelledBy);
             await request.save();
             await auditService_1.default.logEvent({
-                userId: cancelledBy,
-                workplaceId,
+                userId: new mongoose_1.Types.ObjectId(cancelledBy),
+                workplaceId: new mongoose_1.Types.ObjectId(workplaceId),
+            }, {
                 action: 'diagnostic_request_cancelled',
                 resourceType: 'DiagnosticRequest',
                 resourceId: requestId,

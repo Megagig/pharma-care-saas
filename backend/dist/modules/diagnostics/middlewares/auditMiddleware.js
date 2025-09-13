@@ -68,7 +68,7 @@ const diagnosticAuditLogger = (options = {}) => {
                     const consentObtained = req.body?.consentObtained ||
                         req.auditData?.details?.consentObtained;
                     if (!consentObtained) {
-                        await diagnosticAuditService_1.default.logSecurityViolation(req.user.id, req.user.workplaceId, 'missing_consent', {
+                        await diagnosticAuditService_1.default.logSecurityViolation(req.user.id.toString(), req.user.workplaceId.toString(), 'missing_consent', {
                             eventType,
                             entityType,
                             entityId,
@@ -116,14 +116,13 @@ const diagnosticAuditLogger = (options = {}) => {
                     eventType: eventType,
                     entityType: entityType,
                     entityId: entityId || 'unknown',
-                    userId: req.user.id,
-                    workplaceId: req.user.workplaceId,
+                    userId: req.user.id.toString(),
+                    workplaceId: req.user.workplaceId.toString(),
                     patientId,
                     details: auditDetails,
                     metadata: {
                         ipAddress: req.ip,
                         userAgent: req.get('User-Agent'),
-                        sessionId: req.sessionID,
                         apiVersion: req.get('API-Version') || '1.0',
                         requestId: req.headers['x-request-id']
                     },
@@ -137,8 +136,8 @@ const diagnosticAuditLogger = (options = {}) => {
                         eventType,
                         entityType,
                         entityId,
-                        userId: req.user.id,
-                        workplaceId: req.user.workplaceId,
+                        userId: req.user.id.toString(),
+                        workplaceId: req.user.workplaceId.toString(),
                         severity,
                         ipAddress: req.ip,
                         userAgent: req.get('User-Agent')

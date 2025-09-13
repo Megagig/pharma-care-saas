@@ -16,6 +16,8 @@ import { pdfGenerationService } from './pdfGenerationService';
 import AuditService, { AuditContext, AuditLogData } from '../../../services/auditService';
 import ManualLabAuditService from './manualLabAuditService';
 import { mtrNotificationService, CriticalAlert } from '../../../services/mtrNotificationService';
+import ManualLabCacheService from './manualLabCacheService';
+import { MonitorPerformance } from '../middlewares/manualLabPerformanceMiddleware';
 
 // Import diagnostic service for AI integration
 import { diagnosticService } from '../../diagnostics/services';
@@ -115,6 +117,7 @@ class ManualLabService {
     /**
      * Create a new manual lab order
      */
+    @MonitorPerformance('createOrder')
     static async createOrder(
         orderData: CreateOrderRequest,
         auditContext: AuditContext
@@ -209,10 +212,17 @@ class ManualLabService {
                 auditContext,
                 order,
                 true, // PDF generated
-                pdfResult.metadata?.generationTime
+                pdfResult.metadata?.generatedAt
             );
 
             await session.commitTransaction();
+
+            // Invalidate relevant caches after successful order creation
+            await ManualLabCacheService.invalidateOrderCache(
+                orderData.workplaceId,
+                order.orderId,
+                orderData.patientId
+            );
 
             logger.info('Manual lab order created successfully', {
                 orderId: order.orderId,
@@ -248,6 +258,30 @@ class ManualLabService {
         auditContext?: AuditContext
     ): Promise<IManualLabOrder | null> {
         try {
+            // Try to get from cache first
+            const cachedOrder = await ManualLabCacheService.getCachedOrder(workplaceId, orderId.toUpperCase());
+            if (cachedOrder) {
+                // Still log audit access for cached results
+                if (auditContext) {
+                    await AuditService.logActivity(auditContext, {
+                        action: 'MANUAL_LAB_ORDER_ACCESSED',
+                        resourceType: 'Patient',
+                        resourceId: cachedOrder._id,
+                        patientId: cachedOrder.patientId,
+                        details: {
+                            orderId: cachedOrder.orderId,
+                            status: cachedOrder.status,
+                            accessType: 'view',
+                            fromCache: true
+                        },
+                        complianceCategory: 'data_access',
+                        riskLevel: 'low'
+                    });
+                }
+                return cachedOrder;
+            }
+
+            // Fetch from database if not in cache
             const order = await ManualLabOrder.findOne({
                 orderId: orderId.toUpperCase(),
                 workplaceId,
@@ -257,6 +291,11 @@ class ManualLabService {
                 .populate('orderedBy', 'firstName lastName email role')
                 .populate('createdBy', 'firstName lastName email')
                 .populate('updatedBy', 'firstName lastName email');
+
+            // Cache the order if found
+            if (order) {
+                await ManualLabCacheService.cacheOrder(order);
+            }
 
             if (order && auditContext) {
                 // Log access for audit trail
@@ -268,7 +307,8 @@ class ManualLabService {
                     details: {
                         orderId: order.orderId,
                         status: order.status,
-                        accessType: 'view'
+                        accessType: 'view',
+                        fromCache: false
                     },
                     complianceCategory: 'data_access',
                     riskLevel: 'low'
@@ -304,6 +344,40 @@ class ManualLabService {
         try {
             const page = Math.max(1, options.page || 1);
             const limit = Math.min(100, Math.max(1, options.limit || 20));
+
+            // For simple queries without status filter, try cache first
+            if (!options.status && options.sortBy === 'createdAt' && options.sortOrder !== 'asc') {
+                const cachedOrders = await ManualLabCacheService.getCachedPatientOrders(
+                    workplaceId,
+                    patientId,
+                    page,
+                    limit
+                );
+
+                if (cachedOrders) {
+                    // Calculate pagination info (we need total count from DB for this)
+                    const total = await ManualLabOrder.countDocuments({
+                        patientId,
+                        workplaceId,
+                        isDeleted: { $ne: true }
+                    });
+
+                    const pages = Math.ceil(total / limit);
+
+                    return {
+                        data: cachedOrders,
+                        pagination: {
+                            page,
+                            limit,
+                            total,
+                            pages,
+                            hasNext: page < pages,
+                            hasPrev: page > 1
+                        }
+                    };
+                }
+            }
+
             const skip = (page - 1) * limit;
 
             // Build query
@@ -332,6 +406,11 @@ class ManualLabService {
                 .sort(sort)
                 .skip(skip)
                 .limit(limit);
+
+            // Cache the results for simple queries
+            if (!options.status && options.sortBy === 'createdAt' && options.sortOrder !== 'asc') {
+                await ManualLabCacheService.cachePatientOrders(workplaceId, patientId, orders, page, limit);
+            }
 
             const pages = Math.ceil(total / limit);
 
@@ -446,6 +525,7 @@ class ManualLabService {
     /**
      * Add results to a lab order
      */
+    @MonitorPerformance('addResults')
     static async addResults(
         orderId: string,
         resultData: AddResultsRequest,
@@ -535,6 +615,14 @@ class ManualLabService {
 
             await session.commitTransaction();
 
+            // Cache the result and invalidate order cache
+            await ManualLabCacheService.cacheResult(result);
+            await ManualLabCacheService.invalidateOrderCache(
+                order.workplaceId,
+                order.orderId,
+                order.patientId
+            );
+
             // Trigger AI interpretation asynchronously
             this.triggerAIInterpretation({
                 orderId: order.orderId,
@@ -584,6 +672,41 @@ class ManualLabService {
         auditContext?: AuditContext
     ): Promise<IManualLabResult | null> {
         try {
+            // Try to get from cache first
+            const cachedResult = await ManualLabCacheService.getCachedResult(orderId.toUpperCase());
+            if (cachedResult) {
+                // Verify order belongs to workplace (security check)
+                const order = await ManualLabOrder.findOne({
+                    orderId: orderId.toUpperCase(),
+                    workplaceId,
+                    isDeleted: { $ne: true }
+                });
+
+                if (!order) {
+                    throw createNotFoundError('Lab order not found');
+                }
+
+                if (auditContext) {
+                    await AuditService.logActivity(auditContext, {
+                        action: 'MANUAL_LAB_RESULTS_ACCESSED',
+                        resourceType: 'Patient',
+                        resourceId: cachedResult._id,
+                        patientId: order.patientId,
+                        details: {
+                            orderId: cachedResult.orderId,
+                            hasAbnormalResults: cachedResult.hasAbnormalResults(),
+                            aiProcessed: cachedResult.aiProcessed,
+                            accessType: 'view',
+                            fromCache: true
+                        },
+                        complianceCategory: 'data_access',
+                        riskLevel: 'low'
+                    });
+                }
+
+                return cachedResult;
+            }
+
             // Verify order belongs to workplace
             const order = await ManualLabOrder.findOne({
                 orderId: orderId.toUpperCase(),
@@ -603,6 +726,11 @@ class ManualLabService {
                 .populate('reviewedBy', 'firstName lastName email role')
                 .populate('diagnosticResultId');
 
+            // Cache the result if found
+            if (result) {
+                await ManualLabCacheService.cacheResult(result);
+            }
+
             if (result && auditContext) {
                 // Log access for audit trail
                 await AuditService.logActivity(auditContext, {
@@ -614,7 +742,8 @@ class ManualLabService {
                         orderId: result.orderId,
                         hasAbnormalResults: result.hasAbnormalResults(),
                         aiProcessed: result.aiProcessed,
-                        accessType: 'view'
+                        accessType: 'view',
+                        fromCache: false
                     },
                     complianceCategory: 'data_access',
                     riskLevel: 'low'

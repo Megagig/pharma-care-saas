@@ -513,7 +513,7 @@ export class LabService {
             if (numericResults.length < 2) {
                 return {
                     testCode,
-                    testName: results[0].testName,
+                    testName: results[0]?.testName || testCode,
                     results: [],
                     trend: 'insufficient_data',
                     analysis: {
@@ -525,13 +525,13 @@ export class LabService {
             }
 
             // Calculate trend
-            const firstValue = numericResults[0].value;
-            const lastValue = numericResults[numericResults.length - 1].value;
+            const firstValue = numericResults[0]!.value;
+            const lastValue = numericResults[numericResults.length - 1]!.value;
             const averageValue = numericResults.reduce((sum, r) => sum + r.value, 0) / numericResults.length;
             const changePercent = ((lastValue - firstValue) / firstValue) * 100;
             const timeSpan = Math.ceil(
-                (numericResults[numericResults.length - 1].performedAt.getTime() -
-                    numericResults[0].performedAt.getTime()) / (1000 * 60 * 60 * 24)
+                (numericResults[numericResults.length - 1]!.performedAt.getTime() -
+                    numericResults[0]!.performedAt.getTime()) / (1000 * 60 * 60 * 24)
             );
 
             // Determine trend direction
@@ -555,7 +555,7 @@ export class LabService {
 
             return {
                 testCode,
-                testName: results[0].testName,
+                testName: results[0]!.testName,
                 results: numericResults,
                 trend,
                 analysis: {

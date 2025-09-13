@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import logger from '../../../utils/logger';
 import openRouterService, { DiagnosticInput, DiagnosticResponse } from '../../../services/openRouterService';
 import auditService from '../../../services/auditService';
@@ -93,7 +94,7 @@ export class AIOrchestrationService {
             );
 
             // Log successful processing
-            await this.logAIResponse(enhancedResponse, consent);
+            await this.logAIResponse(enhancedResponse, consent, input.workplaceId);
 
             logger.info('AI diagnostic analysis completed successfully', {
                 patientId: consent.patientId,
@@ -108,7 +109,7 @@ export class AIOrchestrationService {
             const processingTime = Date.now() - startTime;
 
             // Log failed processing
-            await this.logAIError(error, consent, processingTime);
+            await this.logAIError(error, consent, processingTime, input.workplaceId);
 
             logger.error('AI diagnostic analysis failed', {
                 patientId: consent.patientId,
@@ -539,8 +540,8 @@ export class AIOrchestrationService {
     ): Promise<void> {
         try {
             await auditService.logEvent({
-                userId: consent.pharmacistId,
-                workplaceId: '', // Will be set by the calling service
+                userId: new Types.ObjectId(consent.pharmacistId),
+                workplaceId: input.workplaceId,
             }, {
                 action: 'ai_diagnostic_request',
                 resourceType: 'AIAnalysis',
@@ -566,12 +567,13 @@ export class AIOrchestrationService {
      */
     private async logAIResponse(
         response: EnhancedDiagnosticResponse,
-        consent: ConsentValidation
+        consent: ConsentValidation,
+        workplaceId: mongoose.Types.ObjectId
     ): Promise<void> {
         try {
             await auditService.logEvent({
-                userId: consent.pharmacistId,
-                workplaceId: '', // Will be set by the calling service
+                userId: new Types.ObjectId(consent.pharmacistId),
+                workplaceId: workplaceId,
             }, {
                 action: 'ai_diagnostic_response',
                 resourceType: 'AIAnalysis',
@@ -598,12 +600,13 @@ export class AIOrchestrationService {
     private async logAIError(
         error: unknown,
         consent: ConsentValidation,
-        processingTime: number
+        processingTime: number,
+        workplaceId: mongoose.Types.ObjectId
     ): Promise<void> {
         try {
             await auditService.logEvent({
-                userId: consent.pharmacistId,
-                workplaceId: '', // Will be set by the calling service
+                userId: new Types.ObjectId(consent.pharmacistId),
+                workplaceId: workplaceId,
             }, {
                 action: 'ai_diagnostic_error',
                 resourceType: 'AIAnalysis',

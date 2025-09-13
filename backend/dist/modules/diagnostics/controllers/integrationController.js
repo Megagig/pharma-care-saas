@@ -7,7 +7,6 @@ exports.getIntegrationOptions = exports.crossReferenceWithExistingRecords = expo
 const mongoose_1 = __importDefault(require("mongoose"));
 const integrationService_1 = __importDefault(require("../services/integrationService"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
-const responseHelpers_1 = require("../../../utils/responseHelpers");
 const createClinicalNoteFromDiagnostic = async (req, res) => {
     try {
         const { diagnosticRequestId, diagnosticResultId, patientId } = req.body;
@@ -22,7 +21,7 @@ const createClinicalNoteFromDiagnostic = async (req, res) => {
             });
             return;
         }
-        if (!(0, responseHelpers_1.validateObjectId)(diagnosticRequestId) || !(0, responseHelpers_1.validateObjectId)(patientId)) {
+        if (!mongoose_1.default.Types.ObjectId.isValid(diagnosticRequestId) || !mongoose_1.default.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -32,7 +31,7 @@ const createClinicalNoteFromDiagnostic = async (req, res) => {
             });
             return;
         }
-        if (diagnosticResultId && !(0, responseHelpers_1.validateObjectId)(diagnosticResultId)) {
+        if (diagnosticResultId && !mongoose_1.default.Types.ObjectId.isValid(diagnosticResultId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -89,7 +88,7 @@ const addDiagnosticDataToMTR = async (req, res) => {
             });
             return;
         }
-        if (!(0, responseHelpers_1.validateObjectId)(mtrId) || !(0, responseHelpers_1.validateObjectId)(diagnosticRequestId) || !(0, responseHelpers_1.validateObjectId)(patientId)) {
+        if (!mongoose_1.default.Types.ObjectId.isValid(mtrId) || !mongoose_1.default.Types.ObjectId.isValid(diagnosticRequestId) || !mongoose_1.default.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -99,7 +98,7 @@ const addDiagnosticDataToMTR = async (req, res) => {
             });
             return;
         }
-        if (diagnosticResultId && !(0, responseHelpers_1.validateObjectId)(diagnosticResultId)) {
+        if (diagnosticResultId && !mongoose_1.default.Types.ObjectId.isValid(diagnosticResultId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -157,7 +156,7 @@ const createMTRFromDiagnostic = async (req, res) => {
             });
             return;
         }
-        if (!(0, responseHelpers_1.validateObjectId)(diagnosticRequestId) || !(0, responseHelpers_1.validateObjectId)(patientId)) {
+        if (!mongoose_1.default.Types.ObjectId.isValid(diagnosticRequestId) || !mongoose_1.default.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -167,7 +166,7 @@ const createMTRFromDiagnostic = async (req, res) => {
             });
             return;
         }
-        if (diagnosticResultId && !(0, responseHelpers_1.validateObjectId)(diagnosticResultId)) {
+        if (diagnosticResultId && !mongoose_1.default.Types.ObjectId.isValid(diagnosticResultId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -224,7 +223,7 @@ const getUnifiedPatientTimeline = async (req, res) => {
             });
             return;
         }
-        if (!(0, responseHelpers_1.validateObjectId)(patientId)) {
+        if (!mongoose_1.default.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -283,7 +282,7 @@ const crossReferenceWithExistingRecords = async (req, res) => {
             });
             return;
         }
-        if (!(0, responseHelpers_1.validateObjectId)(diagnosticRequestId)) {
+        if (!mongoose_1.default.Types.ObjectId.isValid(diagnosticRequestId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -318,7 +317,7 @@ exports.crossReferenceWithExistingRecords = crossReferenceWithExistingRecords;
 const getIntegrationOptions = async (req, res) => {
     try {
         const { diagnosticRequestId } = req.params;
-        if (!(0, responseHelpers_1.validateObjectId)(diagnosticRequestId)) {
+        if (!mongoose_1.default.Types.ObjectId.isValid(diagnosticRequestId)) {
             res.status(400).json({
                 success: false,
                 error: {

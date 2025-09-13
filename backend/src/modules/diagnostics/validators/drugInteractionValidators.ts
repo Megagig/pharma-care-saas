@@ -239,7 +239,7 @@ export const validateMedicationList = (medications: string[]): { valid: boolean;
     const seenMedications = new Set<string>();
 
     for (let i = 0; i < medications.length; i++) {
-        const medication = medications[i];
+        const medication = medications[i]!;
 
         // Validate individual medication
         const validation = validateMedicationName(medication);
@@ -271,7 +271,7 @@ export const validateAllergyList = (allergies: string[]): { valid: boolean; erro
     const seenAllergies = new Set<string>();
 
     for (let i = 0; i < allergies.length; i++) {
-        const allergy = allergies[i];
+        const allergy = allergies[i]!;
 
         // Validate individual allergy
         const validation = validateAllergyName(allergy);
@@ -303,7 +303,7 @@ export const validateConditionList = (conditions: string[]): { valid: boolean; e
     const seenConditions = new Set<string>();
 
     for (let i = 0; i < conditions.length; i++) {
-        const condition = conditions[i];
+        const condition = conditions[i]!;
 
         // Validate individual condition
         const validation = validateConditionName(condition);

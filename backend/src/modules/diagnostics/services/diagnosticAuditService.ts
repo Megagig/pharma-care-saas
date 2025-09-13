@@ -157,10 +157,22 @@ class DiagnosticAuditService {
     async logAuditEvent(event: DiagnosticAuditEvent): Promise<void> {
         try {
             // Use the existing audit service with diagnostic-specific context
-            await auditService.logActivity({
-                userId: event.userId,
+            const auditContext = {
+                userId: new Types.ObjectId(event.userId),
+                workplaceId: new Types.ObjectId(event.workplaceId),
+                userRole: 'system', // Placeholder: userRole is not directly available in DiagnosticAuditEvent
+                sessionId: event.metadata?.sessionId, // Optional
+                ipAddress: event.metadata?.ipAddress, // Optional
+                userAgent: event.metadata?.userAgent, // Optional
+                requestMethod: 'N/A', // Placeholder: requestMethod is not directly available
+                requestUrl: 'N/A', // Placeholder: requestUrl is not directly available
+            };
+
+            const auditLogData = {
                 action: event.eventType,
-                resource: `${event.entityType}:${event.entityId}`,
+                resourceType: event.entityType,
+                resourceId: new Types.ObjectId(event.entityId),
+                patientId: event.patientId ? new Types.ObjectId(event.patientId) : undefined,
                 details: {
                     ...event.details,
                     entityType: event.entityType,
@@ -171,10 +183,13 @@ class DiagnosticAuditService {
                     aiMetadata: event.aiMetadata,
                     metadata: event.metadata
                 },
-                ipAddress: event.metadata?.ipAddress,
-                userAgent: event.metadata?.userAgent,
-                workplaceId: event.workplaceId
-            });
+                errorMessage: event.details?.errorMessage,
+                duration: event.details?.duration,
+                complianceCategory: event.details?.complianceCategory,
+                riskLevel: event.severity,
+            };
+
+            await auditService.logActivity(auditContext, auditLogData);
 
             // Log to application logger for immediate monitoring
             logger.info('Diagnostic audit event logged', {
@@ -434,18 +449,22 @@ class DiagnosticAuditService {
             }
 
             // Use existing audit service to search
+            const filters: Parameters<typeof auditService.getAuditLogs>[1] = {
+                startDate: searchCriteria.dateRange?.start,
+                endDate: searchCriteria.dateRange?.end,
+                userId: searchCriteria.userIds?.[0] ? new Types.ObjectId(searchCriteria.userIds[0]) : undefined,
+                action: searchCriteria.actions?.[0]
+            };
+
+            const options: Parameters<typeof auditService.getAuditLogs>[2] = {
+                page: Math.floor((searchCriteria.offset || 0) / (searchCriteria.limit || 50)) + 1,
+                limit: searchCriteria.limit || 50
+            };
+
             const results = await auditService.getAuditLogs(
                 new Types.ObjectId(searchCriteria.workplaceId),
-                {
-                    startDate: searchCriteria.dateRange?.start,
-                    endDate: searchCriteria.dateRange?.end,
-                    userId: searchCriteria.userIds?.[0] ? new Types.ObjectId(searchCriteria.userIds[0]) : undefined,
-                    action: searchCriteria.actions?.[0]
-                },
-                {
-                    page: Math.floor((searchCriteria.offset || 0) / (searchCriteria.limit || 50)) + 1,
-                    limit: searchCriteria.limit || 50
-                }
+                filters,
+                options
             );
 
             // Filter for diagnostic-related events
@@ -457,7 +476,7 @@ class DiagnosticAuditService {
             return {
                 events: diagnosticEvents,
                 total: results.total,
-                hasMore: results.hasMore
+                hasMore: (searchCriteria.offset || 0) + diagnosticEvents.length < results.total
             };
         } catch (error) {
             logger.error('Error searching audit events:', error);
