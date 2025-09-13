@@ -462,9 +462,12 @@ const validateLOINCCode = (loincCode) => {
     const [, code, checkDigit] = match;
     let sum = 0;
     for (let i = 0; i < code.length; i++) {
-        const digit = parseInt(code[i]);
-        const weight = (i % 2 === 0) ? 1 : 2;
-        sum += digit * weight;
+        const char = code[i];
+        if (char) {
+            const digit = parseInt(char);
+            const weight = (i % 2 === 0) ? 1 : 2;
+            sum += digit * weight;
+        }
     }
     const calculatedCheckDigit = (10 - (sum % 10)) % 10;
     const providedCheckDigit = parseInt(checkDigit);

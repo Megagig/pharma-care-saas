@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getPerformanceDashboard = exports.cleanupOldMetrics = exports.getSystemHealth = exports.clearWorkplaceCache = exports.getCacheStats = exports.getPerformanceAlerts = exports.getRealTimeMetrics = exports.getPerformanceSummary = void 0;
+const mongoose_1 = __importDefault(require("mongoose"));
 const manualLabPerformanceService_1 = __importDefault(require("../services/manualLabPerformanceService"));
 const manualLabCacheService_1 = __importDefault(require("../services/manualLabCacheService"));
 const responseHelpers_1 = require("../../../utils/responseHelpers");
@@ -155,7 +156,7 @@ exports.clearWorkplaceCache = (0, responseHelpers_1.asyncHandler)(async (req, re
         return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', 'Insufficient permissions to clear cache', 403);
     }
     try {
-        await manualLabCacheService_1.default.clearWorkplaceCache(context.workplaceId);
+        await manualLabCacheService_1.default.clearWorkplaceCache(new mongoose_1.default.Types.ObjectId(context.workplaceId));
         (0, responseHelpers_1.sendSuccess)(res, {
             message: 'Workplace cache cleared successfully',
             metadata: {

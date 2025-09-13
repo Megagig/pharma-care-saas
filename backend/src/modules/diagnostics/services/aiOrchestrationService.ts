@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import logger from '../../../utils/logger';
 import openRouterService, { DiagnosticInput, DiagnosticResponse } from '../../../services/openRouterService';
 import auditService from '../../../services/auditService';
+import mongoose from 'mongoose';
 
 export interface AIProcessingOptions {
     temperature?: number;
@@ -41,6 +42,7 @@ export interface ConsentValidation {
     consentMethod: 'verbal' | 'written' | 'electronic';
     patientId: string;
     pharmacistId: string;
+    pharmacistRole: string; // Add this line
     errors?: string[];
 }
 
@@ -94,7 +96,7 @@ export class AIOrchestrationService {
             );
 
             // Log successful processing
-            await this.logAIResponse(enhancedResponse, consent, input.workplaceId);
+            await this.logAIResponse(enhancedResponse, consent, new Types.ObjectId(input.workplaceId!));
 
             logger.info('AI diagnostic analysis completed successfully', {
                 patientId: consent.patientId,
@@ -109,7 +111,7 @@ export class AIOrchestrationService {
             const processingTime = Date.now() - startTime;
 
             // Log failed processing
-            await this.logAIError(error, consent, processingTime, input.workplaceId);
+            await this.logAIError(error, consent, processingTime, new Types.ObjectId(input.workplaceId!));
 
             logger.error('AI diagnostic analysis failed', {
                 patientId: consent.patientId,
@@ -541,11 +543,12 @@ export class AIOrchestrationService {
         try {
             await auditService.logEvent({
                 userId: new Types.ObjectId(consent.pharmacistId),
-                workplaceId: input.workplaceId,
+                workplaceId: new Types.ObjectId(input.workplaceId!),
+                userRole: consent.pharmacistRole, // Assuming consent has pharmacistRole
             }, {
                 action: 'ai_diagnostic_request',
                 resourceType: 'AIAnalysis',
-                resourceId: '', // Will be set after processing
+                
                 details: {
                     patientId: consent.patientId,
                     symptomsCount: input.symptoms.subjective.length,
@@ -574,11 +577,13 @@ export class AIOrchestrationService {
             await auditService.logEvent({
                 userId: new Types.ObjectId(consent.pharmacistId),
                 workplaceId: workplaceId,
+                userRole: consent.pharmacistRole,
             }, {
                 action: 'ai_diagnostic_response',
                 resourceType: 'AIAnalysis',
-                resourceId: response.metadata.requestId,
+                resourceId: new Types.ObjectId(),
                 details: {
+                    requestId: response.metadata.requestId,
                     patientId: consent.patientId,
                     processingTime: response.metadata.processingTime,
                     confidenceScore: response.metadata.confidenceScore,
@@ -607,10 +612,11 @@ export class AIOrchestrationService {
             await auditService.logEvent({
                 userId: new Types.ObjectId(consent.pharmacistId),
                 workplaceId: workplaceId,
+                userRole: consent.pharmacistRole,
             }, {
                 action: 'ai_diagnostic_error',
                 resourceType: 'AIAnalysis',
-                resourceId: '',
+                resourceId: new Types.ObjectId(),
                 details: {
                     patientId: consent.patientId,
                     error: error instanceof Error ? error.message : 'Unknown error',

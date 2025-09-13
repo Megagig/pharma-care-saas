@@ -34,6 +34,7 @@ export interface ConsentValidation {
     consentMethod: 'verbal' | 'written' | 'electronic';
     patientId: string;
     pharmacistId: string;
+    pharmacistRole: string;
     errors?: string[];
 }
 export declare class AIOrchestrationService {

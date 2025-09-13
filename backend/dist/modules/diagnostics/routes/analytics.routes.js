@@ -11,7 +11,7 @@ const rateLimiting_1 = __importDefault(require("../../../middlewares/rateLimitin
 const router = (0, express_1.Router)();
 router.use(auth_1.auth);
 router.use(diagnosticRBAC_1.default.requireDiagnosticAnalytics);
-router.use((0, rateLimiting_1.default)({
+router.use(rateLimiting_1.default.createRateLimiter({
     windowMs: 15 * 60 * 1000,
     max: 100,
     message: 'Too many analytics requests, please try again later'

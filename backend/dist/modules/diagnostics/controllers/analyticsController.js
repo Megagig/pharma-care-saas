@@ -29,7 +29,7 @@ const getDiagnosticMetrics = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error getting diagnostic metrics:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'ANALYTICS_ERROR',
@@ -63,7 +63,7 @@ const getAIPerformanceMetrics = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error getting AI performance metrics:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'AI_ANALYTICS_ERROR',
@@ -97,7 +97,7 @@ const getPatientOutcomeMetrics = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error getting patient outcome metrics:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'OUTCOME_ANALYTICS_ERROR',
@@ -131,7 +131,7 @@ const getUsageAnalytics = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error getting usage analytics:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'USAGE_ANALYTICS_ERROR',
@@ -165,7 +165,7 @@ const getTrendAnalysis = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error getting trend analysis:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'TREND_ANALYTICS_ERROR',
@@ -199,7 +199,7 @@ const getComparisonAnalysis = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error getting comparison analysis:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'COMPARISON_ANALYTICS_ERROR',
@@ -243,7 +243,7 @@ const generateAnalyticsReport = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error generating analytics report:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'REPORT_GENERATION_ERROR',
@@ -340,7 +340,7 @@ const getDashboardSummary = async (req, res) => {
     }
     catch (error) {
         logger_1.default.error('Error getting dashboard summary:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: {
                 code: 'DASHBOARD_ERROR',

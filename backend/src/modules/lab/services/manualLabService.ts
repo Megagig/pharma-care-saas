@@ -208,12 +208,7 @@ class ManualLabService {
             await order.save({ session });
 
             // Enhanced audit logging for order creation
-            await ManualLabAuditService.logOrderCreation(
-                auditContext,
-                order,
-                true, // PDF generated
-                pdfResult.metadata?.generatedAt
-            );
+            await ManualLabAuditService.logOrderCreation(auditContext, order, true, pdfResult.metadata?.generatedAt?.getTime());
 
             await session.commitTransaction();
 

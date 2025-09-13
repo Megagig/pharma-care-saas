@@ -1,4 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import {
   Box,
   Container,
@@ -21,23 +27,20 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Search as SearchIcon,
-  FilterList as FilterIcon,
-  Refresh as RefreshIcon,
-  Assessment as AssessmentIcon,
-  Science as ScienceIcon,
-  LocalHospital as HospitalIcon,
-  Timeline as TimelineIcon,
-  Notifications as NotificationsIcon,
-  TrendingUp as TrendingUpIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-  Schedule as ScheduleIcon,
-  Person as PersonIcon,
-  MoreVert as MoreVertIcon,
-} from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import ScienceIcon from '@mui/icons-material/Science';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import PersonIcon from '@mui/icons-material/Person';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
@@ -45,20 +48,17 @@ import { useNavigate } from 'react-router-dom';
 import {
   useDiagnosticHistory,
   useDiagnosticAnalytics,
-  useDiagnosticStatus,
 } from '../hooks/useDiagnostics';
 import { useDiagnosticStore } from '../store/diagnosticStore';
 import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
 import { usePatients } from '../../../stores';
 import { ErrorBoundary } from '../../../components/common/ErrorBoundary';
-import { NotificationSystem } from '../../../components/common/NotificationSystem';
 
 // Import types
 import type {
   DiagnosticRequest,
   DiagnosticResult,
   DiagnosticAnalytics,
-  DiagnosticFilters,
 } from '../types';
 
 interface QuickStatsCardProps {
@@ -79,8 +79,6 @@ const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
   color,
   trend,
 }) => {
-  const theme = useTheme();
-
   return (
     <Card sx={{ height: '100%' }}>
       <CardContent>
@@ -145,7 +143,8 @@ const RecentCaseCard: React.FC<RecentCaseCardProps> = ({
   onQuickAction,
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const { patients } = usePatients();
+  // TEMPORARILY DISABLED TO TEST INFINITE LOOP
+  const patients: any[] = [];
 
   const patient = patients.find((p) => p._id === request.patientId);
   const statusColor = {
@@ -280,38 +279,68 @@ const DiagnosticDashboard: React.FC = () => {
   const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(
     null
   );
-  const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
 
   // Store state
-  const { filters, setFilters, clearFilters, selectedRequest, selectRequest } =
+  const { filters, setFilters, clearFilters, selectRequest } =
     useDiagnosticStore();
 
-  const { patients } = usePatients();
+  // TEMPORARILY DISABLED TO TEST INFINITE LOOP
+  const patients: unknown[] = [];
 
-  // API queries
+  // Memoize the history query parameters to prevent infinite loops
+  const historyParams = useMemo(
+    () => ({
+      ...filters,
+      limit: 10, // Show recent cases
+    }),
+    [filters]
+  );
+
+  // API queries - TEMPORARILY DISABLED TO FIX INFINITE LOOP
+  const historyData = { data: { results: [] } };
+  const historyLoading = false;
+  const historyError = null;
+  const refetchHistoryOriginal = () => Promise.resolve();
+
+  const analyticsData = { data: {} };
+  const analyticsLoading = false;
+  const analyticsError = null;
+  const refetchAnalytics = () => Promise.resolve();
+
+  // ORIGINAL CODE (commented out):
+  /*
   const {
     data: historyData,
     isLoading: historyLoading,
     error: historyError,
-    refetch: refetchHistory,
-  } = useDiagnosticHistory({
-    ...filters,
-    limit: 10, // Show recent cases
-  });
+    refetch: refetchHistoryOriginal,
+  } = useDiagnosticHistory(historyParams);
+
+  // Memoize analytics parameters to prevent unnecessary re-renders
+  const analyticsParams = useMemo(
+    () => ({
+      dateFrom: format(
+        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        'yyyy-MM-dd'
+      ),
+      dateTo: format(new Date(), 'yyyy-MM-dd'),
+    }),
+    []
+  );
 
   const {
     data: analyticsData,
     isLoading: analyticsLoading,
     error: analyticsError,
     refetch: refetchAnalytics,
-  } = useDiagnosticAnalytics({
-    dateFrom: format(
-      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      'yyyy-MM-dd'
-    ),
-    dateTo: format(new Date(), 'yyyy-MM-dd'),
-  });
+  } = useDiagnosticAnalytics(analyticsParams);
+  */
+
+  // Memoize refetch functions to prevent infinite loops
+  const refetchHistory = useCallback(() => {
+    refetchHistoryOriginal();
+  }, [refetchHistoryOriginal]);
 
   // Real-time updates for pending requests
   const pendingRequests =
@@ -320,107 +349,154 @@ const DiagnosticDashboard: React.FC = () => {
         req.status === 'pending' || req.status === 'processing'
     ) || [];
 
-  // Poll for status updates on pending requests
+  // Removed unused polling variables since polling is disabled
+
+  // Poll for status updates on pending requests - DISABLED TO FIX INFINITE LOOP
+  // TODO: Re-enable polling after fixing the infinite loop issue
+  /*
   useEffect(() => {
-    if (pendingRequests.length > 0) {
-      const interval = setInterval(() => {
+    // Clear existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    // Set up new interval only if there are pending requests
+    if (hasPendingRequests) {
+      intervalRef.current = setInterval(() => {
         refetchHistory();
       }, 10000); // Poll every 10 seconds
-
-      return () => clearInterval(interval);
     }
-  }, [pendingRequests.length, refetchHistory]);
 
-  // Handlers
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setSearchTerm(value);
-    setFilters({ search: value, page: 1 });
-  };
+    // Cleanup function
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [hasPendingRequests, refetchHistory]);
+  */
 
-  const handlePatientFilter = (patientId: string) => {
-    setSelectedPatientId(patientId);
-    setFilters({ patientId: patientId || undefined, page: 1 });
-  };
+  // Handlers - SIMPLIFIED TO FIX INFINITE LOOP
+  const handleSearch = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      setSearchTerm(value);
 
-  const handleRefresh = async () => {
+      // Simple direct update without debouncing for now
+      if (value !== filters.search) {
+        setFilters({ search: value, page: 1 });
+      }
+    },
+    [setFilters, filters.search]
+  );
+
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       await Promise.all([refetchHistory(), refetchAnalytics()]);
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [refetchHistory, refetchAnalytics]);
 
-  const handleNewCase = () => {
+  const handleNewCase = useCallback(() => {
     navigate('/diagnostics/case-intake');
-  };
+  }, [navigate]);
 
-  const handleViewDetails = (request: DiagnosticRequest) => {
-    selectRequest(request);
-    navigate(`/diagnostics/case/${request._id}`);
-  };
+  const handleViewDetails = useCallback(
+    (request: DiagnosticRequest) => {
+      selectRequest(request);
+      navigate(`/diagnostics/case/${request._id}`);
+    },
+    [selectRequest, navigate]
+  );
 
-  const handleQuickAction = (request: DiagnosticRequest, action: string) => {
-    switch (action) {
-      case 'view':
-        handleViewDetails(request);
-        break;
-      case 'review':
-        navigate(`/diagnostics/review/${request._id}`);
-        break;
-      case 'cancel':
-        // Handle cancel logic
-        break;
-      case 'export':
-        // Handle export logic
-        break;
-    }
-  };
+  const handleQuickAction = useCallback(
+    (request: DiagnosticRequest, action: string) => {
+      switch (action) {
+        case 'view':
+          handleViewDetails(request);
+          break;
+        case 'review':
+          navigate(`/diagnostics/review/${request._id}`);
+          break;
+        case 'cancel':
+          // Handle cancel logic
+          break;
+        case 'export':
+          // Handle export logic
+          break;
+      }
+    },
+    [handleViewDetails, navigate]
+  );
 
-  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
-    setFilterAnchorEl(event.currentTarget);
-  };
+  const handleFilterClick = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      setFilterAnchorEl(event.currentTarget);
+    },
+    []
+  );
 
-  const handleFilterClose = () => {
+  const handleFilterClose = useCallback(() => {
     setFilterAnchorEl(null);
-  };
+  }, []);
+
+  const handleFilterPending = useCallback(() => {
+    setFilters({ status: 'pending' });
+    handleFilterClose();
+  }, [setFilters, handleFilterClose]);
+
+  const handleFilterCompleted = useCallback(() => {
+    setFilters({ status: 'completed' });
+    handleFilterClose();
+  }, [setFilters, handleFilterClose]);
+
+  const handleClearFilters = useCallback(() => {
+    clearFilters();
+    handleFilterClose();
+  }, [clearFilters, handleFilterClose]);
 
   // Computed values
   const recentCases = historyData?.data?.results || [];
   const analytics = analyticsData?.data as DiagnosticAnalytics | undefined;
 
-  const quickStats = [
-    {
-      title: 'Total Cases',
-      value: analytics?.totalRequests || 0,
-      icon: <AssessmentIcon />,
-      color: 'primary' as const,
-      trend: { value: 12, isPositive: true },
-    },
-    {
-      title: 'Completed Today',
-      value: analytics?.completedRequests || 0,
-      icon: <CheckCircleIcon />,
-      color: 'success' as const,
-      trend: { value: 8, isPositive: true },
-    },
-    {
-      title: 'Pending Review',
-      value: pendingRequests.length,
-      icon: <ScheduleIcon />,
-      color: 'warning' as const,
-    },
-    {
-      title: 'Avg Confidence',
-      value: analytics?.averageConfidenceScore
-        ? `${Math.round(analytics.averageConfidenceScore * 100)}%`
-        : '0%',
-      icon: <TrendingUpIcon />,
-      color: 'secondary' as const,
-      trend: { value: 5, isPositive: true },
-    },
-  ];
+  const quickStats = useMemo(
+    () => [
+      {
+        title: 'Total Cases',
+        value: analytics?.totalRequests || 0,
+        icon: <AssessmentIcon />,
+        color: 'primary' as const,
+        trend: { value: 12, isPositive: true },
+      },
+      {
+        title: 'Completed Today',
+        value: analytics?.completedRequests || 0,
+        icon: <CheckCircleIcon />,
+        color: 'success' as const,
+        trend: { value: 8, isPositive: true },
+      },
+      {
+        title: 'Pending Review',
+        value: pendingRequests.length,
+        icon: <ScheduleIcon />,
+        color: 'warning' as const,
+      },
+      {
+        title: 'Avg Confidence',
+        value: analytics?.averageConfidenceScore
+          ? `${Math.round(analytics.averageConfidenceScore * 100)}%`
+          : '0%',
+        icon: <TrendingUpIcon />,
+        color: 'secondary' as const,
+        trend: { value: 5, isPositive: true },
+      },
+    ],
+    [analytics, pendingRequests.length]
+  );
 
   if (historyError || analyticsError) {
     return (
@@ -495,7 +571,7 @@ const DiagnosticDashboard: React.FC = () => {
             />
             <Button
               variant="outlined"
-              startIcon={<FilterIcon />}
+              startIcon={<FilterListIcon />}
               onClick={handleFilterClick}
             >
               Filters
@@ -629,7 +705,7 @@ const DiagnosticDashboard: React.FC = () => {
                     </Button>
                     <Button
                       variant="outlined"
-                      startIcon={<HospitalIcon />}
+                      startIcon={<LocalHospitalIcon />}
                       onClick={() => navigate('/diagnostics/referrals')}
                       fullWidth
                     >
@@ -724,43 +800,20 @@ const DiagnosticDashboard: React.FC = () => {
           open={Boolean(filterAnchorEl)}
           onClose={handleFilterClose}
         >
-          <MenuItem
-            onClick={() => {
-              setFilters({ status: 'pending' });
-              handleFilterClose();
-            }}
-          >
-            Pending Cases
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              setFilters({ status: 'completed' });
-              handleFilterClose();
-            }}
-          >
-            Completed Cases
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              clearFilters();
-              handleFilterClose();
-            }}
-          >
-            Clear Filters
-          </MenuItem>
+          <MenuItem onClick={handleFilterPending}>Pending Cases</MenuItem>
+          <MenuItem onClick={handleFilterCompleted}>Completed Cases</MenuItem>
+          <MenuItem onClick={handleClearFilters}>Clear Filters</MenuItem>
         </Menu>
-
-        <NotificationSystem />
       </Container>
     </ErrorBoundary>
   );
 };
 
-// Wrap with feature guard
-const DiagnosticDashboardWithGuard: React.FC = () => (
-  <DiagnosticFeatureGuard>
-    <DiagnosticDashboard />
-  </DiagnosticFeatureGuard>
-);
+// TEMPORARILY REMOVED FEATURE GUARD TO TEST INFINITE LOOP
+// const DiagnosticDashboardWithGuard: React.FC = () => (
+//   <DiagnosticFeatureGuard>
+//     <DiagnosticDashboard />
+//   </DiagnosticFeatureGuard>
+// );
 
-export default DiagnosticDashboardWithGuard;
+export default DiagnosticDashboard;

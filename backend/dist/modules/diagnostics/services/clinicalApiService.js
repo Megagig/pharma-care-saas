@@ -112,8 +112,10 @@ class ClinicalApiService {
             rxcuiResults.forEach((rxcuis, index) => {
                 if (rxcuis.length > 0) {
                     const rxcui = rxcuis[0];
-                    validRxcuis.push(rxcui);
-                    medicationMap.set(rxcui, medications[index]);
+                    if (rxcui) {
+                        validRxcuis.push(rxcui);
+                        medicationMap.set(rxcui, medications[index]);
+                    }
                 }
             });
             if (validRxcuis.length < 2) {
@@ -247,6 +249,32 @@ class ClinicalApiService {
         catch (error) {
             logger_1.default.error('Contraindication check failed:', error);
             throw new Error(`Failed to check contraindications: ${error}`);
+        }
+    }
+    async searchDrugs(drugName, limit = 20) {
+        const cacheKey = `drug_search_${drugName.toLowerCase()}_${limit}`;
+        const cached = this.getFromCache(cacheKey);
+        if (cached) {
+            return {
+                data: cached,
+                cached: true,
+                timestamp: new Date(),
+                source: 'cache',
+            };
+        }
+        try {
+            const results = await rxnormService_1.default.searchDrugs(drugName, limit);
+            this.setCache(cacheKey, results);
+            return {
+                data: results,
+                cached: false,
+                timestamp: new Date(),
+                source: 'api',
+            };
+        }
+        catch (error) {
+            logger_1.default.error(`Failed to search for drug ${drugName}:`, error);
+            throw new Error(`Failed to search for drug: ${error}`);
         }
     }
     async getFDADrugInfo(drugName) {

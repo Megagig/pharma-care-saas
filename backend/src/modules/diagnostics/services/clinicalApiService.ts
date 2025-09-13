@@ -215,8 +215,10 @@ export class ClinicalApiService {
             rxcuiResults.forEach((rxcuis, index) => {
                 if (rxcuis.length > 0) {
                     const rxcui = rxcuis[0];
-                    validRxcuis.push(rxcui!);
-                    medicationMap.set(rxcui!, medications[index]);
+                    if (rxcui) {
+                        validRxcuis.push(rxcui);
+                        medicationMap.set(rxcui, medications[index]!);
+                    }
                 }
             });
 
@@ -390,6 +392,38 @@ export class ClinicalApiService {
         } catch (error) {
             logger.error('Contraindication check failed:', error);
             throw new Error(`Failed to check contraindications: ${error}`);
+        }
+    }
+
+    /**
+     * Search for drugs by name
+     */
+    async searchDrugs(drugName: string, limit: number = 20): Promise<ClinicalApiResponse<RxNormDrug[]>> {
+        const cacheKey = `drug_search_${drugName.toLowerCase()}_${limit}`;
+        const cached = this.getFromCache<RxNormDrug[]>(cacheKey);
+
+        if (cached) {
+            return {
+                data: cached,
+                cached: true,
+                timestamp: new Date(),
+                source: 'cache',
+            };
+        }
+
+        try {
+            const results = await rxnormService.searchDrugs(drugName, limit);
+            this.setCache(cacheKey, results);
+
+            return {
+                data: results,
+                cached: false,
+                timestamp: new Date(),
+                source: 'api',
+            };
+        } catch (error) {
+            logger.error(`Failed to search for drug ${drugName}:`, error);
+            throw new Error(`Failed to search for drug: ${error}`);
         }
     }
 

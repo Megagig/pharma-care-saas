@@ -1,4 +1,5 @@
 import { z } from 'zod';
+export type IVitalSigns = z.infer<typeof vitalSignsSchema>;
 export declare const paginationSchema: z.ZodObject<{
     page: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
     limit: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;

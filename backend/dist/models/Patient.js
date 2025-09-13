@@ -173,6 +173,13 @@ const patientSchema = new mongoose_1.Schema({
         },
         recordedAt: Date,
     },
+    notificationPreferences: {
+        email: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false },
+        push: { type: Boolean, default: true },
+        resultNotifications: { type: Boolean, default: true },
+        orderReminders: { type: Boolean, default: true },
+    },
     metadata: {
         sharedAccess: {
             patientId: {

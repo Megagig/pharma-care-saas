@@ -89,15 +89,16 @@ class HealthCheckService {
         for (let i = 0; i < results.length; i++) {
             const result = results[i];
             if (result.status === 'fulfilled') {
-                healthResults.push(result.value);
+                healthResults.push((result as PromiseFulfilledResult<HealthCheckResult>).value);
             } else {
+                const rejectedResult = result as PromiseRejectedResult;
                 healthResults.push({
                     service: `service_${i}`,
                     status: 'unhealthy',
                     responseTime: Date.now() - startTime,
-                    details: { error: result.reason },
+                    details: { error: rejectedResult.reason },
                     timestamp: new Date(),
-                    error: result.reason instanceof Error ? result.reason.message : 'Unknown error',
+                    error: rejectedResult.reason instanceof Error ? rejectedResult.reason.message : 'Unknown error',
                 });
             }
         }

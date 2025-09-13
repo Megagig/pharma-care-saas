@@ -134,7 +134,14 @@ class ManualLabNotificationService {
             if (!patient) {
                 throw new Error('Patient not found');
             }
-            const patientPreferences = patient.notificationPreferences || {};
+            const patientPreferences = {
+                email: patient.notificationPreferences?.email ?? true,
+                sms: patient.notificationPreferences?.sms ?? true,
+                push: patient.notificationPreferences?.push ?? true,
+                criticalAlerts: patient.notificationPreferences?.criticalAlerts ?? true,
+                resultNotifications: patient.notificationPreferences?.resultNotifications ?? true,
+                orderReminders: patient.notificationPreferences?.orderReminders ?? true,
+            };
             if (!patientPreferences.resultNotifications) {
                 logger_1.default.info(`Result notifications disabled for patient ${patientId}`);
                 return;

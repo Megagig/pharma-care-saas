@@ -24,7 +24,8 @@ export const searchAuditEvents = async (req: AuthRequest, res: Response) => {
                 }
             });
         }
-        const { workplaceId } = req.user;
+        const { workplaceId } = req.user!;
+        const workplaceIdString = workplaceId as string;
         const {
             startDate,
             endDate,
@@ -40,7 +41,7 @@ export const searchAuditEvents = async (req: AuthRequest, res: Response) => {
         } = req.query;
 
         const criteria: AuditSearchCriteria = {
-            workplaceId: workplaceId.toString(),
+            workplaceId: workplaceIdString,
             limit: limit ? parseInt(limit as string) : 50,
             offset: offset ? parseInt(offset as string) : 0
         };
@@ -96,7 +97,8 @@ export const getEntityAuditTrail = async (req: AuthRequest, res: Response) => {
                 }
             });
         }
-        const { workplaceId } = req.user;
+        const { workplaceId } = req.user!;
+        const workplaceIdString = workplaceId as string;
         const { entityType, entityId } = req.params;
 
         if (!entityType || !entityId) {
@@ -112,7 +114,7 @@ export const getEntityAuditTrail = async (req: AuthRequest, res: Response) => {
         const auditTrail = await diagnosticAuditService.getEntityAuditTrail(
             entityType,
             entityId,
-            workplaceId.toString()
+            workplaceIdString
         );
 
         return res.json({
@@ -282,7 +284,7 @@ export const getAuditStatistics = async (req: AuthRequest, res: Response) => {
         }
 
         const results = await diagnosticAuditService.searchAuditEvents({
-            workplaceId: workplaceId.toString(),
+            workplaceId: workplaceId!.toString(),
             startDate,
             endDate: now,
             limit: 10000 // Get all events for statistics
@@ -309,7 +311,9 @@ export const getAuditStatistics = async (req: AuthRequest, res: Response) => {
 
             // Count by day
             const day = new Date(event.timestamp).toISOString().split('T')[0];
-            dailyActivity[day] = (dailyActivity[day] || 0) + 1;
+            if (day) {
+                dailyActivity[day] = (dailyActivity[day] || 0) + 1;
+            }
         });
 
         const statistics = {
@@ -386,7 +390,7 @@ export const archiveAuditRecords = async (req: AuthRequest, res: Response) => {
         }
 
         const result = await diagnosticAuditService.archiveOldRecords(
-            workplaceId,
+            workplaceId.toString(),
             parseInt(retentionDays)
         );
 
@@ -430,7 +434,7 @@ export const exportAuditData = async (req: AuthRequest, res: Response) => {
         }
 
         const results = await diagnosticAuditService.searchAuditEvents({
-            workplaceId,
+            workplaceId: workplaceId.toString(),
             startDate: new Date(startDate as string),
             endDate: new Date(endDate as string),
             limit: 10000 // Export all events in range
@@ -442,7 +446,7 @@ export const exportAuditData = async (req: AuthRequest, res: Response) => {
             entityType: 'diagnostic_request',
             entityId: 'audit_export',
             userId,
-            workplaceId,
+            workplaceId: workplaceId!.toString(),
             details: {
                 exportFormat: format,
                 recordCount: results.events.length,
@@ -488,12 +492,12 @@ export const exportAuditData = async (req: AuthRequest, res: Response) => {
             res.setHeader('Content-Disposition', `attachment; filename="audit_export_${Date.now()}.json"`);
             res.json({
                 exportInfo: {
-                    workplaceId,
-                    dateRange: { startDate, endDate },
-                    exportedAt: new Date(),
-                    exportedBy: userId,
-                    recordCount: results.events.length
-                },
+                workplaceId: workplaceId!.toString(),
+                dateRange: { startDate, endDate },
+                exportedAt: new Date(),
+                exportedBy: userId,
+                recordCount: results.events.length
+            },
                 auditEvents: results.events
             });
         }
@@ -540,7 +544,7 @@ export const generateRegulatoryReport = async (req: AuthRequest, res: Response) 
         }
 
         const report = await complianceReportingService.generateRegulatoryReport(
-            workplaceId,
+            workplaceId.toString(),
             reportType as any,
             new Date(startDate as string),
             new Date(endDate as string),
@@ -582,7 +586,7 @@ export const detectAuditAnomalies = async (req: AuthRequest, res: Response) => {
         const { lookbackDays = 30 } = req.query;
 
         const anomalies = await complianceReportingService.detectAnomalies(
-            workplaceId,
+            workplaceId.toString(),
             parseInt(lookbackDays as string)
         );
 
@@ -695,7 +699,7 @@ export const advancedAuditSearch = async (req: AuthRequest, res: Response) => {
         } = req.query;
 
         const filters = {
-            workplaceId,
+            workplaceId: workplaceId.toString(),
             startDate: startDate ? new Date(startDate as string) : undefined,
             endDate: endDate ? new Date(endDate as string) : undefined,
             userIds: userIds ? (userIds as string).split(',') : undefined,
@@ -752,7 +756,7 @@ export const exportAuditVisualization = async (req: AuthRequest, res: Response) 
         }
 
         const exportData = await auditVisualizationService.exportVisualizationData(
-            workplaceId,
+            workplaceId!.toString(),
             new Date(startDate as string),
             new Date(endDate as string),
             format as 'json' | 'csv' | 'pdf'
@@ -764,7 +768,7 @@ export const exportAuditVisualization = async (req: AuthRequest, res: Response) 
             entityType: 'diagnostic_request',
             entityId: 'audit_visualization_export',
             userId,
-            workplaceId,
+            workplaceId: workplaceId!.toString(),
             details: {
                 exportFormat: format,
                 dateRange: { startDate, endDate },
@@ -849,7 +853,7 @@ export const updateDataRetentionPolicy = async (req: AuthRequest, res: Response)
             entityType: 'diagnostic_request',
             entityId: recordType,
             userId: req.user!._id,
-            workplaceId: req.user!.workplaceId,
+            workplaceId: req.user!.workplaceId!.toString(),
             details: {
                 recordType,
                 policyUpdate,

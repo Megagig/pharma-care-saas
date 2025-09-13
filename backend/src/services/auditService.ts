@@ -30,7 +30,13 @@ export interface AuditLogData {
     | 'User'
     | 'ClinicalIntervention'
     | 'ClinicalNote'
-    | 'System';
+    | 'System'
+    | 'diagnostic_request'
+    | 'diagnostic_result'
+    | 'lab_order'
+    | 'lab_result'
+    | 'follow_up'
+    | 'adherence';
   resourceId: mongoose.Types.ObjectId;
   patientId?: mongoose.Types.ObjectId;
   reviewId?: mongoose.Types.ObjectId;

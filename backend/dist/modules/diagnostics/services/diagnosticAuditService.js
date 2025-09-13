@@ -9,10 +9,21 @@ const auditService_1 = __importDefault(require("../../../services/auditService")
 class DiagnosticAuditService {
     async logAuditEvent(event) {
         try {
-            await auditService_1.default.logActivity({
-                userId: event.userId,
+            const auditContext = {
+                userId: new mongoose_1.Types.ObjectId(event.userId),
+                workplaceId: new mongoose_1.Types.ObjectId(event.workplaceId),
+                userRole: 'system',
+                sessionId: event.metadata?.sessionId,
+                ipAddress: event.metadata?.ipAddress,
+                userAgent: event.metadata?.userAgent,
+                requestMethod: 'N/A',
+                requestUrl: 'N/A',
+            };
+            const auditLogData = {
                 action: event.eventType,
-                resource: `${event.entityType}:${event.entityId}`,
+                resourceType: event.entityType,
+                resourceId: new mongoose_1.Types.ObjectId(event.entityId),
+                patientId: event.patientId ? new mongoose_1.Types.ObjectId(event.patientId) : undefined,
                 details: {
                     ...event.details,
                     entityType: event.entityType,
@@ -23,10 +34,12 @@ class DiagnosticAuditService {
                     aiMetadata: event.aiMetadata,
                     metadata: event.metadata
                 },
-                ipAddress: event.metadata?.ipAddress,
-                userAgent: event.metadata?.userAgent,
-                workplaceId: event.workplaceId
-            });
+                errorMessage: event.details?.errorMessage,
+                duration: event.details?.duration,
+                complianceCategory: event.details?.complianceCategory,
+                riskLevel: event.severity,
+            };
+            await auditService_1.default.logActivity(auditContext, auditLogData);
             logger_1.default.info('Diagnostic audit event logged', {
                 eventType: event.eventType,
                 entityType: event.entityType,

@@ -50,9 +50,13 @@ import drugRoutes from './modules/drug-info/routes/drugRoutes';
 import manualLabRoutes from './modules/lab/routes/manualLabRoutes';
 import publicApiRoutes from './routes/publicApiRoutes';
 import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
-import diagnosticRoutes from './routes/diagnosticRoutes';
+import diagnosticRoutes from './modules/diagnostics/routes/diagnosticRoutes';
+import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
+
+// Initialize system integration service
+const systemIntegration = SystemIntegrationService.getInstance();
 
 // Security middleware
 app.use(helmet());
@@ -78,6 +82,10 @@ import {
 } from './middlewares/securityMonitoring';
 app.use(blockSuspiciousIPs);
 app.use(detectAnomalies);
+
+// System integration middleware for backward compatibility
+app.use(systemIntegration.backwardCompatibilityMiddleware());
+app.use(systemIntegration.gradualRolloutMiddleware());
 
 // Rate limiting - more lenient for development
 const limiter = rateLimit({
@@ -120,6 +128,25 @@ app.get('/api/health', (req: Request, res: Response) => {
     environment: process.env.NODE_ENV,
   });
 });
+
+// System integration health endpoint
+app.get('/api/health/integration', async (req: Request, res: Response) => {
+  try {
+    const health = await systemIntegration.getIntegrationHealth();
+    res.json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      integration: health,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      error: 'Failed to get integration health',
+    });
+  }
+});
+
 app.use('/api/health/feature-flags', healthRoutes);
 
 // Public API routes (no authentication required)
@@ -157,7 +184,7 @@ app.use('/api', visitRoutes);
 app.use('/api/drugs', drugRoutes);
 
 // Manual Lab Order routes
-app.use('/api/manual-lab-orders', manualLabRoutes);
+app.use('/api/manual-lab', manualLabRoutes);
 
 // AI Diagnostic routes
 app.use('/api/diagnostics', diagnosticRoutes);

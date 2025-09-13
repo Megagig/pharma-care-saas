@@ -46,7 +46,7 @@ class DiagnosticSecurityService {
         if (!req.user)
             return threats;
         const userId = req.user._id.toString();
-        const workplaceId = req.workspaceContext?.workspace._id?.toString() || '';
+        const workplaceId = req.workspaceContext?.workspace?._id?.toString() || '';
         const burstPattern = await this.detectBurstPattern(userId, requestType);
         if (burstPattern.detected) {
             threats.push({
@@ -92,7 +92,7 @@ class DiagnosticSecurityService {
         if (!req.user || !req.body)
             return threats;
         const userId = req.user._id.toString();
-        const workplaceId = req.workspaceContext?.workspace._id?.toString() || '';
+        const workplaceId = req.workspaceContext?.workspace?._id?.toString() || '';
         const exfiltrationPattern = this.detectDataExfiltrationPattern(req.body);
         if (exfiltrationPattern.detected) {
             threats.push({
@@ -136,7 +136,7 @@ class DiagnosticSecurityService {
         if (!req.user)
             return threats;
         const userId = req.user._id.toString();
-        const workplaceId = req.workspaceContext?.workspace._id?.toString() || '';
+        const workplaceId = req.workspaceContext?.workspace?._id?.toString() || '';
         const injectionPatterns = this.detectInjectionPatterns(req.body);
         for (const pattern of injectionPatterns) {
             threats.push({
@@ -183,7 +183,7 @@ class DiagnosticSecurityService {
         if (!req.user)
             return threats;
         const userId = req.user._id.toString();
-        const workplaceId = req.workspaceContext?.workspace._id?.toString() || '';
+        const workplaceId = req.workspaceContext?.workspace?._id?.toString() || '';
         const botPattern = this.detectBotBehavior(req);
         if (botPattern.detected) {
             threats.push({

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Response } from 'express';
 import { AuthRequest } from '../../../middlewares/auth';
 import ManualLabPerformanceService from '../services/manualLabPerformanceService';
@@ -228,7 +229,7 @@ export const clearWorkplaceCache = asyncHandler(
         }
 
         try {
-            await ManualLabCacheService.clearWorkplaceCache(context.workplaceId);
+            await ManualLabCacheService.clearWorkplaceCache(new mongoose.Types.ObjectId(context.workplaceId));
 
             sendSuccess(res, {
                 message: 'Workplace cache cleared successfully',

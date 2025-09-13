@@ -50,12 +50,10 @@ export const createLabOrder = asyncHandler(
                 patientId: patientId.toString(),
                 orderedBy: context.userId.toString(),
                 workplaceId: context.workplaceId.toString(),
-                locationId: context.locationId,
                 tests: tests.map((test: any) => ({
                     ...test,
                     indication: test.indication || '', // Ensure indication is present
                 })),
-                priority,
                 expectedDate: expectedDate ? new Date(expectedDate) : undefined,
                 externalOrderId,
             });
@@ -419,8 +417,6 @@ export const addLabResult = asyncHandler(
                 value,
                 unit,
                 referenceRange,
-                interpretation,
-                flags,
                 source: 'manual',
                 performedAt: performedAt ? new Date(performedAt) : new Date(),
                 recordedAt: new Date(),

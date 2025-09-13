@@ -601,11 +601,11 @@ class ComplianceReportingService {
                 ...existingPolicy,
                 ...policy,
                 recordType, // Ensure recordType is always present
-                retentionPeriod: policy.retentionPeriod || existingPolicy.retentionPeriod,
-                archivalRequired: policy.archivalRequired || existingPolicy.archivalRequired,
-                deletionMethod: policy.deletionMethod || existingPolicy.deletionMethod,
-                legalHold: policy.legalHold || existingPolicy.legalHold,
-                regulatoryBasis: policy.regulatoryBasis || existingPolicy.regulatoryBasis,
+                retentionPeriod: policy.retentionPeriod || existingPolicy!.retentionPeriod,
+                archivalRequired: policy.archivalRequired || existingPolicy!.archivalRequired,
+                deletionMethod: policy.deletionMethod || existingPolicy!.deletionMethod,
+                legalHold: policy.legalHold || existingPolicy!.legalHold,
+                regulatoryBasis: policy.regulatoryBasis || existingPolicy!.regulatoryBasis,
             };
         } else {
             this.dataRetentionPolicies.push({

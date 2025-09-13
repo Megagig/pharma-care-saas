@@ -7,9 +7,19 @@ exports.monitorCompliance = exports.auditManualLabOperation = exports.auditToken
 const manualLabAuditService_1 = __importDefault(require("../services/manualLabAuditService"));
 const manualLabSecurityService_1 = __importDefault(require("../services/manualLabSecurityService"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
+const mongoose_1 = require("mongoose");
+const auditService_1 = __importDefault(require("../../../services/auditService"));
 const auditPDFAccess = (req, res, next) => {
     const startTime = Date.now();
     const orderId = req.params.orderId;
+    if (!orderId) {
+        res.status(400).json({
+            success: false,
+            message: 'Order ID is required',
+            code: 'VALIDATION_ERROR',
+        });
+        return;
+    }
     const originalSend = res.send;
     res.send = function (body) {
         const endTime = Date.now();
@@ -33,7 +43,7 @@ const auditPDFAccess = (req, res, next) => {
                         downloadMethod = referrer.includes('qr') ? 'qr_scan' : 'barcode_scan';
                     }
                     await manualLabAuditService_1.default.logPDFAccess(auditContext, {
-                        orderId,
+                        orderId: orderId,
                         patientId: req.body?.patientId || req.query?.patientId,
                         fileName: `lab_requisition_${orderId}.pdf`,
                         fileSize: Buffer.isBuffer(body) ? body.length : 0,
@@ -71,7 +81,7 @@ const auditResultEntry = (req, res, next) => {
                     if (result) {
                         const auditContext = {
                             userId: req.user._id,
-                            workplaceId: req.user.workplaceId,
+                            workplaceId: new mongoose_1.Types.ObjectId(req.user.workplaceId),
                             userRole: req.user.role,
                             sessionId: req.sessionID,
                             ipAddress: req.ip,
@@ -82,7 +92,7 @@ const auditResultEntry = (req, res, next) => {
                         const abnormalCount = result.values?.filter((v) => v.abnormalFlag).length || 0;
                         const criticalCount = result.criticalResults?.length || 0;
                         await manualLabAuditService_1.default.logResultEntry(auditContext, result, {
-                            orderId,
+                            orderId: orderId,
                             patientId: req.body?.patientId,
                             testCount: result.values?.length || 0,
                             abnormalResultCount: abnormalCount,
@@ -108,44 +118,30 @@ const auditResultEntry = (req, res, next) => {
 };
 exports.auditResultEntry = auditResultEntry;
 const auditStatusChange = (req, res, next) => {
-    let originalStatus;
-    setImmediate(async () => {
-        try {
-            if (req.params.orderId) {
-            }
-        }
-        catch (error) {
-            logger_1.default.error('Failed to capture original status', {
-                orderId: req.params.orderId,
-                error: error instanceof Error ? error.message : 'Unknown error',
-                service: 'manual-lab-audit-middleware'
-            });
-        }
-    });
+    const orderId = req.params.orderId;
+    const { status: newStatus } = req.body;
     const originalJson = res.json;
     res.json = function (body) {
         setImmediate(async () => {
             try {
                 if (res.statusCode === 200 && req.user && body.success) {
-                    const order = body.data?.order;
-                    if (order && req.body?.status) {
-                        const auditContext = {
-                            userId: req.user._id,
-                            workplaceId: req.user.workplaceId,
-                            userRole: req.user.role,
-                            sessionId: req.sessionID,
-                            ipAddress: req.ip,
-                            userAgent: req.get('User-Agent'),
-                            requestMethod: req.method,
-                            requestUrl: req.originalUrl
-                        };
-                        await manualLabAuditService_1.default.logStatusChange(auditContext, req.params.orderId, originalStatus || 'unknown', req.body.status, req.body.notes);
-                    }
+                    const auditContext = {
+                        userId: req.user._id,
+                        workplaceId: req.user.workplaceId,
+                        userRole: req.user.role,
+                        sessionId: req.sessionID,
+                        ipAddress: req.ip,
+                        userAgent: req.get('User-Agent'),
+                        requestMethod: req.method,
+                        requestUrl: req.originalUrl
+                    };
+                    const { previousStatus } = body.data;
+                    await manualLabAuditService_1.default.logStatusChange(auditContext, orderId, previousStatus, newStatus);
                 }
             }
             catch (error) {
                 logger_1.default.error('Failed to audit status change in middleware', {
-                    orderId: req.params.orderId,
+                    orderId,
                     error: error instanceof Error ? error.message : 'Unknown error',
                     service: 'manual-lab-audit-middleware'
                 });
@@ -212,7 +208,7 @@ const auditManualLabOperation = (operationType) => {
             try {
                 const auditContext = {
                     userId: req.user._id,
-                    workplaceId: req.user.workplaceId,
+                    workplaceId: new mongoose_1.Types.ObjectId(req.user.workplaceId),
                     userRole: req.user.role,
                     sessionId: req.sessionID,
                     ipAddress: req.ip,
@@ -265,6 +261,7 @@ const auditManualLabOperation = (operationType) => {
             return originalJson.call(this, body);
         };
         next();
+        return;
     };
 };
 exports.auditManualLabOperation = auditManualLabOperation;
@@ -304,7 +301,7 @@ const monitorCompliance = (req, res, next) => {
                         requestMethod: req.method,
                         requestUrl: req.originalUrl
                     };
-                    await manualLabAuditService_1.default.logActivity(auditContext, {
+                    await auditService_1.default.logActivity(auditContext, {
                         action: 'MANUAL_LAB_COMPLIANCE_VIOLATION',
                         resourceType: 'System',
                         resourceId: req.user._id,
@@ -331,12 +328,4 @@ const monitorCompliance = (req, res, next) => {
     next();
 };
 exports.monitorCompliance = monitorCompliance;
-exports.default = {
-    auditPDFAccess: exports.auditPDFAccess,
-    auditResultEntry: exports.auditResultEntry,
-    auditStatusChange: exports.auditStatusChange,
-    auditTokenResolution: exports.auditTokenResolution,
-    auditManualLabOperation: exports.auditManualLabOperation,
-    monitorCompliance: exports.monitorCompliance
-};
 //# sourceMappingURL=manualLabAuditMiddleware.js.map

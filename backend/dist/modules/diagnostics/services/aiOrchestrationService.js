@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AIOrchestrationService = void 0;
+const mongoose_1 = require("mongoose");
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const openRouterService_1 = __importDefault(require("../../../services/openRouterService"));
 const auditService_1 = __importDefault(require("../../../services/auditService"));
@@ -28,7 +29,7 @@ class AIOrchestrationService {
             const promptHash = this.generatePromptHash(prompt);
             const aiResponse = await this.callOpenRouterWithRetry(input, processingOptions);
             const enhancedResponse = await this.validateAndEnhanceResponse(aiResponse, input, processingOptions, promptHash, startTime);
-            await this.logAIResponse(enhancedResponse, consent, input.workplaceId);
+            await this.logAIResponse(enhancedResponse, consent, new mongoose_1.Types.ObjectId(input.workplaceId));
             logger_1.default.info('AI diagnostic analysis completed successfully', {
                 patientId: consent.patientId,
                 processingTime: enhancedResponse.metadata.processingTime,
@@ -40,7 +41,7 @@ class AIOrchestrationService {
         }
         catch (error) {
             const processingTime = Date.now() - startTime;
-            await this.logAIError(error, consent, processingTime, input.workplaceId);
+            await this.logAIError(error, consent, processingTime, new mongoose_1.Types.ObjectId(input.workplaceId));
             logger_1.default.error('AI diagnostic analysis failed', {
                 patientId: consent.patientId,
                 error: error instanceof Error ? error.message : 'Unknown error',
@@ -316,8 +317,9 @@ class AIOrchestrationService {
     async logAIRequest(input, consent, options) {
         try {
             await auditService_1.default.logEvent({
-                userId: new Types.ObjectId(consent.pharmacistId),
-                workplaceId: input.workplaceId,
+                userId: new mongoose_1.Types.ObjectId(consent.pharmacistId),
+                workplaceId: new mongoose_1.Types.ObjectId(input.workplaceId),
+                userRole: consent.pharmacistRole,
             }, {
                 action: 'ai_diagnostic_request',
                 resourceType: 'AIAnalysis',
@@ -341,12 +343,13 @@ class AIOrchestrationService {
     async logAIResponse(response, consent, workplaceId) {
         try {
             await auditService_1.default.logEvent({
-                userId: new Types.ObjectId(consent.pharmacistId),
+                userId: new mongoose_1.Types.ObjectId(consent.pharmacistId),
                 workplaceId: workplaceId,
+                userRole: consent.pharmacistRole,
             }, {
                 action: 'ai_diagnostic_response',
                 resourceType: 'AIAnalysis',
-                resourceId: response.metadata.requestId,
+                resourceId: new mongoose_1.Types.ObjectId(response.metadata.requestId),
                 details: {
                     patientId: consent.patientId,
                     processingTime: response.metadata.processingTime,
@@ -366,12 +369,13 @@ class AIOrchestrationService {
     async logAIError(error, consent, processingTime, workplaceId) {
         try {
             await auditService_1.default.logEvent({
-                userId: new Types.ObjectId(consent.pharmacistId),
+                userId: new mongoose_1.Types.ObjectId(consent.pharmacistId),
                 workplaceId: workplaceId,
+                userRole: consent.pharmacistRole,
             }, {
                 action: 'ai_diagnostic_error',
                 resourceType: 'AIAnalysis',
-                resourceId: '',
+                resourceId: new mongoose_1.Types.ObjectId(),
                 details: {
                     patientId: consent.patientId,
                     error: error instanceof Error ? error.message : 'Unknown error',

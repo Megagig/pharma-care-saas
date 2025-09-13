@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
-import { AuthRequest } from '../../../middlewares/auth';
+import { AuthRequest } from '../../../types/auth';
 import logger from '../../../utils/logger';
 import crypto from 'crypto';
-import xss from 'xss';
+import xss from 'xss'; // @ts-ignore: No type declarations for 'xss'
 
 /**
  * Enhanced security middleware for manual lab operations
@@ -67,7 +67,7 @@ export const enhancedOrderCreationRateLimit = rateLimit({
         // Never skip rate limiting for order creation
         return false;
     },
-    onLimitReached: (req: AuthRequest) => {
+    handler: (req: AuthRequest, res: Response) => {
         const userId = req.user?._id?.toString();
         if (userId) {
             updateSecurityMetrics(userId, 'orderCreationLimit');
@@ -78,6 +78,14 @@ export const enhancedOrderCreationRateLimit = rateLimit({
             ip: req.ip,
             userAgent: req.get('User-Agent'),
             service: 'manual-lab-security'
+        });
+
+        res.status(429).json({
+            success: false,
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: 'Too many order creation attempts. Please try again later.',
+            retryAfter: Math.ceil(15 * 60), // 15 minutes in seconds
+            userId: req.user?._id
         });
     }
 });
@@ -106,7 +114,7 @@ export const enhancedPDFAccessRateLimit = rateLimit({
     keyGenerator: (req: AuthRequest) => {
         return req.user?._id?.toString() || req.ip || 'anonymous';
     },
-    onLimitReached: (req: AuthRequest) => {
+    handler: (req: AuthRequest, res: Response) => {
         const userId = req.user?._id?.toString();
         if (userId) {
             updateSecurityMetrics(userId, 'pdfAccessLimit');
@@ -117,6 +125,13 @@ export const enhancedPDFAccessRateLimit = rateLimit({
             orderId: req.params.orderId,
             ip: req.ip,
             service: 'manual-lab-security'
+        });
+
+        res.status(429).json({
+            success: false,
+            code: 'PDF_ACCESS_RATE_LIMIT_EXCEEDED',
+            message: 'Too many PDF access attempts. Please try again later.',
+            retryAfter: Math.ceil(5 * 60)
         });
     }
 });
@@ -265,6 +280,7 @@ export const validatePDFAccess = (req: AuthRequest, res: Response, next: NextFun
     // Store token payload for use in controller
     (req as any).pdfToken = validation.payload;
     next();
+    return;
 };
 
 /**

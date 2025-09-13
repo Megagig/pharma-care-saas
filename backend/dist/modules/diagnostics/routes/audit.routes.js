@@ -10,7 +10,7 @@ const diagnosticRBAC_1 = __importDefault(require("../middlewares/diagnosticRBAC"
 const rateLimiting_1 = __importDefault(require("../../../middlewares/rateLimiting"));
 const router = (0, express_1.Router)();
 router.use(auth_1.auth);
-router.use((0, rateLimiting_1.default)({
+router.use(rateLimiting_1.default.createRateLimiter({
     windowMs: 15 * 60 * 1000,
     max: 200,
     message: 'Too many audit requests, please try again later'

@@ -64,10 +64,11 @@ class DiagnosticService {
             await auditService_1.default.logEvent({
                 userId: new mongoose_1.Types.ObjectId(data.pharmacistId),
                 workplaceId: new mongoose_1.Types.ObjectId(data.workplaceId),
+                userRole: pharmacist.role,
             }, {
                 action: 'diagnostic_request_created',
                 resourceType: 'DiagnosticRequest',
-                resourceId: savedRequest._id.toString(),
+                resourceId: savedRequest._id,
                 details: {
                     patientId: data.patientId,
                     priority: data.priority,
@@ -154,13 +155,16 @@ class DiagnosticService {
             const diagnosticResult = await this.createDiagnosticResult(request, aiAnalysis, interactionResults, labValidation);
             await request.markAsCompleted();
             const processingTime = Date.now() - startTime;
+            const pharmacist = await User_1.default.findById(request.pharmacistId);
+            const userRole = pharmacist?.role || 'unknown';
             await auditService_1.default.logEvent({
                 userId: request.pharmacistId,
                 workplaceId: request.workplaceId,
+                userRole: userRole,
             }, {
                 action: 'diagnostic_analysis_completed',
                 resourceType: 'DiagnosticResult',
-                resourceId: diagnosticResult._id.toString(),
+                resourceId: diagnosticResult._id,
                 details: {
                     requestId,
                     processingTime,
@@ -191,13 +195,16 @@ class DiagnosticService {
                 await request.markAsFailed(error instanceof Error ? error.message : 'Unknown error');
             }
             if (request) {
+                const pharmacist = await User_1.default.findById(request.pharmacistId);
+                const userRole = pharmacist?.role || 'unknown';
                 await auditService_1.default.logEvent({
                     userId: request.pharmacistId,
                     workplaceId: request.workplaceId,
+                    userRole: userRole,
                 }, {
                     action: 'diagnostic_analysis_failed',
                     resourceType: 'DiagnosticRequest',
-                    resourceId: requestId,
+                    resourceId: new mongoose_1.Types.ObjectId(requestId),
                     details: {
                         error: error instanceof Error ? error.message : 'Unknown error',
                         processingTime,
@@ -219,7 +226,7 @@ class DiagnosticService {
             if (!patient) {
                 throw new Error('Patient not found');
             }
-            const age = patient.dateOfBirth ? Math.floor((Date.now() - patient.dateOfBirth.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : patient.age || 0;
+            const age = patient.dob ? Math.floor((Date.now() - patient.dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : patient.age || 0;
             let labResults = [];
             if (request.inputSnapshot.labResultIds && request.inputSnapshot.labResultIds.length > 0) {
                 labResults = await labService_1.default.getLabResults(request.workplaceId.toString(), {
@@ -229,7 +236,7 @@ class DiagnosticService {
             const aggregatedData = {
                 demographics: {
                     age,
-                    gender: patient.gender,
+                    gender: patient.gender || 'unknown',
                     weight: request.inputSnapshot.vitals?.weight,
                     height: request.inputSnapshot.vitals?.height,
                 },
@@ -269,11 +276,14 @@ class DiagnosticService {
             name: med.name,
             dosage: med.dosage,
             frequency: med.frequency,
+            startDate: undefined,
+            route: undefined,
+            indication: undefined,
         })) : undefined;
         const aiInput = {
             symptoms: patientData.symptoms,
             labResults: labResults.length > 0 ? labResults : undefined,
-            currentMedications: currentMedications.length > 0 ? currentMedications : undefined,
+            currentMedications: currentMedications && currentMedications.length > 0 ? currentMedications : undefined,
             vitalSigns: patientData.vitals ? {
                 bloodPressure: patientData.vitals.bloodPressure,
                 heartRate: patientData.vitals.heartRate,
@@ -545,13 +555,16 @@ class DiagnosticService {
             request.errorMessage = reason || 'Cancelled by user';
             request.updatedBy = new mongoose_1.Types.ObjectId(cancelledBy);
             await request.save();
+            const cancelledByUser = await User_1.default.findById(cancelledBy);
+            const userRole = cancelledByUser?.role || 'unknown';
             await auditService_1.default.logEvent({
                 userId: new mongoose_1.Types.ObjectId(cancelledBy),
                 workplaceId: new mongoose_1.Types.ObjectId(workplaceId),
+                userRole: userRole,
             }, {
                 action: 'diagnostic_request_cancelled',
                 resourceType: 'DiagnosticRequest',
-                resourceId: requestId,
+                resourceId: new mongoose_1.Types.ObjectId(requestId),
                 details: {
                     reason: reason || 'Cancelled by user',
                     originalStatus: request.status,

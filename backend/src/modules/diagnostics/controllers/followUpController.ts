@@ -8,9 +8,9 @@ import { AuthRequest } from '../../../types/auth';
 /**
  * Create a new diagnostic follow-up
  */
-export const createFollowUp = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const createFollowUp = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { workplaceId, userId } = req.user!;
+        const { workplaceId, _id: userId } = req.user!;
         const followUpData: CreateFollowUpRequest = req.body;
 
         // Validate required fields
@@ -101,13 +101,13 @@ export const createFollowUp = async (req: AuthenticatedRequest, res: Response): 
 /**
  * Get follow-ups for a patient
  */
-export const getPatientFollowUps = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getPatientFollowUps = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { workplaceId } = req.user!;
         const { patientId } = req.params;
         const { status, type, limit, skip } = req.query;
 
-        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -155,12 +155,12 @@ export const getPatientFollowUps = async (req: AuthenticatedRequest, res: Respon
 /**
  * Get follow-up by ID
  */
-export const getFollowUpById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getFollowUpById = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { workplaceId } = req.user!;
         const { followUpId } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(followUpId)) {
+        if (!followUpId || !mongoose.Types.ObjectId.isValid(followUpId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -213,13 +213,13 @@ export const getFollowUpById = async (req: AuthenticatedRequest, res: Response):
 /**
  * Complete a follow-up
  */
-export const completeFollowUp = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const completeFollowUp = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { userId } = req.user!;
+        const { _id: userId } = req.user!;
         const { followUpId } = req.params;
         const outcome: IFollowUpOutcome = req.body;
 
-        if (!mongoose.Types.ObjectId.isValid(followUpId)) {
+        if (!followUpId || !mongoose.Types.ObjectId.isValid(followUpId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -296,13 +296,13 @@ export const completeFollowUp = async (req: AuthenticatedRequest, res: Response)
 /**
  * Reschedule a follow-up
  */
-export const rescheduleFollowUp = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const rescheduleFollowUp = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { userId } = req.user!;
+        const { _id: userId } = req.user!;
         const { followUpId } = req.params;
         const { newDate, reason } = req.body;
 
-        if (!mongoose.Types.ObjectId.isValid(followUpId)) {
+        if (!followUpId || !mongoose.Types.ObjectId.isValid(followUpId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -394,7 +394,7 @@ export const rescheduleFollowUp = async (req: AuthenticatedRequest, res: Respons
 /**
  * Get overdue follow-ups
  */
-export const getOverdueFollowUps = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getOverdueFollowUps = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { workplaceId } = req.user!;
 
@@ -426,7 +426,7 @@ export const getOverdueFollowUps = async (req: AuthenticatedRequest, res: Respon
 /**
  * Get follow-up analytics
  */
-export const getFollowUpAnalytics = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getFollowUpAnalytics = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { workplaceId } = req.user!;
         const { startDate, endDate } = req.query;
@@ -480,9 +480,9 @@ export const getFollowUpAnalytics = async (req: AuthenticatedRequest, res: Respo
 /**
  * Get follow-ups assigned to current user
  */
-export const getMyFollowUps = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getMyFollowUps = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { workplaceId, userId } = req.user!;
+        const { workplaceId, _id: userId } = req.user!;
         const { status, limit, skip } = req.query;
 
         const options = {
@@ -533,13 +533,13 @@ export const getMyFollowUps = async (req: AuthenticatedRequest, res: Response): 
 /**
  * Update follow-up status
  */
-export const updateFollowUpStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const updateFollowUpStatus = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { workplaceId, userId } = req.user!;
+        const { workplaceId, _id: userId } = req.user!;
         const { followUpId } = req.params;
         const { status } = req.body;
 
-        if (!mongoose.Types.ObjectId.isValid(followUpId)) {
+        if (!followUpId || !mongoose.Types.ObjectId.isValid(followUpId)) {
             res.status(400).json({
                 success: false,
                 error: {

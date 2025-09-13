@@ -85,13 +85,13 @@ export interface IDiagnosticFollowUp extends Document {
     calculateNextFollowUp(): Date | null;
 }
 export interface IDiagnosticFollowUpModel extends mongoose.Model<IDiagnosticFollowUp> {
-    findByPatient(patientId: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId): Promise<IDiagnosticFollowUp[]>;
-    findOverdue(workplaceId?: mongoose.Types.ObjectId): Promise<IDiagnosticFollowUp[]>;
+    findByPatient(patientId: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId): mongoose.Query<IDiagnosticFollowUp[], IDiagnosticFollowUp>;
+    findOverdue(workplaceId?: mongoose.Types.ObjectId): mongoose.Query<IDiagnosticFollowUp[], IDiagnosticFollowUp>;
     findScheduled(workplaceId?: mongoose.Types.ObjectId, dateRange?: {
         start: Date;
         end: Date;
-    }): Promise<IDiagnosticFollowUp[]>;
-    findByAssignee(assignedTo: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId, status?: string): Promise<IDiagnosticFollowUp[]>;
+    }): mongoose.Query<IDiagnosticFollowUp[], IDiagnosticFollowUp>;
+    findByAssignee(assignedTo: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId, status?: string): mongoose.Query<IDiagnosticFollowUp[], IDiagnosticFollowUp>;
 }
 declare const _default: IDiagnosticFollowUpModel;
 export default _default;

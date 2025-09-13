@@ -184,7 +184,7 @@ export const checkDiagnosticLimits = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        if (!req.user || !req.workspaceContext || !req.workspaceContext.workspace || !req.workspaceContext.plan) {
+        if (!req.user || !(req as any).workspaceContext || !(req as any).workspaceContext.workspace || !(req as any).workspaceContext.plan) {
             res.status(401).json({
                 success: false,
                 message: 'Authentication and workspace context required',
@@ -197,12 +197,12 @@ export const checkDiagnosticLimits = async (
             return next();
         }
 
-        const { workspace, plan } = req.workspaceContext;
+        const { workspace, plan } = (req as any).workspaceContext;
 
         // Check if subscription is active
-        if (!req.workspaceContext.isSubscriptionActive) {
+        if (!(req as any).workspaceContext.isSubscriptionActive) {
             // Allow trial users with limits
-            if (workspace.subscriptionStatus === 'trial' && !req.workspaceContext.isTrialExpired) {
+            if (workspace.subscriptionStatus === 'trial' && !(req as any).workspaceContext.isTrialExpired) {
                 // Trial users get limited diagnostic requests
                 const trialLimit = 10; // 10 diagnostic requests per trial
 
@@ -287,7 +287,7 @@ export const checkAIProcessingLimits = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        if (!req.user || !req.workspaceContext || !req.workspaceContext.workspace || !req.workspaceContext.plan) {
+        if (!req.user || !(req as any).workspaceContext || !(req as any).workspaceContext.workspace || !(req as any).workspaceContext.plan) {
             res.status(401).json({
                 success: false,
                 message: 'Authentication and workspace context required',
@@ -300,7 +300,7 @@ export const checkAIProcessingLimits = async (
             return next();
         }
 
-        const { workspace, plan } = req.workspaceContext;
+        const { workspace, plan } = (req as any).workspaceContext;
 
         // Check AI token limits
         if (plan?.limits?.aiTokens) {
@@ -374,7 +374,7 @@ export const checkDiagnosticAccess = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        if (!req.user || !req.workspaceContext || !req.workspaceContext.workspace) {
+        if (!req.user || !(req as any).workspaceContext || !(req as any).workspaceContext.workspace) {
             res.status(401).json({
                 success: false,
                 message: 'Authentication and workspace context required',
@@ -396,7 +396,7 @@ export const checkDiagnosticAccess = async (
         const DiagnosticRequest = require('../models/DiagnosticRequest').default;
         const request = await DiagnosticRequest.findOne({
             _id: id,
-            workplaceId: req.workspaceContext.workspace._id,
+            workplaceId: (req as any).workspaceContext.workspace._id,
             isDeleted: false,
         });
 
@@ -429,7 +429,7 @@ export const checkDiagnosticResultAccess = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        if (!req.user || !req.workspaceContext || !req.workspaceContext.workspace) {
+        if (!req.user || !(req as any).workspaceContext || !(req as any).workspaceContext.workspace) {
             res.status(401).json({
                 success: false,
                 message: 'Authentication and workspace context required',
@@ -451,7 +451,7 @@ export const checkDiagnosticResultAccess = async (
         const DiagnosticResult = require('../models/DiagnosticResult').default;
         const result = await DiagnosticResult.findOne({
             _id: id,
-            workplaceId: req.workspaceContext.workspace._id,
+            workplaceId: (req as any).workspaceContext.workspace._id,
             isDeleted: false,
         });
 

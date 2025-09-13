@@ -10,7 +10,7 @@ const diagnosticFollowUpService_1 = __importDefault(require("../services/diagnos
 const DiagnosticFollowUp_1 = __importDefault(require("../models/DiagnosticFollowUp"));
 const createFollowUp = async (req, res) => {
     try {
-        const { workplaceId, userId } = req.user;
+        const { workplaceId, _id: userId } = req.user;
         const followUpData = req.body;
         if (!followUpData.diagnosticRequestId || !followUpData.diagnosticResultId ||
             !followUpData.patientId || !followUpData.type || !followUpData.description ||
@@ -89,7 +89,7 @@ const getPatientFollowUps = async (req, res) => {
         const { workplaceId } = req.user;
         const { patientId } = req.params;
         const { status, type, limit, skip } = req.query;
-        if (!mongoose_1.default.Types.ObjectId.isValid(patientId)) {
+        if (!patientId || !mongoose_1.default.Types.ObjectId.isValid(patientId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -131,7 +131,7 @@ const getFollowUpById = async (req, res) => {
     try {
         const { workplaceId } = req.user;
         const { followUpId } = req.params;
-        if (!mongoose_1.default.Types.ObjectId.isValid(followUpId)) {
+        if (!followUpId || !mongoose_1.default.Types.ObjectId.isValid(followUpId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -180,10 +180,10 @@ const getFollowUpById = async (req, res) => {
 exports.getFollowUpById = getFollowUpById;
 const completeFollowUp = async (req, res) => {
     try {
-        const { userId } = req.user;
+        const { _id: userId } = req.user;
         const { followUpId } = req.params;
         const outcome = req.body;
-        if (!mongoose_1.default.Types.ObjectId.isValid(followUpId)) {
+        if (!followUpId || !mongoose_1.default.Types.ObjectId.isValid(followUpId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -248,10 +248,10 @@ const completeFollowUp = async (req, res) => {
 exports.completeFollowUp = completeFollowUp;
 const rescheduleFollowUp = async (req, res) => {
     try {
-        const { userId } = req.user;
+        const { _id: userId } = req.user;
         const { followUpId } = req.params;
         const { newDate, reason } = req.body;
-        if (!mongoose_1.default.Types.ObjectId.isValid(followUpId)) {
+        if (!followUpId || !mongoose_1.default.Types.ObjectId.isValid(followUpId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -397,7 +397,7 @@ const getFollowUpAnalytics = async (req, res) => {
 exports.getFollowUpAnalytics = getFollowUpAnalytics;
 const getMyFollowUps = async (req, res) => {
     try {
-        const { workplaceId, userId } = req.user;
+        const { workplaceId, _id: userId } = req.user;
         const { status, limit, skip } = req.query;
         const options = {
             status: status,
@@ -438,10 +438,10 @@ const getMyFollowUps = async (req, res) => {
 exports.getMyFollowUps = getMyFollowUps;
 const updateFollowUpStatus = async (req, res) => {
     try {
-        const { workplaceId, userId } = req.user;
+        const { workplaceId, _id: userId } = req.user;
         const { followUpId } = req.params;
         const { status } = req.body;
-        if (!mongoose_1.default.Types.ObjectId.isValid(followUpId)) {
+        if (!followUpId || !mongoose_1.default.Types.ObjectId.isValid(followUpId)) {
             res.status(400).json({
                 success: false,
                 error: {

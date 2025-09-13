@@ -18,12 +18,10 @@ exports.createLabOrder = (0, responseHelpers_1.asyncHandler)(async (req, res) =>
             patientId: patientId.toString(),
             orderedBy: context.userId.toString(),
             workplaceId: context.workplaceId.toString(),
-            locationId: context.locationId,
             tests: tests.map((test) => ({
                 ...test,
                 indication: test.indication || '',
             })),
-            priority,
             expectedDate: expectedDate ? new Date(expectedDate) : undefined,
             externalOrderId,
         });
@@ -206,8 +204,6 @@ exports.addLabResult = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
             value,
             unit,
             referenceRange,
-            interpretation,
-            flags,
             source: 'manual',
             performedAt: performedAt ? new Date(performedAt) : new Date(),
             recordedAt: new Date(),

@@ -168,7 +168,9 @@ class PerformanceMiddleware {
         this.requestMetrics.set(metrics.requestId, metrics);
         if (this.requestMetrics.size > 1000) {
             const oldestKey = this.requestMetrics.keys().next().value;
-            this.requestMetrics.delete(oldestKey);
+            if (oldestKey) {
+                this.requestMetrics.delete(oldestKey);
+            }
         }
         logger_1.default.debug('Request performance metrics', {
             requestId: metrics.requestId,

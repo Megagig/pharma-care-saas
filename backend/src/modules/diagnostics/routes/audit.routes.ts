@@ -15,7 +15,7 @@ const router = Router();
 router.use(auth);
 
 // Apply rate limiting for audit endpoints
-router.use(rateLimiting({
+router.use(rateLimiting.createRateLimiter({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 200, // Higher limit for audit operations
     message: 'Too many audit requests, please try again later'

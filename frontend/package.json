@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5173",
+    "dev": "vite --force --port 5173",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -21,6 +21,7 @@
     "@date-io/date-fns": "^3.2.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@hookform/resolvers": "^5.2.1",
     "@mui/icons-material": "^7.3.1",
     "@mui/lab": "^7.0.0-beta.16",
     "@mui/material": "^7.3.1",
@@ -49,6 +50,7 @@
     "react-window": "^1.8.11",
     "recharts": "^3.1.2",
     "yup": "^1.7.0",
+    "zod": "^4.1.8",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

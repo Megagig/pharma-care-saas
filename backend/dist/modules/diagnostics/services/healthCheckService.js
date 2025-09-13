@@ -46,13 +46,14 @@ class HealthCheckService {
                 healthResults.push(result.value);
             }
             else {
+                const rejectedResult = result;
                 healthResults.push({
                     service: `service_${i}`,
                     status: 'unhealthy',
                     responseTime: Date.now() - startTime,
-                    details: { error: result.reason },
+                    details: { error: rejectedResult.reason },
                     timestamp: new Date(),
-                    error: result.reason instanceof Error ? result.reason.message : 'Unknown error',
+                    error: rejectedResult.reason instanceof Error ? rejectedResult.reason.message : 'Unknown error',
                 });
             }
         }

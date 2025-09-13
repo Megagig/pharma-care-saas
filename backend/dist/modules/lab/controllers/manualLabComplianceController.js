@@ -62,7 +62,7 @@ exports.generateComplianceReport = (0, responseHelpers_1.asyncHandler)(async (re
             securityIncidents: auditStats.logs.filter(log => log.action.includes('SUSPICIOUS') || log.action.includes('VIOLATION')).length
         });
         if (format === 'csv') {
-            const csvData = this.formatReportAsCSV(report);
+            const csvData = formatReportAsCSV(report);
             res.setHeader('Content-Type', 'text/csv');
             res.setHeader('Content-Disposition', `attachment; filename="manual_lab_compliance_report_${Date.now()}.csv"`);
             res.send(csvData);
