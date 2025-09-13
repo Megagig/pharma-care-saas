@@ -327,7 +327,7 @@ router.use((error: any, req: express.Request, res: express.Response, next: expre
     }
 
     // Default error response
-    res.status(error.status || 500).json({
+    return res.status(error.status || 500).json({
         success: false,
         message: error.message || 'Internal server error',
         code: error.code || 'INTERNAL_ERROR',

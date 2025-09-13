@@ -200,6 +200,32 @@ class AuditService {
   }
 
   /**
+   * Log general events - simplified interface for backward compatibility
+   */
+  static async logEvent(
+    context: AuditContext,
+    eventData: {
+      action: string;
+      resourceType?: string;
+      resourceId?: mongoose.Types.ObjectId;
+      patientId?: mongoose.Types.ObjectId;
+      details?: any;
+      complianceCategory?: string;
+      riskLevel?: string;
+    }
+  ): Promise<IMTRAuditLog> {
+    return this.logActivity(context, {
+      action: eventData.action,
+      resourceType: eventData.resourceType || 'System',
+      resourceId: eventData.resourceId || context.userId,
+      patientId: eventData.patientId,
+      details: eventData.details || {},
+      complianceCategory: eventData.complianceCategory as any || 'system_security',
+      riskLevel: eventData.riskLevel as any || 'low',
+    });
+  }
+
+  /**
    * Log authentication events
    */
   static async logAuthEvent(

@@ -1,6 +1,6 @@
 import express from 'express';
 import { auth } from '../../../middlewares/auth';
-import { rbac } from '../../../middlewares/rbac';
+import rbac from '../../../middlewares/rbac';
 import {
     createAdherenceTracking,
     getPatientAdherenceTracking,
@@ -26,7 +26,7 @@ router.use(auth);
  */
 router.post(
     '/',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     createAdherenceTracking
 );
 
@@ -37,7 +37,7 @@ router.post(
  */
 router.get(
     '/poor-adherence',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     getPatientsWithPoorAdherence
 );
 
@@ -48,7 +48,7 @@ router.get(
  */
 router.get(
     '/patient/:patientId',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     getPatientAdherenceTracking
 );
 
@@ -59,7 +59,7 @@ router.get(
  */
 router.post(
     '/patient/:patientId/refill',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     addRefill
 );
 
@@ -70,7 +70,7 @@ router.post(
  */
 router.put(
     '/patient/:patientId/medication/:medicationName',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     updateMedicationAdherence
 );
 
@@ -81,7 +81,7 @@ router.put(
  */
 router.get(
     '/patient/:patientId/assessment',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     assessPatientAdherence
 );
 
@@ -92,7 +92,7 @@ router.get(
  */
 router.post(
     '/patient/:patientId/intervention',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     addIntervention
 );
 
@@ -103,7 +103,7 @@ router.post(
  */
 router.get(
     '/patient/:patientId/report',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     generateAdherenceReport
 );
 
@@ -114,7 +114,7 @@ router.get(
  */
 router.put(
     '/patient/:patientId/alert/:alertIndex/acknowledge',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     acknowledgeAlert
 );
 
@@ -125,7 +125,7 @@ router.put(
  */
 router.put(
     '/patient/:patientId/alert/:alertIndex/resolve',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     resolveAlert
 );
 

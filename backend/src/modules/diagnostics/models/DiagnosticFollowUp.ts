@@ -109,6 +109,13 @@ export interface IDiagnosticFollowUp extends Document {
     calculateNextFollowUp(): Date | null;
 }
 
+export interface IDiagnosticFollowUpModel extends mongoose.Model<IDiagnosticFollowUp> {
+    findByPatient(patientId: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId): Promise<IDiagnosticFollowUp[]>;
+    findOverdue(workplaceId?: mongoose.Types.ObjectId): Promise<IDiagnosticFollowUp[]>;
+    findScheduled(workplaceId?: mongoose.Types.ObjectId, dateRange?: { start: Date; end: Date }): Promise<IDiagnosticFollowUp[]>;
+    findByAssignee(assignedTo: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId, status?: string): Promise<IDiagnosticFollowUp[]>;
+}
+
 const followUpReminderSchema = new Schema({
     type: {
         type: String,
@@ -643,4 +650,4 @@ diagnosticFollowUpSchema.statics.findByAssignee = function (
     return baseQuery.sort({ scheduledDate: 1, priority: 1 });
 };
 
-export default mongoose.model<IDiagnosticFollowUp>('DiagnosticFollowUp', diagnosticFollowUpSchema);
+export default mongoose.model<IDiagnosticFollowUp, IDiagnosticFollowUpModel>('DiagnosticFollowUp', diagnosticFollowUpSchema);

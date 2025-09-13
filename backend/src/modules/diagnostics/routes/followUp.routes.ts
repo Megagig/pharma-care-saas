@@ -1,6 +1,6 @@
 import express from 'express';
 import { auth } from '../../../middlewares/auth';
-import { rbac } from '../../../middlewares/rbac';
+import rbac from '../../../middlewares/rbac';
 import {
     createFollowUp,
     getPatientFollowUps,
@@ -25,7 +25,7 @@ router.use(auth);
  */
 router.post(
     '/',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     createFollowUp
 );
 
@@ -36,7 +36,7 @@ router.post(
  */
 router.get(
     '/my',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     getMyFollowUps
 );
 
@@ -47,7 +47,7 @@ router.get(
  */
 router.get(
     '/overdue',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     getOverdueFollowUps
 );
 
@@ -58,7 +58,7 @@ router.get(
  */
 router.get(
     '/analytics',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     getFollowUpAnalytics
 );
 
@@ -69,7 +69,7 @@ router.get(
  */
 router.get(
     '/patient/:patientId',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     getPatientFollowUps
 );
 
@@ -80,7 +80,7 @@ router.get(
  */
 router.get(
     '/:followUpId',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     getFollowUpById
 );
 
@@ -91,7 +91,7 @@ router.get(
  */
 router.put(
     '/:followUpId/complete',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     completeFollowUp
 );
 
@@ -102,7 +102,7 @@ router.put(
  */
 router.put(
     '/:followUpId/reschedule',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     rescheduleFollowUp
 );
 
@@ -113,7 +113,7 @@ router.put(
  */
 router.put(
     '/:followUpId/status',
-    rbac(['pharmacist', 'admin']),
+    rbac.requireRole('pharmacist', 'admin'),
     updateFollowUpStatus
 );
 

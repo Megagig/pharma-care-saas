@@ -59,8 +59,10 @@ export interface IClinicalNote extends Document {
     deletedAt?: Date;
     deletedBy?: mongoose.Types.ObjectId;
 }
-declare const _default: mongoose.Model<IClinicalNote, {}, {}, {}, mongoose.Document<unknown, {}, IClinicalNote> & IClinicalNote & {
-    _id: mongoose.Types.ObjectId;
-}, any>;
+export interface IClinicalNoteModel extends mongoose.Model<IClinicalNote> {
+    findActive(filter?: any): Promise<IClinicalNote[]>;
+    findDeleted(filter?: any): Promise<IClinicalNote[]>;
+}
+declare const _default: IClinicalNoteModel;
 export default _default;
 //# sourceMappingURL=ClinicalNote.d.ts.map

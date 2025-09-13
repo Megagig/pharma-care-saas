@@ -2,7 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { auth, requireFeature } from '../../../middlewares/auth';
 import { auditLogger } from '../../../middlewares/auditMiddleware';
-import interactionController from '../controllers/interactionController';
+import drugInteractionController from '../controllers/drugInteractionController';
 import {
     validateInteractionCheck,
     formatValidationErrors
@@ -52,7 +52,7 @@ router.post(
         riskLevel: 'medium'
     }),
     validateRequest(validateInteractionCheck),
-    interactionController.checkInteractions
+    drugInteractionController.checkInteractions
 );
 
 /**
@@ -71,7 +71,7 @@ router.get(
         complianceCategory: 'data_access',
         riskLevel: 'low'
     }),
-    interactionController.getDrugInfo
+    drugInteractionController.getDrugInfo
 );
 
 /**
@@ -90,7 +90,7 @@ router.get(
         complianceCategory: 'data_access',
         riskLevel: 'low'
     }),
-    interactionController.searchDrugs
+    drugInteractionController.searchDrugs
 );
 
 /**
@@ -109,7 +109,7 @@ router.post(
         complianceCategory: 'clinical_documentation',
         riskLevel: 'medium'
     }),
-    interactionController.checkAllergies
+    drugInteractionController.checkAllergies
 );
 
 /**
@@ -128,7 +128,7 @@ router.get(
         complianceCategory: 'data_access',
         riskLevel: 'low'
     }),
-    interactionController.getInteractionDetails
+    drugInteractionController.getInteractionDetails
 );
 
 /**
@@ -147,7 +147,7 @@ router.get(
         complianceCategory: 'data_access',
         riskLevel: 'low'
     }),
-    interactionController.getClassInteractions
+    drugInteractionController.getClassInteractions
 );
 
 /**
@@ -166,7 +166,7 @@ router.get(
         complianceCategory: 'data_access',
         riskLevel: 'low'
     }),
-    interactionController.getFoodInteractions
+    drugInteractionController.getFoodInteractions
 );
 
 /**
@@ -185,7 +185,7 @@ router.get(
         complianceCategory: 'data_access',
         riskLevel: 'low'
     }),
-    interactionController.getPregnancyInfo
+    drugInteractionController.getPregnancyInfo
 );
 
 export default router;

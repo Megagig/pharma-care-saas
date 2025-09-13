@@ -38,7 +38,7 @@ router.use(rateLimiting({
  * @query offset - Number of results to skip (default: 0)
  */
 router.get('/events',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.searchAuditEvents
 );
 
@@ -50,7 +50,7 @@ router.get('/events',
  * @param entityId - ID of the entity
  */
 router.get('/trail/:entityType/:entityId',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.getEntityAuditTrail
 );
 
@@ -61,7 +61,7 @@ router.get('/trail/:entityType/:entityId',
  * @query period - Time period (7d, 30d, 90d)
  */
 router.get('/statistics',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.getAuditStatistics
 );
 
@@ -74,7 +74,7 @@ router.get('/statistics',
  * @query endDate - End date for report (ISO string)
  */
 router.get('/compliance/report',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.generateComplianceReport
 );
 
@@ -86,7 +86,7 @@ router.get('/compliance/report',
  * @body details - Additional details about the violation
  */
 router.post('/security/violation',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.logSecurityViolation
 );
 
@@ -97,7 +97,7 @@ router.post('/security/violation',
  * @body retentionDays - Number of days to retain records
  */
 router.post('/archive',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.archiveAuditRecords
 );
 
@@ -110,7 +110,7 @@ router.post('/archive',
  * @query format - Export format (json, csv)
  */
 router.get('/export',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.exportAuditData
 );
 
@@ -123,7 +123,7 @@ router.get('/export',
  * @query endDate - End date for report (ISO string)
  */
 router.get('/regulatory/report',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.generateRegulatoryReport
 );
 
@@ -134,7 +134,7 @@ router.get('/regulatory/report',
  * @query lookbackDays - Number of days to look back for anomaly detection (default: 30)
  */
 router.get('/anomalies',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.detectAuditAnomalies
 );
 
@@ -146,7 +146,7 @@ router.get('/anomalies',
  * @query endDate - End date for visualization (ISO string)
  */
 router.get('/visualization',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.getAuditVisualization
 );
 
@@ -157,7 +157,7 @@ router.get('/visualization',
  * @query Multiple filter parameters (see controller for details)
  */
 router.get('/search/advanced',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.advancedAuditSearch
 );
 
@@ -170,7 +170,7 @@ router.get('/search/advanced',
  * @query format - Export format (json, csv, pdf)
  */
 router.get('/visualization/export',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.exportAuditVisualization
 );
 
@@ -180,7 +180,7 @@ router.get('/visualization/export',
  * @access Private (requires diagnostic:analytics permission)
  */
 router.get('/retention/policies',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.getDataRetentionPolicies
 );
 
@@ -192,7 +192,7 @@ router.get('/retention/policies',
  * @body Policy update data
  */
 router.put('/retention/policies/:recordType',
-    diagnosticRBAC(['diagnostic:analytics']),
+    diagnosticRBAC.requireDiagnosticAnalytics,
     auditController.updateDataRetentionPolicy
 );
 

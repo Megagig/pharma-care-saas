@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.moduleConfig = exports.routes = exports.drugInteractionValidators = exports.labValidators = exports.diagnosticValidators = exports.diagnosticRBAC = exports.AdherenceTracking = exports.DiagnosticFollowUp = exports.LabResult = exports.LabOrder = exports.DiagnosticResult = exports.DiagnosticRequest = exports.diagnosticAuditService = exports.diagnosticAnalyticsService = exports.diagnosticNotificationService = exports.adherenceService = exports.diagnosticFollowUpService = exports.clinicalApiService = exports.labService = exports.PharmacistReviewService = exports.DiagnosticService = void 0;
+exports.moduleConfig = exports.routes = exports.drugInteractionValidators = exports.labValidators = exports.diagnosticValidators = exports.diagnosticRBAC = exports.AdherenceTracking = exports.DiagnosticFollowUp = exports.LabResult = exports.LabOrder = exports.DiagnosticResult = exports.DiagnosticRequest = exports.diagnosticIntegrationService = exports.diagnosticAuditService = exports.diagnosticAnalyticsService = exports.diagnosticNotificationService = exports.adherenceService = exports.diagnosticFollowUpService = exports.clinicalApiService = exports.labService = exports.PharmacistReviewService = exports.DiagnosticService = void 0;
 const diagnosticRoutes_1 = __importDefault(require("./routes/diagnosticRoutes"));
 const labRoutes_1 = __importDefault(require("./routes/labRoutes"));
 const drugInteractionRoutes_1 = __importDefault(require("./routes/drugInteractionRoutes"));
@@ -11,6 +11,7 @@ const followUp_routes_1 = __importDefault(require("./routes/followUp.routes"));
 const adherence_routes_1 = __importDefault(require("./routes/adherence.routes"));
 const analytics_routes_1 = __importDefault(require("./routes/analytics.routes"));
 const audit_routes_1 = __importDefault(require("./routes/audit.routes"));
+const integration_routes_1 = __importDefault(require("./routes/integration.routes"));
 var diagnosticService_1 = require("./services/diagnosticService");
 Object.defineProperty(exports, "DiagnosticService", { enumerable: true, get: function () { return diagnosticService_1.DiagnosticService; } });
 var pharmacistReviewService_1 = require("./services/pharmacistReviewService");
@@ -29,6 +30,8 @@ var diagnosticAnalyticsService_1 = require("./services/diagnosticAnalyticsServic
 Object.defineProperty(exports, "diagnosticAnalyticsService", { enumerable: true, get: function () { return __importDefault(diagnosticAnalyticsService_1).default; } });
 var diagnosticAuditService_1 = require("./services/diagnosticAuditService");
 Object.defineProperty(exports, "diagnosticAuditService", { enumerable: true, get: function () { return __importDefault(diagnosticAuditService_1).default; } });
+var integrationService_1 = require("./services/integrationService");
+Object.defineProperty(exports, "diagnosticIntegrationService", { enumerable: true, get: function () { return __importDefault(integrationService_1).default; } });
 var DiagnosticRequest_1 = require("./models/DiagnosticRequest");
 Object.defineProperty(exports, "DiagnosticRequest", { enumerable: true, get: function () { return __importDefault(DiagnosticRequest_1).default; } });
 var DiagnosticResult_1 = require("./models/DiagnosticResult");
@@ -57,6 +60,7 @@ exports.routes = {
     adherence: adherence_routes_1.default,
     analytics: analytics_routes_1.default,
     audit: audit_routes_1.default,
+    integration: integration_routes_1.default,
 };
 exports.moduleConfig = {
     name: 'ai-diagnostics-therapeutics',
@@ -118,6 +122,7 @@ exports.moduleConfig = {
         adherence: '/api/diagnostics/adherence',
         analytics: '/api/diagnostics/analytics',
         audit: '/api/diagnostics/audit',
+        integration: '/api/diagnostics/integration',
     },
     dependencies: [
         'openRouterService',

@@ -100,8 +100,12 @@ export interface IAdherenceTracking extends Document {
     assessAdherenceRisk(): 'low' | 'medium' | 'high' | 'critical';
     generateAdherenceReport(): any;
 }
-declare const _default: mongoose.Model<IAdherenceTracking, {}, {}, {}, mongoose.Document<unknown, {}, IAdherenceTracking> & IAdherenceTracking & Required<{
-    _id: mongoose.Types.ObjectId;
-}>, any>;
+export interface IAdherenceTrackingModel extends mongoose.Model<IAdherenceTracking> {
+    findByPatient(patientId: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId): Promise<IAdherenceTracking | null>;
+    findPoorAdherence(workplaceId?: mongoose.Types.ObjectId, threshold?: number): Promise<IAdherenceTracking[]>;
+    findDueForAssessment(workplaceId?: mongoose.Types.ObjectId): Promise<IAdherenceTracking[]>;
+    findWithActiveAlerts(workplaceId?: mongoose.Types.ObjectId): Promise<IAdherenceTracking[]>;
+}
+declare const _default: IAdherenceTrackingModel;
 export default _default;
 //# sourceMappingURL=AdherenceTracking.d.ts.map

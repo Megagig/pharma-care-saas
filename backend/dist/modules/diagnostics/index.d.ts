@@ -7,6 +7,7 @@ export { default as adherenceService } from './services/adherenceService';
 export { default as diagnosticNotificationService } from './services/diagnosticNotificationService';
 export { default as diagnosticAnalyticsService } from './services/diagnosticAnalyticsService';
 export { default as diagnosticAuditService } from './services/diagnosticAuditService';
+export { default as diagnosticIntegrationService } from './services/integrationService';
 export { default as DiagnosticRequest } from './models/DiagnosticRequest';
 export { default as DiagnosticResult } from './models/DiagnosticResult';
 export { default as LabOrder } from './models/LabOrder';
@@ -31,6 +32,7 @@ export declare const routes: {
     adherence: import("express-serve-static-core").Router;
     analytics: import("express-serve-static-core").Router;
     audit: import("express-serve-static-core").Router;
+    integration: import("express-serve-static-core").Router;
 };
 export declare const moduleConfig: {
     name: string;
@@ -46,6 +48,7 @@ export declare const moduleConfig: {
         adherence: string;
         analytics: string;
         audit: string;
+        integration: string;
     };
     dependencies: string[];
 };
@@ -58,6 +61,7 @@ declare const _default: {
         adherence: import("express-serve-static-core").Router;
         analytics: import("express-serve-static-core").Router;
         audit: import("express-serve-static-core").Router;
+        integration: import("express-serve-static-core").Router;
     };
     moduleConfig: {
         name: string;
@@ -73,6 +77,7 @@ declare const _default: {
             adherence: string;
             analytics: string;
             audit: string;
+            integration: string;
         };
         dependencies: string[];
     };
