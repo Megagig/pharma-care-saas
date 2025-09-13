@@ -64,11 +64,11 @@ exports.getAllergies = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
             .filter((a) => a.severity === 'severe')
             .map((a) => a.substance),
     };
-    (0, responseHelpers_1.respondWithPaginatedResults)(res, allergies, total, page, limit, `Found ${total} allergies for patient`);
-    res.json({
-        ...res.locals.responseData,
+    const meta = (0, responseHelpers_1.createPaginationMeta)(total, page, limit);
+    (0, responseHelpers_1.sendSuccess)(res, {
+        results: allergies,
         summary,
-    });
+    }, `Found ${total} allergies for patient`, 200, meta);
 });
 exports.getAllergy = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { allergyId } = req.params;

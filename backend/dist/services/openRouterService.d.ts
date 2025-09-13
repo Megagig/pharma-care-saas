@@ -73,6 +73,7 @@ declare class OpenRouterService {
     private apiKey;
     private defaultModel;
     private timeout;
+    private retryConfig;
     constructor();
     generateDiagnosticAnalysis(input: DiagnosticInput): Promise<{
         analysis: DiagnosticResponse;
@@ -80,9 +81,15 @@ declare class OpenRouterService {
         requestId: string;
         processingTime: number;
     }>;
+    private executeWithRetry;
+    private shouldRetryError;
+    private calculateRetryDelay;
+    private sleep;
+    private enhanceError;
     private createSystemPrompt;
     private formatDiagnosticPrompt;
-    private parseAIResponse;
+    private parseAndValidateAIResponse;
+    private validateDiagnosticResponse;
     testConnection(): Promise<boolean>;
 }
 declare const _default: OpenRouterService;

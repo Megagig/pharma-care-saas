@@ -48,6 +48,7 @@ import {
   useDiagnosticStatus,
 } from '../hooks/useDiagnostics';
 import { useDiagnosticStore } from '../store/diagnosticStore';
+import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
 import { usePatients } from '../../../stores';
 import { ErrorBoundary } from '../../../components/common/ErrorBoundary';
 import { NotificationSystem } from '../../../components/common/NotificationSystem';
@@ -755,4 +756,11 @@ const DiagnosticDashboard: React.FC = () => {
   );
 };
 
-export default DiagnosticDashboard;
+// Wrap with feature guard
+const DiagnosticDashboardWithGuard: React.FC = () => (
+  <DiagnosticFeatureGuard>
+    <DiagnosticDashboard />
+  </DiagnosticFeatureGuard>
+);
+
+export default DiagnosticDashboardWithGuard;

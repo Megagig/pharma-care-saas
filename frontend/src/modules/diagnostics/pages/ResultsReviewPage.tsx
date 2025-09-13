@@ -79,6 +79,7 @@ import type {
   DiagnosticResult,
   DrugInteraction,
 } from '../types';
+import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -915,4 +916,11 @@ const ResultsReviewPage: React.FC = () => {
   );
 };
 
-export default ResultsReviewPage;
+// Wrap with feature guard
+const ResultsReviewPageWithGuard: React.FC = () => (
+  <DiagnosticFeatureGuard>
+    <ResultsReviewPage />
+  </DiagnosticFeatureGuard>
+);
+
+export default ResultsReviewPageWithGuard;

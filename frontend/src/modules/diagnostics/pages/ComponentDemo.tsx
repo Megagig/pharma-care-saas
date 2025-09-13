@@ -15,6 +15,7 @@ import {
   AllergyInput,
 } from '../components';
 import type { DiagnosticRequestForm } from '../types';
+import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
 
 const ComponentDemo: React.FC = () => {
   const [formData, setFormData] = useState<Partial<DiagnosticRequestForm>>({
@@ -152,4 +153,11 @@ const ComponentDemo: React.FC = () => {
   );
 };
 
-export default ComponentDemo;
+// Wrap with feature guard
+const ComponentDemoWithGuard: React.FC = () => (
+  <DiagnosticFeatureGuard>
+    <ComponentDemo />
+  </DiagnosticFeatureGuard>
+);
+
+export default ComponentDemoWithGuard;
