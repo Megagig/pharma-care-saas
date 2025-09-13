@@ -59,6 +59,7 @@ import { usePatients } from '../../../stores';
 
 // Import types
 import type { DiagnosticRequestForm } from '../types';
+import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
 
 // Validation schema
 const caseIntakeSchema = z.object({
@@ -767,4 +768,11 @@ const CaseIntakePage: React.FC = () => {
   );
 };
 
-export default CaseIntakePage;
+// Wrap with feature guard
+const CaseIntakePageWithGuard: React.FC = () => (
+  <DiagnosticFeatureGuard>
+    <CaseIntakePage />
+  </DiagnosticFeatureGuard>
+);
+
+export default CaseIntakePageWithGuard;

@@ -95,15 +95,6 @@ const patientSchema = new mongoose_1.Schema({
     },
     phone: {
         type: String,
-        validate: {
-            validator: function (value) {
-                if (value) {
-                    return /^\+234[789][01]\d{8}$/.test(value);
-                }
-                return true;
-            },
-            message: 'Phone must be in E.164 format (+234...)',
-        },
     },
     email: {
         type: String,
@@ -188,9 +179,11 @@ const patientSchema = new mongoose_1.Schema({
                 type: mongoose_1.Schema.Types.ObjectId,
                 ref: 'Patient',
             },
-            sharedWithLocations: [{
+            sharedWithLocations: [
+                {
                     type: String,
-                }],
+                },
+            ],
             sharedBy: {
                 type: mongoose_1.Schema.Types.ObjectId,
                 ref: 'User',
@@ -227,14 +220,16 @@ const patientSchema = new mongoose_1.Schema({
                 type: mongoose_1.Schema.Types.ObjectId,
                 ref: 'User',
             },
-            steps: [{
+            steps: [
+                {
                     step: String,
                     completedAt: Date,
                     completedBy: {
                         type: mongoose_1.Schema.Types.ObjectId,
                         ref: 'User',
                     },
-                }],
+                },
+            ],
         },
     },
     hasActiveDTP: {

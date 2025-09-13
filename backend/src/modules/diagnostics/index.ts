@@ -9,6 +9,9 @@ import labRoutes from './routes/labRoutes';
 import drugInteractionRoutes from './routes/drugInteractionRoutes';
 import followUpRoutes from './routes/followUp.routes';
 import adherenceRoutes from './routes/adherence.routes';
+import analyticsRoutes from './routes/analytics.routes';
+import auditRoutes from './routes/audit.routes';
+import integrationRoutes from './routes/integration.routes';
 
 // Import services
 export { DiagnosticService } from './services/diagnosticService';
@@ -18,6 +21,9 @@ export { default as clinicalApiService } from './services/clinicalApiService';
 export { default as diagnosticFollowUpService } from './services/diagnosticFollowUpService';
 export { default as adherenceService } from './services/adherenceService';
 export { default as diagnosticNotificationService } from './services/diagnosticNotificationService';
+export { default as diagnosticAnalyticsService } from './services/diagnosticAnalyticsService';
+export { default as diagnosticAuditService } from './services/diagnosticAuditService';
+export { default as diagnosticIntegrationService } from './services/integrationService';
 
 // Import models
 export { default as DiagnosticRequest } from './models/DiagnosticRequest';
@@ -85,6 +91,9 @@ export const routes = {
     drugInteractions: drugInteractionRoutes,
     followUps: followUpRoutes,
     adherence: adherenceRoutes,
+    analytics: analyticsRoutes,
+    audit: auditRoutes,
+    integration: integrationRoutes,
 };
 
 // Module configuration
@@ -146,6 +155,9 @@ export const moduleConfig = {
         drugInteractions: '/api/interactions',
         followUps: '/api/diagnostics/follow-ups',
         adherence: '/api/diagnostics/adherence',
+        analytics: '/api/diagnostics/analytics',
+        audit: '/api/diagnostics/audit',
+        integration: '/api/diagnostics/integration',
     },
     dependencies: [
         'openRouterService',

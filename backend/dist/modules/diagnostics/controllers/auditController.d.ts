@@ -1,0 +1,34 @@
+import { Response } from 'express';
+import { AuthRequest } from '../../../types/auth';
+export declare const searchAuditEvents: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getEntityAuditTrail: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const generateComplianceReport: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const logSecurityViolation: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getAuditStatistics: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const archiveAuditRecords: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const exportAuditData: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const generateRegulatoryReport: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const detectAuditAnomalies: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getAuditVisualization: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const advancedAuditSearch: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const exportAuditVisualization: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getDataRetentionPolicies: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const updateDataRetentionPolicy: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+declare const _default: {
+    searchAuditEvents: (req: AuthRequest, res: Response) => Promise<void>;
+    getEntityAuditTrail: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    generateComplianceReport: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    generateRegulatoryReport: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    detectAuditAnomalies: (req: AuthRequest, res: Response) => Promise<void>;
+    getAuditVisualization: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    advancedAuditSearch: (req: AuthRequest, res: Response) => Promise<void>;
+    exportAuditVisualization: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    getDataRetentionPolicies: (req: AuthRequest, res: Response) => Promise<void>;
+    updateDataRetentionPolicy: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    logSecurityViolation: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    getAuditStatistics: (req: AuthRequest, res: Response) => Promise<void>;
+    archiveAuditRecords: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    exportAuditData: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+};
+export default _default;
+//# sourceMappingURL=auditController.d.ts.map

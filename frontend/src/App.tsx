@@ -67,13 +67,18 @@ import MTRHelp from './pages/MTRHelp';
 // Pharmacy Module Components
 import MedicationTherapyReview from './pages/MedicationTherapyReview';
 import ClinicalInterventionsLayout from './components/ClinicalInterventionsLayout';
-import LabResultIntegration from './pages/LabResultIntegration';
 import CommunicationHub from './pages/CommunicationHub';
 import DrugInformationCenter from './pages/DrugInformationCenter';
 import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
 import PharmacyReports from './pages/PharmacyReports';
 import PharmacyUserManagement from './pages/PharmacyUserManagement';
 import PharmacySettings from './pages/PharmacySettings';
+
+// Diagnostic Module Components
+import DiagnosticDashboard from './modules/diagnostics/pages/DiagnosticDashboard';
+import CaseIntakePage from './modules/diagnostics/pages/CaseIntakePage';
+import ResultsReviewPage from './modules/diagnostics/pages/ResultsReviewPage';
+import ComponentDemo from './modules/diagnostics/pages/ComponentDemo';
 
 // Test Components
 import SidebarTest from './components/SidebarTest';
@@ -419,11 +424,41 @@ function App(): JSX.Element {
                             }
                           />
                           <Route
-                            path="/pharmacy/lab-integration"
+                            path="/pharmacy/diagnostics"
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <LabResultIntegration />
+                                  <DiagnosticDashboard />
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/pharmacy/diagnostics/case/new"
+                            element={
+                              <ProtectedRoute requiresActiveSubscription>
+                                <AppLayout>
+                                  <CaseIntakePage />
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/pharmacy/diagnostics/case/:requestId"
+                            element={
+                              <ProtectedRoute requiresActiveSubscription>
+                                <AppLayout>
+                                  <ResultsReviewPage />
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/pharmacy/diagnostics/demo"
+                            element={
+                              <ProtectedRoute requiresActiveSubscription>
+                                <AppLayout>
+                                  <ComponentDemo />
                                 </AppLayout>
                               </ProtectedRoute>
                             }
