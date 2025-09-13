@@ -262,7 +262,7 @@ import { Request, Response, NextFunction } from 'express';
 type ValidationTarget = 'body' | 'params' | 'query';
 export declare const validateRequest: (schema: z.ZodSchema, target?: ValidationTarget) => (req: Request, res: Response, next: NextFunction) => void;
 export declare const validateConsentTimestamp: (timestamp: Date) => boolean;
-export declare const validateVitalSignsForAge: (vitals: any, patientAge: number) => {
+export declare const validateVitalSignsForAge: (vitals: IVitalSigns, patientAge: number) => {
     valid: boolean;
     errors: string[];
 };
@@ -277,7 +277,7 @@ export declare const validateBloodPressure: (bp: string) => {
 declare const _default: {
     validateRequest: (schema: z.ZodSchema, target?: ValidationTarget) => (req: Request, res: Response, next: NextFunction) => void;
     validateConsentTimestamp: (timestamp: Date) => boolean;
-    validateVitalSignsForAge: (vitals: any, patientAge: number) => {
+    validateVitalSignsForAge: (vitals: IVitalSigns, patientAge: number) => {
         valid: boolean;
         errors: string[];
     };

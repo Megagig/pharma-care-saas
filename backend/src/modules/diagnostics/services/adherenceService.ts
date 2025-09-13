@@ -304,10 +304,10 @@ class AdherenceService {
                         .slice(0, 2);
 
                     const daysBetween = Math.floor(
-                        ((lastTwoRefills[0]?.date?.getTime() || 0) - (lastTwoRefills[1]?.date?.getTime() || 0)) / (1000 * 60 * 60 * 24)
+                        ((lastTwoRefills[0]!.date.getTime()) - (lastTwoRefills[1]!.date.getTime())) / (1000 * 60 * 60 * 24)
                     );
 
-                    const expectedDays = lastTwoRefills[1]?.daysSupply || 0;
+                    const expectedDays = lastTwoRefills[1]!.daysSupply || 0;
                     const gap = daysBetween - expectedDays;
 
                     if (gap > 3) {
@@ -453,7 +453,7 @@ class AdherenceService {
         threshold: number = 70
     ): Promise<IAdherenceTracking[]> {
         try {
-            const poorAdherencePatients = await AdherenceTracking.findPoorAdherence(workplaceId, threshold)
+            const poorAdherencePatients = AdherenceTracking.findPoorAdherence(workplaceId, threshold)
                 .populate('patientId', 'firstName lastName mrn')
                 .exec();
 
@@ -470,7 +470,7 @@ class AdherenceService {
      */
     async processAdherenceAssessments(): Promise<void> {
         try {
-            const dueAssessments = await AdherenceTracking.findDueForAssessment();
+            const dueAssessments = AdherenceTracking.findDueForAssessment();
 
             for (const tracking of dueAssessments) {
                 // Recalculate adherence scores

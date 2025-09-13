@@ -326,7 +326,7 @@ class LabService {
             if (numericResults.length < 2) {
                 return {
                     testCode,
-                    testName: results[0].testName,
+                    testName: results[0]?.testName || testCode,
                     results: [],
                     trend: 'insufficient_data',
                     analysis: {

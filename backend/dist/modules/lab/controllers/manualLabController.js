@@ -7,12 +7,14 @@ exports.servePDFRequisition = exports.resolveOrderToken = exports.getLabResults 
 const mongoose_1 = __importDefault(require("mongoose"));
 const manualLabService_1 = __importDefault(require("../services/manualLabService"));
 const pdfGenerationService_1 = require("../services/pdfGenerationService");
+const manualLabCacheService_1 = __importDefault(require("../services/manualLabCacheService"));
 const ManualLabOrder_1 = __importDefault(require("../models/ManualLabOrder"));
 const Patient_1 = __importDefault(require("../../../models/Patient"));
 const Workplace_1 = __importDefault(require("../../../models/Workplace"));
 const User_1 = __importDefault(require("../../../models/User"));
 const responseHelpers_1 = require("../../../utils/responseHelpers");
 const manualLabAuditService_1 = __importDefault(require("../services/manualLabAuditService"));
+const manualLabSecurityMiddleware_1 = require("../middlewares/manualLabSecurityMiddleware");
 const logger_1 = __importDefault(require("../../../utils/logger"));
 exports.createManualLabOrder = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
@@ -33,15 +35,18 @@ exports.createManualLabOrder = (0, responseHelpers_1.asyncHandler)(async (req, r
         const auditContext = {
             userId: context.userId,
             workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
-            userRole: context.userRole,
+            userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
         };
         const order = await manualLabService_1.default.createOrder(createRequest, auditContext);
+        const pdfToken = (0, manualLabSecurityMiddleware_1.generateSecurePDFToken)(order.orderId, context.userId.toString(), 24 * 60 * 60);
         (0, responseHelpers_1.sendSuccess)(res, {
             order: {
                 ...order.toObject(),
                 testCount: order.tests.length,
+                pdfAccessToken: pdfToken,
+                pdfUrl: `/api/manual-lab-orders/${order.orderId}/pdf?token=${pdfToken}`
             },
         }, 'Manual lab order created successfully', 201);
         logger_1.default.info('Manual lab order created via API', {
@@ -85,7 +90,7 @@ exports.getManualLabOrder = (0, responseHelpers_1.asyncHandler)(async (req, res)
         const auditContext = {
             userId: context.userId,
             workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
-            userRole: context.userRole,
+            userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
         };
@@ -181,7 +186,7 @@ exports.updateOrderStatus = (0, responseHelpers_1.asyncHandler)(async (req, res)
         const auditContext = {
             userId: context.userId,
             workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
-            userRole: context.userRole,
+            userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
         };
@@ -250,7 +255,7 @@ exports.getManualLabOrders = (0, responseHelpers_1.asyncHandler)(async (req, res
         const auditContext = {
             userId: context.userId,
             workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
-            userRole: context.userRole,
+            userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
         };
@@ -305,7 +310,7 @@ exports.addLabResults = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
         const auditContext = {
             userId: context.userId,
             workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
-            userRole: context.userRole,
+            userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
         };
@@ -362,7 +367,7 @@ exports.getLabResults = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
         const auditContext = {
             userId: context.userId,
             workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
-            userRole: context.userRole,
+            userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
         };
@@ -413,7 +418,7 @@ exports.resolveOrderToken = (0, responseHelpers_1.asyncHandler)(async (req, res)
         const auditContext = {
             userId: context.userId,
             workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
-            userRole: context.userRole,
+            userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
         };
@@ -480,12 +485,15 @@ exports.servePDFRequisition = (0, responseHelpers_1.asyncHandler)(async (req, re
         if (!patient || !workplace || !pharmacist) {
             return (0, responseHelpers_1.sendError)(res, 'NOT_FOUND', 'Required data not found for PDF generation', 404);
         }
-        pdfGenerationService_1.pdfGenerationService.validateGenerationRequirements(order, patient, workplace, pharmacist);
-        const pdfResult = await pdfGenerationService_1.pdfGenerationService.generateRequisitionPDF(order, patient, workplace, pharmacist);
+        let pdfResult = await manualLabCacheService_1.default.getCachedPDFRequisition(orderId.toUpperCase());
+        if (!pdfResult) {
+            pdfGenerationService_1.pdfGenerationService.validateGenerationRequirements(order, patient, workplace, pharmacist);
+            pdfResult = await pdfGenerationService_1.pdfGenerationService.generateRequisitionPDF(order, patient, workplace, pharmacist);
+        }
         const auditContext = {
             userId: context.userId,
             workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
-            userRole: context.userRole,
+            userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
         };

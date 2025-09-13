@@ -1,11 +1,11 @@
-import cron from 'node-cron';
+import cron, { ScheduledTask } from 'node-cron';
 import logger from '../../../utils/logger';
 import diagnosticFollowUpService from './diagnosticFollowUpService';
 import adherenceService from './adherenceService';
 import diagnosticNotificationService from './diagnosticNotificationService';
 
 class DiagnosticCronService {
-    private jobs: Map<string, cron.ScheduledTask> = new Map();
+    private jobs: Map<string, ScheduledTask> = new Map();
 
     /**
      * Initialize all cron jobs
@@ -81,7 +81,7 @@ class DiagnosticCronService {
             }, {
                 scheduled: false, // Don't start immediately
                 timezone: 'UTC'
-            });
+            } as ScheduleOptions);
 
             this.jobs.set(name, job);
             logger.info(`Scheduled cron job: ${name} with schedule: ${schedule}`);
@@ -161,7 +161,7 @@ class DiagnosticCronService {
         const status: Record<string, boolean> = {};
 
         this.jobs.forEach((job, name) => {
-            status[name] = job.running;
+            status[name] = job.getStatus() === 'running';
         });
 
         return status;

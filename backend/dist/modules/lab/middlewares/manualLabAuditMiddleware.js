@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.monitorCompliance = exports.auditManualLabOperation = exports.auditTokenResolution = exports.auditStatusChange = exports.auditResultEntry = exports.auditPDFAccess = void 0;
 const manualLabAuditService_1 = __importDefault(require("../services/manualLabAuditService"));
+const manualLabSecurityService_1 = __importDefault(require("../services/manualLabSecurityService"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const auditPDFAccess = (req, res, next) => {
     const startTime = Date.now();
@@ -197,7 +198,7 @@ const auditTokenResolution = (req, res, next) => {
 };
 exports.auditTokenResolution = auditTokenResolution;
 const auditManualLabOperation = (operationType) => {
-    return (req, res, next) => {
+    return async (req, res, next) => {
         const startTime = Date.now();
         logger_1.default.info('Manual lab operation started', {
             operationType,
@@ -207,6 +208,47 @@ const auditManualLabOperation = (operationType) => {
             url: req.originalUrl,
             service: 'manual-lab-audit-middleware'
         });
+        if (req.user) {
+            try {
+                const auditContext = {
+                    userId: req.user._id,
+                    workplaceId: req.user.workplaceId,
+                    userRole: req.user.role,
+                    sessionId: req.sessionID,
+                    ipAddress: req.ip,
+                    userAgent: req.get('User-Agent'),
+                    requestMethod: req.method,
+                    requestUrl: req.originalUrl
+                };
+                const threats = await manualLabSecurityService_1.default.analyzeRequest(auditContext, {
+                    method: req.method,
+                    url: req.originalUrl,
+                    body: req.body,
+                    query: req.query,
+                    headers: req.headers
+                });
+                const criticalThreats = threats.filter(t => t.severity === 'critical');
+                if (criticalThreats.length > 0) {
+                    logger_1.default.error('Critical security threat detected - blocking request', {
+                        userId: req.user._id,
+                        threats: criticalThreats,
+                        service: 'manual-lab-audit-middleware'
+                    });
+                    return res.status(403).json({
+                        success: false,
+                        code: 'SECURITY_THREAT_DETECTED',
+                        message: 'Request blocked due to security threat detection'
+                    });
+                }
+            }
+            catch (error) {
+                logger_1.default.error('Security analysis failed', {
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                    userId: req.user._id,
+                    service: 'manual-lab-audit-middleware'
+                });
+            }
+        }
         const originalJson = res.json;
         res.json = function (body) {
             const endTime = Date.now();

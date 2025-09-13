@@ -28,7 +28,7 @@ class AIOrchestrationService {
             const promptHash = this.generatePromptHash(prompt);
             const aiResponse = await this.callOpenRouterWithRetry(input, processingOptions);
             const enhancedResponse = await this.validateAndEnhanceResponse(aiResponse, input, processingOptions, promptHash, startTime);
-            await this.logAIResponse(enhancedResponse, consent);
+            await this.logAIResponse(enhancedResponse, consent, input.workplaceId);
             logger_1.default.info('AI diagnostic analysis completed successfully', {
                 patientId: consent.patientId,
                 processingTime: enhancedResponse.metadata.processingTime,
@@ -40,7 +40,7 @@ class AIOrchestrationService {
         }
         catch (error) {
             const processingTime = Date.now() - startTime;
-            await this.logAIError(error, consent, processingTime);
+            await this.logAIError(error, consent, processingTime, input.workplaceId);
             logger_1.default.error('AI diagnostic analysis failed', {
                 patientId: consent.patientId,
                 error: error instanceof Error ? error.message : 'Unknown error',
@@ -316,8 +316,8 @@ class AIOrchestrationService {
     async logAIRequest(input, consent, options) {
         try {
             await auditService_1.default.logEvent({
-                userId: consent.pharmacistId,
-                workplaceId: '',
+                userId: new Types.ObjectId(consent.pharmacistId),
+                workplaceId: input.workplaceId,
             }, {
                 action: 'ai_diagnostic_request',
                 resourceType: 'AIAnalysis',
@@ -338,11 +338,11 @@ class AIOrchestrationService {
             logger_1.default.warn('Failed to log AI request audit event', { error });
         }
     }
-    async logAIResponse(response, consent) {
+    async logAIResponse(response, consent, workplaceId) {
         try {
             await auditService_1.default.logEvent({
-                userId: consent.pharmacistId,
-                workplaceId: '',
+                userId: new Types.ObjectId(consent.pharmacistId),
+                workplaceId: workplaceId,
             }, {
                 action: 'ai_diagnostic_response',
                 resourceType: 'AIAnalysis',
@@ -363,11 +363,11 @@ class AIOrchestrationService {
             logger_1.default.warn('Failed to log AI response audit event', { error });
         }
     }
-    async logAIError(error, consent, processingTime) {
+    async logAIError(error, consent, processingTime, workplaceId) {
         try {
             await auditService_1.default.logEvent({
-                userId: consent.pharmacistId,
-                workplaceId: '',
+                userId: new Types.ObjectId(consent.pharmacistId),
+                workplaceId: workplaceId,
             }, {
                 action: 'ai_diagnostic_error',
                 resourceType: 'AIAnalysis',

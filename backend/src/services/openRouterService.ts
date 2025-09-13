@@ -1,5 +1,22 @@
 import axios, { AxiosResponse } from 'axios';
 import logger from '../utils/logger';
+import { z } from 'zod';
+import {
+    symptomDataSchema,
+    vitalSignsSchema,
+    medicationEntrySchema,
+} from '../modules/diagnostics/validators/diagnosticValidators';
+
+export type ISymptomData = z.infer<typeof symptomDataSchema>;
+export type VitalSigns = z.infer<typeof vitalSignsSchema>;
+export type MedicationEntry = z.infer<typeof medicationEntrySchema>;
+
+export interface LabResult {
+    testName: string;
+    value: string;
+    referenceRange: string;
+    abnormal?: boolean;
+}
 
 interface RetryConfig {
   maxRetries: number;
@@ -44,36 +61,15 @@ interface OpenRouterResponse {
   usage: OpenRouterUsage;
 }
 
-interface DiagnosticInput {
-  symptoms: {
-    subjective: string[];
-    objective: string[];
-    duration: string;
-    severity: 'mild' | 'moderate' | 'severe';
-    onset: 'acute' | 'chronic' | 'subacute';
-  };
-  labResults?: {
-    testName: string;
-    value: string;
-    referenceRange: string;
-    abnormal: boolean;
-  }[];
-  currentMedications?: {
-    name: string;
-    dosage: string;
-    frequency: string;
-  }[];
-  vitalSigns?: {
-    bloodPressure?: string;
-    heartRate?: number;
-    temperature?: number;
-    respiratoryRate?: number;
-    oxygenSaturation?: number;
-  };
-  patientAge?: number;
-  patientGender?: string;
-  allergies?: string[];
-  medicalHistory?: string[];
+export interface DiagnosticInput {
+    symptoms: ISymptomData;
+    labResults?: LabResult[];
+    currentMedications?: MedicationEntry[];
+    vitalSigns?: VitalSigns;
+    patientAge?: number;
+    patientGender?: string;
+    allergies?: string[];
+    medicalHistory?: string[];
 }
 
 interface DiagnosticResponse {
@@ -698,4 +694,4 @@ Your response must be valid JSON in this exact format:
 }
 
 export default new OpenRouterService();
-export { DiagnosticInput, DiagnosticResponse };
+export { DiagnosticResponse };

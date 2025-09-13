@@ -499,13 +499,13 @@ class PharmacistReviewService {
                 { $sort: { count: -1 } },
                 { $limit: 5 },
             ]),
-            Promise.resolve(0.75),
+            Promise.resolve({ interventionCreationRate: 0.75 }),
         ]);
         return {
             averageConfidenceScore: metrics[0]?.avgConfidence || 0,
             averageQualityScore: metrics[0]?.avgQuality || 0,
             commonRejectionReasons: rejectionReasons.map((r) => r._id).filter(Boolean),
-            interventionCreationRate: interventionRate,
+            interventionCreationRate: interventionRate.interventionCreationRate,
         };
     }
     async getTimeMetrics(matchStage) {

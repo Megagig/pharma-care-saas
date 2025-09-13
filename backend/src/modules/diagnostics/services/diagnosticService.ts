@@ -115,18 +115,23 @@ export class DiagnosticService {
             const savedRequest = await diagnosticRequest.save();
 
             // Log audit event
-            await auditService.logEvent({
-                userId: data.pharmacistId,
-                workplaceId: data.workplaceId,
-                action: 'diagnostic_request_created',
-                resourceType: 'DiagnosticRequest',
-                resourceId: savedRequest._id.toString(),
-                details: {
-                    patientId: data.patientId,
-                    priority: data.priority,
-                    symptomsCount: data.inputSnapshot.symptoms.subjective.length,
+            await auditService.logEvent(
+                {
+                    userId: new Types.ObjectId(data.pharmacistId),
+                    workplaceId: new Types.ObjectId(data.workplaceId),
+                    userRole: pharmacist.role,
                 },
-            });
+                {
+                    action: 'diagnostic_request_created',
+                    resourceType: 'DiagnosticRequest',
+                    resourceId: savedRequest._id.toString(),
+                    details: {
+                        patientId: data.patientId,
+                        priority: data.priority,
+                        symptomsCount: data.inputSnapshot.symptoms.subjective.length,
+                    },
+                }
+            );
 
             logger.info('Diagnostic request created successfully', {
                 requestId: savedRequest._id,
@@ -250,21 +255,25 @@ export class DiagnosticService {
             const processingTime = Date.now() - startTime;
 
             // Log audit event
-            await auditService.logEvent({
-                userId: request.pharmacistId.toString(),
-                workplaceId: request.workplaceId.toString(),
-                action: 'diagnostic_analysis_completed',
-                resourceType: 'DiagnosticResult',
-                resourceId: diagnosticResult._id.toString(),
-                details: {
-                    requestId,
-                    processingTime,
-                    diagnosesCount: diagnosticResult.diagnoses.length,
-                    confidenceScore: diagnosticResult.aiMetadata.confidenceScore,
-                    hasRedFlags: diagnosticResult.redFlags.length > 0,
-                    requiresReferral: diagnosticResult.referralRecommendation?.recommended || false,
+            await auditService.logEvent(
+                {
+                    userId: request.pharmacistId,
+                    workplaceId: request.workplaceId,
                 },
-            });
+                {
+                    action: 'diagnostic_analysis_completed',
+                    resourceType: 'DiagnosticResult',
+                    resourceId: diagnosticResult._id.toString(),
+                    details: {
+                        requestId,
+                        processingTime,
+                        diagnosesCount: diagnosticResult.diagnoses.length,
+                        confidenceScore: diagnosticResult.aiMetadata.confidenceScore,
+                        hasRedFlags: diagnosticResult.redFlags.length > 0,
+                        requiresReferral: diagnosticResult.referralRecommendation?.recommended || false,
+                    },
+                }
+            );
 
             logger.info('Diagnostic processing completed successfully', {
                 requestId,
@@ -291,18 +300,22 @@ export class DiagnosticService {
 
             // Log audit event
             if (request) {
-                await auditService.logEvent({
-                    userId: request.pharmacistId.toString(),
-                    workplaceId: request.workplaceId.toString(),
-                    action: 'diagnostic_analysis_failed',
-                    resourceType: 'DiagnosticRequest',
-                    resourceId: requestId,
-                    details: {
-                        error: error instanceof Error ? error.message : 'Unknown error',
-                        processingTime,
-                        retryCount: request.retryCount,
+                await auditService.logEvent(
+                    {
+                        userId: request.pharmacistId,
+                        workplaceId: request.workplaceId,
                     },
-                });
+                    {
+                        action: 'diagnostic_analysis_failed',
+                        resourceType: 'DiagnosticRequest',
+                        resourceId: requestId,
+                        details: {
+                            error: error instanceof Error ? error.message : 'Unknown error',
+                            processingTime,
+                            retryCount: request.retryCount,
+                        },
+                    }
+                );
             }
 
             logger.error('Diagnostic processing failed', {
@@ -327,9 +340,9 @@ export class DiagnosticService {
             }
 
             // Calculate age
-            const age = Math.floor(
+            const age = patient.dateOfBirth ? Math.floor(
                 (Date.now() - patient.dateOfBirth.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-            );
+            ) : patient.age || 0;
 
             // Get lab results if referenced
             let labResults: any[] = [];
@@ -393,11 +406,11 @@ export class DiagnosticService {
         }));
 
         // Convert medications to AI input format
-        const currentMedications = patientData.medications.map(med => ({
+        const currentMedications = patientData.medications ? patientData.medications.map(med => ({
             name: med.name,
             dosage: med.dosage,
             frequency: med.frequency,
-        }));
+        })) : undefined;
 
         const aiInput: DiagnosticInput = {
             symptoms: patientData.symptoms,
@@ -806,17 +819,21 @@ export class DiagnosticService {
             await request.save();
 
             // Log audit event
-            await auditService.logEvent({
-                userId: cancelledBy,
-                workplaceId,
-                action: 'diagnostic_request_cancelled',
-                resourceType: 'DiagnosticRequest',
-                resourceId: requestId,
-                details: {
-                    reason: reason || 'Cancelled by user',
-                    originalStatus: request.status,
+            await auditService.logEvent(
+                {
+                    userId: new Types.ObjectId(cancelledBy),
+                    workplaceId: new Types.ObjectId(workplaceId),
                 },
-            });
+                {
+                    action: 'diagnostic_request_cancelled',
+                    resourceType: 'DiagnosticRequest',
+                    resourceId: requestId,
+                    details: {
+                        reason: reason || 'Cancelled by user',
+                        originalStatus: request.status,
+                    },
+                }
+            );
 
             logger.info('Diagnostic request cancelled', {
                 requestId,

@@ -112,80 +112,80 @@ router.post(
     drugInteractionController.checkAllergyInteractions
 );
 
-/**
- * @route GET /api/interactions/details
- * @desc Get detailed interaction information between two drugs
- * @access Private (requires drug_information feature)
- */
-router.get(
-    '/details',
-    interactionRateLimit,
-    auth,
-    requireFeature('drug_information'),
-    auditLogger({
-        action: 'GET_INTERACTION_DETAILS',
-        resourceType: 'InteractionDetails',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    drugInteractionController.getInteractionDetails
-);
+// /**
+//  * @route GET /api/interactions/details
+//  * @desc Get detailed interaction information between two drugs
+//  * @access Private (requires drug_information feature)
+//  */
+// router.get(
+//     '/details',
+//     interactionRateLimit,
+//     auth,
+//     requireFeature('drug_information'),
+//     auditLogger({
+//         action: 'GET_INTERACTION_DETAILS',
+//         resourceType: 'InteractionDetails',
+//         complianceCategory: 'data_access',
+//         riskLevel: 'low'
+//     }),
+//     drugInteractionController.getInteractionDetails
+// );
 
-/**
- * @route GET /api/interactions/class-interactions
- * @desc Get drug class interactions
- * @access Private (requires drug_information feature)
- */
-router.get(
-    '/class-interactions',
-    interactionRateLimit,
-    auth,
-    requireFeature('drug_information'),
-    auditLogger({
-        action: 'GET_CLASS_INTERACTIONS',
-        resourceType: 'ClassInteractions',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    drugInteractionController.getClassInteractions
-);
+// /**
+//  * @route GET /api/interactions/class-interactions
+//  * @desc Get drug class interactions
+//  * @access Private (requires drug_information feature)
+//  */
+// router.get(
+//     '/class-interactions',
+//     interactionRateLimit,
+//     auth,
+//     requireFeature('drug_information'),
+//     auditLogger({
+//         action: 'GET_CLASS_INTERACTIONS',
+//         resourceType: 'ClassInteractions',
+//         complianceCategory: 'data_access',
+//         riskLevel: 'low'
+//     }),
+//     drugInteractionController.getClassInteractions
+// );
 
-/**
- * @route GET /api/interactions/food-interactions
- * @desc Get food-drug interactions
- * @access Private (requires drug_information feature)
- */
-router.get(
-    '/food-interactions',
-    interactionRateLimit,
-    auth,
-    requireFeature('drug_information'),
-    auditLogger({
-        action: 'GET_FOOD_INTERACTIONS',
-        resourceType: 'FoodInteractions',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    drugInteractionController.getFoodInteractions
-);
+// /**
+//  * @route GET /api/interactions/food-interactions
+//  * @desc Get food-drug interactions
+//  * @access Private (requires drug_information feature)
+//  */
+// router.get(
+//     '/food-interactions',
+//     interactionRateLimit,
+//     auth,
+//     requireFeature('drug_information'),
+//     auditLogger({
+//         action: 'GET_FOOD_INTERACTIONS',
+//         resourceType: 'FoodInteractions',
+//         complianceCategory: 'data_access',
+//         riskLevel: 'low'
+//     }),
+//     drugInteractionController.getFoodInteractions
+// );
 
-/**
- * @route GET /api/interactions/pregnancy-info
- * @desc Get pregnancy and lactation information for drug
- * @access Private (requires drug_information feature)
- */
-router.get(
-    '/pregnancy-info',
-    interactionRateLimit,
-    auth,
-    requireFeature('drug_information'),
-    auditLogger({
-        action: 'GET_PREGNANCY_INFO',
-        resourceType: 'PregnancyInfo',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
-    drugInteractionController.getPregnancyInfo
-);
+// /**
+//  * @route GET /api/interactions/pregnancy-info
+//  * @desc Get pregnancy and lactation information for drug
+//  * @access Private (requires drug_information feature)
+//  */
+// router.get(
+//     '/pregnancy-info',
+//     interactionRateLimit,
+//     auth,
+//     requireFeature('drug_information'),
+//     auditLogger({
+//         action: 'GET_PREGNANCY_INFO',
+//         resourceType: 'PregnancyInfo',
+//         complianceCategory: 'data_access',
+//         riskLevel: 'low'
+//     }),
+//     drugInteractionController.getPregnancyInfo
+// );
 
 export default router;

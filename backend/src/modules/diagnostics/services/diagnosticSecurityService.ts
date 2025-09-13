@@ -93,7 +93,7 @@ class DiagnosticSecurityService {
         if (!req.user) return threats;
 
         const userId = req.user._id.toString();
-        const workplaceId = req.workspaceContext?.workspace._id?.toString() || '';
+        const workplaceId = req.workspaceContext?.workspace?._id?.toString() || '';
 
         // Check for burst patterns (many requests in short time)
         const burstPattern = await this.detectBurstPattern(userId, requestType);
@@ -149,7 +149,7 @@ class DiagnosticSecurityService {
         if (!req.user || !req.body) return threats;
 
         const userId = req.user._id.toString();
-        const workplaceId = req.workspaceContext?.workspace._id?.toString() || '';
+        const workplaceId = req.workspaceContext?.workspace?._id?.toString() || '';
 
         // Check for data exfiltration patterns
         const exfiltrationPattern = this.detectDataExfiltrationPattern(req.body);
@@ -203,7 +203,7 @@ class DiagnosticSecurityService {
         if (!req.user) return threats;
 
         const userId = req.user._id.toString();
-        const workplaceId = req.workspaceContext?.workspace._id?.toString() || '';
+        const workplaceId = req.workspaceContext?.workspace?._id?.toString() || '';
 
         // Check request body for injection patterns
         const injectionPatterns = this.detectInjectionPatterns(req.body);
@@ -260,7 +260,7 @@ class DiagnosticSecurityService {
         if (!req.user) return threats;
 
         const userId = req.user._id.toString();
-        const workplaceId = req.workspaceContext?.workspace._id?.toString() || '';
+        const workplaceId = req.workspaceContext?.workspace?._id?.toString() || '';
 
         // Check for automated/bot behavior
         const botPattern = this.detectBotBehavior(req);

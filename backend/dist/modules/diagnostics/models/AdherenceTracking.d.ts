@@ -99,6 +99,7 @@ export interface IAdherenceTracking extends Document {
     addIntervention(intervention: Omit<IAdherenceIntervention, 'implementedAt'>): void;
     assessAdherenceRisk(): 'low' | 'medium' | 'high' | 'critical';
     generateAdherenceReport(): any;
+    calculateMedicationAdherence(medication: IMedicationAdherence): void;
 }
 export interface IAdherenceTrackingModel extends mongoose.Model<IAdherenceTracking> {
     findByPatient(patientId: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId): Promise<IAdherenceTracking | null>;

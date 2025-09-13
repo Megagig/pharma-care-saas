@@ -79,7 +79,7 @@ const requireSeniorPharmacistRole = (req, res, next) => {
 exports.requireSeniorPharmacistRole = requireSeniorPharmacistRole;
 const checkDiagnosticLimits = async (req, res, next) => {
     try {
-        if (!req.user || !req.workspaceContext) {
+        if (!req.user || !req.workspaceContext || !req.workspaceContext.workspace || !req.workspaceContext.plan) {
             res.status(401).json({
                 success: false,
                 message: 'Authentication and workspace context required',
@@ -158,7 +158,7 @@ const checkDiagnosticLimits = async (req, res, next) => {
 exports.checkDiagnosticLimits = checkDiagnosticLimits;
 const checkAIProcessingLimits = async (req, res, next) => {
     try {
-        if (!req.user || !req.workspaceContext) {
+        if (!req.user || !req.workspaceContext || !req.workspaceContext.workspace || !req.workspaceContext.plan) {
             res.status(401).json({
                 success: false,
                 message: 'Authentication and workspace context required',
@@ -222,7 +222,7 @@ const checkAIProcessingLimits = async (req, res, next) => {
 exports.checkAIProcessingLimits = checkAIProcessingLimits;
 const checkDiagnosticAccess = async (req, res, next) => {
     try {
-        if (!req.user || !req.workspaceContext) {
+        if (!req.user || !req.workspaceContext || !req.workspaceContext.workspace) {
             res.status(401).json({
                 success: false,
                 message: 'Authentication and workspace context required',
@@ -263,7 +263,7 @@ const checkDiagnosticAccess = async (req, res, next) => {
 exports.checkDiagnosticAccess = checkDiagnosticAccess;
 const checkDiagnosticResultAccess = async (req, res, next) => {
     try {
-        if (!req.user || !req.workspaceContext) {
+        if (!req.user || !req.workspaceContext || !req.workspaceContext.workspace) {
             res.status(401).json({
                 success: false,
                 message: 'Authentication and workspace context required',

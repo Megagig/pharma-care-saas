@@ -241,23 +241,29 @@ export class DiagnosticIntegrationService {
             };
 
             // Get diagnostic requests
-            const diagnosticRequests = await DiagnosticRequest.find({
+            const diagnosticRequestsQuery = DiagnosticRequest.find({
                 ...baseFilter,
                 patientId,
             }).sort({ createdAt: -1 }).limit(limit);
 
             // Get clinical notes
-            const clinicalNotes = await ClinicalNote.findActive({
+            const clinicalNotesQuery = ClinicalNote.findActive({
                 ...baseFilter,
                 patient: patientId,
             }).sort({ createdAt: -1 }).limit(limit);
 
             // Get MTRs
-            const mtrs = await MedicationTherapyReview.find({
+            const mtrsQuery = MedicationTherapyReview.find({
                 ...baseFilter,
                 patientId,
                 isDeleted: false,
             }).sort({ createdAt: -1 }).limit(limit);
+
+            const [diagnosticRequests, clinicalNotes, mtrs] = await Promise.all([
+                diagnosticRequestsQuery.exec(),
+                clinicalNotesQuery.exec(),
+                mtrsQuery.exec(),
+            ]);
 
             // Combine and format timeline events
             const timelineEvents = [

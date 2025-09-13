@@ -94,7 +94,7 @@ export const generateComplianceReport = asyncHandler(
 
             // Format response based on requested format
             if (format === 'csv') {
-                const csvData = this.formatReportAsCSV(report);
+                const csvData = formatReportAsCSV(report);
                 res.setHeader('Content-Type', 'text/csv');
                 res.setHeader('Content-Disposition', `attachment; filename="manual_lab_compliance_report_${Date.now()}.csv"`);
                 res.send(csvData);
@@ -156,12 +156,12 @@ export const getOrderAuditTrail = asyncHandler(
 
             // Filter logs related to this specific order
             const orderLogs = logs.filter(log =>
-                log.details?.orderId === orderId.toUpperCase()
+                log.details?.orderId === orderId!.toUpperCase()
             );
 
             // Group logs by activity type
             const auditTrail = {
-                orderId: orderId.toUpperCase(),
+                orderId: orderId!.toUpperCase(),
                 totalEvents: orderLogs.length,
                 timeline: orderLogs.map(log => ({
                     timestamp: log.timestamp,

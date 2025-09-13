@@ -127,19 +127,24 @@ class DiagnosticIntegrationService {
                 workplaceId,
                 ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
             };
-            const diagnosticRequests = await DiagnosticRequest_1.default.find({
+            const diagnosticRequestsQuery = DiagnosticRequest_1.default.find({
                 ...baseFilter,
                 patientId,
             }).sort({ createdAt: -1 }).limit(limit);
-            const clinicalNotes = await ClinicalNote_1.default.findActive({
+            const clinicalNotesQuery = ClinicalNote_1.default.findActive({
                 ...baseFilter,
                 patient: patientId,
             }).sort({ createdAt: -1 }).limit(limit);
-            const mtrs = await MedicationTherapyReview_1.default.find({
+            const mtrsQuery = MedicationTherapyReview_1.default.find({
                 ...baseFilter,
                 patientId,
                 isDeleted: false,
             }).sort({ createdAt: -1 }).limit(limit);
+            const [diagnosticRequests, clinicalNotes, mtrs] = await Promise.all([
+                diagnosticRequestsQuery.exec(),
+                clinicalNotesQuery.exec(),
+                mtrsQuery.exec(),
+            ]);
             const timelineEvents = [
                 ...diagnosticRequests.map(req => ({
                     type: 'diagnostic',

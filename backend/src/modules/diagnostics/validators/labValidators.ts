@@ -592,7 +592,7 @@ export const validateLOINCCode = (loincCode: string): { valid: boolean; error?: 
     // Validate check digit using LOINC algorithm
     let sum = 0;
     for (let i = 0; i < code.length; i++) {
-        const digit = parseInt(code[i]);
+        const digit = parseInt(code[i]!);
         const weight = (i % 2 === 0) ? 1 : 2;
         sum += digit * weight;
     }

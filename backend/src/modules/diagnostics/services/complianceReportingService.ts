@@ -596,19 +596,25 @@ class ComplianceReportingService {
     updateDataRetentionPolicy(recordType: string, policy: Partial<DataRetentionPolicy>): void {
         const index = this.dataRetentionPolicies.findIndex(p => p.recordType === recordType);
         if (index >= 0) {
+            const existingPolicy = this.dataRetentionPolicies[index];
             this.dataRetentionPolicies[index] = {
-                ...this.dataRetentionPolicies[index],
+                ...existingPolicy,
                 ...policy,
-                recordType // Ensure recordType is always present
+                recordType, // Ensure recordType is always present
+                retentionPeriod: policy.retentionPeriod || existingPolicy.retentionPeriod,
+                archivalRequired: policy.archivalRequired || existingPolicy.archivalRequired,
+                deletionMethod: policy.deletionMethod || existingPolicy.deletionMethod,
+                legalHold: policy.legalHold || existingPolicy.legalHold,
+                regulatoryBasis: policy.regulatoryBasis || existingPolicy.regulatoryBasis,
             };
         } else {
             this.dataRetentionPolicies.push({
                 recordType,
-                retentionPeriod: 2555,
-                archivalRequired: true,
-                deletionMethod: 'soft',
-                legalHold: false,
-                regulatoryBasis: ['HIPAA'],
+                retentionPeriod: policy.retentionPeriod || 2555,
+                archivalRequired: policy.archivalRequired || true,
+                deletionMethod: policy.deletionMethod || 'soft',
+                legalHold: policy.legalHold || false,
+                regulatoryBasis: policy.regulatoryBasis || ['HIPAA'],
                 ...policy
             });
         }

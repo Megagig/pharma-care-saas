@@ -10,6 +10,7 @@ import ManualLabService, {
     OrderStatusUpdate,
 } from '../services/manualLabService';
 import { pdfGenerationService } from '../services/pdfGenerationService';
+import ManualLabCacheService from '../services/manualLabCacheService';
 
 // Import models
 import ManualLabOrder from '../models/ManualLabOrder';
@@ -76,7 +77,7 @@ export const createManualLabOrder = asyncHandler(
             const auditContext = {
                 userId: context.userId,
                 workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
-                userRole: context.userRole,
+                userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
             };
@@ -158,7 +159,7 @@ export const getManualLabOrder = asyncHandler(
             const auditContext = {
                 userId: context.userId,
                 workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
-                userRole: context.userRole,
+                userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
             };
@@ -298,7 +299,7 @@ export const updateOrderStatus = asyncHandler(
             const auditContext = {
                 userId: context.userId,
                 workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
-                userRole: context.userRole,
+                userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
             };
@@ -398,7 +399,7 @@ export const getManualLabOrders = asyncHandler(
             const auditContext = {
                 userId: context.userId,
                 workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
-                userRole: context.userRole,
+                userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
             };
@@ -476,7 +477,7 @@ export const addLabResults = asyncHandler(
             const auditContext = {
                 userId: context.userId,
                 workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
-                userRole: context.userRole,
+                userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
             };
@@ -558,7 +559,7 @@ export const getLabResults = asyncHandler(
             const auditContext = {
                 userId: context.userId,
                 workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
-                userRole: context.userRole,
+                userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
             };
@@ -638,7 +639,7 @@ export const resolveOrderToken = asyncHandler(
             const auditContext = {
                 userId: context.userId,
                 workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
-                userRole: context.userRole,
+                userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
             };
@@ -735,22 +736,27 @@ export const servePDFRequisition = asyncHandler(
                 return sendError(res, 'NOT_FOUND', 'Required data not found for PDF generation', 404);
             }
 
-            // Validate PDF generation requirements
-            pdfGenerationService.validateGenerationRequirements(order, patient, workplace, pharmacist);
+            // Try to get cached PDF first
+            let pdfResult = await ManualLabCacheService.getCachedPDFRequisition(orderId.toUpperCase());
 
-            // Generate PDF
-            const pdfResult = await pdfGenerationService.generateRequisitionPDF(
-                order,
-                patient,
-                workplace,
-                pharmacist
-            );
+            if (!pdfResult) {
+                // Validate PDF generation requirements
+                pdfGenerationService.validateGenerationRequirements(order, patient, workplace, pharmacist);
+
+                // Generate PDF if not cached
+                pdfResult = await pdfGenerationService.generateRequisitionPDF(
+                    order,
+                    patient,
+                    workplace,
+                    pharmacist
+                );
+            }
 
             // Create audit context
             const auditContext = {
                 userId: context.userId,
                 workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
-                userRole: context.userRole,
+                userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
             };

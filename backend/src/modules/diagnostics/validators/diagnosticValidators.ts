@@ -5,6 +5,8 @@ import { z } from 'zod';
  * Comprehensive Zod schemas for all Diagnostic API endpoints
  */
 
+export type IVitalSigns = z.infer<typeof vitalSignsSchema>;
+
 // Common validation patterns
 const mongoIdSchema = z
     .string()
@@ -372,7 +374,7 @@ export const validateConsentTimestamp = (timestamp: Date): boolean => {
  * Validate that vital signs are within reasonable ranges for the patient's age
  */
 export const validateVitalSignsForAge = (
-    vitals: any,
+    vitals: IVitalSigns,
     patientAge: number
 ): { valid: boolean; errors: string[] } => {
     const errors: string[] = [];
@@ -400,7 +402,7 @@ export const validateVitalSignsForAge = (
         }
 
         if (vitals.heartRate < minHR || vitals.heartRate > maxHR) {
-            errors.push(`Heart rate ${vitals.heartRate} is outside normal range for age ${patientAge} (${minHR}-${maxHR})`);
+            errors.push(`Heart rate ${vitals.heartRate.toString()} is outside normal range for age ${patientAge} (${minHR}-${maxHR})`);
         }
     }
 
@@ -427,7 +429,7 @@ export const validateVitalSignsForAge = (
         }
 
         if (vitals.respiratoryRate < minRR || vitals.respiratoryRate > maxRR) {
-            errors.push(`Respiratory rate ${vitals.respiratoryRate} is outside normal range for age ${patientAge} (${minRR}-${maxRR})`);
+            errors.push(`Respiratory rate ${vitals.respiratoryRate.toString()} is outside normal range for age ${patientAge} (${minRR}-${maxRR})`);
         }
     }
 
@@ -472,8 +474,8 @@ export const validateBloodPressure = (bp: string): { valid: boolean; systolic?: 
         return { valid: false, error: 'Blood pressure must be in format "systolic/diastolic"' };
     }
 
-    const systolic = parseInt(bpMatch[1]);
-    const diastolic = parseInt(bpMatch[2]);
+    const systolic = parseInt(bpMatch[1]!);
+    const diastolic = parseInt(bpMatch[2]!);
 
     if (systolic < 70 || systolic > 250) {
         return { valid: false, error: 'Systolic pressure must be between 70-250 mmHg' };

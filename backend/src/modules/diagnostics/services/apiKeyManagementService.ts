@@ -167,7 +167,7 @@ class ApiKeyManagementService {
         }
 
         // Return the most recently created active key
-        const latestKey = activeKeys.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+        const latestKey = activeKeys.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]!;
 
         // Update usage tracking
         this.trackKeyUsage(latestKey.id);

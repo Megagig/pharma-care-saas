@@ -3,32 +3,11 @@ interface OpenRouterUsage {
     completion_tokens: number;
     total_tokens: number;
 }
-interface DiagnosticInput {
-    symptoms: {
-        subjective: string[];
-        objective: string[];
-        duration: string;
-        severity: 'mild' | 'moderate' | 'severe';
-        onset: 'acute' | 'chronic' | 'subacute';
-    };
-    labResults?: {
-        testName: string;
-        value: string;
-        referenceRange: string;
-        abnormal: boolean;
-    }[];
-    currentMedications?: {
-        name: string;
-        dosage: string;
-        frequency: string;
-    }[];
-    vitalSigns?: {
-        bloodPressure?: string;
-        heartRate?: number;
-        temperature?: number;
-        respiratoryRate?: number;
-        oxygenSaturation?: number;
-    };
+export interface DiagnosticInput {
+    symptoms: ISymptomData;
+    labResults?: LabResult[];
+    currentMedications?: MedicationEntry[];
+    vitalSigns?: VitalSigns;
     patientAge?: number;
     patientGender?: string;
     allergies?: string[];

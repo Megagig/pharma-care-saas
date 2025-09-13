@@ -2,9 +2,6 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { jest } from '@jest/globals';
 
-declare global {
-    var testUtils: any;
-}
 
 // Extend Jest timeout for integration tests
 jest.setTimeout(30000);
