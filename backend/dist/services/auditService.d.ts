@@ -47,6 +47,15 @@ declare class AuditService {
     static logActivity(context: AuditContext, auditData: AuditLogData): Promise<IMTRAuditLog>;
     static logMTRActivity(context: AuditContext, action: string, session: any, oldValues?: any, newValues?: any): Promise<IMTRAuditLog>;
     static logPatientAccess(context: AuditContext, patientId: mongoose.Types.ObjectId, accessType: 'view' | 'edit' | 'create' | 'delete', details?: any): Promise<IMTRAuditLog>;
+    static logEvent(context: AuditContext, eventData: {
+        action: string;
+        resourceType?: string;
+        resourceId?: mongoose.Types.ObjectId;
+        patientId?: mongoose.Types.ObjectId;
+        details?: any;
+        complianceCategory?: string;
+        riskLevel?: string;
+    }): Promise<IMTRAuditLog>;
     static logAuthEvent(context: Partial<AuditContext>, action: 'LOGIN' | 'LOGOUT' | 'FAILED_LOGIN', details?: any): Promise<IMTRAuditLog | null>;
     static getAuditLogs(workplaceId: mongoose.Types.ObjectId, filters?: {
         userId?: mongoose.Types.ObjectId;

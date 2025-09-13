@@ -10,7 +10,7 @@ const diagnosticRBAC_1 = __importDefault(require("../middlewares/diagnosticRBAC"
 const rateLimiting_1 = require("../../../middlewares/rateLimiting");
 const router = (0, express_1.Router)();
 router.use(auth_1.auth);
-router.use((0, diagnosticRBAC_1.default)(['diagnostic:analytics']));
+router.use(diagnosticRBAC_1.default.requireDiagnosticAnalytics);
 router.use((0, rateLimiting_1.rateLimiting)({
     windowMs: 15 * 60 * 1000,
     max: 100,

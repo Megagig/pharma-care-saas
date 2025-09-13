@@ -126,6 +126,13 @@ export interface IAdherenceTracking extends Document {
     generateAdherenceReport(): any;
 }
 
+export interface IAdherenceTrackingModel extends mongoose.Model<IAdherenceTracking> {
+    findByPatient(patientId: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId): Promise<IAdherenceTracking | null>;
+    findPoorAdherence(workplaceId?: mongoose.Types.ObjectId, threshold?: number): Promise<IAdherenceTracking[]>;
+    findDueForAssessment(workplaceId?: mongoose.Types.ObjectId): Promise<IAdherenceTracking[]>;
+    findWithActiveAlerts(workplaceId?: mongoose.Types.ObjectId): Promise<IAdherenceTracking[]>;
+}
+
 const medicationAdherenceSchema = new Schema({
     medicationName: {
         type: String,
@@ -824,4 +831,4 @@ adherenceTrackingSchema.statics.findWithActiveAlerts = function (
     return baseQuery.sort({ 'alerts.severity': -1, 'alerts.triggeredAt': 1 });
 };
 
-export default mongoose.model<IAdherenceTracking>('AdherenceTracking', adherenceTrackingSchema);
+export default mongoose.model<IAdherenceTracking, IAdherenceTrackingModel>('AdherenceTracking', adherenceTrackingSchema);

@@ -236,6 +236,32 @@ const diagnosticRequestSchema = new mongoose_1.Schema({
         type: inputSnapshotSchema,
         required: true
     },
+    clinicalContext: {
+        chiefComplaint: {
+            type: String,
+            trim: true,
+            maxlength: [500, 'Chief complaint cannot exceed 500 characters']
+        },
+        presentingSymptoms: {
+            type: [String],
+            default: []
+        },
+        relevantHistory: {
+            type: String,
+            trim: true,
+            maxlength: [1000, 'Relevant history cannot exceed 1000 characters']
+        },
+        assessment: {
+            type: String,
+            trim: true,
+            maxlength: [2000, 'Assessment cannot exceed 2000 characters']
+        },
+        plan: {
+            type: String,
+            trim: true,
+            maxlength: [2000, 'Plan cannot exceed 2000 characters']
+        }
+    },
     consentObtained: {
         type: Boolean,
         required: true,

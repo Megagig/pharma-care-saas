@@ -13,7 +13,7 @@ const router = Router();
 
 // Apply authentication and RBAC to all routes
 router.use(auth);
-router.use(diagnosticRBAC(['diagnostic:analytics']));
+router.use(diagnosticRBAC.requireDiagnosticAnalytics);
 
 // Apply rate limiting for analytics endpoints
 router.use(rateLimiting({

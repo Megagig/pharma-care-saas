@@ -269,6 +269,12 @@ patientSchema.virtual('computedAge').get(function () {
     }
     return this.age;
 });
+patientSchema.virtual('dateOfBirth').get(function () {
+    return this.dob;
+});
+patientSchema.virtual('dateOfBirth').set(function (value) {
+    this.dob = value;
+});
 patientSchema.methods.getAge = function () {
     if (this.dob) {
         const now = new Date();

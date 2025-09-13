@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import DiagnosticIntegrationService, { DiagnosticIntegrationData } from '../services/integrationService';
-import { logger } from '../../../utils/logger';
+import logger from '../../../utils/logger';
 import { validateObjectId } from '../../../utils/responseHelpers';
 
 export interface AuthenticatedRequest extends Request {

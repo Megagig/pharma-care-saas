@@ -353,6 +353,15 @@ patientSchema.virtual('computedAge').get(function (this: IPatient) {
   return this.age;
 });
 
+// Virtual for dateOfBirth alias to maintain backward compatibility
+patientSchema.virtual('dateOfBirth').get(function (this: IPatient) {
+  return this.dob;
+});
+
+patientSchema.virtual('dateOfBirth').set(function (this: IPatient, value: Date) {
+  this.dob = value;
+});
+
 // Instance methods
 patientSchema.methods.getAge = function (this: IPatient): number {
   if (this.dob) {

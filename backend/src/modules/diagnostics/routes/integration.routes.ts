@@ -8,7 +8,7 @@ import {
     getIntegrationOptions,
 } from '../controllers/integrationController';
 import { auth } from '../../../middlewares/auth';
-import { rbac } from '../../../middlewares/rbac';
+import rbac from '../../../middlewares/rbac';
 
 const router = Router();
 
@@ -22,7 +22,7 @@ router.use(auth);
  */
 router.post(
     '/clinical-note',
-    rbac(['pharmacist', 'admin', 'super_admin']),
+    rbac.requireRole('pharmacist', 'admin', 'super_admin'),
     createClinicalNoteFromDiagnostic
 );
 
@@ -33,7 +33,7 @@ router.post(
  */
 router.post(
     '/mtr/:mtrId/enrich',
-    rbac(['pharmacist', 'admin', 'super_admin']),
+    rbac.requireRole('pharmacist', 'admin', 'super_admin'),
     addDiagnosticDataToMTR
 );
 
@@ -44,7 +44,7 @@ router.post(
  */
 router.post(
     '/mtr',
-    rbac(['pharmacist', 'admin', 'super_admin']),
+    rbac.requireRole('pharmacist', 'admin', 'super_admin'),
     createMTRFromDiagnostic
 );
 
@@ -55,7 +55,7 @@ router.post(
  */
 router.get(
     '/timeline/:patientId',
-    rbac(['pharmacist', 'admin', 'super_admin']),
+    rbac.requireRole('pharmacist', 'admin', 'super_admin'),
     getUnifiedPatientTimeline
 );
 
@@ -66,7 +66,7 @@ router.get(
  */
 router.get(
     '/cross-reference/:diagnosticRequestId',
-    rbac(['pharmacist', 'admin', 'super_admin']),
+    rbac.requireRole('pharmacist', 'admin', 'super_admin'),
     crossReferenceWithExistingRecords
 );
 
@@ -77,7 +77,7 @@ router.get(
  */
 router.get(
     '/options/:diagnosticRequestId',
-    rbac(['pharmacist', 'admin', 'super_admin']),
+    rbac.requireRole('pharmacist', 'admin', 'super_admin'),
     getIntegrationOptions
 );
 

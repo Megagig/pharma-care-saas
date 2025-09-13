@@ -29,6 +29,14 @@ export interface IMedicationEntry {
     indication?: string;
 }
 
+export interface IClinicalContext {
+    chiefComplaint?: string;
+    presentingSymptoms?: string[];
+    relevantHistory?: string;
+    assessment?: string;
+    plan?: string;
+}
+
 export interface IInputSnapshot {
     symptoms: ISymptomData;
     vitals?: IVitalSigns;
@@ -53,6 +61,7 @@ export interface IDiagnosticRequest extends Document {
 
     // Clinical Input Data
     inputSnapshot: IInputSnapshot;
+    clinicalContext?: IClinicalContext;
 
     // AI Processing Metadata
     consentObtained: boolean;
@@ -292,6 +301,32 @@ const diagnosticRequestSchema = new Schema({
     inputSnapshot: {
         type: inputSnapshotSchema,
         required: true
+    },
+    clinicalContext: {
+        chiefComplaint: {
+            type: String,
+            trim: true,
+            maxlength: [500, 'Chief complaint cannot exceed 500 characters']
+        },
+        presentingSymptoms: {
+            type: [String],
+            default: []
+        },
+        relevantHistory: {
+            type: String,
+            trim: true,
+            maxlength: [1000, 'Relevant history cannot exceed 1000 characters']
+        },
+        assessment: {
+            type: String,
+            trim: true,
+            maxlength: [2000, 'Assessment cannot exceed 2000 characters']
+        },
+        plan: {
+            type: String,
+            trim: true,
+            maxlength: [2000, 'Plan cannot exceed 2000 characters']
+        }
     },
 
     // AI Processing Metadata

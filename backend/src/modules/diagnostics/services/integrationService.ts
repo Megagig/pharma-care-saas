@@ -3,7 +3,7 @@ import ClinicalNote, { IClinicalNote } from '../../../models/ClinicalNote';
 import MedicationTherapyReview, { IMedicationTherapyReview } from '../../../models/MedicationTherapyReview';
 import DiagnosticRequest, { IDiagnosticRequest } from '../models/DiagnosticRequest';
 import DiagnosticResult, { IDiagnosticResult } from '../models/DiagnosticResult';
-import { logger } from '../../../utils/logger';
+import logger from '../../../utils/logger';
 
 export interface DiagnosticIntegrationData {
     diagnosticRequestId: mongoose.Types.ObjectId;

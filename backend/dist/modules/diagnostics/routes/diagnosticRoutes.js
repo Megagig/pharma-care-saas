@@ -123,7 +123,7 @@ router.use((error, req, res, next) => {
             upgradeRequired: true,
         });
     }
-    res.status(error.status || 500).json({
+    return res.status(error.status || 500).json({
         success: false,
         message: error.message || 'Internal server error',
         code: error.code || 'INTERNAL_ERROR',

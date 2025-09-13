@@ -24,6 +24,13 @@ export interface IMedicationEntry {
     startDate?: Date;
     indication?: string;
 }
+export interface IClinicalContext {
+    chiefComplaint?: string;
+    presentingSymptoms?: string[];
+    relevantHistory?: string;
+    assessment?: string;
+    plan?: string;
+}
 export interface IInputSnapshot {
     symptoms: ISymptomData;
     vitals?: IVitalSigns;
@@ -45,6 +52,7 @@ export interface IDiagnosticRequest extends Document {
     workplaceId: mongoose.Types.ObjectId;
     locationId?: string;
     inputSnapshot: IInputSnapshot;
+    clinicalContext?: IClinicalContext;
     consentObtained: boolean;
     consentTimestamp: Date;
     promptVersion: string;

@@ -84,8 +84,15 @@ export interface IDiagnosticFollowUp extends Document {
     scheduleDefaultReminders(): void;
     calculateNextFollowUp(): Date | null;
 }
-declare const _default: mongoose.Model<IDiagnosticFollowUp, {}, {}, {}, mongoose.Document<unknown, {}, IDiagnosticFollowUp> & IDiagnosticFollowUp & Required<{
-    _id: mongoose.Types.ObjectId;
-}>, any>;
+export interface IDiagnosticFollowUpModel extends mongoose.Model<IDiagnosticFollowUp> {
+    findByPatient(patientId: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId): Promise<IDiagnosticFollowUp[]>;
+    findOverdue(workplaceId?: mongoose.Types.ObjectId): Promise<IDiagnosticFollowUp[]>;
+    findScheduled(workplaceId?: mongoose.Types.ObjectId, dateRange?: {
+        start: Date;
+        end: Date;
+    }): Promise<IDiagnosticFollowUp[]>;
+    findByAssignee(assignedTo: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId, status?: string): Promise<IDiagnosticFollowUp[]>;
+}
+declare const _default: IDiagnosticFollowUpModel;
 export default _default;
 //# sourceMappingURL=DiagnosticFollowUp.d.ts.map

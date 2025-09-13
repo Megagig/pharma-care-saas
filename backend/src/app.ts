@@ -47,6 +47,7 @@ import legacyApiRoutes from './routes/legacyApiRoutes';
 import migrationDashboardRoutes from './routes/migrationDashboardRoutes';
 import emailWebhookRoutes from './routes/emailWebhookRoutes';
 import drugRoutes from './modules/drug-info/routes/drugRoutes';
+import manualLabRoutes from './modules/lab/routes/manualLabRoutes';
 import publicApiRoutes from './routes/publicApiRoutes';
 import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
 import diagnosticRoutes from './routes/diagnosticRoutes';
@@ -154,6 +155,9 @@ app.use('/api', visitRoutes);
 
 // Drug Information Center routes
 app.use('/api/drugs', drugRoutes);
+
+// Manual Lab Order routes
+app.use('/api/manual-lab-orders', manualLabRoutes);
 
 // AI Diagnostic routes
 app.use('/api/diagnostics', diagnosticRoutes);

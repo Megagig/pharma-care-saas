@@ -15,19 +15,19 @@ router.use((0, rateLimiting_1.rateLimiting)({
     max: 200,
     message: 'Too many audit requests, please try again later'
 }));
-router.get('/events', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.searchAuditEvents);
-router.get('/trail/:entityType/:entityId', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.getEntityAuditTrail);
-router.get('/statistics', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.getAuditStatistics);
-router.get('/compliance/report', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.generateComplianceReport);
-router.post('/security/violation', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.logSecurityViolation);
-router.post('/archive', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.archiveAuditRecords);
-router.get('/export', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.exportAuditData);
-router.get('/regulatory/report', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.generateRegulatoryReport);
-router.get('/anomalies', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.detectAuditAnomalies);
-router.get('/visualization', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.getAuditVisualization);
-router.get('/search/advanced', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.advancedAuditSearch);
-router.get('/visualization/export', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.exportAuditVisualization);
-router.get('/retention/policies', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.getDataRetentionPolicies);
-router.put('/retention/policies/:recordType', (0, diagnosticRBAC_1.default)(['diagnostic:analytics']), auditController_1.default.updateDataRetentionPolicy);
+router.get('/events', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.searchAuditEvents);
+router.get('/trail/:entityType/:entityId', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.getEntityAuditTrail);
+router.get('/statistics', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.getAuditStatistics);
+router.get('/compliance/report', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.generateComplianceReport);
+router.post('/security/violation', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.logSecurityViolation);
+router.post('/archive', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.archiveAuditRecords);
+router.get('/export', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.exportAuditData);
+router.get('/regulatory/report', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.generateRegulatoryReport);
+router.get('/anomalies', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.detectAuditAnomalies);
+router.get('/visualization', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.getAuditVisualization);
+router.get('/search/advanced', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.advancedAuditSearch);
+router.get('/visualization/export', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.exportAuditVisualization);
+router.get('/retention/policies', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.getDataRetentionPolicies);
+router.put('/retention/policies/:recordType', diagnosticRBAC_1.default.requireDiagnosticAnalytics, auditController_1.default.updateDataRetentionPolicy);
 exports.default = router;
 //# sourceMappingURL=audit.routes.js.map

@@ -7,14 +7,18 @@ import ManualLabResult, { IManualLabResult, IManualLabResultValue, IManualLabRes
 import Patient from '../../../models/Patient';
 import User from '../../../models/User';
 import Workplace from '../../../models/Workplace';
+import Allergy from '../../../models/Allergy';
+import Medication from '../../../models/Medication';
 
 // Import services
 import TokenService, { SecureTokenData } from './tokenService';
-import PDFGenerationService from './pdfGenerationService';
+import { pdfGenerationService } from './pdfGenerationService';
 import AuditService, { AuditContext, AuditLogData } from '../../../services/auditService';
+import { mtrNotificationService, CriticalAlert } from '../../../services/mtrNotificationService';
 
 // Import diagnostic service for AI integration
-import { diagnosticService } from '../../../services/openRouterService';
+import { diagnosticService } from '../../diagnostics/services';
+import { DiagnosticInput } from '../../../services/openRouterService';
 
 // Import utilities
 import {
@@ -183,10 +187,16 @@ class ManualLabService {
                 throw createNotFoundError('Workplace not found');
             }
 
-            const pdfResult = await PDFGenerationService.generateRequisitionPDF(
+            const pharmacist = await User.findById(orderData.orderedBy).session(session);
+            if (!pharmacist) {
+                throw createNotFoundError('Pharmacist not found');
+            }
+
+            const pdfResult = await pdfGenerationService.generateRequisitionPDF(
                 order,
                 patient,
-                workplace
+                workplace,
+                pharmacist
             );
 
             // Update order with PDF URL
@@ -196,7 +206,7 @@ class ManualLabService {
             // Log audit event
             await AuditService.logActivity(auditContext, {
                 action: 'MANUAL_LAB_ORDER_CREATED',
-                resourceType: 'ManualLabOrder',
+                resourceType: 'Patient',
                 resourceId: order._id,
                 patientId: orderData.patientId,
                 details: {
@@ -260,7 +270,7 @@ class ManualLabService {
                 // Log access for audit trail
                 await AuditService.logActivity(auditContext, {
                     action: 'MANUAL_LAB_ORDER_ACCESSED',
-                    resourceType: 'ManualLabOrder',
+                    resourceType: 'Patient',
                     resourceId: order._id,
                     patientId: order.patientId,
                     details: {
@@ -318,7 +328,7 @@ class ManualLabService {
             // Build sort
             const sortBy = options.sortBy || 'createdAt';
             const sortOrder = options.sortOrder === 'asc' ? 1 : -1;
-            const sort = { [sortBy]: sortOrder };
+            const sort: { [key: string]: 1 | -1 } = { [sortBy]: sortOrder };
 
             // Get total count
             const total = await ManualLabOrder.countDocuments(query);
@@ -398,7 +408,7 @@ class ManualLabService {
             // Log audit event
             await AuditService.logActivity(auditContext, {
                 action: 'MANUAL_LAB_ORDER_STATUS_UPDATED',
-                resourceType: 'ManualLabOrder',
+                resourceType: 'Patient',
                 resourceId: order._id,
                 patientId: order.patientId,
                 oldValues: { status: oldStatus },
@@ -518,7 +528,7 @@ class ManualLabService {
             // Log audit event
             await AuditService.logActivity(auditContext, {
                 action: 'MANUAL_LAB_RESULTS_ENTERED',
-                resourceType: 'ManualLabResult',
+                resourceType: 'Patient',
                 resourceId: result._id,
                 patientId: order.patientId,
                 details: {
@@ -605,7 +615,7 @@ class ManualLabService {
                 // Log access for audit trail
                 await AuditService.logActivity(auditContext, {
                     action: 'MANUAL_LAB_RESULTS_ACCESSED',
-                    resourceType: 'ManualLabResult',
+                    resourceType: 'Patient',
                     resourceId: result._id,
                     patientId: order.patientId,
                     details: {
@@ -674,7 +684,7 @@ class ManualLabService {
                 // Log token access
                 await AuditService.logActivity(auditContext, {
                     action: 'MANUAL_LAB_ORDER_TOKEN_RESOLVED',
-                    resourceType: 'ManualLabOrder',
+                    resourceType: 'Patient',
                     resourceId: order._id,
                     patientId: order.patientId,
                     details: {
@@ -743,7 +753,7 @@ class ManualLabService {
             // Build sort
             const sortBy = filters.sortBy || 'createdAt';
             const sortOrder = filters.sortOrder === 'asc' ? 1 : -1;
-            const sort = { [sortBy]: sortOrder };
+            const sort: { [key: string]: 1 | -1 } = { [sortBy]: sortOrder };
 
             // Get total count
             const total = await ManualLabOrder.countDocuments(query);
@@ -763,7 +773,7 @@ class ManualLabService {
                 // Log bulk access for audit trail
                 await AuditService.logActivity(auditContext, {
                     action: 'MANUAL_LAB_ORDERS_BULK_ACCESSED',
-                    resourceType: 'ManualLabOrder',
+                    resourceType: 'Patient',
                     resourceId: new mongoose.Types.ObjectId(), // Placeholder for bulk operations
                     details: {
                         filterCriteria: filters,
@@ -805,48 +815,88 @@ class ManualLabService {
     ): Promise<any> {
         try {
             // Get patient data for context
-            const patient = await Patient.findById(request.patientId)
-                .populate('allergies')
-                .populate('conditions');
+            const patient = await Patient.findById(request.patientId);
 
             if (!patient) {
                 throw createNotFoundError('Patient not found for AI interpretation');
             }
 
-            // Get current medications (simplified - in production would get from medication management)
-            const currentMedications: any[] = []; // Placeholder
+            // Get current medications from medication records
+            const medicationRecords = await Medication.find({
+                patient: request.patientId,
+                status: 'active'
+            });
 
-            // Prepare diagnostic request for AI
-            const diagnosticRequest = {
+            const currentMedications = medicationRecords.map(med => ({
+                name: med.drugName,
+                dosage: med.instructions.dosage || '',
+                frequency: med.instructions.frequency || '',
+                route: med.dosageForm,
+                startDate: med.createdAt,
+                indication: med.therapy.indication
+            }));
+
+            // Get patient allergies
+            const allergyRecords = await Allergy.find({
                 patientId: request.patientId,
                 workplaceId: request.workplaceId,
+                isDeleted: { $ne: true }
+            });
+
+            const allergies = allergyRecords.map(allergy => allergy.substance);
+
+            // Calculate patient age
+            const age = patient.dob ?
+                Math.floor((Date.now() - patient.dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) :
+                patient.age;
+
+            // Prepare diagnostic request data
+            const diagnosticRequestData = {
+                patientId: request.patientId.toString(),
+                pharmacistId: request.requestedBy.toString(),
+                workplaceId: request.workplaceId.toString(),
                 inputSnapshot: {
-                    symptoms: [request.indication], // Use indication as symptom context
-                    labResults: request.labResults.map(result => ({
-                        testName: result.testName,
-                        testCode: result.testCode,
-                        value: result.numericValue || result.stringValue,
-                        unit: result.unit,
-                        abnormalFlag: result.abnormalFlag,
-                        comment: result.comment
-                    })),
+                    symptoms: {
+                        subjective: [request.indication],
+                        objective: [],
+                        duration: 'unknown',
+                        severity: 'mild' as const,
+                        onset: 'chronic' as const
+                    },
                     currentMedications,
-                    allergies: patient.allergies || [],
-                    medicalHistory: patient.conditions || [],
-                    demographics: {
-                        age: patient.getAge ? patient.getAge() : null,
-                        gender: patient.gender,
-                        weight: patient.weight,
-                        height: patient.height
-                    }
+                    allergies,
+                    medicalHistory: [], // Could be enhanced to fetch from clinical notes or conditions
+                    labResultIds: [], // Manual lab results don't have IDs yet
+                    vitals: patient.latestVitals ? {
+                        weight: patient.weightKg,
+                        bloodPressure: patient.latestVitals.bpSystolic && patient.latestVitals.bpDiastolic ?
+                            `${patient.latestVitals.bpSystolic}/${patient.latestVitals.bpDiastolic}` : undefined,
+                        heartRate: undefined, // Not available in current Patient model
+                        temperature: patient.latestVitals.tempC,
+                        respiratoryRate: patient.latestVitals.rr,
+                        oxygenSaturation: undefined // Not available in current Patient model
+                    } : undefined
                 },
-                source: 'manual_lab_order',
-                sourceId: request.orderId,
-                requestedBy: request.requestedBy
+                priority: 'routine' as const,
+                consentObtained: true // Already obtained during order creation
             };
 
-            // Call diagnostic service (existing AI integration)
-            const diagnosticResult = await diagnosticService.processRequest(diagnosticRequest);
+            // Create diagnostic request
+            const diagnosticRequest = await diagnosticService.createDiagnosticRequest(diagnosticRequestData);
+
+            // Process the diagnostic request with AI
+            const analysisResult = await diagnosticService.processDiagnosticRequest(
+                diagnosticRequest._id.toString(),
+                {
+                    skipInteractionCheck: false,
+                    skipLabValidation: true, // Skip since we're providing manual results
+                    retryOnFailure: true,
+                    maxRetries: 2
+                }
+            );
+
+            // Validate AI response structure
+            this.validateAIResponse(analysisResult.result);
 
             // Update lab result with AI processing info
             const labResult = await ManualLabResult.findOne({
@@ -854,25 +904,206 @@ class ManualLabService {
                 isDeleted: { $ne: true }
             });
 
-            if (labResult && diagnosticResult) {
-                await labResult.markAsAIProcessed(diagnosticResult._id);
+            if (labResult && analysisResult.result) {
+                await labResult.markAsAIProcessed(analysisResult.result._id);
+            }
+
+            // Process critical alerts from AI analysis
+            await this.processCriticalAlerts(analysisResult.result, request);
+
+            // Update order status to completed after AI processing
+            const order = await ManualLabOrder.findOne({
+                orderId: request.orderId.toUpperCase(),
+                workplaceId: request.workplaceId,
+                isDeleted: { $ne: true }
+            });
+
+            if (order && order.status !== 'completed') {
+                await order.updateStatus('completed', request.requestedBy);
             }
 
             logger.info('AI interpretation completed', {
                 orderId: request.orderId,
-                diagnosticResultId: diagnosticResult?._id,
-                hasRedFlags: diagnosticResult?.redFlags?.length > 0,
+                diagnosticRequestId: diagnosticRequest._id,
+                diagnosticResultId: analysisResult.result._id,
+                processingTime: analysisResult.processingTime,
+                hasRedFlags: analysisResult.result.redFlags?.length > 0,
+                criticalRedFlags: analysisResult.result.redFlags?.filter(flag => flag.severity === 'critical').length || 0,
+                confidenceScore: analysisResult.result.aiMetadata?.confidenceScore,
                 service: 'manual-lab'
             });
 
-            return diagnosticResult;
+            return {
+                diagnosticRequest,
+                diagnosticResult: analysisResult.result,
+                processingTime: analysisResult.processingTime,
+                interactionResults: analysisResult.interactionResults,
+                criticalAlertsTriggered: analysisResult.result.redFlags?.filter(flag => flag.severity === 'critical').length || 0
+            };
         } catch (error) {
             logger.error('AI interpretation failed', {
                 orderId: request.orderId,
+                patientId: request.patientId,
+                error: error instanceof Error ? error.message : 'Unknown error',
+                stack: error instanceof Error ? error.stack : undefined,
+                service: 'manual-lab'
+            });
+
+            // Don't throw error - AI interpretation failure shouldn't block result entry
+            // Instead, log the failure and return null
+            return null;
+        }
+    }
+
+    /**
+     * Validate AI response structure
+     */
+    private static validateAIResponse(diagnosticResult: any): void {
+        if (!diagnosticResult) {
+            throw new Error('AI diagnostic result is null or undefined');
+        }
+
+        // Validate required fields
+        const requiredFields = ['diagnoses', 'aiMetadata'];
+        for (const field of requiredFields) {
+            if (!diagnosticResult[field]) {
+                throw new Error(`AI response missing required field: ${field}`);
+            }
+        }
+
+        // Validate diagnoses structure
+        if (!Array.isArray(diagnosticResult.diagnoses)) {
+            throw new Error('AI response diagnoses must be an array');
+        }
+
+        // Validate each diagnosis
+        for (const diagnosis of diagnosticResult.diagnoses) {
+            if (!diagnosis.condition || typeof diagnosis.condition !== 'string') {
+                throw new Error('AI response diagnosis missing or invalid condition');
+            }
+            if (typeof diagnosis.probability !== 'number' || diagnosis.probability < 0 || diagnosis.probability > 1) {
+                throw new Error('AI response diagnosis probability must be a number between 0 and 1');
+            }
+        }
+
+        // Validate red flags if present
+        if (diagnosticResult.redFlags && Array.isArray(diagnosticResult.redFlags)) {
+            for (const flag of diagnosticResult.redFlags) {
+                if (!flag.flag || typeof flag.flag !== 'string') {
+                    throw new Error('AI response red flag missing or invalid flag description');
+                }
+                if (!['low', 'medium', 'high', 'critical'].includes(flag.severity)) {
+                    throw new Error('AI response red flag invalid severity level');
+                }
+            }
+        }
+
+        // Validate AI metadata
+        if (!diagnosticResult.aiMetadata.confidenceScore ||
+            typeof diagnosticResult.aiMetadata.confidenceScore !== 'number' ||
+            diagnosticResult.aiMetadata.confidenceScore < 0 ||
+            diagnosticResult.aiMetadata.confidenceScore > 1) {
+            throw new Error('AI response missing or invalid confidence score');
+        }
+
+        logger.debug('AI response validation passed', {
+            diagnosesCount: diagnosticResult.diagnoses.length,
+            redFlagsCount: diagnosticResult.redFlags?.length || 0,
+            confidenceScore: diagnosticResult.aiMetadata.confidenceScore,
+            service: 'manual-lab'
+        });
+    }
+
+    /**
+     * Process critical alerts from AI analysis
+     */
+    private static async processCriticalAlerts(
+        diagnosticResult: any,
+        request: AIInterpretationRequest
+    ): Promise<void> {
+        try {
+            if (!diagnosticResult.redFlags || diagnosticResult.redFlags.length === 0) {
+                return;
+            }
+
+            // Filter critical and high severity red flags
+            const criticalFlags = diagnosticResult.redFlags.filter(
+                (flag: any) => flag.severity === 'critical' || flag.severity === 'high'
+            );
+
+            if (criticalFlags.length === 0) {
+                return;
+            }
+
+            // Send critical alerts for each critical red flag
+            for (const flag of criticalFlags) {
+                const alert: CriticalAlert = {
+                    type: 'high_severity_dtp', // Using existing type, could be enhanced with lab-specific type
+                    severity: flag.severity === 'critical' ? 'critical' : 'major',
+                    patientId: request.patientId,
+                    message: `Critical lab result interpretation: ${flag.flag}`,
+                    details: {
+                        orderId: request.orderId,
+                        labResults: request.labResults.map(result => ({
+                            testName: result.testName,
+                            value: result.numericValue || result.stringValue,
+                            unit: result.unit,
+                            abnormal: result.abnormalFlag
+                        })),
+                        aiInterpretation: flag,
+                        recommendedAction: flag.action,
+                        confidenceScore: diagnosticResult.aiMetadata?.confidenceScore,
+                        source: 'manual_lab_ai_interpretation'
+                    },
+                    requiresImmediate: flag.severity === 'critical'
+                };
+
+                await mtrNotificationService.sendCriticalAlert(alert);
+
+                logger.warn('Critical alert sent for lab results', {
+                    orderId: request.orderId,
+                    patientId: request.patientId,
+                    flagSeverity: flag.severity,
+                    flag: flag.flag,
+                    action: flag.action,
+                    service: 'manual-lab'
+                });
+            }
+
+            // Log audit event for critical alerts
+            const auditContext: AuditContext = {
+                userId: request.requestedBy,
+                workplaceId: request.workplaceId,
+                userRole: 'pharmacist'
+            };
+
+            await AuditService.logActivity(auditContext, {
+                action: 'MANUAL_LAB_CRITICAL_ALERTS_TRIGGERED',
+                resourceType: 'Patient',
+                resourceId: new mongoose.Types.ObjectId(), // Would need actual result ID
+                patientId: request.patientId,
+                details: {
+                    orderId: request.orderId,
+                    criticalFlagsCount: criticalFlags.length,
+                    flags: criticalFlags.map((flag: any) => ({
+                        severity: flag.severity,
+                        flag: flag.flag,
+                        action: flag.action
+                    })),
+                    alertsSent: criticalFlags.length
+                },
+                complianceCategory: 'patient_safety',
+                riskLevel: 'critical'
+            });
+
+        } catch (error) {
+            logger.error('Failed to process critical alerts', {
+                orderId: request.orderId,
+                patientId: request.patientId,
                 error: error instanceof Error ? error.message : 'Unknown error',
                 service: 'manual-lab'
             });
-            throw error;
+            // Don't throw - critical alert failure shouldn't block AI processing
         }
     }
 
@@ -939,8 +1170,8 @@ class ManualLabService {
 
             if (rangeMatch) {
                 const [, minStr, maxStr] = rangeMatch;
-                const min = parseFloat(minStr);
-                const max = parseFloat(maxStr);
+                const min = parseFloat(minStr || '0');
+                const max = parseFloat(maxStr || '0');
 
                 if (value < min) {
                     const percentBelow = ((min - value) / min) * 100;
@@ -961,13 +1192,13 @@ class ManualLabService {
                     };
                 }
             } else if (lessThanMatch) {
-                const threshold = parseFloat(lessThanMatch[1]);
+                const threshold = parseFloat(lessThanMatch[1] || '0');
                 return {
                     level: value >= threshold ? 'high' : 'normal',
                     note: `Reference: ${refRange}${unit ? ' ' + unit : ''}`
                 };
             } else if (greaterThanMatch) {
-                const threshold = parseFloat(greaterThanMatch[1]);
+                const threshold = parseFloat(greaterThanMatch[1] || '0');
                 return {
                     level: value <= threshold ? 'low' : 'normal',
                     note: `Reference: ${refRange}${unit ? ' ' + unit : ''}`
@@ -1014,7 +1245,7 @@ class ManualLabService {
 
             await AuditService.logActivity(auditContext, {
                 action: event,
-                resourceType: 'ManualLabOrder',
+                resourceType: 'Patient',
                 resourceId: new mongoose.Types.ObjectId(), // Would need to resolve order ID to ObjectId
                 details: {
                     orderId,

@@ -7,7 +7,7 @@ const express_1 = require("express");
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const auth_1 = require("../../../middlewares/auth");
 const auditMiddleware_1 = require("../../../middlewares/auditMiddleware");
-const interactionController_1 = __importDefault(require("../controllers/interactionController"));
+const drugInteractionController_1 = __importDefault(require("../controllers/drugInteractionController"));
 const validators_1 = require("../utils/validators");
 const router = (0, express_1.Router)();
 const interactionRateLimit = (0, express_rate_limit_1.default)({
@@ -36,48 +36,48 @@ router.post('/check', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeatu
     resourceType: 'DrugInteraction',
     complianceCategory: 'clinical_documentation',
     riskLevel: 'medium'
-}), validateRequest(validators_1.validateInteractionCheck), interactionController_1.default.checkInteractions);
+}), validateRequest(validators_1.validateInteractionCheck), drugInteractionController_1.default.checkInteractions);
 router.get('/drug-info', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
     action: 'GET_DRUG_INFO',
     resourceType: 'DrugInfo',
     complianceCategory: 'data_access',
     riskLevel: 'low'
-}), interactionController_1.default.getDrugInfo);
+}), drugInteractionController_1.default.getDrugInfo);
 router.get('/search', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
     action: 'SEARCH_DRUGS',
     resourceType: 'DrugSearch',
     complianceCategory: 'data_access',
     riskLevel: 'low'
-}), interactionController_1.default.searchDrugs);
+}), drugInteractionController_1.default.searchDrugs);
 router.post('/check-allergies', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
     action: 'CHECK_ALLERGY_CONTRAINDICATIONS',
     resourceType: 'AllergyCheck',
     complianceCategory: 'clinical_documentation',
     riskLevel: 'medium'
-}), interactionController_1.default.checkAllergies);
+}), drugInteractionController_1.default.checkAllergies);
 router.get('/details', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
     action: 'GET_INTERACTION_DETAILS',
     resourceType: 'InteractionDetails',
     complianceCategory: 'data_access',
     riskLevel: 'low'
-}), interactionController_1.default.getInteractionDetails);
+}), drugInteractionController_1.default.getInteractionDetails);
 router.get('/class-interactions', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
     action: 'GET_CLASS_INTERACTIONS',
     resourceType: 'ClassInteractions',
     complianceCategory: 'data_access',
     riskLevel: 'low'
-}), interactionController_1.default.getClassInteractions);
+}), drugInteractionController_1.default.getClassInteractions);
 router.get('/food-interactions', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
     action: 'GET_FOOD_INTERACTIONS',
     resourceType: 'FoodInteractions',
     complianceCategory: 'data_access',
     riskLevel: 'low'
-}), interactionController_1.default.getFoodInteractions);
+}), drugInteractionController_1.default.getFoodInteractions);
 router.get('/pregnancy-info', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
     action: 'GET_PREGNANCY_INFO',
     resourceType: 'PregnancyInfo',
     complianceCategory: 'data_access',
     riskLevel: 'low'
-}), interactionController_1.default.getPregnancyInfo);
+}), drugInteractionController_1.default.getPregnancyInfo);
 exports.default = router;
 //# sourceMappingURL=interactionRoutes.js.map

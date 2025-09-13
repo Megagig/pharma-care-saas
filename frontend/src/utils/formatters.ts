@@ -48,6 +48,27 @@ export const formatDateShort = (date: string | Date): string => {
 };
 
 /**
+ * Format date and time for display
+ */
+export const formatDateTime = (
+  date: string | Date,
+  options?: Intl.DateTimeFormatOptions
+): string => {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+
+  const defaultOptions: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    ...options,
+  };
+
+  return new Intl.DateTimeFormat('en-US', defaultOptions).format(dateObj);
+};
+
+/**
  * Format relative time (e.g., "2 days ago")
  */
 export const formatRelativeTime = (date: string | Date): string => {
