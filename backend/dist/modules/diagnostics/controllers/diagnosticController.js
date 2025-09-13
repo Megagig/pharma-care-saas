@@ -135,7 +135,7 @@ exports.cancelDiagnosticRequest = (0, responseHelpers_1.asyncHandler)(async (req
         if (!['pending', 'processing'].includes(request.status)) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Can only cancel pending or processing requests', 400);
         }
-        await diagnosticService.cancelDiagnosticRequest(id, context.userId);
+        await diagnosticService.cancelDiagnosticRequest(id, context.workplaceId, context.userId);
         console.log('Diagnostic request cancelled:', (0, responseHelpers_1.createAuditLog)('CANCEL_DIAGNOSTIC_REQUEST', 'DiagnosticRequest', id, context, {
             previousStatus: request.status,
         }));
@@ -153,6 +153,9 @@ exports.getPatientDiagnosticHistory = (0, responseHelpers_1.asyncHandler)(async 
     const parsedPage = Math.max(1, parseInt(page) || 1);
     const parsedLimit = Math.min(50, Math.max(1, parseInt(limit) || 20));
     try {
+        if (!patientId) {
+            return (0, responseHelpers_1.sendError)(res, 'VALIDATION_ERROR', 'Patient ID is required', 400);
+        }
         const history = await diagnosticService.getPatientDiagnosticHistory(patientId, context.workplaceId, parsedPage, parsedLimit);
         (0, responseHelpers_1.respondWithPaginatedResults)(res, history.requests, history.total, history.page, parsedLimit, `Found ${history.total} diagnostic requests for patient`);
     }

@@ -54,7 +54,7 @@ const featureFlagSchema = new Schema({
   }],
   allowedRoles: [{
     type: String,
-    enum: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist', 'super_admin'],
+    enum: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist', 'super_admin', 'owner'],
     index: true
   }],
   customRules: {

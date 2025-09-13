@@ -1,3 +1,4 @@
+import { RxNormDrug } from '../../../services/rxnormService';
 export interface DrugInfo {
     rxcui: string;
     name: string;
@@ -70,6 +71,7 @@ export declare class ClinicalApiService {
     checkDrugInteractions(medications: string[]): Promise<ClinicalApiResponse<InteractionResult[]>>;
     checkDrugAllergies(medications: string[], knownAllergies: string[]): Promise<ClinicalApiResponse<AllergyAlert[]>>;
     checkContraindications(medications: string[], conditions: string[]): Promise<ClinicalApiResponse<ContraindicationAlert[]>>;
+    searchDrugs(drugName: string, limit?: number): Promise<ClinicalApiResponse<RxNormDrug[]>>;
     private getFDADrugInfo;
     private extractBrandNames;
     private extractGenericNames;

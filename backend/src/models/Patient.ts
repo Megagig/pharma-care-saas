@@ -47,6 +47,15 @@ export interface IPatient extends Document {
   // Clinical snapshots (latest vitals cached for list speed)
   latestVitals?: IPatientVitals;
 
+  // Notification preferences
+  notificationPreferences?: {
+    email: boolean;
+    sms: boolean;
+    push: boolean;
+    resultNotifications: boolean;
+    orderReminders: boolean;
+  };
+
   // Multi-location and sharing metadata
   metadata?: {
     sharedAccess?: {
@@ -236,6 +245,15 @@ const patientSchema = new Schema(
         enum: ['none', 'mild', 'moderate', 'severe'],
       },
       recordedAt: Date,
+    },
+
+    // Notification preferences
+    notificationPreferences: {
+      email: { type: Boolean, default: true },
+      sms: { type: Boolean, default: false },
+      push: { type: Boolean, default: true },
+      resultNotifications: { type: Boolean, default: true },
+      orderReminders: { type: Boolean, default: true },
     },
 
     // Multi-location and sharing metadata

@@ -553,6 +553,16 @@ const acknowledgeAlert = async (req, res) => {
             });
             return;
         }
+        if (!alertIndex) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Invalid or missing alert index'
+                }
+            });
+            return;
+        }
         const alertIdx = parseInt(alertIndex);
         if (isNaN(alertIdx) || alertIdx < 0) {
             res.status(400).json({
@@ -618,6 +628,16 @@ const resolveAlert = async (req, res) => {
                 error: {
                     code: 'VALIDATION_ERROR',
                     message: 'Invalid or missing patient ID'
+                }
+            });
+            return;
+        }
+        if (!alertIndex) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Invalid or missing alert index'
                 }
             });
             return;

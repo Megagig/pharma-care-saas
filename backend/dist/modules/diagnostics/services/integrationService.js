@@ -127,26 +127,26 @@ class DiagnosticIntegrationService {
                 workplaceId,
                 ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
             };
-            const diagnosticRequestsQuery = DiagnosticRequest_1.default.find({
+            const diagnosticRequestsQuery = await DiagnosticRequest_1.default.find({
                 ...baseFilter,
                 patientId,
-            }).sort({ createdAt: -1 }).limit(limit);
+            }).sort({ createdAt: -1 }).limit(limit).exec();
             const clinicalNotesQuery = ClinicalNote_1.default.findActive({
                 ...baseFilter,
                 patient: patientId,
-            }).sort({ createdAt: -1 }).limit(limit);
+            }).sort({ createdAt: -1 }).limit(limit).exec();
             const mtrsQuery = MedicationTherapyReview_1.default.find({
                 ...baseFilter,
                 patientId,
                 isDeleted: false,
-            }).sort({ createdAt: -1 }).limit(limit);
+            }).sort({ createdAt: -1 }).limit(limit).exec();
             const [diagnosticRequests, clinicalNotes, mtrs] = await Promise.all([
-                diagnosticRequestsQuery.exec(),
-                clinicalNotesQuery.exec(),
-                mtrsQuery.exec(),
+                diagnosticRequestsQuery,
+                clinicalNotesQuery,
+                mtrsQuery,
             ]);
             const timelineEvents = [
-                ...diagnosticRequests.map(req => ({
+                ...diagnosticRequests.map((req) => ({
                     type: 'diagnostic',
                     id: req._id,
                     date: req.createdAt,
@@ -156,7 +156,7 @@ class DiagnosticIntegrationService {
                     status: req.status,
                     data: req,
                 })),
-                ...clinicalNotes.map(note => ({
+                ...clinicalNotes.map((note) => ({
                     type: 'clinical_note',
                     id: note._id,
                     date: note.createdAt,
@@ -165,7 +165,7 @@ class DiagnosticIntegrationService {
                     priority: note.priority,
                     data: note,
                 })),
-                ...mtrs.map(mtr => ({
+                ...mtrs.map((mtr) => ({
                     type: 'mtr',
                     id: mtr._id,
                     date: mtr.createdAt,
@@ -201,7 +201,7 @@ class DiagnosticIntegrationService {
                 patient: patientId,
                 workplaceId,
                 createdAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
-            }).sort({ createdAt: -1 }).limit(10);
+            }).sort({ createdAt: -1 }).limit(10).exec();
             const recentMTRs = await MedicationTherapyReview_1.default.find({
                 patientId,
                 workplaceId,

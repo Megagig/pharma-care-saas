@@ -202,6 +202,7 @@ const validatePDFAccess = (req, res, next) => {
     }
     req.pdfToken = validation.payload;
     next();
+    return;
 };
 exports.validatePDFAccess = validatePDFAccess;
 const csrfProtection = (req, res, next) => {

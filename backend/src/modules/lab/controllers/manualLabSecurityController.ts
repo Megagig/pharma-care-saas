@@ -200,12 +200,12 @@ export const clearUserSecurityMetrics = asyncHandler(
         const context = getRequestContext(req);
 
         // Only allow owners to clear metrics
-        if (context.userRole !== 'owner') {
+        if (req.user?.workplaceRole !== 'Owner') {
             return sendError(res, 'FORBIDDEN', 'Only owners can clear user security metrics', 403);
         }
 
         try {
-            const cleared = ManualLabSecurityService.clearUserMetrics(userId);
+            const cleared = ManualLabSecurityService.clearUserMetrics(userId!);
 
             if (cleared) {
                 sendSuccess(
@@ -249,7 +249,7 @@ export const getUserSecuritySummary = asyncHandler(
         const context = getRequestContext(req);
 
         try {
-            const securitySummary = ManualLabSecurityService.getSecuritySummary(userId);
+            const securitySummary = ManualLabSecurityService.getSecuritySummary(userId!);
 
             if (!securitySummary) {
                 return sendSuccess(

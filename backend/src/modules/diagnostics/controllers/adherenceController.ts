@@ -669,6 +669,16 @@ export const acknowledgeAlert = async (req: AuthRequest, res: Response): Promise
             return;
         }
 
+        if (!alertIndex) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Invalid or missing alert index'
+                }
+            });
+            return;
+        }
         const alertIdx = parseInt(alertIndex);
         if (isNaN(alertIdx) || alertIdx < 0) {
             res.status(400).json({
@@ -756,6 +766,16 @@ export const resolveAlert = async (req: AuthRequest, res: Response): Promise<voi
             return;
         }
 
+        if (!alertIndex) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Invalid or missing alert index'
+                }
+            });
+            return;
+        }
         const alertIdx = parseInt(alertIndex);
         if (isNaN(alertIdx) || alertIdx < 0) {
             res.status(400).json({

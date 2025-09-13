@@ -161,14 +161,13 @@ const fhirBundleSchema: JSONSchemaType<FHIRBundleSchema> = {
         type: { type: 'string' },
         entry: {
             type: 'array',
-            nullable: true,
             items: {
                 type: 'object',
                 properties: {
                     resource: {
                         type: 'object',
                         properties: {
-                            resourceType: { type: 'string', nullable: true }
+                            resourceType: { type: 'string' }
                         },
                         required: ['resourceType'],
                         additionalProperties: true

@@ -69,15 +69,22 @@ import {
 // Import error handler
 import { asyncHandler } from '../../../utils/responseHelpers';
 
+// Import feature flag middleware
+import { injectFeatureFlags, requireFeatureFlag } from '../../../config/featureFlags';
+
 const router = express.Router();
 
 // Apply authentication, security, and compliance monitoring to all routes
 router.use(auth);
+router.use(injectFeatureFlags);
 router.use(setSecurityHeaders);
 router.use(sanitizeInput);
 router.use(detectSuspiciousActivity);
 router.use(generateCSRFToken);
 router.use(monitorCompliance);
+
+// Require manual lab orders feature flag for all routes
+router.use(requireFeatureFlag('manual_lab_orders'));
 
 // Enhanced rate limiting is now handled by security middleware
 
@@ -99,7 +106,7 @@ const tokenScanLimiter = rateLimit({
 // ===============================
 
 /**
- * POST /api/manual-lab-orders
+ * POST /api/manual-lab
  * Create new lab order with PDF generation
  * Requires: pharmacist or owner role
  */
@@ -114,7 +121,7 @@ router.post(
 );
 
 /**
- * GET /api/manual-lab-orders
+ * GET /api/manual-lab
  * List orders with filtering and pagination (admin/management endpoint)
  * Requires: pharmacist or owner role
  */
@@ -126,12 +133,13 @@ router.get(
 );
 
 /**
- * GET /api/manual-lab-orders/scan
+ * GET /api/manual-lab/scan
  * Resolve QR/barcode tokens to order details
  * Requires: pharmacist or owner role
  */
 router.get(
     '/scan',
+    requireFeatureFlag('manual_lab_qr_scanning'),
     tokenScanLimiter,
     rbac.requireRole('pharmacist', 'owner'),
     validateRequest(tokenQuerySchema, 'query'),
@@ -215,12 +223,13 @@ router.get(
 // ===============================
 
 /**
- * GET /api/manual-lab-orders/:orderId/pdf
+ * GET /api/manual-lab/:orderId/pdf
  * Serve generated PDF requisition
  * Requires: pharmacist or owner role
  */
 router.get(
     '/:orderId/pdf',
+    requireFeatureFlag('manual_lab_pdf_generation'),
     enhancedPDFAccessRateLimit,
     rbac.requireRole('pharmacist', 'owner'),
     validateRequest(orderParamsSchema, 'params'),

@@ -375,7 +375,7 @@ export const crossReferenceWithExistingRecords = async (
         }
 
         // Validate ObjectId
-        if (!mongoose.Types.ObjectId.isValid(diagnosticRequestId)) {
+        if (!diagnosticRequestId || !mongoose.Types.ObjectId.isValid(diagnosticRequestId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -423,7 +423,7 @@ export const getIntegrationOptions = async (
         const { diagnosticRequestId } = req.params;
 
         // Validate ObjectId
-        if (!mongoose.Types.ObjectId.isValid(diagnosticRequestId)) {
+        if (!diagnosticRequestId || !mongoose.Types.ObjectId.isValid(diagnosticRequestId)) {
             res.status(400).json({
                 success: false,
                 error: {

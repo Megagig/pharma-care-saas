@@ -282,7 +282,7 @@ const crossReferenceWithExistingRecords = async (req, res) => {
             });
             return;
         }
-        if (!mongoose_1.default.Types.ObjectId.isValid(diagnosticRequestId)) {
+        if (!diagnosticRequestId || !mongoose_1.default.Types.ObjectId.isValid(diagnosticRequestId)) {
             res.status(400).json({
                 success: false,
                 error: {
@@ -317,7 +317,7 @@ exports.crossReferenceWithExistingRecords = crossReferenceWithExistingRecords;
 const getIntegrationOptions = async (req, res) => {
     try {
         const { diagnosticRequestId } = req.params;
-        if (!mongoose_1.default.Types.ObjectId.isValid(diagnosticRequestId)) {
+        if (!diagnosticRequestId || !mongoose_1.default.Types.ObjectId.isValid(diagnosticRequestId)) {
             res.status(400).json({
                 success: false,
                 error: {

@@ -37,3 +37,90 @@ export function extractData<T>(
 
   return response as T;
 }
+
+/**
+ * API helpers object with HTTP methods for making requests
+ */
+export const apiHelpers = {
+  /**
+   * Make a GET request
+   */
+  get: async (url: string, options?: RequestInit) => {
+    const response = await fetch(`/api${url}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      ...options,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Make a POST request
+   */
+  post: async (url: string, data?: unknown, options?: RequestInit) => {
+    const response = await fetch(`/api${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      body: data ? JSON.stringify(data) : undefined,
+      ...options,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Make a PUT request
+   */
+  put: async (url: string, data?: unknown, options?: RequestInit) => {
+    const response = await fetch(`/api${url}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      body: data ? JSON.stringify(data) : undefined,
+      ...options,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Make a DELETE request
+   */
+  delete: async (url: string, options?: RequestInit) => {
+    const response = await fetch(`/api${url}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      ...options,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  },
+};

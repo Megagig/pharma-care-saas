@@ -16,13 +16,13 @@ export declare class ManualLabCacheService {
     }): Promise<ITestCatalog[]>;
     static cacheTestByCode(workplaceId: mongoose.Types.ObjectId, code: string): Promise<ITestCatalog | null>;
     static cachePDFRequisition(orderId: string, pdfData: {
-        buffer: Buffer;
+        pdfBuffer: Buffer;
         fileName: string;
         url: string;
         metadata?: any;
     }): Promise<void>;
     static getCachedPDFRequisition(orderId: string): Promise<{
-        buffer: Buffer;
+        pdfBuffer: Buffer;
         fileName: string;
         url: string;
         metadata?: any;

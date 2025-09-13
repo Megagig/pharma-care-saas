@@ -204,7 +204,7 @@ class ManualLabCacheService {
         const pdfCacheKey = CACHE_KEYS.PDF.REQUISITION(orderId);
         const metadataCacheKey = CACHE_KEYS.PDF.METADATA(orderId);
         try {
-            await performanceOptimization_1.CacheManager.set(pdfCacheKey, pdfData.buffer, {
+            await performanceOptimization_1.CacheManager.set(pdfCacheKey, pdfData.pdfBuffer, {
                 ttl: CACHE_TTL.PDF,
                 compress: true
             });
@@ -217,7 +217,7 @@ class ManualLabCacheService {
             logger_1.default.info('PDF requisition cached successfully', {
                 orderId,
                 fileName: pdfData.fileName,
-                bufferSize: pdfData.buffer.length,
+                bufferSize: pdfData.pdfBuffer.length,
                 service: 'manual-lab-cache'
             });
         }
@@ -233,19 +233,19 @@ class ManualLabCacheService {
         const pdfCacheKey = CACHE_KEYS.PDF.REQUISITION(orderId);
         const metadataCacheKey = CACHE_KEYS.PDF.METADATA(orderId);
         try {
-            const [buffer, metadata] = await Promise.all([
+            const [pdfBuffer, metadata] = await Promise.all([
                 performanceOptimization_1.CacheManager.get(pdfCacheKey),
                 performanceOptimization_1.CacheManager.get(metadataCacheKey)
             ]);
-            if (buffer && metadata) {
+            if (pdfBuffer && metadata) {
                 logger_1.default.debug('PDF requisition retrieved from cache', {
                     orderId,
                     fileName: metadata.fileName,
-                    bufferSize: buffer.length,
+                    bufferSize: pdfBuffer.length,
                     service: 'manual-lab-cache'
                 });
                 return {
-                    buffer,
+                    pdfBuffer,
                     fileName: metadata.fileName,
                     url: metadata.url,
                     metadata: metadata.metadata
@@ -494,16 +494,23 @@ class ManualLabCacheService {
                     manualLabKeys: 0
                 };
             }
-            const [totalKeys, manualLabKeys, memoryInfo] = await Promise.all([
+            const [totalKeys, manualLabKeys, memoryInfoArray] = await Promise.all([
                 redisClient.dbsize(),
                 redisClient.keys('manual_lab:*').then(keys => keys.length),
-                redisClient.memory('usage').catch(() => null)
+                redisClient.memory('STATS').catch(() => null)
             ]);
+            let memoryUsageBytes;
+            if (memoryInfoArray) {
+                const usedMemoryIndex = memoryInfoArray.indexOf('used_memory');
+                if (usedMemoryIndex !== -1 && usedMemoryIndex + 1 < memoryInfoArray.length) {
+                    memoryUsageBytes = parseInt(memoryInfoArray[usedMemoryIndex + 1]);
+                }
+            }
             return {
                 redisConnected: true,
                 totalKeys,
                 manualLabKeys,
-                memoryUsage: memoryInfo ? `${Math.round(memoryInfo / 1024 / 1024 * 100) / 100} MB` : undefined
+                memoryUsage: memoryUsageBytes ? `${Math.round(memoryUsageBytes / 1024 / 1024 * 100) / 100} MB` : undefined
             };
         }
         catch (error) {

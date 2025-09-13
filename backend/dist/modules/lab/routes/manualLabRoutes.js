@@ -13,13 +13,16 @@ const rbac_1 = __importDefault(require("../../../middlewares/rbac"));
 const manualLabAuditMiddleware_1 = require("../middlewares/manualLabAuditMiddleware");
 const manualLabSecurityMiddleware_1 = require("../middlewares/manualLabSecurityMiddleware");
 const manualLabValidators_1 = require("../validators/manualLabValidators");
+const featureFlags_1 = require("../../../config/featureFlags");
 const router = express_1.default.Router();
 router.use(auth_1.auth);
+router.use(featureFlags_1.injectFeatureFlags);
 router.use(manualLabSecurityMiddleware_1.setSecurityHeaders);
 router.use(manualLabSecurityMiddleware_1.sanitizeInput);
 router.use(manualLabSecurityMiddleware_1.detectSuspiciousActivity);
 router.use(manualLabSecurityMiddleware_1.generateCSRFToken);
 router.use(manualLabAuditMiddleware_1.monitorCompliance);
+router.use((0, featureFlags_1.requireFeatureFlag)('manual_lab_orders'));
 const tokenScanLimiter = (0, express_rate_limit_1.default)({
     windowMs: 1 * 60 * 1000,
     max: 30,
@@ -33,13 +36,13 @@ const tokenScanLimiter = (0, express_rate_limit_1.default)({
 });
 router.post('/', manualLabSecurityMiddleware_1.enhancedOrderCreationRateLimit, rbac_1.default.requireRole('pharmacist', 'owner'), manualLabSecurityMiddleware_1.csrfProtection, (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.createManualLabOrderSchema, 'body'), (0, manualLabAuditMiddleware_1.auditManualLabOperation)('order_creation'), manualLabController_1.createManualLabOrder);
 router.get('/', rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.orderQuerySchema, 'query'), manualLabController_1.getManualLabOrders);
-router.get('/scan', tokenScanLimiter, rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.tokenQuerySchema, 'query'), manualLabAuditMiddleware_1.auditTokenResolution, manualLabController_1.resolveOrderToken);
+router.get('/scan', (0, featureFlags_1.requireFeatureFlag)('manual_lab_qr_scanning'), tokenScanLimiter, rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.tokenQuerySchema, 'query'), manualLabAuditMiddleware_1.auditTokenResolution, manualLabController_1.resolveOrderToken);
 router.get('/patient/:patientId', rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.patientParamsSchema, 'params'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.patientOrderQuerySchema, 'query'), manualLabController_1.getPatientLabOrders);
 router.get('/:orderId', rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.orderParamsSchema, 'params'), manualLabController_1.getManualLabOrder);
 router.put('/:orderId/status', rbac_1.default.requireRole('pharmacist', 'owner'), manualLabSecurityMiddleware_1.csrfProtection, (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.orderParamsSchema, 'params'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.updateOrderStatusSchema, 'body'), manualLabAuditMiddleware_1.auditStatusChange, manualLabController_1.updateOrderStatus);
 router.post('/:orderId/results', rbac_1.default.requireRole('pharmacist', 'owner'), manualLabSecurityMiddleware_1.csrfProtection, (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.orderParamsSchema, 'params'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.addResultsSchema, 'body'), manualLabAuditMiddleware_1.auditResultEntry, manualLabController_1.addLabResults);
 router.get('/:orderId/results', rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.orderParamsSchema, 'params'), manualLabController_1.getLabResults);
-router.get('/:orderId/pdf', manualLabSecurityMiddleware_1.enhancedPDFAccessRateLimit, rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.orderParamsSchema, 'params'), manualLabSecurityMiddleware_1.validatePDFAccess, manualLabAuditMiddleware_1.auditPDFAccess, manualLabController_1.servePDFRequisition);
+router.get('/:orderId/pdf', (0, featureFlags_1.requireFeatureFlag)('manual_lab_pdf_generation'), manualLabSecurityMiddleware_1.enhancedPDFAccessRateLimit, rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.orderParamsSchema, 'params'), manualLabSecurityMiddleware_1.validatePDFAccess, manualLabAuditMiddleware_1.auditPDFAccess, manualLabController_1.servePDFRequisition);
 router.get('/compliance/report', rbac_1.default.requireRole('pharmacist', 'owner'), manualLabComplianceController_1.generateComplianceReport);
 router.get('/compliance/audit-trail/:orderId', rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.orderParamsSchema, 'params'), manualLabComplianceController_1.getOrderAuditTrail);
 router.get('/compliance/violations', rbac_1.default.requireRole('pharmacist', 'owner'), manualLabComplianceController_1.getComplianceViolations);

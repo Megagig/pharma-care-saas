@@ -129,7 +129,7 @@ exports.getSecurityThreats = (0, responseHelpers_1.asyncHandler)(async (req, res
 exports.clearUserSecurityMetrics = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { userId } = req.params;
     const context = (0, responseHelpers_1.getRequestContext)(req);
-    if (context.userRole !== 'owner') {
+    if (req.user?.workplaceRole !== 'Owner') {
         return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', 'Only owners can clear user security metrics', 403);
     }
     try {

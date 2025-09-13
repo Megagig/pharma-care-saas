@@ -1,3 +1,14 @@
+import { z } from 'zod';
+import { symptomDataSchema, vitalSignsSchema, medicationEntrySchema } from '../modules/diagnostics/validators/diagnosticValidators';
+export type ISymptomData = z.infer<typeof symptomDataSchema>;
+export type VitalSigns = z.infer<typeof vitalSignsSchema>;
+export type MedicationEntry = z.infer<typeof medicationEntrySchema>;
+export interface LabResult {
+    testName: string;
+    value: string;
+    referenceRange: string;
+    abnormal?: boolean;
+}
 interface OpenRouterUsage {
     prompt_tokens: number;
     completion_tokens: number;
@@ -12,6 +23,7 @@ export interface DiagnosticInput {
     patientGender?: string;
     allergies?: string[];
     medicalHistory?: string[];
+    workplaceId?: string;
 }
 interface DiagnosticResponse {
     differentialDiagnoses: {
@@ -73,5 +85,5 @@ declare class OpenRouterService {
 }
 declare const _default: OpenRouterService;
 export default _default;
-export { DiagnosticInput, DiagnosticResponse };
+export { DiagnosticResponse };
 //# sourceMappingURL=openRouterService.d.ts.map

@@ -305,7 +305,7 @@ export class ManualLabCacheService {
     static async cachePDFRequisition(
         orderId: string,
         pdfData: {
-            buffer: Buffer;
+            pdfBuffer: Buffer;
             fileName: string;
             url: string;
             metadata?: any;
@@ -316,7 +316,7 @@ export class ManualLabCacheService {
 
         try {
             // Cache PDF buffer (compressed)
-            await CacheManager.set(pdfCacheKey, pdfData.buffer, {
+            await CacheManager.set(pdfCacheKey, pdfData.pdfBuffer, {
                 ttl: CACHE_TTL.PDF,
                 compress: true
             });
@@ -332,7 +332,7 @@ export class ManualLabCacheService {
             logger.info('PDF requisition cached successfully', {
                 orderId,
                 fileName: pdfData.fileName,
-                bufferSize: pdfData.buffer.length,
+                bufferSize: pdfData.pdfBuffer.length,
                 service: 'manual-lab-cache'
             });
         } catch (error) {
@@ -348,7 +348,7 @@ export class ManualLabCacheService {
      * Get cached PDF requisition
      */
     static async getCachedPDFRequisition(orderId: string): Promise<{
-        buffer: Buffer;
+        pdfBuffer: Buffer;
         fileName: string;
         url: string;
         metadata?: any;
@@ -357,21 +357,21 @@ export class ManualLabCacheService {
         const metadataCacheKey = CACHE_KEYS.PDF.METADATA(orderId);
 
         try {
-            const [buffer, metadata] = await Promise.all([
+            const [pdfBuffer, metadata] = await Promise.all([
                 CacheManager.get<Buffer>(pdfCacheKey),
                 CacheManager.get<any>(metadataCacheKey)
             ]);
 
-            if (buffer && metadata) {
+            if (pdfBuffer && metadata) {
                 logger.debug('PDF requisition retrieved from cache', {
                     orderId,
                     fileName: metadata.fileName,
-                    bufferSize: buffer.length,
+                    bufferSize: pdfBuffer.length,
                     service: 'manual-lab-cache'
                 });
 
                 return {
-                    buffer,
+                    pdfBuffer,
                     fileName: metadata.fileName,
                     url: metadata.url,
                     metadata: metadata.metadata
@@ -728,17 +728,25 @@ export class ManualLabCacheService {
                 };
             }
 
-            const [totalKeys, manualLabKeys, memoryInfo] = await Promise.all([
+            const [totalKeys, manualLabKeys, memoryInfoArray] = await Promise.all([
                 redisClient.dbsize(),
                 redisClient.keys('manual_lab:*').then(keys => keys.length),
-                redisClient.memory('usage').catch(() => null)
+                redisClient.memory('STATS').catch(() => null)
             ]);
+
+            let memoryUsageBytes: number | undefined;
+            if (memoryInfoArray) {
+                const usedMemoryIndex = memoryInfoArray.indexOf('used_memory');
+                if (usedMemoryIndex !== -1 && usedMemoryIndex + 1 < memoryInfoArray.length) {
+                    memoryUsageBytes = parseInt(memoryInfoArray[usedMemoryIndex + 1] as string);
+                }
+            }
 
             return {
                 redisConnected: true,
                 totalKeys,
                 manualLabKeys,
-                memoryUsage: memoryInfo ? `${Math.round(memoryInfo / 1024 / 1024 * 100) / 100} MB` : undefined
+                memoryUsage: memoryUsageBytes ? `${Math.round(memoryUsageBytes / 1024 / 1024 * 100) / 100} MB` : undefined
             };
         } catch (error) {
             logger.error('Failed to get cache statistics', {

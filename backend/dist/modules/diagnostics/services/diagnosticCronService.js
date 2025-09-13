@@ -102,7 +102,7 @@ class DiagnosticCronService {
     getJobsStatus() {
         const status = {};
         this.jobs.forEach((job, name) => {
-            status[name] = job.running;
+            status[name] = job.getStatus() === 'running';
         });
         return status;
     }

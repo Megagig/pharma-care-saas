@@ -3,6 +3,14 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { jest } from '@jest/globals';
 
 
+import * as openRouterService from '../services/openRouterService';
+import * as rxnormService from '../services/rxnormService';
+import * as openfdaService from '../services/openfdaService';
+
+jest.mock('../services/openRouterService');
+jest.mock('../services/rxnormService');
+jest.mock('../services/openfdaService');
+
 // Extend Jest timeout for integration tests
 jest.setTimeout(30000);
 
@@ -60,8 +68,24 @@ afterAll(async () => {
     await mongoServer.stop();
 });
 
+declare global {
+    namespace NodeJS {
+        interface Global {
+            testUtils: {
+                createObjectId: () => mongoose.Types.ObjectId;
+                waitFor: (ms: number) => Promise<void>;
+                mockExternalAPI: (service: string, response: any) => void;
+                createTestWorkplace: () => any;
+                createTestUser: (workplaceId: mongoose.Types.ObjectId) => any;
+                createTestPatient: (workplaceId: mongoose.Types.ObjectId, createdBy: mongoose.Types.ObjectId) => any;
+                createTestDiagnosticRequest: (patientId: mongoose.Types.ObjectId, pharmacistId: mongoose.Types.ObjectId, workplaceId: mongoose.Types.ObjectId) => any;
+            };
+        }
+    }
+}
+
 // Global test utilities
-global.testUtils = {
+(global as any).testUtils = {
     // Create test ObjectId
     createObjectId: () => new mongoose.Types.ObjectId(),
 
@@ -69,24 +93,18 @@ global.testUtils = {
     waitFor: (ms: number) => new Promise(resolve => setTimeout(resolve, ms)),
 
     // Mock external API responses
-    mockExternalAPI: (service: string, response: any) => {
+    mockExternalAPI: (service: string, mockFn: jest.Mock) => {
         switch (service) {
             case 'openrouter':
-                jest.doMock('../services/openRouterService', () => ({
-                    generateDiagnosticAnalysis: jest.fn().mockResolvedValue(response),
-                } as any));
+                openRouterService.generateDiagnosticAnalysis = mockFn;
                 break;
             case 'rxnorm':
-                jest.doMock('../services/rxnormService', () => ({
-                    searchDrug: jest.fn().mockResolvedValue(response),
-                    getDrugInteractions: jest.fn().mockResolvedValue(response),
-                } as any));
+                rxnormService.searchDrug = mockFn;
+                rxnormService.getDrugInteractions = mockFn;
                 break;
             case 'openfda':
-                jest.doMock('../services/openfdaService', () => ({
-                    getAdverseEvents: jest.fn().mockResolvedValue(response),
-                    getDrugLabeling: jest.fn().mockResolvedValue(response),
-                } as any));
+                openfdaService.getAdverseEvents = mockFn;
+                openfdaService.getDrugLabeling = mockFn;
                 break;
         }
     },

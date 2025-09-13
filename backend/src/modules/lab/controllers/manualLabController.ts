@@ -765,8 +765,8 @@ export const servePDFRequisition = asyncHandler(
             await ManualLabAuditService.logPDFAccess(auditContext, {
                 orderId: order.orderId,
                 patientId: order.patientId,
-                fileName: pdfResult.fileName,
-                fileSize: pdfResult.metadata.fileSize,
+                fileName: pdfResult!.fileName,
+                fileSize: pdfResult!.metadata.fileSize,
                 downloadMethod: 'direct_link',
                 userAgent: req.get('User-Agent'),
                 referrer: req.get('Referer')
@@ -774,8 +774,8 @@ export const servePDFRequisition = asyncHandler(
 
             // Set response headers for PDF
             res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `inline; filename="${pdfResult.fileName}"`);
-            res.setHeader('Content-Length', pdfResult.pdfBuffer.length);
+            res.setHeader('Content-Disposition', `inline; filename="${pdfResult!.fileName}"`);
+            res.setHeader('Content-Length', pdfResult!.pdfBuffer.length);
             res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
             res.setHeader('Pragma', 'no-cache');
             res.setHeader('Expires', '0');
@@ -786,14 +786,14 @@ export const servePDFRequisition = asyncHandler(
             res.setHeader('X-Download-Options', 'noopen');
 
             // Send PDF buffer
-            res.send(pdfResult.pdfBuffer);
+            res.send(pdfResult!.pdfBuffer);
 
             logger.info('Manual lab PDF served via API', {
                 orderId: order.orderId,
                 workplaceId: context.workplaceId,
                 userId: context.userId,
-                fileName: pdfResult.fileName,
-                fileSize: pdfResult.metadata.fileSize,
+                fileName: pdfResult!.fileName,
+                fileSize: pdfResult!.metadata.fileSize,
                 service: 'manual-lab-api',
             });
         } catch (error) {

@@ -1,4 +1,13 @@
 "use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -18,6 +27,7 @@ const auditService_1 = __importDefault(require("../../../services/auditService")
 const manualLabAuditService_1 = __importDefault(require("./manualLabAuditService"));
 const mtrNotificationService_1 = require("../../../services/mtrNotificationService");
 const manualLabCacheService_1 = __importDefault(require("./manualLabCacheService"));
+const manualLabPerformanceMiddleware_1 = require("../middlewares/manualLabPerformanceMiddleware");
 const services_1 = require("../../diagnostics/services");
 const responseHelpers_1 = require("../../../utils/responseHelpers");
 class ManualLabService {
@@ -77,7 +87,7 @@ class ManualLabService {
             const pdfResult = await pdfGenerationService_1.pdfGenerationService.generateRequisitionPDF(order, patient, workplace, pharmacist);
             order.requisitionFormUrl = pdfResult.url;
             await order.save({ session });
-            await manualLabAuditService_1.default.logOrderCreation(auditContext, order, true, pdfResult.metadata?.generatedAt);
+            await manualLabAuditService_1.default.logOrderCreation(auditContext, order, true, pdfResult.metadata?.generatedAt?.getTime());
             await session.commitTransaction();
             await manualLabCacheService_1.default.invalidateOrderCache(orderData.workplaceId, order.orderId, orderData.patientId);
             logger_1.default.info('Manual lab order created successfully', {
@@ -950,5 +960,17 @@ class ManualLabService {
         }
     }
 }
+__decorate([
+    (0, manualLabPerformanceMiddleware_1.MonitorPerformance)('createOrder'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], ManualLabService, "createOrder", null);
+__decorate([
+    (0, manualLabPerformanceMiddleware_1.MonitorPerformance)('addResults'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], ManualLabService, "addResults", null);
 exports.default = ManualLabService;
 //# sourceMappingURL=manualLabService.js.map

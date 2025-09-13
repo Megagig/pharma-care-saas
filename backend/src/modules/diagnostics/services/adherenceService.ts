@@ -453,9 +453,7 @@ class AdherenceService {
         threshold: number = 70
     ): Promise<IAdherenceTracking[]> {
         try {
-            const poorAdherencePatients = AdherenceTracking.findPoorAdherence(workplaceId, threshold)
-                .populate('patientId', 'firstName lastName mrn')
-                .exec();
+            const poorAdherencePatients = await AdherenceTracking.findPoorAdherence(workplaceId, threshold);
 
             return poorAdherencePatients;
 
@@ -470,7 +468,7 @@ class AdherenceService {
      */
     async processAdherenceAssessments(): Promise<void> {
         try {
-            const dueAssessments = AdherenceTracking.findDueForAssessment();
+            const dueAssessments = await AdherenceTracking.findDueForAssessment();
 
             for (const tracking of dueAssessments) {
                 // Recalculate adherence scores
@@ -604,11 +602,16 @@ class AdherenceService {
         const gaps: number[] = [];
 
         for (let i = 1; i < refills.length; i++) {
-            const daysBetween = Math.floor(
-                (refills[i].date.getTime() - refills[i - 1].date.getTime()) / (1000 * 60 * 60 * 24)
-            );
-            const expectedDays = refills[i - 1].daysSupply || 30;
-            gaps.push(Math.max(0, daysBetween - expectedDays));
+            const currentRefill = refills[i];
+            const previousRefill = refills[i - 1];
+
+            if (currentRefill && previousRefill) {
+                const daysBetween = Math.floor(
+                    (currentRefill.date.getTime() - previousRefill.date.getTime()) / (1000 * 60 * 60 * 24)
+                );
+                const expectedDays = previousRefill.daysSupply || 30;
+                gaps.push(Math.max(0, daysBetween - expectedDays));
+            }
         }
 
         return gaps;

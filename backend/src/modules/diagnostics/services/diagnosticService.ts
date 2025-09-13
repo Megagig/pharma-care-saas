@@ -124,7 +124,7 @@ export class DiagnosticService {
                 {
                     action: 'diagnostic_request_created',
                     resourceType: 'DiagnosticRequest',
-                    resourceId: savedRequest._id.toString(),
+                    resourceId: savedRequest._id,
                     details: {
                         patientId: data.patientId,
                         priority: data.priority,
@@ -255,15 +255,19 @@ export class DiagnosticService {
             const processingTime = Date.now() - startTime;
 
             // Log audit event
+            const pharmacist = await User.findById(request.pharmacistId);
+            const userRole = pharmacist?.role || 'unknown';
+
             await auditService.logEvent(
                 {
                     userId: request.pharmacistId,
                     workplaceId: request.workplaceId,
+                    userRole: userRole,
                 },
                 {
                     action: 'diagnostic_analysis_completed',
                     resourceType: 'DiagnosticResult',
-                    resourceId: diagnosticResult._id.toString(),
+                    resourceId: diagnosticResult._id,
                     details: {
                         requestId,
                         processingTime,
@@ -300,15 +304,19 @@ export class DiagnosticService {
 
             // Log audit event
             if (request) {
+                const pharmacist = await User.findById(request.pharmacistId);
+                const userRole = pharmacist?.role || 'unknown';
+
                 await auditService.logEvent(
                     {
                         userId: request.pharmacistId,
                         workplaceId: request.workplaceId,
+                        userRole: userRole,
                     },
                     {
                         action: 'diagnostic_analysis_failed',
                         resourceType: 'DiagnosticRequest',
-                        resourceId: requestId,
+                        resourceId: new Types.ObjectId(requestId),
                         details: {
                             error: error instanceof Error ? error.message : 'Unknown error',
                             processingTime,
@@ -340,8 +348,8 @@ export class DiagnosticService {
             }
 
             // Calculate age
-            const age = patient.dateOfBirth ? Math.floor(
-                (Date.now() - patient.dateOfBirth.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+            const age = patient.dob ? Math.floor(
+                (Date.now() - patient.dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
             ) : patient.age || 0;
 
             // Get lab results if referenced
@@ -358,7 +366,7 @@ export class DiagnosticService {
             const aggregatedData: PatientDataAggregation = {
                 demographics: {
                     age,
-                    gender: patient.gender,
+                    gender: patient.gender || 'unknown',
                     weight: request.inputSnapshot.vitals?.weight,
                     height: request.inputSnapshot.vitals?.height,
                 },
@@ -376,7 +384,7 @@ export class DiagnosticService {
                 requestId: request._id,
                 patientId: request.patientId,
                 age,
-                medicationsCount: aggregatedData.medications.length,
+                medicationsCount: aggregatedData.medications!.length,
                 allergiesCount: aggregatedData.allergies.length,
                 labResultsCount: labResults.length,
             });
@@ -410,12 +418,15 @@ export class DiagnosticService {
             name: med.name,
             dosage: med.dosage,
             frequency: med.frequency,
+            startDate: undefined,
+            route: undefined,
+            indication: undefined,
         })) : undefined;
 
         const aiInput: DiagnosticInput = {
             symptoms: patientData.symptoms,
             labResults: labResults.length > 0 ? labResults : undefined,
-            currentMedications: currentMedications.length > 0 ? currentMedications : undefined,
+            currentMedications: currentMedications && currentMedications.length > 0 ? currentMedications : undefined,
             vitalSigns: patientData.vitals ? {
                 bloodPressure: patientData.vitals.bloodPressure,
                 heartRate: patientData.vitals.heartRate,
@@ -819,15 +830,19 @@ export class DiagnosticService {
             await request.save();
 
             // Log audit event
+            const cancelledByUser = await User.findById(cancelledBy);
+            const userRole = cancelledByUser?.role || 'unknown';
+
             await auditService.logEvent(
                 {
                     userId: new Types.ObjectId(cancelledBy),
                     workplaceId: new Types.ObjectId(workplaceId),
+                    userRole: userRole,
                 },
                 {
                     action: 'diagnostic_request_cancelled',
                     resourceType: 'DiagnosticRequest',
-                    resourceId: requestId,
+                    resourceId: new Types.ObjectId(requestId),
                     details: {
                         reason: reason || 'Cancelled by user',
                         originalStatus: request.status,

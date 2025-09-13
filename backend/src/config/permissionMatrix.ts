@@ -558,11 +558,13 @@ export const ROLE_HIERARCHY: Record<UserRole, UserRole[]> = {
         'pharmacy_team',
         'pharmacist',
         'intern_pharmacist',
+        'owner',
     ],
     pharmacy_outlet: ['pharmacy_outlet', 'pharmacy_team', 'pharmacist'],
     pharmacy_team: ['pharmacy_team', 'pharmacist'],
     pharmacist: ['pharmacist'],
     intern_pharmacist: ['intern_pharmacist'],
+    owner: ['owner', 'pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist'],
 };
 
 /**

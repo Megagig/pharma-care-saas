@@ -12,7 +12,7 @@ export interface AuditContext {
 }
 export interface AuditLogData {
     action: string;
-    resourceType: 'MedicationTherapyReview' | 'DrugTherapyProblem' | 'MTRIntervention' | 'MTRFollowUp' | 'Patient' | 'User' | 'ClinicalIntervention' | 'ClinicalNote' | 'System';
+    resourceType: 'MedicationTherapyReview' | 'DrugTherapyProblem' | 'MTRIntervention' | 'MTRFollowUp' | 'Patient' | 'User' | 'ClinicalIntervention' | 'ClinicalNote' | 'System' | 'diagnostic_request' | 'diagnostic_result' | 'lab_order' | 'lab_result' | 'follow_up' | 'adherence';
     resourceId: mongoose.Types.ObjectId;
     patientId?: mongoose.Types.ObjectId;
     reviewId?: mongoose.Types.ObjectId;

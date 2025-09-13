@@ -127,7 +127,7 @@ export const diagnosticAuditLogger = (options: {
                     if (!consentObtained) {
                         await diagnosticAuditService.logSecurityViolation(
                             req.user.id.toString(),
-                            req.user.workplaceId.toString(),
+                            req.user!.workplaceId!.toString(),
                             'missing_consent',
                             {
                                 eventType,
@@ -190,7 +190,7 @@ export const diagnosticAuditLogger = (options: {
                     entityType: entityType as any,
                     entityId: entityId || 'unknown',
                     userId: req.user.id.toString(),
-                    workplaceId: req.user.workplaceId.toString(),
+                    workplaceId: req.user!.workplaceId!.toString(),
                     patientId,
                     details: auditDetails,
                     metadata: {
@@ -213,7 +213,7 @@ export const diagnosticAuditLogger = (options: {
                         entityType,
                         entityId,
                         userId: req.user.id.toString(),
-                        workplaceId: req.user.workplaceId.toString(),
+                        workplaceId: req.user!.workplaceId!.toString(),
                         severity,
                         ipAddress: req.ip,
                         userAgent: req.get('User-Agent')

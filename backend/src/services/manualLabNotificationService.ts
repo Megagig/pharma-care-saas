@@ -214,7 +214,14 @@ class ManualLabNotificationService {
             }
 
             // Check patient's notification preferences
-            const patientPreferences = patient.notificationPreferences || {};
+            const patientPreferences: ManualLabNotificationPreferences = {
+                email: patient.notificationPreferences?.email ?? true,
+                sms: patient.notificationPreferences?.sms ?? true,
+                push: patient.notificationPreferences?.push ?? true,
+                criticalAlerts: patient.notificationPreferences?.criticalAlerts ?? true,
+                resultNotifications: patient.notificationPreferences?.resultNotifications ?? true,
+                orderReminders: patient.notificationPreferences?.orderReminders ?? true,
+            };
             if (!patientPreferences.resultNotifications) {
                 logger.info(`Result notifications disabled for patient ${patientId}`);
                 return;

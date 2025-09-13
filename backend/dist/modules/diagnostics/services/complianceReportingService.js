@@ -339,15 +339,16 @@ class ComplianceReportingService {
     updateDataRetentionPolicy(recordType, policy) {
         const index = this.dataRetentionPolicies.findIndex(p => p.recordType === recordType);
         if (index >= 0) {
+            const existingPolicy = this.dataRetentionPolicies[index];
             this.dataRetentionPolicies[index] = {
-                ...this.dataRetentionPolicies[index],
+                ...existingPolicy,
                 ...policy,
                 recordType,
-                retentionPeriod: policy.retentionPeriod || this.dataRetentionPolicies[index].retentionPeriod,
-                archivalRequired: policy.archivalRequired || this.dataRetentionPolicies[index].archivalRequired,
-                deletionMethod: policy.deletionMethod || this.dataRetentionPolicies[index].deletionMethod,
-                legalHold: policy.legalHold || this.dataRetentionPolicies[index].legalHold,
-                regulatoryBasis: policy.regulatoryBasis || this.dataRetentionPolicies[index].regulatoryBasis,
+                retentionPeriod: policy.retentionPeriod || existingPolicy.retentionPeriod,
+                archivalRequired: policy.archivalRequired || existingPolicy.archivalRequired,
+                deletionMethod: policy.deletionMethod || existingPolicy.deletionMethod,
+                legalHold: policy.legalHold || existingPolicy.legalHold,
+                regulatoryBasis: policy.regulatoryBasis || existingPolicy.regulatoryBasis,
             };
         }
         else {

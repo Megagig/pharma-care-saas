@@ -294,7 +294,7 @@ export const cancelDiagnosticRequest = asyncHandler(
             }
 
             // Cancel the request
-            await diagnosticService.cancelDiagnosticRequest(id, context.userId);
+            await diagnosticService.cancelDiagnosticRequest(id, context.workplaceId, context.userId);
 
             // Create audit log
             console.log(
@@ -343,7 +343,10 @@ export const getPatientDiagnosticHistory = asyncHandler(
 
         try {
             // Get patient diagnostic history
-            const history = await diagnosticService.getPatientDiagnosticHistory(
+            if (!patientId) {
+            return sendError(res, 'VALIDATION_ERROR', 'Patient ID is required', 400);
+        }
+        const history = await diagnosticService.getPatientDiagnosticHistory(
                 patientId,
                 context.workplaceId,
                 parsedPage,

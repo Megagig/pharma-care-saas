@@ -53,7 +53,9 @@ const manualLabRoutes_1 = __importDefault(require("./modules/lab/routes/manualLa
 const publicApiRoutes_1 = __importDefault(require("./routes/publicApiRoutes"));
 const publicDrugDetailsRoutes_1 = __importDefault(require("./routes/publicDrugDetailsRoutes"));
 const diagnosticRoutes_1 = __importDefault(require("./routes/diagnosticRoutes"));
+const systemIntegrationService_1 = __importDefault(require("./services/systemIntegrationService"));
 const app = (0, express_1.default)();
+const systemIntegration = systemIntegrationService_1.default.getInstance();
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
     origin: [
@@ -70,6 +72,8 @@ app.use((0, cors_1.default)({
 const securityMonitoring_1 = require("./middlewares/securityMonitoring");
 app.use(securityMonitoring_1.blockSuspiciousIPs);
 app.use(securityMonitoring_1.detectAnomalies);
+app.use(systemIntegration.backwardCompatibilityMiddleware());
+app.use(systemIntegration.gradualRolloutMiddleware());
 const limiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000,
     max: process.env.NODE_ENV === 'development' ? 1000 : 100,
@@ -99,6 +103,23 @@ app.get('/api/health', (req, res) => {
         environment: process.env.NODE_ENV,
     });
 });
+app.get('/api/health/integration', async (req, res) => {
+    try {
+        const health = await systemIntegration.getIntegrationHealth();
+        res.json({
+            status: 'OK',
+            timestamp: new Date().toISOString(),
+            integration: health,
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            status: 'ERROR',
+            timestamp: new Date().toISOString(),
+            error: 'Failed to get integration health',
+        });
+    }
+});
 app.use('/api/health/feature-flags', healthRoutes_1.default);
 app.use('/api/public', publicApiRoutes_1.default);
 app.use('/api/public/drugs', publicDrugDetailsRoutes_1.default);
@@ -122,7 +143,7 @@ app.use('/api', dtpRoutes_1.default);
 app.use('/api', carePlanRoutes_1.default);
 app.use('/api', visitRoutes_1.default);
 app.use('/api/drugs', drugRoutes_1.default);
-app.use('/api/manual-lab-orders', manualLabRoutes_1.default);
+app.use('/api/manual-lab', manualLabRoutes_1.default);
 app.use('/api/diagnostics', diagnosticRoutes_1.default);
 app.use((req, res, next) => {
     if (req.path.startsWith('/api/notes')) {

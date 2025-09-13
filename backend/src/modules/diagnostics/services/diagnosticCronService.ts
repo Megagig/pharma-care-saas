@@ -81,7 +81,7 @@ class DiagnosticCronService {
             }, {
                 scheduled: false, // Don't start immediately
                 timezone: 'UTC'
-            } as ScheduleOptions);
+            } as cron.ScheduleOptions);
 
             this.jobs.set(name, job);
             logger.info(`Scheduled cron job: ${name} with schedule: ${schedule}`);

@@ -53,11 +53,13 @@ class PharmacistReviewService {
             }
             const updatedResult = await result.save();
             await auditService_1.default.logEvent({
-                userId: reviewData.reviewedBy,
-                workplaceId: reviewData.workplaceId,
+                userId: new mongoose_1.Types.ObjectId(reviewData.reviewedBy),
+                workplaceId: new mongoose_1.Types.ObjectId(reviewData.workplaceId),
+                userRole: reviewer.role,
+            }, {
                 action: 'diagnostic_result_reviewed',
                 resourceType: 'DiagnosticResult',
-                resourceId: resultId,
+                resourceId: new mongoose_1.Types.ObjectId(resultId),
                 details: {
                     reviewStatus: reviewData.status,
                     hasModifications: !!reviewData.modifications,
@@ -122,11 +124,13 @@ class PharmacistReviewService {
             result.updatedBy = new mongoose_1.Types.ObjectId(createdBy);
             await result.save();
             await auditService_1.default.logEvent({
-                userId: createdBy,
-                workplaceId,
+                userId: new mongoose_1.Types.ObjectId(createdBy),
+                workplaceId: new mongoose_1.Types.ObjectId(workplaceId),
+                userRole: 'pharmacist',
+            }, {
                 action: 'intervention_created_from_diagnostic',
                 resourceType: 'ClinicalIntervention',
-                resourceId: savedIntervention._id.toString(),
+                resourceId: new mongoose_1.Types.ObjectId(savedIntervention._id.toString()),
                 details: {
                     diagnosticResultId: resultId,
                     interventionType: interventionData.type,

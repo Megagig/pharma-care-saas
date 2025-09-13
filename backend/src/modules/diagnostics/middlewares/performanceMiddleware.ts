@@ -262,7 +262,9 @@ class PerformanceMiddleware {
         // Keep only last 1000 requests to prevent memory leak
         if (this.requestMetrics.size > 1000) {
             const oldestKey = this.requestMetrics.keys().next().value;
-            this.requestMetrics.delete(oldestKey);
+            if (oldestKey) {
+                this.requestMetrics.delete(oldestKey);
+            }
         }
 
         // Log metrics for analysis

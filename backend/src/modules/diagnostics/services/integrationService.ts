@@ -241,33 +241,33 @@ export class DiagnosticIntegrationService {
             };
 
             // Get diagnostic requests
-            const diagnosticRequestsQuery = DiagnosticRequest.find({
+            const diagnosticRequestsQuery = await DiagnosticRequest.find({
                 ...baseFilter,
                 patientId,
-            }).sort({ createdAt: -1 }).limit(limit);
+            }).sort({ createdAt: -1 }).limit(limit).exec();
 
             // Get clinical notes
             const clinicalNotesQuery = ClinicalNote.findActive({
                 ...baseFilter,
                 patient: patientId,
-            }).sort({ createdAt: -1 }).limit(limit);
+            }).sort({ createdAt: -1 }).limit(limit).exec();
 
             // Get MTRs
             const mtrsQuery = MedicationTherapyReview.find({
                 ...baseFilter,
                 patientId,
                 isDeleted: false,
-            }).sort({ createdAt: -1 }).limit(limit);
+            }).sort({ createdAt: -1 }).limit(limit).exec();
 
             const [diagnosticRequests, clinicalNotes, mtrs] = await Promise.all([
-                diagnosticRequestsQuery.exec(),
-                clinicalNotesQuery.exec(),
-                mtrsQuery.exec(),
+                diagnosticRequestsQuery,
+                clinicalNotesQuery,
+                mtrsQuery,
             ]);
 
             // Combine and format timeline events
             const timelineEvents = [
-                ...diagnosticRequests.map(req => ({
+                ...diagnosticRequests.map((req: IDiagnosticRequest) => ({
                     type: 'diagnostic' as const,
                     id: req._id,
                     date: req.createdAt,
@@ -277,7 +277,7 @@ export class DiagnosticIntegrationService {
                     status: req.status,
                     data: req,
                 })),
-                ...clinicalNotes.map(note => ({
+                ...clinicalNotes.map((note: IClinicalNote) => ({
                     type: 'clinical_note' as const,
                     id: note._id,
                     date: note.createdAt,
@@ -286,7 +286,7 @@ export class DiagnosticIntegrationService {
                     priority: note.priority,
                     data: note,
                 })),
-                ...mtrs.map(mtr => ({
+                ...mtrs.map((mtr: IMedicationTherapyReview) => ({
                     type: 'mtr' as const,
                     id: mtr._id,
                     date: mtr.createdAt,
@@ -343,7 +343,7 @@ export class DiagnosticIntegrationService {
                 patient: patientId,
                 workplaceId,
                 createdAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) }, // Last 90 days
-            }).sort({ createdAt: -1 }).limit(10);
+            }).sort({ createdAt: -1 }).limit(10).exec();
 
             // Get recent MTRs for the patient
             const recentMTRs = await MedicationTherapyReview.find({

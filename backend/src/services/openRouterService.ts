@@ -70,6 +70,7 @@ export interface DiagnosticInput {
     patientGender?: string;
     allergies?: string[];
     medicalHistory?: string[];
+    workplaceId?: string;
 }
 
 interface DiagnosticResponse {
