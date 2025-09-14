@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
@@ -12,56 +12,30 @@ import {
   StepLabel,
   StepContent,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Checkbox,
-  FormControlLabel,
   LinearProgress,
-  Chip,
   IconButton,
-  Tooltip,
-  useTheme,
-  useMediaQuery,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControlLabel,
+  Checkbox,
+  Chip,
+  Autocomplete,
 } from '@mui/material';
-import {
-  ArrowBack as ArrowBackIcon,
-  Save as SaveIcon,
-  Send as SendIcon,
-  AutoAwesome as AIIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
-} from '@mui/icons-material';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useForm, FormProvider } from 'react-hook-form';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useNavigate } from 'react-router-dom';
+import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-
-// Import components
-import {
-  SymptomInput,
-  VitalSignsInput,
-  MedicationHistoryInput,
-  AllergyInput,
-} from '../components';
 import { ErrorBoundary } from '../../../components/common/ErrorBoundary';
-
-// Import hooks and stores
-import {
-  useCreateDiagnosticRequest,
-  useDiagnosticResult,
-} from '../hooks/useDiagnostics';
-import { useDiagnosticStore } from '../store/diagnosticStore';
-import { usePatients } from '../../../stores';
-
-// Import types
-import type { DiagnosticRequestForm } from '../types';
 import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
 
-// Validation schema
+// Use the stable version of patient store
+import { usePatientStore } from '../../../stores';
+
+// Test 2: Add back form validation
 const caseIntakeSchema = z.object({
   patientId: z.string().min(1, 'Patient selection is required'),
   symptoms: z.object({
@@ -97,7 +71,7 @@ const caseIntakeSchema = z.object({
 
 type CaseIntakeFormData = z.infer<typeof caseIntakeSchema>;
 
-const steps = [
+const STEPS = [
   {
     label: 'Patient Selection',
     description: 'Select the patient for this diagnostic case',
@@ -116,195 +90,28 @@ const steps = [
   },
 ];
 
-interface PatientSelectionStepProps {
-  selectedPatientId: string;
-  onPatientSelect: (patientId: string) => void;
-  error?: string;
-}
-
-const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
-  selectedPatientId,
-  onPatientSelect,
-  error,
-}) => {
-  const { patients, loading } = usePatients();
-
-  return (
-    <Box>
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Select Patient
-      </Typography>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Grid container spacing={2}>
-        {loading ? (
-          <Grid item xs={12}>
-            <Typography>Loading patients...</Typography>
-          </Grid>
-        ) : patients.length > 0 ? (
-          patients.map((patient) => (
-            <Grid item xs={12} sm={6} md={4} key={patient._id}>
-              <Card
-                sx={{
-                  cursor: 'pointer',
-                  border: selectedPatientId === patient._id ? 2 : 1,
-                  borderColor:
-                    selectedPatientId === patient._id
-                      ? 'primary.main'
-                      : 'divider',
-                  '&:hover': { boxShadow: 4 },
-                }}
-                onClick={() => onPatientSelect(patient._id)}
-              >
-                <CardContent>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    {patient.firstName} {patient.lastName}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    DOB: {patient.dateOfBirth}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    ID: {patient._id.slice(-8)}
-                  </Typography>
-                  {selectedPatientId === patient._id && (
-                    <Chip
-                      label="Selected"
-                      color="primary"
-                      size="small"
-                      sx={{ mt: 1 }}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          ))
-        ) : (
-          <Grid item xs={12}>
-            <Alert severity="info">
-              No patients found. Please add patients first.
-            </Alert>
-          </Grid>
-        )}
-      </Grid>
-    </Box>
-  );
-};
-
-interface ConsentDialogProps {
-  open: boolean;
-  onClose: () => void;
-  onConsent: (consented: boolean) => void;
-  patientName?: string;
-}
-
-const ConsentDialog: React.FC<ConsentDialogProps> = ({
-  open,
-  onClose,
-  onConsent,
-  patientName,
-}) => {
-  const [consented, setConsented] = useState(false);
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <AIIcon sx={{ mr: 1, color: 'primary.main' }} />
-          AI Diagnostic Analysis Consent
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        <Alert severity="info" sx={{ mb: 3 }}>
-          <Typography variant="body2">
-            This diagnostic analysis will use AI assistance to help generate
-            differential diagnoses and treatment recommendations. The AI
-            analysis is for clinical decision support only and requires
-            pharmacist review and approval.
-          </Typography>
-        </Alert>
-
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Patient Consent for AI Analysis
-        </Typography>
-
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          Patient: <strong>{patientName || 'Selected Patient'}</strong>
-        </Typography>
-
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            By proceeding with AI analysis, you confirm that:
-          </Typography>
-          <ul>
-            <li>
-              The patient has been informed about the use of AI in their
-              diagnostic assessment
-            </li>
-            <li>
-              The patient understands that AI recommendations require pharmacist
-              review
-            </li>
-            <li>
-              The patient consents to their clinical data being processed for
-              diagnostic analysis
-            </li>
-            <li>
-              All AI recommendations will be reviewed by a licensed pharmacist
-              before implementation
-            </li>
-          </ul>
-        </Box>
-
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={consented}
-              onChange={(e) => setConsented(e.target.checked)}
-            />
-          }
-          label="I confirm that appropriate patient consent has been obtained for AI diagnostic analysis"
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button
-          variant="contained"
-          onClick={() => onConsent(consented)}
-          disabled={!consented}
-        >
-          Proceed with Analysis
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-
 const CaseIntakePage: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
-  const { patientId } = useParams<{ patientId?: string }>();
-
-  // Local state
   const [activeStep, setActiveStep] = useState(0);
-  const [consentDialogOpen, setConsentDialogOpen] = useState(false);
-  const [draftSaved, setDraftSaved] = useState(false);
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
 
-  // Store state
-  const { setActiveStep: setStoreActiveStep } = useDiagnosticStore();
-  const { patients } = usePatients();
+  // Use individual selectors to avoid object recreation
+  const patients = usePatientStore((state) => state.patients);
+  const loading = usePatientStore(
+    (state) => state.loading.fetchPatients || false
+  );
 
-  // Form setup
+  const fetchPatients = usePatientStore((state) => state.fetchPatients);
+
+  // Fetch patients when component mounts
+  React.useEffect(() => {
+    fetchPatients();
+  }, [fetchPatients]);
+
+  // Initialize react-hook-form with zod validation
   const methods = useForm<CaseIntakeFormData>({
     resolver: zodResolver(caseIntakeSchema),
     defaultValues: {
-      patientId: patientId || '',
+      patientId: '',
       symptoms: {
         subjective: [],
         objective: [],
@@ -319,104 +126,29 @@ const CaseIntakePage: React.FC = () => {
       labResults: [],
       consent: false,
     },
-    mode: 'onChange',
   });
 
   const {
+    control,
+    handleSubmit,
+    formState: { errors },
     watch,
-    setValue,
-    getValues,
-    formState: { errors, isValid },
+    trigger,
   } = methods;
-  const watchedValues = watch();
 
-  // Mutations
-  const createRequestMutation = useCreateDiagnosticRequest();
+  const handleNext = async () => {
+    // Validate current step before proceeding
+    const fieldsToValidate = getFieldsForStep(activeStep);
+    const isValid = await trigger(fieldsToValidate);
 
-  // Auto-save functionality
-  const saveDraft = useCallback(() => {
-    if (autoSaveEnabled) {
-      const formData = getValues();
-      localStorage.setItem('diagnostic-draft', JSON.stringify(formData));
-      setDraftSaved(true);
-      setTimeout(() => setDraftSaved(false), 2000);
-    }
-  }, [getValues, autoSaveEnabled]);
-
-  // Auto-save on form changes
-  // useEffect(() => {
-  //   const subscription = watch(() => {
-  //     if (activeStep > 0) {
-  //       // Don't auto-save on patient selection step
-  //       saveDraft();
-  //     }
-  //   });
-  //   return () => subscription.unsubscribe();
-  // }, [watch, saveDraft, activeStep]);
-
-  // Load draft on mount
-  // useEffect(() => {
-  //   const savedDraft = localStorage.getItem('diagnostic-draft');
-  //   if (savedDraft) {
-  //     try {
-  //       const draftData = JSON.parse(savedDraft);
-  //       Object.keys(draftData).forEach((key) => {
-  //         setValue(key as keyof CaseIntakeFormData, draftData[key]);
-  //       });
-  //     } catch (error) {
-  //       console.error('Failed to load draft:', error);
-  //     }
-  //   }
-  // }, [setValue]);
-
-  // Sync with store
-  // useEffect(() => {
-  //   setStoreActiveStep(activeStep);
-  // }, [activeStep, setStoreActiveStep]);
-
-  // Handlers
-  const handleNext = () => {
-    if (activeStep === steps.length - 1) {
-      handleSubmit();
-    } else {
-      setActiveStep((prev) => prev + 1);
+    if (isValid && activeStep < STEPS.length - 1) {
+      setActiveStep(activeStep + 1);
     }
   };
 
   const handleBack = () => {
-    setActiveStep((prev) => prev - 1);
-  };
-
-  const handlePatientSelect = (selectedPatientId: string) => {
-    setValue('patientId', selectedPatientId);
-  };
-
-  const handleSubmit = () => {
-    setConsentDialogOpen(true);
-  };
-
-  const handleConsent = async (consented: boolean) => {
-    setConsentDialogOpen(false);
-
-    if (!consented) {
-      return;
-    }
-
-    setValue('consent', true);
-
-    try {
-      const formData = getValues();
-      const result = await createRequestMutation.mutateAsync(formData);
-
-      if (result) {
-        // Clear draft
-        localStorage.removeItem('diagnostic-draft');
-
-        // Navigate to results page
-        navigate(`/diagnostics/case/${result._id}`);
-      }
-    } catch (error) {
-      console.error('Failed to create diagnostic request:', error);
+    if (activeStep > 0) {
+      setActiveStep(activeStep - 1);
     }
   };
 
@@ -424,344 +156,472 @@ const CaseIntakePage: React.FC = () => {
     navigate('/diagnostics');
   };
 
-  const clearDraft = () => {
-    localStorage.removeItem('diagnostic-draft');
-    methods.reset();
-    setActiveStep(0);
+  const onSubmit = (data: CaseIntakeFormData) => {
+    console.log('Form submitted:', data);
+    // TODO: Submit to API
+    navigate('/diagnostics');
   };
 
-  // Get current step validation
-  const getStepValid = (step: number) => {
+  // Helper function to determine which fields to validate for each step
+  const getFieldsForStep = (step: number): (keyof CaseIntakeFormData)[] => {
     switch (step) {
       case 0:
-        return !!watchedValues.patientId && !errors.patientId;
+        return ['patientId'];
       case 1:
-        return (
-          watchedValues.symptoms.subjective.length > 0 &&
-          !!watchedValues.symptoms.duration &&
-          !errors.symptoms
-        );
+        return ['symptoms'];
       case 2:
-        return true; // Optional step
+        return ['vitals', 'currentMedications', 'allergies', 'medicalHistory'];
       case 3:
-        return isValid;
+        return ['consent'];
       default:
-        return false;
+        return [];
     }
   };
 
-  const selectedPatient = null;
+  const renderStepContent = () => {
+    switch (activeStep) {
+      case 0:
+        return (
+          <Box>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: 3,
+              }}
+            >
+              <Typography variant="h6">Patient Selection</Typography>
+              <Button
+                size="small"
+                onClick={() => fetchPatients()}
+                disabled={loading}
+                sx={{ textTransform: 'none' }}
+              >
+                {loading ? 'Loading...' : 'Refresh Patients'}
+              </Button>
+            </Box>
+            <Controller
+              name="patientId"
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth error={!!errors.patientId}>
+                  <InputLabel>Select Patient</InputLabel>
+                  <Select {...field} label="Select Patient" disabled={loading}>
+                    {loading ? (
+                      <MenuItem disabled>Loading patients...</MenuItem>
+                    ) : patients.length === 0 ? (
+                      <MenuItem disabled>
+                        No patients found. Please add patients first.
+                      </MenuItem>
+                    ) : (
+                      patients.map((patient) => (
+                        <MenuItem key={patient._id} value={patient._id}>
+                          {patient.firstName} {patient.lastName} - DOB:{' '}
+                          {patient.dateOfBirth}
+                        </MenuItem>
+                      ))
+                    )}
+                  </Select>
+                  {errors.patientId && (
+                    <Typography variant="caption" color="error" sx={{ mt: 1 }}>
+                      {errors.patientId.message}
+                    </Typography>
+                  )}
+                  {!loading && patients.length === 0 && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mt: 1 }}
+                    >
+                      You need to add patients before creating a diagnostic
+                      case.{' '}
+                      <Button
+                        size="small"
+                        onClick={() => navigate('/patients')}
+                        sx={{ textTransform: 'none', p: 0, minWidth: 'auto' }}
+                      >
+                        Go to Patients
+                      </Button>
+                    </Typography>
+                  )}
+                </FormControl>
+              )}
+            />
+          </Box>
+        );
+
+      case 1:
+        return (
+          <Box>
+            <Typography variant="h6" sx={{ mb: 3 }}>
+              Symptom Assessment
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Controller
+                  name="symptoms.subjective"
+                  control={control}
+                  render={({ field }) => (
+                    <Autocomplete
+                      multiple
+                      freeSolo
+                      options={[
+                        'Headache',
+                        'Fever',
+                        'Cough',
+                        'Fatigue',
+                        'Nausea',
+                        'Chest pain',
+                        'Shortness of breath',
+                        'Dizziness',
+                      ]}
+                      value={field.value}
+                      onChange={(_, newValue) => field.onChange(newValue)}
+                      renderTags={(value, getTagProps) =>
+                        value.map((option, index) => (
+                          <Chip
+                            variant="outlined"
+                            label={option}
+                            {...getTagProps({ index })}
+                            key={index}
+                          />
+                        ))
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Subjective Symptoms"
+                          placeholder="Type or select symptoms"
+                          error={!!errors.symptoms?.subjective}
+                          helperText={errors.symptoms?.subjective?.message}
+                        />
+                      )}
+                    />
+                  )}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Controller
+                  name="symptoms.duration"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label="Duration"
+                      placeholder="e.g., 3 days, 2 weeks"
+                      error={!!errors.symptoms?.duration}
+                      helperText={errors.symptoms?.duration?.message}
+                    />
+                  )}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Controller
+                  name="symptoms.severity"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth>
+                      <InputLabel>Severity</InputLabel>
+                      <Select {...field} label="Severity">
+                        <MenuItem value="mild">Mild</MenuItem>
+                        <MenuItem value="moderate">Moderate</MenuItem>
+                        <MenuItem value="severe">Severe</MenuItem>
+                      </Select>
+                    </FormControl>
+                  )}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Controller
+                  name="symptoms.onset"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth>
+                      <InputLabel>Onset</InputLabel>
+                      <Select {...field} label="Onset">
+                        <MenuItem value="acute">Acute</MenuItem>
+                        <MenuItem value="chronic">Chronic</MenuItem>
+                        <MenuItem value="subacute">Subacute</MenuItem>
+                      </Select>
+                    </FormControl>
+                  )}
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        );
+
+      case 2:
+        return (
+          <Box>
+            <Typography variant="h6" sx={{ mb: 3 }}>
+              Vital Signs & Medical History
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" sx={{ mb: 2 }}>
+                  Vital Signs
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Controller
+                  name="vitals.bloodPressure"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label="Blood Pressure"
+                      placeholder="e.g., 120/80"
+                    />
+                  )}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Controller
+                  name="vitals.heartRate"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      type="number"
+                      label="Heart Rate (bpm)"
+                      onChange={(e) =>
+                        field.onChange(Number(e.target.value) || undefined)
+                      }
+                    />
+                  )}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Controller
+                  name="vitals.temperature"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      type="number"
+                      label="Temperature (°F)"
+                      onChange={(e) =>
+                        field.onChange(Number(e.target.value) || undefined)
+                      }
+                    />
+                  )}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" sx={{ mb: 2, mt: 2 }}>
+                  Medical History
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Controller
+                  name="allergies"
+                  control={control}
+                  render={({ field }) => (
+                    <Autocomplete
+                      multiple
+                      freeSolo
+                      options={['Penicillin', 'Peanuts', 'Shellfish', 'Latex']}
+                      value={field.value || []}
+                      onChange={(_, newValue) => field.onChange(newValue)}
+                      renderTags={(value, getTagProps) =>
+                        value.map((option, index) => (
+                          <Chip
+                            variant="outlined"
+                            label={option}
+                            {...getTagProps({ index })}
+                            key={index}
+                          />
+                        ))
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Allergies"
+                          placeholder="Type or select allergies"
+                        />
+                      )}
+                    />
+                  )}
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        );
+
+      case 3:
+        return (
+          <Box>
+            <Typography variant="h6" sx={{ mb: 3 }}>
+              Review & Submit
+            </Typography>
+
+            <Alert severity="info" sx={{ mb: 3 }}>
+              Please review the information below and provide consent for AI
+              analysis.
+            </Alert>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle2">Selected Patient:</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {watch('patientId')
+                  ? (() => {
+                      const selectedPatient = patients.find(
+                        (p) => p._id === watch('patientId')
+                      );
+                      return selectedPatient
+                        ? `${selectedPatient.firstName} ${selectedPatient.lastName} - DOB: ${selectedPatient.dateOfBirth}`
+                        : 'Patient not found';
+                    })()
+                  : 'None selected'}
+              </Typography>
+            </Box>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle2">Symptoms:</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {watch('symptoms.subjective')?.join(', ') || 'None specified'}
+              </Typography>
+            </Box>
+
+            <Controller
+              name="consent"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={
+                    <Checkbox checked={field.value} onChange={field.onChange} />
+                  }
+                  label="I consent to AI-powered diagnostic analysis of this case"
+                />
+              )}
+            />
+            {errors.consent && (
+              <Typography variant="caption" color="error" display="block">
+                {errors.consent.message}
+              </Typography>
+            )}
+          </Box>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <ErrorBoundary>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <IconButton onClick={handleCancel} sx={{ mr: 1 }}>
-              <ArrowBackIcon />
-            </IconButton>
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                New Diagnostic Case
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Step-by-step patient assessment and AI diagnostic analysis
-              </Typography>
+      <FormProvider {...methods}>
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+          {/* Header */}
+          <Box sx={{ mb: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <IconButton onClick={handleCancel} sx={{ mr: 1 }}>
+                <ArrowBackIcon />
+              </IconButton>
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                  New Diagnostic Case
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Complete the form to create a new diagnostic case
+                </Typography>
+              </Box>
             </Box>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-              {draftSaved && (
-                <Chip
-                  icon={<CheckCircleIcon />}
-                  label="Draft Saved"
-                  color="success"
-                  size="small"
-                />
-              )}
-              <Button
-                variant="outlined"
-                startIcon={<SaveIcon />}
-                onClick={saveDraft}
-                size="small"
-              >
-                Save Draft
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<CancelIcon />}
-                onClick={clearDraft}
-                size="small"
-                color="error"
-              >
-                Clear
-              </Button>
-            </Box>
+
+            {/* Progress */}
+            <LinearProgress
+              variant="determinate"
+              value={(activeStep / (STEPS.length - 1)) * 100}
+              sx={{ mb: 2 }}
+            />
           </Box>
 
-          {/* Progress */}
-          <LinearProgress
-            variant="determinate"
-            value={(activeStep / (steps.length - 1)) * 100}
-            sx={{ mb: 2 }}
-          />
-        </Box>
-
-        <FormProvider {...methods}>
-          <Grid container spacing={4}>
-            {/* Stepper */}
-            <Grid item xs={12} md={4}>
-              <Card sx={{ position: 'sticky', top: 24 }}>
-                <CardContent>
-                  <Stepper
-                    activeStep={activeStep}
-                    orientation="vertical"
-                    sx={{
-                      '& .MuiStepContent-root': {
-                        borderLeft: 'none',
-                        pl: 0,
-                        ml: 2,
-                      },
-                    }}
-                  >
-                    {steps.map((step, index) => (
-                      <Step key={step.label}>
-                        <StepLabel
-                          optional={
-                            index === 2 ? (
-                              <Typography variant="caption">
-                                Optional
-                              </Typography>
-                            ) : null
-                          }
-                        >
-                          <Typography variant="subtitle2">
-                            {step.label}
-                          </Typography>
-                        </StepLabel>
-                        <StepContent>
-                          <Typography variant="body2" color="text.secondary">
-                            {step.description}
-                          </Typography>
-                        </StepContent>
-                      </Step>
-                    ))}
-                  </Stepper>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Step Content */}
-            <Grid item xs={12} md={8}>
-              <Card>
-                <CardContent sx={{ minHeight: 400 }}>
-                  {activeStep === 0 && (
-                    <PatientSelectionStep
-                      selectedPatientId={watchedValues.patientId}
-                      onPatientSelect={handlePatientSelect}
-                      error={errors.patientId?.message}
-                    />
-                  )}
-
-                  {activeStep === 1 && (
-                    <Box>
-                      <Typography variant="h6" sx={{ mb: 2 }}>
-                        Symptom Assessment
-                      </Typography>
-                      {selectedPatient && (
-                        <Alert severity="info" sx={{ mb: 3 }}>
-                          Patient: {selectedPatient.firstName}{' '}
-                          {selectedPatient.lastName}
-                        </Alert>
-                      )}
-                      <SymptomInput
-                        value={watchedValues.symptoms}
-                        onChange={(symptoms) => setValue('symptoms', symptoms)}
-                        error={errors.symptoms?.message}
-                      />
-                    </Box>
-                  )}
-
-                  {activeStep === 2 && (
-                    <Box>
-                      <Typography variant="h6" sx={{ mb: 3 }}>
-                        Vital Signs & Medical History
-                      </Typography>
-
-                      <Box sx={{ mb: 4 }}>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ mb: 2, fontWeight: 600 }}
-                        >
-                          Vital Signs
-                        </Typography>
-                        <VitalSignsInput
-                          value={watchedValues.vitals}
-                          onChange={(vitals) => setValue('vitals', vitals)}
-                          error={errors.vitals?.message}
-                        />
-                      </Box>
-
-                      <Box sx={{ mb: 4 }}>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ mb: 2, fontWeight: 600 }}
-                        >
-                          Current Medications
-                        </Typography>
-                        <MedicationHistoryInput
-                          value={watchedValues.currentMedications}
-                          onChange={(medications) =>
-                            setValue('currentMedications', medications)
-                          }
-                          error={errors.currentMedications?.message}
-                        />
-                      </Box>
-
-                      <Box>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ mb: 2, fontWeight: 600 }}
-                        >
-                          Allergies
-                        </Typography>
-                        <AllergyInput
-                          value={watchedValues.allergies}
-                          onChange={(allergies) =>
-                            setValue('allergies', allergies)
-                          }
-                          error={errors.allergies?.message}
-                        />
-                      </Box>
-                    </Box>
-                  )}
-
-                  {activeStep === 3 && (
-                    <Box>
-                      <Typography variant="h6" sx={{ mb: 3 }}>
-                        Review & Submit
-                      </Typography>
-
-                      {selectedPatient && (
-                        <Alert severity="info" sx={{ mb: 3 }}>
-                          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                            Patient: {selectedPatient.firstName}{' '}
-                            {selectedPatient.lastName}
-                          </Typography>
-                          <Typography variant="body2">
-                            This case will be processed using AI diagnostic
-                            analysis. Results will require pharmacist review
-                            before implementation.
-                          </Typography>
-                        </Alert>
-                      )}
-
-                      {/* Summary */}
-                      <Box sx={{ mb: 3 }}>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ fontWeight: 600, mb: 2 }}
-                        >
-                          Case Summary
-                        </Typography>
-
-                        <Grid container spacing={2}>
-                          <Grid item xs={12} sm={6}>
-                            <Typography variant="body2" color="text.secondary">
-                              Primary Symptoms:
-                            </Typography>
-                            <Typography variant="body2">
-                              {watchedValues.symptoms.subjective
-                                .slice(0, 3)
-                                .join(', ')}
-                              {watchedValues.symptoms.subjective.length > 3 &&
-                                '...'}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <Typography variant="body2" color="text.secondary">
-                              Duration & Severity:
-                            </Typography>
-                            <Typography variant="body2">
-                              {watchedValues.symptoms.duration} -{' '}
-                              {watchedValues.symptoms.severity}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <Typography variant="body2" color="text.secondary">
-                              Current Medications:
-                            </Typography>
-                            <Typography variant="body2">
-                              {watchedValues.currentMedications?.length || 0}{' '}
-                              medications
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <Typography variant="body2" color="text.secondary">
-                              Known Allergies:
-                            </Typography>
-                            <Typography variant="body2">
-                              {watchedValues.allergies?.length || 0} allergies
-                            </Typography>
-                          </Grid>
-                        </Grid>
-                      </Box>
-
-                      <Alert severity="warning" sx={{ mb: 3 }}>
-                        <Typography variant="body2">
-                          <strong>Important:</strong> AI analysis requires
-                          patient consent and pharmacist review. Ensure
-                          appropriate consent has been obtained before
-                          proceeding.
-                        </Typography>
-                      </Alert>
-                    </Box>
-                  )}
-                </CardContent>
-
-                {/* Navigation */}
-                <Box sx={{ p: 3, borderTop: 1, borderColor: 'divider' }}>
-                  <Box
-                    sx={{ display: 'flex', justifyContent: 'space-between' }}
-                  >
-                    <Button onClick={handleBack} disabled={activeStep === 0}>
-                      Back
-                    </Button>
-                    <Button
-                      variant="contained"
-                      onClick={handleNext}
-                      disabled={
-                        !getStepValid(activeStep) ||
-                        createRequestMutation.isPending
-                      }
-                      startIcon={
-                        activeStep === steps.length - 1 ? <SendIcon /> : null
-                      }
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <Grid container spacing={4}>
+              {/* Stepper */}
+              <Grid item xs={12} md={4}>
+                <Card sx={{ position: 'sticky', top: 24 }}>
+                  <CardContent>
+                    <Stepper
+                      activeStep={activeStep}
+                      orientation="vertical"
+                      sx={{
+                        '& .MuiStepContent-root': {
+                          borderLeft: 'none',
+                          pl: 0,
+                          ml: 2,
+                        },
+                      }}
                     >
-                      {createRequestMutation.isPending
-                        ? 'Processing...'
-                        : activeStep === steps.length - 1
-                          ? 'Submit for Analysis'
-                          : 'Next'}
-                    </Button>
-                  </Box>
-                </Box>
-              </Card>
-            </Grid>
-          </Grid>
-        </FormProvider>
+                      {STEPS.map((step) => (
+                        <Step key={step.label}>
+                          <StepLabel>
+                            <Typography variant="subtitle2">
+                              {step.label}
+                            </Typography>
+                          </StepLabel>
+                          <StepContent>
+                            <Typography variant="body2" color="text.secondary">
+                              {step.description}
+                            </Typography>
+                          </StepContent>
+                        </Step>
+                      ))}
+                    </Stepper>
+                  </CardContent>
+                </Card>
+              </Grid>
 
-        {/* Consent Dialog */}
-        <ConsentDialog
-          open={consentDialogOpen}
-          onClose={() => setConsentDialogOpen(false)}
-          onConsent={handleConsent}
-          patientName={
-            selectedPatient
-              ? `${selectedPatient.firstName} ${selectedPatient.lastName}`
-              : undefined
-          }
-        />
-      </Container>
+              {/* Step Content */}
+              <Grid item xs={12} md={8}>
+                <Card>
+                  <CardContent sx={{ minHeight: 400 }}>
+                    {renderStepContent()}
+                  </CardContent>
+
+                  {/* Navigation */}
+                  <Box sx={{ p: 3, borderTop: 1, borderColor: 'divider' }}>
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    >
+                      <Button onClick={handleBack} disabled={activeStep === 0}>
+                        Back
+                      </Button>
+                      {activeStep === STEPS.length - 1 ? (
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          disabled={!watch('consent')}
+                        >
+                          Submit Case
+                        </Button>
+                      ) : (
+                        <Button variant="contained" onClick={handleNext}>
+                          Next
+                        </Button>
+                      )}
+                    </Box>
+                  </Box>
+                </Card>
+              </Grid>
+            </Grid>
+          </form>
+        </Container>
+      </FormProvider>
     </ErrorBoundary>
   );
 };
