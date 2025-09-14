@@ -31,12 +31,13 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ErrorBoundary } from '../../../components/common/ErrorBoundary';
 import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
+import { aiDiagnosticService } from '../../../services/aiDiagnosticService';
 
 // Use the stable version of patient store
 import { usePatientStore } from '../../../stores';
@@ -98,6 +99,7 @@ const STEPS = [
 
 const CaseIntakePage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeStep, setActiveStep] = useState(0);
   const [createPatientOpen, setCreatePatientOpen] = useState(false);
   const [newPatientData, setNewPatientData] = useState({
@@ -158,7 +160,69 @@ const CaseIntakePage: React.FC = () => {
     formState: { errors },
     watch,
     trigger,
+    setValue,
   } = methods;
+
+  // Handle patient selection from URL parameters (when returning from patients page)
+  React.useEffect(() => {
+    const selectedPatientId = searchParams.get('selectedPatient');
+    if (selectedPatientId) {
+      if (patients.length > 0) {
+        // Verify the patient exists in the loaded patients
+        const patientExists = patients.some((p) => p._id === selectedPatientId);
+        if (patientExists) {
+          setValue('patientId', selectedPatientId, {
+            shouldValidate: true,
+            shouldDirty: true,
+            shouldTouch: true,
+          });
+
+          // Manually trigger validation for this field
+          setTimeout(() => {
+            trigger('patientId');
+          }, 100);
+
+          // Clear the URL parameter to avoid re-selecting on refresh
+          const newSearchParams = new URLSearchParams(searchParams);
+          newSearchParams.delete('selectedPatient');
+          const newUrl = `/pharmacy/diagnostics/case/new${
+            newSearchParams.toString() ? '?' + newSearchParams.toString() : ''
+          }`;
+          navigate(newUrl, { replace: true });
+        } else {
+          console.warn(
+            'Selected patient not found in loaded patients:',
+            selectedPatientId
+          );
+        }
+      } else {
+        console.log('Patients not loaded yet, waiting...');
+      }
+    }
+  }, [searchParams, setValue, navigate, patients]);
+
+  // Additional effect to handle the case where URL param exists but patients aren't loaded yet
+  React.useEffect(() => {
+    const selectedPatientId = searchParams.get('selectedPatient');
+    if (selectedPatientId && patients.length > 0 && !watch('patientId')) {
+      const patientExists = patients.some((p) => p._id === selectedPatientId);
+      if (patientExists) {
+        setValue('patientId', selectedPatientId, {
+          shouldValidate: true,
+          shouldDirty: true,
+          shouldTouch: true,
+        });
+
+        // Manually trigger validation for this field
+        setTimeout(() => {
+          trigger('patientId');
+        }, 100);
+
+        console.log('Late patient selection:', selectedPatientId);
+        console.log('Form value after late setValue:', watch('patientId'));
+      }
+    }
+  }, [patients, searchParams, setValue, trigger, watch]);
 
   const handleNext = async () => {
     // Validate current step before proceeding
@@ -180,10 +244,35 @@ const CaseIntakePage: React.FC = () => {
     navigate('/diagnostics');
   };
 
-  const onSubmit = (data: CaseIntakeFormData) => {
-    console.log('Form submitted:', data);
-    // TODO: Submit to API
-    navigate('/diagnostics');
+  const [submitting, setSubmitting] = useState(false);
+
+  const onSubmit = async (data: CaseIntakeFormData) => {
+    try {
+      setSubmitting(true);
+
+      // Transform form data to match API expectations
+      const caseData = {
+        patientId: data.patientId,
+        symptoms: data.symptoms,
+        vitals: data.vitals,
+        currentMedications: data.currentMedications || [],
+        allergies: data.allergies || [],
+        medicalHistory: data.medicalHistory || [],
+        labResults: data.labResults || [],
+      };
+
+      // Submit case for AI analysis
+      const diagnosticCase = await aiDiagnosticService.submitCase(caseData);
+
+      // Navigate to results page
+      navigate(`/pharmacy/diagnostics/case/${diagnosticCase.id}/results`);
+    } catch (error) {
+      console.error('Failed to submit case:', error);
+      // TODO: Show error message to user
+      alert('Failed to submit case. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCreatePatient = async () => {
@@ -238,6 +327,19 @@ const CaseIntakePage: React.FC = () => {
     }
   };
 
+  // Helper function to sort patients with selected patient first
+  const getSortedPatients = () => {
+    const selectedPatientId = watch('patientId');
+    if (!selectedPatientId) {
+      return patients;
+    }
+
+    const selectedPatient = patients.find((p) => p._id === selectedPatientId);
+    const otherPatients = patients.filter((p) => p._id !== selectedPatientId);
+
+    return selectedPatient ? [selectedPatient, ...otherPatients] : patients;
+  };
+
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
@@ -255,11 +357,22 @@ const CaseIntakePage: React.FC = () => {
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button
                   size="small"
-                  onClick={() => fetchPatients()}
+                  onClick={() => {
+                    console.log('Manual refresh clicked');
+                    fetchPatients();
+                  }}
                   disabled={loading}
                   sx={{ textTransform: 'none' }}
                 >
                   {loading ? 'Loading...' : 'Refresh'}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => navigate('/patients?for=diagnostics')}
+                  sx={{ textTransform: 'none' }}
+                >
+                  Select from Patients
                 </Button>
                 <Button
                   size="small"
@@ -272,6 +385,30 @@ const CaseIntakePage: React.FC = () => {
                 </Button>
               </Box>
             </Box>
+
+            {watch('patientId') && (
+              <Box
+                sx={{ mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 1 }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  color="success.dark"
+                  sx={{ mb: 1 }}
+                >
+                  Selected Patient:
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  {(() => {
+                    const selectedPatient = patients.find(
+                      (p) => p._id === watch('patientId')
+                    );
+                    return selectedPatient
+                      ? `${selectedPatient.firstName} ${selectedPatient.lastName} - DOB: ${selectedPatient.dateOfBirth}`
+                      : 'Loading patient details...';
+                  })()}
+                </Typography>
+              </Box>
+            )}
             <Controller
               name="patientId"
               control={control}
@@ -286,8 +423,21 @@ const CaseIntakePage: React.FC = () => {
                         No patients found. Please add patients first.
                       </MenuItem>
                     ) : (
-                      patients.map((patient) => (
+                      getSortedPatients().map((patient, index) => (
                         <MenuItem key={patient._id} value={patient._id}>
+                          {index === 0 &&
+                            watch('patientId') === patient._id && (
+                              <Typography
+                                component="span"
+                                sx={{
+                                  fontWeight: 'bold',
+                                  color: 'primary.main',
+                                  mr: 1,
+                                }}
+                              >
+                                ✓
+                              </Typography>
+                            )}
                           {patient.firstName} {patient.lastName} - DOB:{' '}
                           {patient.dateOfBirth}
                         </MenuItem>
@@ -314,19 +464,19 @@ const CaseIntakePage: React.FC = () => {
                         <Button
                           size="small"
                           variant="contained"
+                          onClick={() => navigate('/patients?for=diagnostics')}
+                          sx={{ textTransform: 'none' }}
+                        >
+                          Select from Patients
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="outlined"
                           startIcon={<AddIcon />}
                           onClick={() => setCreatePatientOpen(true)}
                           sx={{ textTransform: 'none' }}
                         >
                           Create New Patient
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => navigate('/patients')}
-                          sx={{ textTransform: 'none' }}
-                        >
-                          Manage Patients
                         </Button>
                       </Box>
                     </Box>
@@ -691,9 +841,11 @@ const CaseIntakePage: React.FC = () => {
                         <Button
                           type="submit"
                           variant="contained"
-                          disabled={!watch('consent')}
+                          disabled={!watch('consent') || submitting}
                         >
-                          Submit Case
+                          {submitting
+                            ? 'Submitting for AI Analysis...'
+                            : 'Submit for AI Analysis'}
                         </Button>
                       ) : (
                         <Button variant="contained" onClick={handleNext}>

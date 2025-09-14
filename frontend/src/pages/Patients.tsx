@@ -106,6 +106,7 @@ const Patients = () => {
   const navigate = useNavigate();
   const [urlParams] = useSearchParams();
   const isForMedications = urlParams.get('for') === 'medications';
+  const isForDiagnostics = urlParams.get('for') === 'diagnostics';
 
   // RBAC permissions
   const { permissions } = useRBAC();
@@ -210,6 +211,9 @@ const Patients = () => {
     // If we're selecting a patient for medications, navigate to the medications page
     if (isForMedications) {
       navigate(`/patients/${patientId}/medications`);
+    } else if (isForDiagnostics) {
+      // Navigate back to diagnostic case creation with selected patient
+      navigate(`/pharmacy/diagnostics/case/new?selectedPatient=${patientId}`);
     } else {
       navigate(`/patients/${patientId}`);
     }
@@ -294,8 +298,8 @@ const Patients = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      {/* Helper message for medication selection mode */}
-      {isForMedications && (
+      {/* Helper message for selection modes */}
+      {(isForMedications || isForDiagnostics) && (
         <Alert
           severity="info"
           sx={{
@@ -307,8 +311,9 @@ const Patients = () => {
         >
           <Box sx={{ fontWeight: 'medium' }}>Patient Selection Mode</Box>
           <Typography variant="body2">
-            Select a patient from the list below to manage their medications.
-            Click the "Select" button in the Actions column to proceed.
+            {isForMedications
+              ? 'Select a patient from the list below to manage their medications. Click the "Select" button in the Actions column to proceed.'
+              : 'Select a patient from the list below to create a diagnostic case. Click the "Select" button in the Actions column to proceed.'}
           </Typography>
         </Alert>
       )}
@@ -337,11 +342,17 @@ const Patients = () => {
             }}
           >
             <LocalHospitalIcon color="primary" />
-            {isForMedications ? 'Select a Patient' : 'Patient Management'}
+            {isForMedications
+              ? 'Select a Patient for Medications'
+              : isForDiagnostics
+              ? 'Select a Patient for Diagnostic Case'
+              : 'Patient Management'}
           </Typography>
           <Typography component="div" variant="body1" color="text.secondary">
             {isForMedications
               ? 'Click on any patient to manage their medications'
+              : isForDiagnostics
+              ? 'Click on any patient to create a diagnostic case'
               : 'Comprehensive patient care and medical records management'}
             {totalPatients > 0 && (
               <Chip
@@ -552,18 +563,23 @@ const Patients = () => {
                     hover
                     sx={{
                       '&:hover': {
-                        bgcolor: isForMedications
-                          ? 'primary.lighter'
-                          : 'action.hover',
+                        bgcolor:
+                          isForMedications || isForDiagnostics
+                            ? 'primary.lighter'
+                            : 'action.hover',
                         transition: 'background-color 0.2s ease',
                       },
-                      cursor: isForMedications ? 'pointer' : 'default',
-                      bgcolor: isForMedications
-                        ? 'rgba(25, 118, 210, 0.04)'
-                        : 'inherit',
+                      cursor:
+                        isForMedications || isForDiagnostics
+                          ? 'pointer'
+                          : 'default',
+                      bgcolor:
+                        isForMedications || isForDiagnostics
+                          ? 'rgba(25, 118, 210, 0.04)'
+                          : 'inherit',
                     }}
                     onClick={
-                      isForMedications
+                      isForMedications || isForDiagnostics
                         ? () => handleViewPatient(patient._id)
                         : undefined
                     }
@@ -709,8 +725,8 @@ const Patients = () => {
                           justifyContent: 'center',
                         }}
                       >
-                        {/* Check if we're in medication selection mode */}
-                        {isForMedications ? (
+                        {/* Check if we're in selection mode */}
+                        {isForMedications || isForDiagnostics ? (
                           <Button
                             size="sm"
                             variant="contained"

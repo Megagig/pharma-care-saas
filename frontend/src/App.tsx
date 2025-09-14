@@ -77,6 +77,7 @@ import PharmacySettings from './pages/PharmacySettings';
 // Diagnostic Module Components
 import DiagnosticDashboard from './modules/diagnostics/pages/DiagnosticDashboard';
 import CaseIntakePage from './modules/diagnostics/pages/CaseIntakePage';
+import CaseResultsPage from './modules/diagnostics/pages/CaseResultsPage';
 import ResultsReviewPage from './modules/diagnostics/pages/ResultsReviewPage';
 import ComponentDemo from './modules/diagnostics/pages/ComponentDemo';
 
@@ -451,6 +452,16 @@ function App(): JSX.Element {
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
                                   <ResultsReviewPage />
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/pharmacy/diagnostics/case/:caseId/results"
+                            element={
+                              <ProtectedRoute requiresActiveSubscription>
+                                <AppLayout>
+                                  <CaseResultsPage />
                                 </AppLayout>
                               </ProtectedRoute>
                             }
