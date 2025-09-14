@@ -93,21 +93,6 @@ export const usePatientStore = create<PatientStore>()(
 
       // CRUD operations
       fetchPatients: async (filters) => {
-        // Check if we have authentication token instead of environment
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
-        if (!token) {
-          console.warn(
-            'Skipping API call - no authentication token found'
-          );
-          // Set empty state instead of returning early
-          set({
-            patients: [],
-            loading: { ...get().loading, fetchPatients: false },
-          });
-          return;
-        }
-
         const { setLoading, setError } = get();
         setLoading('fetchPatients', true);
         setError('fetchPatients', null);
