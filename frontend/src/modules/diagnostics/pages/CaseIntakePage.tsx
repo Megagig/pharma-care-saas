@@ -23,7 +23,13 @@ import {
   Checkbox,
   Chip,
   Autocomplete,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
@@ -93,19 +99,37 @@ const STEPS = [
 const CaseIntakePage: React.FC = () => {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
+  const [createPatientOpen, setCreatePatientOpen] = useState(false);
+  const [newPatientData, setNewPatientData] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    dateOfBirth: '',
+    email: '',
+  });
 
   // Use individual selectors to avoid object recreation
   const patients = usePatientStore((state) => state.patients);
   const loading = usePatientStore(
     (state) => state.loading.fetchPatients || false
   );
-
+  const createLoading = usePatientStore(
+    (state) => state.loading.createPatient || false
+  );
   const fetchPatients = usePatientStore((state) => state.fetchPatients);
+  const createPatient = usePatientStore((state) => state.createPatient);
 
-  // Fetch patients when component mounts
+  // Fetch patients only once when component mounts (no dependencies to avoid infinite loop)
   React.useEffect(() => {
-    fetchPatients();
-  }, [fetchPatients]);
+    const loadPatients = async () => {
+      try {
+        await fetchPatients();
+      } catch (error) {
+        console.error('Failed to fetch patients:', error);
+      }
+    };
+    loadPatients();
+  }, [fetchPatients]); // Empty dependency array - only run once on mount
 
   // Initialize react-hook-form with zod validation
   const methods = useForm<CaseIntakeFormData>({
@@ -162,6 +186,42 @@ const CaseIntakePage: React.FC = () => {
     navigate('/diagnostics');
   };
 
+  const handleCreatePatient = async () => {
+    if (
+      !newPatientData.firstName ||
+      !newPatientData.lastName ||
+      !newPatientData.phone ||
+      !newPatientData.dateOfBirth
+    ) {
+      return;
+    }
+
+    const createdPatient = await createPatient(newPatientData);
+    if (createdPatient) {
+      // Auto-select the newly created patient
+      methods.setValue('patientId', createdPatient._id);
+      setCreatePatientOpen(false);
+      setNewPatientData({
+        firstName: '',
+        lastName: '',
+        phone: '',
+        dateOfBirth: '',
+        email: '',
+      });
+    }
+  };
+
+  const handleCloseCreatePatient = () => {
+    setCreatePatientOpen(false);
+    setNewPatientData({
+      firstName: '',
+      lastName: '',
+      phone: '',
+      dateOfBirth: '',
+      email: '',
+    });
+  };
+
   // Helper function to determine which fields to validate for each step
   const getFieldsForStep = (step: number): (keyof CaseIntakeFormData)[] => {
     switch (step) {
@@ -192,14 +252,25 @@ const CaseIntakePage: React.FC = () => {
               }}
             >
               <Typography variant="h6">Patient Selection</Typography>
-              <Button
-                size="small"
-                onClick={() => fetchPatients()}
-                disabled={loading}
-                sx={{ textTransform: 'none' }}
-              >
-                {loading ? 'Loading...' : 'Refresh Patients'}
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  size="small"
+                  onClick={() => fetchPatients()}
+                  disabled={loading}
+                  sx={{ textTransform: 'none' }}
+                >
+                  {loading ? 'Loading...' : 'Refresh'}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={() => setCreatePatientOpen(true)}
+                  sx={{ textTransform: 'none' }}
+                >
+                  New Patient
+                </Button>
+              </Box>
             </Box>
             <Controller
               name="patientId"
@@ -229,21 +300,36 @@ const CaseIntakePage: React.FC = () => {
                     </Typography>
                   )}
                   {!loading && patients.length === 0 && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ mt: 1 }}
+                    <Box
+                      sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}
                     >
-                      You need to add patients before creating a diagnostic
-                      case.{' '}
-                      <Button
-                        size="small"
-                        onClick={() => navigate('/patients')}
-                        sx={{ textTransform: 'none', p: 0, minWidth: 'auto' }}
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 1 }}
                       >
-                        Go to Patients
-                      </Button>
-                    </Typography>
+                        No patients found. You can:
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          startIcon={<AddIcon />}
+                          onClick={() => setCreatePatientOpen(true)}
+                          sx={{ textTransform: 'none' }}
+                        >
+                          Create New Patient
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => navigate('/patients')}
+                          sx={{ textTransform: 'none' }}
+                        >
+                          Manage Patients
+                        </Button>
+                      </Box>
+                    </Box>
                   )}
                 </FormControl>
               )}
@@ -622,6 +708,110 @@ const CaseIntakePage: React.FC = () => {
           </form>
         </Container>
       </FormProvider>
+
+      {/* Create Patient Dialog */}
+      <Dialog
+        open={createPatientOpen}
+        onClose={handleCloseCreatePatient}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Create New Patient</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 1 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="First Name"
+                  value={newPatientData.firstName}
+                  onChange={(e) =>
+                    setNewPatientData((prev) => ({
+                      ...prev,
+                      firstName: e.target.value,
+                    }))
+                  }
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Last Name"
+                  value={newPatientData.lastName}
+                  onChange={(e) =>
+                    setNewPatientData((prev) => ({
+                      ...prev,
+                      lastName: e.target.value,
+                    }))
+                  }
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Phone"
+                  value={newPatientData.phone}
+                  onChange={(e) =>
+                    setNewPatientData((prev) => ({
+                      ...prev,
+                      phone: e.target.value,
+                    }))
+                  }
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Date of Birth"
+                  type="date"
+                  value={newPatientData.dateOfBirth}
+                  onChange={(e) =>
+                    setNewPatientData((prev) => ({
+                      ...prev,
+                      dateOfBirth: e.target.value,
+                    }))
+                  }
+                  InputLabelProps={{ shrink: true }}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Email (Optional)"
+                  type="email"
+                  value={newPatientData.email}
+                  onChange={(e) =>
+                    setNewPatientData((prev) => ({
+                      ...prev,
+                      email: e.target.value,
+                    }))
+                  }
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseCreatePatient}>Cancel</Button>
+          <Button
+            onClick={handleCreatePatient}
+            variant="contained"
+            disabled={
+              createLoading ||
+              !newPatientData.firstName ||
+              !newPatientData.lastName ||
+              !newPatientData.phone ||
+              !newPatientData.dateOfBirth
+            }
+          >
+            {createLoading ? 'Creating...' : 'Create Patient'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </ErrorBoundary>
   );
 };

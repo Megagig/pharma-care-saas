@@ -93,13 +93,18 @@ export const usePatientStore = create<PatientStore>()(
 
       // CRUD operations
       fetchPatients: async (filters) => {
-        // Prevent automatic API calls in development/testing
-        const isProduction = import.meta.env.PROD;
+        // Check if we have authentication token instead of environment
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
-        if (!isProduction) {
+        if (!token) {
           console.warn(
-            'Skipping API call - no token found in development mode'
+            'Skipping API call - no authentication token found'
           );
+          // Set empty state instead of returning early
+          set({
+            patients: [],
+            loading: { ...get().loading, fetchPatients: false },
+          });
           return;
         }
 
