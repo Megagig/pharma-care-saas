@@ -1,0 +1,226 @@
+/* Modern Dashboard Layout */
+.modern-dashboard {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  margin-bottom: 32px;
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.dashboard-header p {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 0;
+}
+
+/* Stats Cards Grid */
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+/* Charts Grid - 3 per row */
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.dashboard-charts > * {
+  min-height: 400px;
+}
+
+/* Quick Actions */
+.dashboard-actions h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 20px 0;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* Loading and Error States */
+.dashboard-loading,
+.dashboard-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  font-size: 1.2rem;
+}
+
+.loading-spinner {
+  color: #666;
+}
+
+.error-message {
+  color: #f44336;
+  background-color: #ffebee;
+  padding: 16px 24px;
+  border-radius: 8px;
+  border: 1px solid #ffcdd2;
+}
+
+/* Dashboard specific styles */
+.dashboard-chart-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+}
+
+.recharts-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+}
+
+.recharts-surface {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ensure responsive container takes full width */
+.recharts-responsive-container {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+/* Fix for pie chart centering */
+.recharts-pie-sector {
+  outline: none;
+}
+
+/* Improve tooltip styling */
+.recharts-default-tooltip {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #ccc !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Dashboard grid improvements */
+.dashboard-grid-item {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.dashboard-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.dashboard-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Force full width for chart containers */
+.MuiGrid-item {
+  width: 100%;
+  max-width: 100%;
+}
+
+.MuiCard-root {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.MuiCardContent-root {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+  .dashboard-charts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 1200px) {
+  .dashboard-stats {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+
+  .dashboard-charts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dashboard-chart-container {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .modern-dashboard {
+    padding: 16px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 2rem;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .dashboard-charts {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .actions-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .dashboard-chart-container {
+    min-height: 250px;
+  }
+
+  .recharts-responsive-container {
+    min-height: 250px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .modern-dashboard {
+    padding: 12px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+}
