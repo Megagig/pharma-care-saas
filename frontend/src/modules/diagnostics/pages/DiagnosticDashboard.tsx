@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  useMemo,
-} from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Box,
   Container,
@@ -50,7 +44,6 @@ import {
   useDiagnosticAnalytics,
 } from '../hooks/useDiagnostics';
 import { useDiagnosticStore } from '../store/diagnosticStore';
-import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
 import { usePatients } from '../../../stores';
 import { ErrorBoundary } from '../../../components/common/ErrorBoundary';
 
@@ -144,7 +137,7 @@ const RecentCaseCard: React.FC<RecentCaseCardProps> = ({
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   // TEMPORARILY DISABLED TO TEST INFINITE LOOP
-  const patients: any[] = [];
+  const patients: unknown[] = [];
 
   const patient = patients.find((p) => p._id === request.patientId);
   const statusColor = {
@@ -340,7 +333,7 @@ const DiagnosticDashboard: React.FC = () => {
   // Memoize refetch functions to prevent infinite loops
   const refetchHistory = useCallback(() => {
     refetchHistoryOriginal();
-  }, [refetchHistoryOriginal]);
+  }, []);
 
   // Real-time updates for pending requests
   const pendingRequests =
@@ -399,16 +392,16 @@ const DiagnosticDashboard: React.FC = () => {
     } finally {
       setRefreshing(false);
     }
-  }, [refetchHistory, refetchAnalytics]);
+  }, []);
 
   const handleNewCase = useCallback(() => {
-    navigate('/diagnostics/case-intake');
+    navigate('/pharmacy/diagnostics/case/new');
   }, [navigate]);
 
   const handleViewDetails = useCallback(
     (request: DiagnosticRequest) => {
       selectRequest(request);
-      navigate(`/diagnostics/case/${request._id}`);
+      navigate(`/pharmacy/diagnostics/case/${request._id}`);
     },
     [selectRequest, navigate]
   );
@@ -420,7 +413,7 @@ const DiagnosticDashboard: React.FC = () => {
           handleViewDetails(request);
           break;
         case 'review':
-          navigate(`/diagnostics/review/${request._id}`);
+          navigate(`/pharmacy/diagnostics/case/${request._id}`);
           break;
         case 'cancel':
           // Handle cancel logic
@@ -582,7 +575,7 @@ const DiagnosticDashboard: React.FC = () => {
         {/* Quick Stats */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {quickStats.map((stat, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
+            <Grid xs={12} sm={6} md={3} key={index}>
               {analyticsLoading ? (
                 <Skeleton variant="rectangular" height={120} />
               ) : (
@@ -595,7 +588,7 @@ const DiagnosticDashboard: React.FC = () => {
         {/* Main Content */}
         <Grid container spacing={3}>
           {/* Recent Cases */}
-          <Grid item xs={12} md={8}>
+          <Grid xs={12} md={8}>
             <Card>
               <CardContent>
                 <Box
@@ -611,7 +604,7 @@ const DiagnosticDashboard: React.FC = () => {
                   </Typography>
                   <Button
                     size="small"
-                    onClick={() => navigate('/diagnostics/cases')}
+                    onClick={() => navigate('/pharmacy/diagnostics')}
                   >
                     View All
                   </Button>
@@ -668,7 +661,7 @@ const DiagnosticDashboard: React.FC = () => {
           </Grid>
 
           {/* Quick Actions & Notifications */}
-          <Grid item xs={12} md={4}>
+          <Grid xs={12} md={4}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               {/* Quick Actions */}
               <Card>
@@ -690,7 +683,7 @@ const DiagnosticDashboard: React.FC = () => {
                     <Button
                       variant="outlined"
                       startIcon={<ScienceIcon />}
-                      onClick={() => navigate('/diagnostics/lab-orders')}
+                      onClick={() => navigate('/pharmacy/diagnostics/case/new')}
                       fullWidth
                     >
                       Lab Orders
@@ -698,7 +691,7 @@ const DiagnosticDashboard: React.FC = () => {
                     <Button
                       variant="outlined"
                       startIcon={<TimelineIcon />}
-                      onClick={() => navigate('/diagnostics/analytics')}
+                      onClick={() => navigate('/pharmacy/diagnostics')}
                       fullWidth
                     >
                       View Analytics
@@ -706,7 +699,7 @@ const DiagnosticDashboard: React.FC = () => {
                     <Button
                       variant="outlined"
                       startIcon={<LocalHospitalIcon />}
-                      onClick={() => navigate('/diagnostics/referrals')}
+                      onClick={() => navigate('/pharmacy/diagnostics')}
                       fullWidth
                     >
                       Referrals

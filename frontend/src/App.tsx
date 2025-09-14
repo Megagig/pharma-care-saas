@@ -178,7 +178,9 @@ function App(): JSX.Element {
                             path="/dashboard"
                             element={
                               <ProtectedRoute>
-                                <ModernDashboardPage />
+                                <AppLayout>
+                                  <ModernDashboardPage />
+                                </AppLayout>
                               </ProtectedRoute>
                             }
                           />

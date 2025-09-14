@@ -429,7 +429,7 @@ const ResultsReviewPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate('/diagnostics');
+    navigate('/pharmacy/diagnostics');
   };
 
   const handleCreateIntervention = () => {
@@ -575,8 +575,8 @@ const ResultsReviewPage: React.FC = () => {
                     reviewStatus === 'approved'
                       ? 'success'
                       : reviewStatus === 'modified'
-                        ? 'warning'
-                        : 'error'
+                      ? 'warning'
+                      : 'error'
                   }
                   sx={{ textTransform: 'capitalize' }}
                 />

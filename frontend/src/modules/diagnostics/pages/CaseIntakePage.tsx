@@ -344,35 +344,35 @@ const CaseIntakePage: React.FC = () => {
   }, [getValues, autoSaveEnabled]);
 
   // Auto-save on form changes
-  useEffect(() => {
-    const subscription = watch(() => {
-      if (activeStep > 0) {
-        // Don't auto-save on patient selection step
-        saveDraft();
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, saveDraft, activeStep]);
+  // useEffect(() => {
+  //   const subscription = watch(() => {
+  //     if (activeStep > 0) {
+  //       // Don't auto-save on patient selection step
+  //       saveDraft();
+  //     }
+  //   });
+  //   return () => subscription.unsubscribe();
+  // }, [watch, saveDraft, activeStep]);
 
   // Load draft on mount
-  useEffect(() => {
-    const savedDraft = localStorage.getItem('diagnostic-draft');
-    if (savedDraft) {
-      try {
-        const draftData = JSON.parse(savedDraft);
-        Object.keys(draftData).forEach((key) => {
-          setValue(key as keyof CaseIntakeFormData, draftData[key]);
-        });
-      } catch (error) {
-        console.error('Failed to load draft:', error);
-      }
-    }
-  }, [setValue]);
+  // useEffect(() => {
+  //   const savedDraft = localStorage.getItem('diagnostic-draft');
+  //   if (savedDraft) {
+  //     try {
+  //       const draftData = JSON.parse(savedDraft);
+  //       Object.keys(draftData).forEach((key) => {
+  //         setValue(key as keyof CaseIntakeFormData, draftData[key]);
+  //       });
+  //     } catch (error) {
+  //       console.error('Failed to load draft:', error);
+  //     }
+  //   }
+  // }, [setValue]);
 
   // Sync with store
-  useEffect(() => {
-    setStoreActiveStep(activeStep);
-  }, [activeStep, setStoreActiveStep]);
+  // useEffect(() => {
+  //   setStoreActiveStep(activeStep);
+  // }, [activeStep, setStoreActiveStep]);
 
   // Handlers
   const handleNext = () => {
@@ -450,9 +450,7 @@ const CaseIntakePage: React.FC = () => {
     }
   };
 
-  const selectedPatient = patients.find(
-    (p) => p._id === watchedValues.patientId
-  );
+  const selectedPatient = null;
 
   return (
     <ErrorBoundary>
