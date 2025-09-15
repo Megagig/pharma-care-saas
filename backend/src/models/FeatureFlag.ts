@@ -49,7 +49,7 @@ const featureFlagSchema = new Schema({
   },
   allowedTiers: [{
     type: String,
-    enum: ['free_trial', 'basic', 'pro', 'enterprise'],
+    enum: ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'],
     index: true
   }],
   allowedRoles: [{
