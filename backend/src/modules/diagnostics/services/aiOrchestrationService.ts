@@ -50,7 +50,7 @@ export class AIOrchestrationService {
     private readonly defaultOptions: Required<AIProcessingOptions> = {
         temperature: 0.1,
         maxTokens: 4000,
-        timeout: 60000, // 60 seconds
+        timeout: 180000, // 3 minutes
         retryAttempts: 3,
         promptVersion: 'v1.0',
     };
@@ -548,7 +548,7 @@ export class AIOrchestrationService {
             }, {
                 action: 'ai_diagnostic_request',
                 resourceType: 'AIAnalysis',
-                
+
                 details: {
                     patientId: consent.patientId,
                     symptomsCount: input.symptoms.subjective.length,

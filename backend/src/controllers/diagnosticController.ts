@@ -18,9 +18,24 @@ export const generateDiagnosticAnalysis = async (
   res: Response
 ): Promise<void> => {
   try {
+    // Log incoming request data for debugging
+    logger.info('Diagnostic analysis request received:', {
+      body: req.body,
+      userId: req.user?._id,
+      contentType: req.headers['content-type']
+    });
+
+    const userId = req.user!._id;
+    const workplaceId = req.user!.workplaceId;
+
     // Validate request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      logger.error('Diagnostic validation failed:', {
+        errors: errors.array(),
+        body: req.body,
+        userId
+      });
       res.status(400).json({
         success: false,
         message: 'Validation failed',
@@ -37,8 +52,6 @@ export const generateDiagnosticAnalysis = async (
       vitalSigns,
       patientConsent,
     } = req.body;
-    const userId = req.user!._id;
-    const workplaceId = req.user!.workplaceId;
 
     // Verify workplaceId exists
     if (!workplaceId) {
