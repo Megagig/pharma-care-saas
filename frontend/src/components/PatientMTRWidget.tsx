@@ -83,6 +83,8 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
         patientId,
         reviewType: 'initial',
         priority: 'routine',
+        patientConsent: true,
+        confidentialityAgreed: true,
       });
 
       const newMTRId = result.review._id;

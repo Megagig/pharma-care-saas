@@ -219,7 +219,7 @@ const PatientLabOrderWidget: React.FC<PatientLabOrderWidgetProps> = ({
   };
 
   const handleDownloadPdf = (orderId: string) => {
-    const pdfUrl = `/api/manual-lab-orders/${orderId}/pdf`;
+    const pdfUrl = `/api/manual-lab/${orderId}/pdf`;
     window.open(pdfUrl, '_blank');
   };
 

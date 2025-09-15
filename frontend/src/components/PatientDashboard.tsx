@@ -249,13 +249,25 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
             </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <IconButton>
+            <IconButton onClick={() => navigate(`/patients/${patientId}/edit`)}>
               <EditIcon />
             </IconButton>
-            <IconButton>
+            <IconButton onClick={() => window.print()}>
               <PrintIcon />
             </IconButton>
-            <IconButton>
+            <IconButton
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: `Patient Profile - ${patientData.firstName} ${patientData.lastName}`,
+                    text: `Patient profile for ${patientData.firstName} ${patientData.lastName} (MRN: ${patientData.mrn})`,
+                    url: window.location.href,
+                  });
+                } else {
+                  navigator.clipboard.writeText(window.location.href);
+                }
+              }}
+            >
               <ShareIcon />
             </IconButton>
           </Box>

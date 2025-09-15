@@ -71,7 +71,7 @@ const PatientTimelineWidget: React.FC<PatientTimelineWidgetProps> = ({
     isLoading: labOrdersLoading,
     isError: labOrdersError,
     refetch: refetchLabOrders,
-  } = usePatientLabOrders(patientId);
+  } = usePatientLabOrders(patientId, { enabled: !!patientId });
 
   // TODO: Add hooks for clinical notes and MTRs when available
   // const { data: clinicalNotes = [] } = usePatientClinicalNotes(patientId);
