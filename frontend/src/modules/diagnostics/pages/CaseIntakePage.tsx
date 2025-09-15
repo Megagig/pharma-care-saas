@@ -333,25 +333,64 @@ const CaseIntakePage: React.FC = () => {
       let errorMessage = 'Failed to submit case. Please try again.';
 
       if (
-        error?.response?.data?.errors &&
+        error &&
+        typeof error === 'object' &&
+        'response' in error &&
+        error.response &&
+        typeof error.response === 'object' &&
+        'data' in error.response &&
+        error.response.data &&
+        typeof error.response.data === 'object' &&
+        'errors' in error.response.data &&
         Array.isArray(error.response.data.errors)
       ) {
         // Show specific validation errors
         const validationErrors = error.response.data.errors
-          .map(
-            (err: unknown) =>
-              `${err.path || err.param}: ${err.msg || err.message}`
-          )
+          .map((err: unknown) => {
+            if (err && typeof err === 'object') {
+              const errObj = err as {
+                path?: string;
+                param?: string;
+                msg?: string;
+                message?: string;
+              };
+              return `${errObj.path || errObj.param}: ${
+                errObj.msg || errObj.message
+              }`;
+            }
+            return String(err);
+          })
           .join(', ');
         errorMessage = `Validation failed: ${validationErrors}`;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
+      } else if (
+        error &&
+        typeof error === 'object' &&
+        'response' in error &&
+        error.response &&
+        typeof error.response === 'object' &&
+        'data' in error.response &&
+        error.response.data &&
+        typeof error.response.data === 'object' &&
+        'message' in error.response.data
+      ) {
+        const responseData = error.response.data as { message: string };
+        errorMessage = responseData.message;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        const errorObj = error as { message: string };
+        errorMessage = errorObj.message;
       }
 
       // Debug: Log the full error
-      console.error('Full error details:', error?.response?.data);
+      if (
+        error &&
+        typeof error === 'object' &&
+        'response' in error &&
+        error.response &&
+        typeof error.response === 'object' &&
+        'data' in error.response
+      ) {
+        console.error('Full error details:', error.response.data);
+      }
 
       // Show error toast
       toast.error(errorMessage);

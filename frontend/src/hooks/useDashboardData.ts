@@ -136,7 +136,7 @@ export const useDashboardData = (): DashboardData => {
     }, []);
 
     // Helper functions to process real data into chart format
-    const processPatientsByMonth = (patients: any): ChartData[] => {
+    const processPatientsByMonth = (patients: unknown): ChartData[] => {
         console.log('Processing patients by month:', patients);
 
         // Ensure patients is an array
@@ -153,9 +153,10 @@ export const useDashboardData = (): DashboardData => {
         }
 
         // Count patients by registration month
-        patientsArray.forEach(patient => {
-            if (patient && patient.createdAt) {
-                const date = new Date(patient.createdAt);
+        patientsArray.forEach((patient: unknown) => {
+            if (patient && typeof patient === 'object' && 'createdAt' in patient) {
+                const patientObj = patient as { createdAt: string };
+                const date = new Date(patientObj.createdAt);
                 const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
                 if (monthCounts.hasOwnProperty(monthKey)) {
                     monthCounts[monthKey]++;
@@ -167,7 +168,7 @@ export const useDashboardData = (): DashboardData => {
         return Object.entries(monthCounts).map(([name, value]) => ({ name, value }));
     };
 
-    const processMedicationsByStatus = (medications: any): ChartData[] => {
+    const processMedicationsByStatus = (medications: unknown): ChartData[] => {
         console.log('Processing medications by status:', medications);
 
         // Ensure medications is an array
@@ -180,9 +181,10 @@ export const useDashboardData = (): DashboardData => {
             'Paused': 0
         };
 
-        medicationsArray.forEach(medication => {
-            if (medication) {
-                const status = medication.status || 'Active';
+        medicationsArray.forEach((medication: unknown) => {
+            if (medication && typeof medication === 'object' && 'status' in medication) {
+                const medicationObj = medication as { status?: string };
+                const status = medicationObj.status || 'Active';
                 const capitalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
                 if (statusCounts.hasOwnProperty(capitalizedStatus)) {
                     statusCounts[capitalizedStatus]++;
@@ -198,7 +200,7 @@ export const useDashboardData = (): DashboardData => {
         ].filter(item => item.value > 0);
     };
 
-    const processClinicalNotesByType = (notes: any): ChartData[] => {
+    const processClinicalNotesByType = (notes: unknown): ChartData[] => {
         console.log('Processing clinical notes by type:', notes);
 
         // Ensure notes is an array
@@ -206,9 +208,10 @@ export const useDashboardData = (): DashboardData => {
 
         const typeCounts: { [key: string]: number } = {};
 
-        notesArray.forEach(note => {
-            if (note) {
-                const type = note.type || note.noteType || 'General';
+        notesArray.forEach((note: unknown) => {
+            if (note && typeof note === 'object') {
+                const noteObj = note as { type?: string; noteType?: string };
+                const type = noteObj.type || noteObj.noteType || 'General';
                 typeCounts[type] = (typeCounts[type] || 0) + 1;
             }
         });
@@ -224,7 +227,7 @@ export const useDashboardData = (): DashboardData => {
             .slice(0, 7); // Top 7 types
     };
 
-    const processMTRsByStatus = (mtrs: any): ChartData[] => {
+    const processMTRsByStatus = (mtrs: unknown): ChartData[] => {
         console.log('Processing MTRs by status:', mtrs);
 
         // Ensure mtrs is an array
@@ -237,9 +240,10 @@ export const useDashboardData = (): DashboardData => {
             'Scheduled': 0
         };
 
-        mtrsArray.forEach(mtr => {
-            if (mtr) {
-                const status = mtr.status || 'Scheduled';
+        mtrsArray.forEach((mtr: unknown) => {
+            if (mtr && typeof mtr === 'object' && 'status' in mtr) {
+                const mtrObj = mtr as { status?: string };
+                const status = mtrObj.status || 'Scheduled';
                 const formattedStatus = status.replace(/([A-Z])/g, ' $1').trim();
                 const capitalizedStatus = formattedStatus.charAt(0).toUpperCase() + formattedStatus.slice(1).toLowerCase();
 
@@ -259,7 +263,7 @@ export const useDashboardData = (): DashboardData => {
         ].filter(item => item.value > 0);
     };
 
-    const processPatientAgeDistribution = (patients: any): ChartData[] => {
+    const processPatientAgeDistribution = (patients: unknown): ChartData[] => {
         console.log('Processing patient age distribution:', patients);
 
         // Ensure patients is an array
@@ -273,9 +277,10 @@ export const useDashboardData = (): DashboardData => {
             '75+': 0
         };
 
-        patientsArray.forEach(patient => {
-            if (patient && patient.dateOfBirth) {
-                const age = new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear();
+        patientsArray.forEach((patient: unknown) => {
+            if (patient && typeof patient === 'object' && 'dateOfBirth' in patient) {
+                const patientObj = patient as { dateOfBirth: string };
+                const age = new Date().getFullYear() - new Date(patientObj.dateOfBirth).getFullYear();
                 if (age >= 18 && age <= 30) ageCounts['18-30']++;
                 else if (age >= 31 && age <= 45) ageCounts['31-45']++;
                 else if (age >= 46 && age <= 60) ageCounts['46-60']++;
@@ -287,7 +292,7 @@ export const useDashboardData = (): DashboardData => {
         return Object.entries(ageCounts).map(([name, value]) => ({ name, value }));
     };
 
-    const processMonthlyActivity = (notes: any, medications: unknown): ChartData[] => {
+    const processMonthlyActivity = (notes: unknown, medications: unknown): ChartData[] => {
         console.log('Processing monthly activity:', { notes, medications });
 
         // Ensure both are arrays
@@ -305,9 +310,10 @@ export const useDashboardData = (): DashboardData => {
         }
 
         // Count notes by month
-        notesArray.forEach(note => {
-            if (note && note.createdAt) {
-                const date = new Date(note.createdAt);
+        notesArray.forEach((note: unknown) => {
+            if (note && typeof note === 'object' && 'createdAt' in note) {
+                const noteObj = note as { createdAt: string };
+                const date = new Date(noteObj.createdAt);
                 const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
                 if (monthCounts.hasOwnProperty(monthKey)) {
                     monthCounts[monthKey]++;
@@ -316,11 +322,12 @@ export const useDashboardData = (): DashboardData => {
         });
 
         // Count medications by month
-        medicationsArray.forEach(medication => {
-            if (medication && medication.createdAt) {
-                const date = new Date(medication.createdAt);
+        medicationsArray.forEach((medication: unknown) => {
+            if (medication && typeof medication === 'object' && 'createdAt' in medication) {
+                const medicationObj = medication as { createdAt: string };
+                const date = new Date(medicationObj.createdAt);
                 const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
-                if (monthCounts.hasOwnProperty(monthKey)) {
+                if (Object.prototype.hasOwnProperty.call(monthCounts, monthKey)) {
                     monthCounts[monthKey]++;
                 }
             }

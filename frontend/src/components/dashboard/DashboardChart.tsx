@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, Typography, Box } from '@mui/material';
+import { Card, CardContent, Typography, Box, useTheme } from '@mui/material';
 import {
   BarChart,
   Bar,
@@ -38,6 +38,15 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
   height = 350,
   colors = DEFAULT_COLORS,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
+  // Theme-aware colors
+  const textColor = isDark ? '#f1f5f9' : '#374151';
+  const gridColor = isDark ? '#334155' : '#e5e7eb';
+  const tooltipBg = isDark ? '#1e293b' : '#ffffff';
+  const tooltipBorder = isDark ? '#334155' : '#d1d5db';
+
   // Debug logging
   console.log(`Rendering ${type} chart "${title}" with data:`, data);
   console.log(`Data length: ${data?.length}, Type: ${type}`);
@@ -51,21 +60,28 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
               data={data}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fill: textColor }}
                 interval={0}
                 angle={-45}
                 textAnchor="end"
                 height={60}
+                axisLine={{ stroke: gridColor }}
+                tickLine={{ stroke: gridColor }}
               />
-              <YAxis tick={{ fontSize: 12 }} />
+              <YAxis
+                tick={{ fontSize: 12, fill: textColor }}
+                axisLine={{ stroke: gridColor }}
+                tickLine={{ stroke: gridColor }}
+              />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #ccc',
+                  backgroundColor: tooltipBg,
+                  border: `1px solid ${tooltipBorder}`,
                   borderRadius: '4px',
+                  color: textColor,
                 }}
               />
               <Bar dataKey="value" fill={colors[0]} radius={[4, 4, 0, 0]} />
@@ -99,9 +115,10 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
               </Pie>
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #ccc',
+                  backgroundColor: tooltipBg,
+                  border: `1px solid ${tooltipBorder}`,
                   borderRadius: '4px',
+                  color: textColor,
                 }}
               />
             </PieChart>
@@ -115,14 +132,24 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
               data={data}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 12, fill: textColor }}
+                axisLine={{ stroke: gridColor }}
+                tickLine={{ stroke: gridColor }}
+              />
+              <YAxis
+                tick={{ fontSize: 12, fill: textColor }}
+                axisLine={{ stroke: gridColor }}
+                tickLine={{ stroke: gridColor }}
+              />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #ccc',
+                  backgroundColor: tooltipBg,
+                  border: `1px solid ${tooltipBorder}`,
                   borderRadius: '4px',
+                  color: textColor,
                 }}
               />
               <Line

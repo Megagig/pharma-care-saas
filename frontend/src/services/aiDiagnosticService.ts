@@ -82,38 +82,80 @@ class AIdiagnosticService {
     /**
      * Transform backend analysis structure to frontend format
      */
-    private transformAnalysisStructure(backendAnalysis: any) {
+    private transformAnalysisStructure(backendAnalysis: unknown) {
+        if (!backendAnalysis || typeof backendAnalysis !== 'object') {
+            return {
+                primaryDiagnosis: {
+                    condition: 'Unknown',
+                    confidence: 0,
+                    reasoning: 'No reasoning provided'
+                },
+                differentialDiagnoses: [],
+                recommendedTests: [],
+                treatmentSuggestions: [],
+                riskFactors: [],
+                followUpRecommendations: []
+            };
+        }
+
+        const analysis = backendAnalysis as {
+            differentialDiagnoses?: Array<{
+                condition?: string;
+                probability?: number;
+                reasoning?: string;
+            }>;
+            recommendedTests?: Array<{
+                testName?: string;
+                priority?: string;
+                reasoning?: string;
+            }>;
+            therapeuticOptions?: Array<{
+                medication?: string;
+                reasoning?: string;
+            }>;
+            redFlags?: Array<{
+                flag?: string;
+                severity?: string;
+                action?: string;
+            }>;
+            referralRecommendation?: {
+                specialty?: string;
+                urgency?: string;
+                reason?: string;
+            };
+        };
+
         return {
             primaryDiagnosis: {
-                condition: backendAnalysis.differentialDiagnoses?.[0]?.condition || 'Unknown',
-                confidence: (backendAnalysis.differentialDiagnoses?.[0]?.probability || 0) / 100,
-                reasoning: backendAnalysis.differentialDiagnoses?.[0]?.reasoning || 'No reasoning provided'
+                condition: analysis.differentialDiagnoses?.[0]?.condition || 'Unknown',
+                confidence: (analysis.differentialDiagnoses?.[0]?.probability || 0) / 100,
+                reasoning: analysis.differentialDiagnoses?.[0]?.reasoning || 'No reasoning provided'
             },
-            differentialDiagnoses: (backendAnalysis.differentialDiagnoses || []).slice(1).map((dx: unknown) => ({
-                condition: dx.condition,
-                confidence: dx.probability / 100,
-                reasoning: dx.reasoning
+            differentialDiagnoses: (analysis.differentialDiagnoses || []).slice(1).map((dx) => ({
+                condition: dx.condition || 'Unknown',
+                confidence: (dx.probability || 0) / 100,
+                reasoning: dx.reasoning || 'No reasoning provided'
             })),
-            recommendedTests: (backendAnalysis.recommendedTests || []).map((test: unknown) => ({
-                test: test.testName,
-                priority: test.priority === 'urgent' ? 'high' : test.priority === 'routine' ? 'medium' : 'low',
-                reasoning: test.reasoning
+            recommendedTests: (analysis.recommendedTests || []).map((test) => ({
+                test: test.testName || 'Unknown test',
+                priority: (test.priority === 'urgent' ? 'high' : test.priority === 'routine' ? 'medium' : 'low') as 'high' | 'medium' | 'low',
+                reasoning: test.reasoning || 'No reasoning provided'
             })),
-            treatmentSuggestions: (backendAnalysis.therapeuticOptions || []).map((option: unknown) => ({
-                treatment: option.medication,
+            treatmentSuggestions: (analysis.therapeuticOptions || []).map((option) => ({
+                treatment: option.medication || 'Unknown treatment',
                 type: 'medication' as const,
                 priority: 'medium' as const,
-                reasoning: option.reasoning
+                reasoning: option.reasoning || 'No reasoning provided'
             })),
-            riskFactors: (backendAnalysis.redFlags || []).map((flag: unknown) => ({
-                factor: flag.flag,
-                severity: flag.severity === 'critical' ? 'high' : flag.severity,
-                description: flag.action
+            riskFactors: (analysis.redFlags || []).map((flag) => ({
+                factor: flag.flag || 'Unknown risk factor',
+                severity: (flag.severity === 'critical' ? 'high' : flag.severity || 'medium') as 'high' | 'medium' | 'low',
+                description: flag.action || 'No description provided'
             })),
-            followUpRecommendations: backendAnalysis.referralRecommendation ? [{
-                action: `Referral to ${backendAnalysis.referralRecommendation.specialty}`,
-                timeframe: backendAnalysis.referralRecommendation.urgency,
-                reasoning: backendAnalysis.referralRecommendation.reason
+            followUpRecommendations: analysis.referralRecommendation ? [{
+                action: `Referral to ${analysis.referralRecommendation.specialty || 'specialist'}`,
+                timeframe: analysis.referralRecommendation.urgency || 'As needed',
+                reasoning: analysis.referralRecommendation.reason || 'No reasoning provided'
             }] : []
         };
     }
@@ -165,17 +207,31 @@ class AIdiagnosticService {
             console.error('Failed to submit diagnostic case:', error);
 
             // Provide more specific error messages
-            if (error?.response?.status === 401) {
-                const message = error?.response?.data?.message || 'Authentication failed';
-                throw new Error(`Authentication Error: ${message}`);
-            } else if (error?.response?.status === 403) {
-                const message = error?.response?.data?.message || 'Access denied';
-                throw new Error(`Permission Error: ${message}`);
-            } else if (error?.response?.status === 402) {
-                const message = error?.response?.data?.message || 'Subscription required';
-                throw new Error(`Subscription Error: ${message}`);
-            } else if (error?.response?.data?.message) {
-                throw new Error(error.response.data.message);
+            if (
+                error &&
+                typeof error === 'object' &&
+                'response' in error &&
+                error.response &&
+                typeof error.response === 'object' &&
+                'status' in error.response
+            ) {
+                const response = error.response as {
+                    status: number;
+                    data?: { message?: string };
+                };
+
+                if (response.status === 401) {
+                    const message = response.data?.message || 'Authentication failed';
+                    throw new Error(`Authentication Error: ${message}`);
+                } else if (response.status === 403) {
+                    const message = response.data?.message || 'Access denied';
+                    throw new Error(`Permission Error: ${message}`);
+                } else if (response.status === 402) {
+                    const message = response.data?.message || 'Subscription required';
+                    throw new Error(`Subscription Error: ${message}`);
+                } else if (response.data?.message) {
+                    throw new Error(response.data.message);
+                }
             }
 
             throw error;
@@ -245,17 +301,31 @@ class AIdiagnosticService {
             console.error('Failed to get diagnostic case:', error);
 
             // Provide more specific error messages
-            if (error?.response?.status === 401) {
-                const message = error?.response?.data?.message || 'Authentication failed';
-                throw new Error(`Authentication Error: ${message}`);
-            } else if (error?.response?.status === 403) {
-                const message = error?.response?.data?.message || 'Access denied';
-                throw new Error(`Permission Error: ${message}`);
-            } else if (error?.response?.status === 422) {
-                const message = error?.response?.data?.message || 'Invalid request data';
-                throw new Error(`Validation Error: ${message}`);
-            } else if (error?.response?.data?.message) {
-                throw new Error(error.response.data.message);
+            if (
+                error &&
+                typeof error === 'object' &&
+                'response' in error &&
+                error.response &&
+                typeof error.response === 'object' &&
+                'status' in error.response
+            ) {
+                const response = error.response as {
+                    status: number;
+                    data?: { message?: string };
+                };
+
+                if (response.status === 401) {
+                    const message = response.data?.message || 'Authentication failed';
+                    throw new Error(`Authentication Error: ${message}`);
+                } else if (response.status === 403) {
+                    const message = response.data?.message || 'Access denied';
+                    throw new Error(`Permission Error: ${message}`);
+                } else if (response.status === 422) {
+                    const message = response.data?.message || 'Invalid request data';
+                    throw new Error(`Validation Error: ${message}`);
+                } else if (response.data?.message) {
+                    throw new Error(response.data.message);
+                }
             }
 
             throw error;
@@ -271,7 +341,20 @@ class AIdiagnosticService {
             const diagnosticCases = response.data.data.cases;
 
             // Transform backend cases to frontend format
-            return diagnosticCases.map((diagnosticCase: unknown) => ({
+            return diagnosticCases.map((diagnosticCase: {
+                _id: string;
+                patientId: string | { _id?: string; id?: string };
+                symptoms: unknown;
+                vitalSigns?: unknown;
+                currentMedications?: unknown[];
+                labResults?: string[];
+                aiAnalysis?: unknown;
+                aiRequestData?: { processingTime?: number };
+                status: string;
+                createdAt: string;
+                updatedAt: string;
+                caseId: string;
+            }) => ({
                 id: diagnosticCase._id,
                 patientId: typeof diagnosticCase.patientId === 'object'
                     ? diagnosticCase.patientId._id || diagnosticCase.patientId.id
