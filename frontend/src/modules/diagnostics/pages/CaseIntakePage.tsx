@@ -49,9 +49,9 @@ const caseIntakeSchema = z.object({
   symptoms: z.object({
     subjective: z.string().min(1, 'Subjective symptoms are required'),
     objective: z.string().optional(),
-    duration: z.string().min(1, 'Duration is required'),
-    severity: z.enum(['mild', 'moderate', 'severe']),
-    onset: z.enum(['acute', 'chronic', 'subacute']),
+    duration: z.string().optional(),
+    severity: z.enum(['mild', 'moderate', 'severe']).optional(),
+    onset: z.enum(['acute', 'chronic', 'subacute']).optional(),
   }),
   vitals: z
     .object({
@@ -243,30 +243,76 @@ const CaseIntakePage: React.FC = () => {
 
       // Show loading message with time expectation
       toast.loading(
-        'Submitting case for AI analysis... This may take up to 60 seconds.',
+        'Submitting case for AI analysis... This may take up to 3 minutes.',
         {
           id: 'ai-analysis-loading',
         }
       );
 
+      // Debug: Log the form data
+      console.log('Form data received:', data);
+
       // Transform form data to match API expectations
       const caseData = {
         patientId: data.patientId,
         symptoms: {
-          subjective: data.symptoms.subjective
-            ? [data.symptoms.subjective]
-            : [],
-          objective: data.symptoms.objective ? [data.symptoms.objective] : [],
-          duration: data.symptoms.duration,
-          severity: data.symptoms.severity,
-          onset: data.symptoms.onset,
+          subjective:
+            data.symptoms?.subjective && data.symptoms.subjective.trim()
+              ? data.symptoms.subjective
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter((s) => s.length > 0)
+              : [],
+          objective:
+            data.symptoms?.objective && data.symptoms.objective.trim()
+              ? data.symptoms.objective
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter((s) => s.length > 0)
+              : [],
+          duration: data.symptoms?.duration || undefined,
+          severity: data.symptoms?.severity || undefined,
+          onset: data.symptoms?.onset || undefined,
         },
-        vitals: data.vitals,
+        vitalSigns: {
+          bloodPressure: data.vitals?.bloodPressure || undefined,
+          heartRate: data.vitals?.heartRate
+            ? Number(data.vitals.heartRate)
+            : undefined,
+          temperature: data.vitals?.temperature
+            ? Number(data.vitals.temperature)
+            : undefined,
+          respiratoryRate: data.vitals?.respiratoryRate
+            ? Number(data.vitals.respiratoryRate)
+            : undefined,
+          bloodGlucose: data.vitals?.bloodGlucose
+            ? Number(data.vitals.bloodGlucose)
+            : undefined,
+        },
         currentMedications: data.currentMedications || [],
-        allergies: data.allergies ? [data.allergies] : [],
-        medicalHistory: data.medicalHistory ? [data.medicalHistory] : [],
         labResults: data.labResults || [],
+        patientConsent: {
+          provided: true,
+          method: 'electronic',
+        },
       };
+
+      // Debug: Log the transformed data
+      console.log('Transformed case data:', caseData);
+
+      // Validate required fields before submission
+      if (!caseData.patientId) {
+        toast.error('Patient selection is required');
+        return;
+      }
+
+      if (
+        !caseData.symptoms.subjective ||
+        caseData.symptoms.subjective.length === 0
+      ) {
+        toast.error('At least one subjective symptom is required');
+        return;
+      }
 
       // Submit case for AI analysis
       const diagnosticCase = await aiDiagnosticService.submitCase(caseData);
@@ -285,11 +331,27 @@ const CaseIntakePage: React.FC = () => {
 
       // Extract error message
       let errorMessage = 'Failed to submit case. Please try again.';
-      if (error?.response?.data?.message) {
+
+      if (
+        error?.response?.data?.errors &&
+        Array.isArray(error.response.data.errors)
+      ) {
+        // Show specific validation errors
+        const validationErrors = error.response.data.errors
+          .map(
+            (err: unknown) =>
+              `${err.path || err.param}: ${err.msg || err.message}`
+          )
+          .join(', ');
+        errorMessage = `Validation failed: ${validationErrors}`;
+      } else if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error?.message) {
         errorMessage = error.message;
       }
+
+      // Debug: Log the full error
+      console.error('Full error details:', error?.response?.data);
 
       // Show error toast
       toast.error(errorMessage);

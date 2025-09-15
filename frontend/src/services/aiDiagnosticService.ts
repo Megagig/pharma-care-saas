@@ -80,6 +80,44 @@ export interface DiagnosticCase {
 
 class AIdiagnosticService {
     /**
+     * Transform backend analysis structure to frontend format
+     */
+    private transformAnalysisStructure(backendAnalysis: any) {
+        return {
+            primaryDiagnosis: {
+                condition: backendAnalysis.differentialDiagnoses?.[0]?.condition || 'Unknown',
+                confidence: (backendAnalysis.differentialDiagnoses?.[0]?.probability || 0) / 100,
+                reasoning: backendAnalysis.differentialDiagnoses?.[0]?.reasoning || 'No reasoning provided'
+            },
+            differentialDiagnoses: (backendAnalysis.differentialDiagnoses || []).slice(1).map((dx: any) => ({
+                condition: dx.condition,
+                confidence: dx.probability / 100,
+                reasoning: dx.reasoning
+            })),
+            recommendedTests: (backendAnalysis.recommendedTests || []).map((test: unknown) => ({
+                test: test.testName,
+                priority: test.priority === 'urgent' ? 'high' : test.priority === 'routine' ? 'medium' : 'low',
+                reasoning: test.reasoning
+            })),
+            treatmentSuggestions: (backendAnalysis.therapeuticOptions || []).map((option: unknown) => ({
+                treatment: option.medication,
+                type: 'medication' as const,
+                priority: 'medium' as const,
+                reasoning: option.reasoning
+            })),
+            riskFactors: (backendAnalysis.redFlags || []).map((flag: unknown) => ({
+                factor: flag.flag,
+                severity: flag.severity === 'critical' ? 'high' : flag.severity,
+                description: flag.action
+            })),
+            followUpRecommendations: backendAnalysis.referralRecommendation ? [{
+                action: `Referral to ${backendAnalysis.referralRecommendation.specialty}`,
+                timeframe: backendAnalysis.referralRecommendation.urgency,
+                reasoning: backendAnalysis.referralRecommendation.reason
+            }] : []
+        };
+    }
+    /**
      * Submit a diagnostic case for AI analysis
      */
     async submitCase(caseData: DiagnosticCaseData): Promise<DiagnosticCase> {
@@ -90,20 +128,22 @@ class AIdiagnosticService {
                 symptoms: caseData.symptoms,
                 labResults: caseData.labResults || [],
                 currentMedications: caseData.currentMedications || [],
-                vitalSigns: caseData.vitals || {},
-                patientConsent: {
+                vitalSigns: caseData.vitalSigns || {},
+                patientConsent: caseData.patientConsent || {
                     provided: true,
                     method: 'electronic'
                 }
             };
 
-            // Use extended timeout for AI analysis (60 seconds)
+            // Use extended timeout for AI analysis (3 minutes)
             const response = await apiClient.post('/api/diagnostics/ai', apiPayload, {
-                timeout: 60000 // 60 seconds timeout for AI processing
+                timeout: 180000 // 3 minutes timeout for AI processing
             });
 
             // Transform response to match frontend expectations
             const responseData = response.data.data;
+            const transformedAnalysis = this.transformAnalysisStructure(responseData.analysis);
+
             return {
                 id: responseData.caseId,
                 patientId: caseData.patientId,
@@ -111,8 +151,8 @@ class AIdiagnosticService {
                 aiAnalysis: {
                     id: responseData.caseId,
                     caseId: responseData.caseId,
-                    analysis: responseData.analysis,
-                    confidence: responseData.analysis.confidenceScore || 0,
+                    analysis: transformedAnalysis,
+                    confidence: responseData.analysis?.confidenceScore || 0,
                     processingTime: responseData.processingTime,
                     createdAt: new Date().toISOString(),
                     status: 'completed' as const
@@ -121,7 +161,7 @@ class AIdiagnosticService {
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to submit diagnostic case:', error);
 
             // Provide more specific error messages
@@ -182,7 +222,7 @@ class AIdiagnosticService {
                 aiAnalysis: diagnosticCase.aiAnalysis ? {
                     id: diagnosticCase._id,
                     caseId: diagnosticCase.caseId,
-                    analysis: diagnosticCase.aiAnalysis,
+                    analysis: this.transformAnalysisStructure(diagnosticCase.aiAnalysis),
                     confidence: diagnosticCase.aiAnalysis.confidenceScore || 0,
                     processingTime: diagnosticCase.aiRequestData?.processingTime || 0,
                     createdAt: diagnosticCase.createdAt,
@@ -240,7 +280,7 @@ class AIdiagnosticService {
                 aiAnalysis: diagnosticCase.aiAnalysis ? {
                     id: diagnosticCase._id,
                     caseId: diagnosticCase.caseId,
-                    analysis: diagnosticCase.aiAnalysis,
+                    analysis: this.transformAnalysisStructure(diagnosticCase.aiAnalysis),
                     confidence: diagnosticCase.aiAnalysis.confidenceScore || 0,
                     processingTime: diagnosticCase.aiRequestData?.processingTime || 0,
                     createdAt: diagnosticCase.createdAt,

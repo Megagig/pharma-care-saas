@@ -120,7 +120,7 @@ class OpenRouterService {
       process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
     this.apiKey = process.env.OPENROUTER_API_KEY || '';
     this.defaultModel = 'deepseek/deepseek-chat-v3.1:free'; // Use reasoning mode for complex diagnostics
-    this.timeout = 60000; // 60 seconds timeout
+    this.timeout = 180000; // 3 minutes timeout
     this.retryConfig = {
       maxRetries: 3,
       baseDelay: 1000, // 1 second
