@@ -213,12 +213,34 @@ const PatientDetails = () => {
             </Tooltip>
           </RBACGuard>
           <Tooltip title="Print Profile">
-            <IconButton color="primary">
+            <IconButton
+              color="primary"
+              onClick={() => {
+                window.print();
+              }}
+            >
               <PrintIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Share">
-            <IconButton color="primary">
+            <IconButton
+              color="primary"
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: `Patient Profile - ${getDisplayName(patient)}`,
+                    text: `Patient profile for ${getDisplayName(
+                      patient
+                    )} (MRN: ${patient.mrn})`,
+                    url: window.location.href,
+                  });
+                } else {
+                  // Fallback: copy URL to clipboard
+                  navigator.clipboard.writeText(window.location.href);
+                  // You could add a toast notification here
+                }
+              }}
+            >
               <ShareIcon />
             </IconButton>
           </Tooltip>

@@ -17,8 +17,8 @@ export const usePatientLabOrders = (patientId: string, options?: {
     return useQuery({
         queryKey: ['manualLabOrders', 'patient', patientId],
         queryFn: async (): Promise<ManualLabOrder[]> => {
-            const response = await apiHelpers.get(`/manual-lab-orders/patient/${patientId}`);
-            return response.data.orders || [];
+            const response = await apiHelpers.get(`/manual-lab/patient/${patientId}`);
+            return response.data?.orders || response.orders || [];
         },
         enabled: options?.enabled !== false && !!patientId,
         refetchInterval: options?.refetchInterval,
@@ -35,7 +35,7 @@ export const useManualLabOrder = (orderId: string, options?: {
     return useQuery({
         queryKey: ['manualLabOrders', orderId],
         queryFn: async (): Promise<ManualLabOrder> => {
-            const response = await apiHelpers.get(`/manual-lab-orders/${orderId}`);
+            const response = await apiHelpers.get(`/manual-lab/${orderId}`);
             return response.data.order;
         },
         enabled: options?.enabled !== false && !!orderId,
@@ -51,7 +51,7 @@ export const useCreateManualLabOrder = () => {
 
     return useMutation({
         mutationFn: async (orderData: CreateOrderRequest): Promise<CreateOrderResponse> => {
-            const response = await apiHelpers.post('/manual-lab-orders', orderData);
+            const response = await apiHelpers.post('/manual-lab', orderData);
             return response.data;
         },
         onSuccess: (data, variables) => {
@@ -77,7 +77,7 @@ export const useUpdateOrderStatus = () => {
 
     return useMutation({
         mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
-            const response = await apiHelpers.put(`/manual-lab-orders/${orderId}/status`, { status });
+            const response = await apiHelpers.put(`/manual-lab/${orderId}/status`, { status });
             return response.data;
         },
         onSuccess: (data, variables) => {
