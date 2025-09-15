@@ -50,7 +50,7 @@ import drugRoutes from './modules/drug-info/routes/drugRoutes';
 import manualLabRoutes from './modules/lab/routes/manualLabRoutes';
 import publicApiRoutes from './routes/publicApiRoutes';
 import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
-import diagnosticRoutes from './modules/diagnostics/routes/diagnosticRoutes';
+import diagnosticRoutes from './routes/diagnosticRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();

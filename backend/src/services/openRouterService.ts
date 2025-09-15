@@ -2,9 +2,9 @@ import axios, { AxiosResponse } from 'axios';
 import logger from '../utils/logger';
 import { z } from 'zod';
 import {
-    symptomDataSchema,
-    vitalSignsSchema,
-    medicationEntrySchema,
+  symptomDataSchema,
+  vitalSignsSchema,
+  medicationEntrySchema,
 } from '../modules/diagnostics/validators/diagnosticValidators';
 
 export type ISymptomData = z.infer<typeof symptomDataSchema>;
@@ -12,10 +12,10 @@ export type VitalSigns = z.infer<typeof vitalSignsSchema>;
 export type MedicationEntry = z.infer<typeof medicationEntrySchema>;
 
 export interface LabResult {
-    testName: string;
-    value: string;
-    referenceRange: string;
-    abnormal?: boolean;
+  testName: string;
+  value: string;
+  referenceRange: string;
+  abnormal?: boolean;
 }
 
 interface RetryConfig {
@@ -62,15 +62,15 @@ interface OpenRouterResponse {
 }
 
 export interface DiagnosticInput {
-    symptoms: ISymptomData;
-    labResults?: LabResult[];
-    currentMedications?: MedicationEntry[];
-    vitalSigns?: VitalSigns;
-    patientAge?: number;
-    patientGender?: string;
-    allergies?: string[];
-    medicalHistory?: string[];
-    workplaceId?: string;
+  symptoms: ISymptomData;
+  labResults?: LabResult[];
+  currentMedications?: MedicationEntry[];
+  vitalSigns?: VitalSigns;
+  patientAge?: number;
+  patientGender?: string;
+  allergies?: string[];
+  medicalHistory?: string[];
+  workplaceId?: string;
 }
 
 interface DiagnosticResponse {
@@ -658,7 +658,7 @@ Your response must be valid JSON in this exact format:
           'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
           'X-Title': 'PharmaCare SaaS - AI Diagnostic Module',
         },
-        timeout: 10000,
+        timeout: 30000, // 30 seconds for connection test
       });
 
       logger.info('OpenRouter connection test successful', {

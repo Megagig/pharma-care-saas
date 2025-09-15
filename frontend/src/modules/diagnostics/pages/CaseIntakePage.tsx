@@ -38,6 +38,7 @@ import { z } from 'zod';
 import { ErrorBoundary } from '../../../components/common/ErrorBoundary';
 import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
 import { aiDiagnosticService } from '../../../services/aiDiagnosticService';
+import { toast } from 'react-hot-toast';
 
 // Use the stable version of patient store
 import { usePatientStore } from '../../../stores';
@@ -46,8 +47,8 @@ import { usePatientStore } from '../../../stores';
 const caseIntakeSchema = z.object({
   patientId: z.string().min(1, 'Patient selection is required'),
   symptoms: z.object({
-    subjective: z.array(z.string()).min(1, 'At least one symptom is required'),
-    objective: z.array(z.string()),
+    subjective: z.string().min(1, 'Subjective symptoms are required'),
+    objective: z.string().optional(),
     duration: z.string().min(1, 'Duration is required'),
     severity: z.enum(['mild', 'moderate', 'severe']),
     onset: z.enum(['acute', 'chronic', 'subacute']),
@@ -70,8 +71,8 @@ const caseIntakeSchema = z.object({
       })
     )
     .optional(),
-  allergies: z.array(z.string()).optional(),
-  medicalHistory: z.array(z.string()).optional(),
+  allergies: z.string().optional(),
+  medicalHistory: z.string().min(1, 'Medical history is required'),
   labResults: z.array(z.string()).optional(),
   consent: z.boolean().refine((val) => val === true, 'Consent is required'),
 });
@@ -139,16 +140,16 @@ const CaseIntakePage: React.FC = () => {
     defaultValues: {
       patientId: '',
       symptoms: {
-        subjective: [],
-        objective: [],
+        subjective: '',
+        objective: '',
         duration: '',
         severity: 'mild',
         onset: 'acute',
       },
       vitals: {},
       currentMedications: [],
-      allergies: [],
-      medicalHistory: [],
+      allergies: '',
+      medicalHistory: '',
       labResults: [],
       consent: false,
     },
@@ -189,17 +190,10 @@ const CaseIntakePage: React.FC = () => {
             newSearchParams.toString() ? '?' + newSearchParams.toString() : ''
           }`;
           navigate(newUrl, { replace: true });
-        } else {
-          console.warn(
-            'Selected patient not found in loaded patients:',
-            selectedPatientId
-          );
         }
-      } else {
-        console.log('Patients not loaded yet, waiting...');
       }
     }
-  }, [searchParams, setValue, navigate, patients]);
+  }, [searchParams, setValue, navigate, patients, trigger]);
 
   // Additional effect to handle the case where URL param exists but patients aren't loaded yet
   React.useEffect(() => {
@@ -217,9 +211,6 @@ const CaseIntakePage: React.FC = () => {
         setTimeout(() => {
           trigger('patientId');
         }, 100);
-
-        console.log('Late patient selection:', selectedPatientId);
-        console.log('Form value after late setValue:', watch('patientId'));
       }
     }
   }, [patients, searchParams, setValue, trigger, watch]);
@@ -250,26 +241,58 @@ const CaseIntakePage: React.FC = () => {
     try {
       setSubmitting(true);
 
+      // Show loading message with time expectation
+      toast.loading(
+        'Submitting case for AI analysis... This may take up to 60 seconds.',
+        {
+          id: 'ai-analysis-loading',
+        }
+      );
+
       // Transform form data to match API expectations
       const caseData = {
         patientId: data.patientId,
-        symptoms: data.symptoms,
+        symptoms: {
+          subjective: data.symptoms.subjective
+            ? [data.symptoms.subjective]
+            : [],
+          objective: data.symptoms.objective ? [data.symptoms.objective] : [],
+          duration: data.symptoms.duration,
+          severity: data.symptoms.severity,
+          onset: data.symptoms.onset,
+        },
         vitals: data.vitals,
         currentMedications: data.currentMedications || [],
-        allergies: data.allergies || [],
-        medicalHistory: data.medicalHistory || [],
+        allergies: data.allergies ? [data.allergies] : [],
+        medicalHistory: data.medicalHistory ? [data.medicalHistory] : [],
         labResults: data.labResults || [],
       };
 
       // Submit case for AI analysis
       const diagnosticCase = await aiDiagnosticService.submitCase(caseData);
 
-      // Navigate to results page
+      // Dismiss loading toast and show success message
+      toast.dismiss('ai-analysis-loading');
+      toast.success('AI analysis completed successfully!');
+
+      // Navigate to results page with the completed analysis
       navigate(`/pharmacy/diagnostics/case/${diagnosticCase.id}/results`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to submit case:', error);
-      // TODO: Show error message to user
-      alert('Failed to submit case. Please try again.');
+
+      // Dismiss loading toast
+      toast.dismiss('ai-analysis-loading');
+
+      // Extract error message
+      let errorMessage = 'Failed to submit case. Please try again.';
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      // Show error toast
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -319,7 +342,7 @@ const CaseIntakePage: React.FC = () => {
       case 1:
         return ['symptoms'];
       case 2:
-        return ['vitals', 'currentMedications', 'allergies', 'medicalHistory'];
+        return ['medicalHistory'];
       case 3:
         return ['consent'];
       default:
@@ -358,7 +381,6 @@ const CaseIntakePage: React.FC = () => {
                 <Button
                   size="small"
                   onClick={() => {
-                    console.log('Manual refresh clicked');
                     fetchPatients();
                   }}
                   disabled={loading}
@@ -494,51 +516,50 @@ const CaseIntakePage: React.FC = () => {
               Symptom Assessment
             </Typography>
             <Grid container spacing={3}>
+              {/* Subjective Symptoms - Large text area at top */}
               <Grid item xs={12}>
                 <Controller
                   name="symptoms.subjective"
                   control={control}
                   render={({ field }) => (
-                    <Autocomplete
-                      multiple
-                      freeSolo
-                      options={[
-                        'Headache',
-                        'Fever',
-                        'Cough',
-                        'Fatigue',
-                        'Nausea',
-                        'Chest pain',
-                        'Shortness of breath',
-                        'Dizziness',
-                      ]}
-                      value={field.value}
-                      onChange={(_, newValue) => field.onChange(newValue)}
-                      renderTags={(value, getTagProps) =>
-                        value.map((option, index) => (
-                          <Chip
-                            variant="outlined"
-                            label={option}
-                            {...getTagProps({ index })}
-                            key={index}
-                          />
-                        ))
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Subjective Symptoms"
-                          placeholder="Type or select symptoms"
-                          error={!!errors.symptoms?.subjective}
-                          helperText={errors.symptoms?.subjective?.message}
-                        />
-                      )}
+                    <TextField
+                      {...field}
+                      fullWidth
+                      multiline
+                      rows={6}
+                      label="Subjective Symptoms"
+                      placeholder="Describe the patient's reported symptoms in detail..."
+                      error={!!errors.symptoms?.subjective}
+                      helperText={errors.symptoms?.subjective?.message}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              {/* Objective Symptoms - Free text field below subjective */}
+              <Grid item xs={12}>
+                <Controller
+                  name="symptoms.objective"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      multiline
+                      rows={4}
+                      label="Objective Symptoms (Optional)"
+                      placeholder="Document observable signs and clinical findings..."
+                      error={!!errors.symptoms?.objective}
+                      helperText={errors.symptoms?.objective?.message}
+                      sx={{ mb: 2 }}
+                    />
+                  )}
+                />
+              </Grid>
+
+              {/* Duration, Severity, and Onset below */}
+              <Grid item xs={12} md={4}>
                 <Controller
                   name="symptoms.duration"
                   control={control}
@@ -555,7 +576,7 @@ const CaseIntakePage: React.FC = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={4}>
                 <Controller
                   name="symptoms.severity"
                   control={control}
@@ -572,7 +593,7 @@ const CaseIntakePage: React.FC = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={4}>
                 <Controller
                   name="symptoms.onset"
                   control={control}
@@ -599,9 +620,50 @@ const CaseIntakePage: React.FC = () => {
               Vital Signs & Medical History
             </Typography>
             <Grid container spacing={3}>
+              {/* Medical History at the top */}
+              <Grid item xs={12}>
+                <Controller
+                  name="medicalHistory"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      multiline
+                      rows={6}
+                      label="Medical History"
+                      placeholder="Document patient's medical history, past illnesses, surgeries, family history, etc..."
+                      error={!!errors.medicalHistory}
+                      helperText={errors.medicalHistory?.message}
+                      sx={{ mb: 3 }}
+                    />
+                  )}
+                />
+              </Grid>
+
+              {/* Allergies as free text */}
+              <Grid item xs={12}>
+                <Controller
+                  name="allergies"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      multiline
+                      rows={2}
+                      label="Allergies (Optional)"
+                      placeholder="List any known allergies..."
+                      sx={{ mb: 3 }}
+                    />
+                  )}
+                />
+              </Grid>
+
+              {/* Vital Signs section */}
               <Grid item xs={12}>
                 <Typography variant="subtitle1" sx={{ mb: 2 }}>
-                  Vital Signs
+                  Vital Signs (Optional)
                 </Typography>
               </Grid>
 
@@ -630,8 +692,11 @@ const CaseIntakePage: React.FC = () => {
                       fullWidth
                       type="number"
                       label="Heart Rate (bpm)"
+                      value={field.value || ''}
                       onChange={(e) =>
-                        field.onChange(Number(e.target.value) || undefined)
+                        field.onChange(
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
                       }
                     />
                   )}
@@ -647,49 +712,55 @@ const CaseIntakePage: React.FC = () => {
                       {...field}
                       fullWidth
                       type="number"
-                      label="Temperature (°F)"
+                      label="Temperature (°C)"
+                      value={field.value || ''}
                       onChange={(e) =>
-                        field.onChange(Number(e.target.value) || undefined)
+                        field.onChange(
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
                       }
                     />
                   )}
                 />
               </Grid>
 
-              <Grid item xs={12}>
-                <Typography variant="subtitle1" sx={{ mb: 2, mt: 2 }}>
-                  Medical History
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12}>
+              <Grid item xs={12} md={6}>
                 <Controller
-                  name="allergies"
+                  name="vitals.bloodGlucose"
                   control={control}
                   render={({ field }) => (
-                    <Autocomplete
-                      multiple
-                      freeSolo
-                      options={['Penicillin', 'Peanuts', 'Shellfish', 'Latex']}
-                      value={field.value || []}
-                      onChange={(_, newValue) => field.onChange(newValue)}
-                      renderTags={(value, getTagProps) =>
-                        value.map((option, index) => (
-                          <Chip
-                            variant="outlined"
-                            label={option}
-                            {...getTagProps({ index })}
-                            key={index}
-                          />
-                        ))
+                    <TextField
+                      {...field}
+                      fullWidth
+                      type="number"
+                      label="Blood Glucose (mg/dL)"
+                      value={field.value || ''}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
                       }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Allergies"
-                          placeholder="Type or select allergies"
-                        />
-                      )}
+                    />
+                  )}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Controller
+                  name="vitals.respiratoryRate"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      type="number"
+                      label="Respiratory Rate (breaths/min)"
+                      value={field.value || ''}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
+                      }
                     />
                   )}
                 />
@@ -727,9 +798,25 @@ const CaseIntakePage: React.FC = () => {
             </Box>
 
             <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2">Symptoms:</Typography>
+              <Typography variant="subtitle2">Subjective Symptoms:</Typography>
               <Typography variant="body2" color="text.secondary">
-                {watch('symptoms.subjective')?.join(', ') || 'None specified'}
+                {watch('symptoms.subjective') || 'None specified'}
+              </Typography>
+            </Box>
+
+            {watch('symptoms.objective') && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2">Objective Symptoms:</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {watch('symptoms.objective')}
+                </Typography>
+              </Box>
+            )}
+
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle2">Medical History:</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {watch('medicalHistory') || 'None specified'}
               </Typography>
             </Box>
 
@@ -838,15 +925,28 @@ const CaseIntakePage: React.FC = () => {
                         Back
                       </Button>
                       {activeStep === STEPS.length - 1 ? (
-                        <Button
-                          type="submit"
-                          variant="contained"
-                          disabled={!watch('consent') || submitting}
-                        >
-                          {submitting
-                            ? 'Submitting for AI Analysis...'
-                            : 'Submit for AI Analysis'}
-                        </Button>
+                        <>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                              display: 'block',
+                              mb: 1,
+                              fontStyle: 'italic',
+                            }}
+                          >
+                            AI analysis may take up to 60 seconds to complete
+                          </Typography>
+                          <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={!watch('consent') || submitting}
+                          >
+                            {submitting
+                              ? 'Submitting for AI Analysis...'
+                              : 'Submit for AI Analysis'}
+                          </Button>
+                        </>
                       ) : (
                         <Button variant="contained" onClick={handleNext}>
                           Next
