@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Container,
@@ -34,15 +34,51 @@ const CaseResultsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isLoadingRef = useRef(false);
 
-  const loadCase = async () => {
+  const pollForAnalysis = useCallback(async () => {
+    if (!caseId) return;
+
+    try {
+      setAnalysisLoading(true);
+      const analysisResult = await aiDiagnosticService.pollAnalysis(caseId);
+      setAnalysis(analysisResult);
+
+      // Update case status
+      setDiagnosticCase((prevCase) => {
+        if (prevCase) {
+          return {
+            ...prevCase,
+            status: 'completed',
+            aiAnalysis: analysisResult,
+          };
+        }
+        return prevCase;
+      });
+    } catch (err) {
+      console.error('Failed to get analysis:', err);
+      setError(
+        'Analysis is taking longer than expected. Please refresh to check status.'
+      );
+    } finally {
+      setAnalysisLoading(false);
+    }
+  }, [caseId]);
+
+  const loadCase = useCallback(async () => {
     if (!caseId) {
       setError('Case ID is required');
       setLoading(false);
       return;
     }
 
+    // Prevent multiple simultaneous calls using ref
+    if (isLoadingRef.current) {
+      return;
+    }
+
     try {
+      isLoadingRef.current = true;
       setLoading(true);
       setError(null);
 
@@ -61,34 +97,9 @@ const CaseResultsPage: React.FC = () => {
       setError('Failed to load diagnostic case. Please try again.');
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  };
-
-  const pollForAnalysis = async () => {
-    if (!caseId) return;
-
-    try {
-      setAnalysisLoading(true);
-      const analysisResult = await aiDiagnosticService.pollAnalysis(caseId);
-      setAnalysis(analysisResult);
-
-      // Update case status
-      if (diagnosticCase) {
-        setDiagnosticCase({
-          ...diagnosticCase,
-          status: 'completed',
-          aiAnalysis: analysisResult,
-        });
-      }
-    } catch (err) {
-      console.error('Failed to get analysis:', err);
-      setError(
-        'Analysis is taking longer than expected. Please refresh to check status.'
-      );
-    } finally {
-      setAnalysisLoading(false);
-    }
-  };
+  }, [caseId, pollForAnalysis]);
 
   const handleRefresh = () => {
     loadCase();
@@ -100,7 +111,7 @@ const CaseResultsPage: React.FC = () => {
 
   useEffect(() => {
     loadCase();
-  }, [caseId]);
+  }, [loadCase]);
 
   if (loading) {
     return (
@@ -148,19 +159,6 @@ const CaseResultsPage: React.FC = () => {
       </Container>
     );
   }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'success';
-      case 'analyzing':
-        return 'info';
-      case 'failed':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
 
   return (
     <ErrorBoundary>
@@ -216,10 +214,16 @@ const CaseResultsPage: React.FC = () => {
             >
               <Box>
                 <Typography variant="caption" color="text.secondary">
-                  Patient ID
+                  Patient
                 </Typography>
                 <Typography variant="body2">
-                  {diagnosticCase.patientId}
+                  {typeof diagnosticCase.patientId === 'object' &&
+                  diagnosticCase.patientId &&
+                  'firstName' in diagnosticCase.patientId
+                    ? `${diagnosticCase.patientId.firstName || ''} ${
+                        diagnosticCase.patientId.lastName || ''
+                      }`.trim()
+                    : diagnosticCase.patientId}
                 </Typography>
               </Box>
               <Box>

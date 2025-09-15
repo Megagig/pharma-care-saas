@@ -89,7 +89,7 @@ class AIdiagnosticService {
                 confidence: (backendAnalysis.differentialDiagnoses?.[0]?.probability || 0) / 100,
                 reasoning: backendAnalysis.differentialDiagnoses?.[0]?.reasoning || 'No reasoning provided'
             },
-            differentialDiagnoses: (backendAnalysis.differentialDiagnoses || []).slice(1).map((dx: any) => ({
+            differentialDiagnoses: (backendAnalysis.differentialDiagnoses || []).slice(1).map((dx: unknown) => ({
                 condition: dx.condition,
                 confidence: dx.probability / 100,
                 reasoning: dx.reasoning
@@ -203,15 +203,21 @@ class AIdiagnosticService {
      */
     async getCase(caseId: string): Promise<DiagnosticCase> {
         try {
-            const response = await apiClient.get(`/api/diagnostics/cases/${caseId}`);
+            const response = await apiClient.get(`/api/diagnostics/cases/${caseId}`, {
+                timeout: 30000 // 30 seconds timeout for getting case data
+            });
             const diagnosticCase = response.data.data;
 
             // Transform backend response to frontend format
             return {
                 id: diagnosticCase._id,
-                patientId: diagnosticCase.patientId,
+                patientId: typeof diagnosticCase.patientId === 'object'
+                    ? diagnosticCase.patientId._id || diagnosticCase.patientId.id
+                    : diagnosticCase.patientId,
                 caseData: {
-                    patientId: diagnosticCase.patientId,
+                    patientId: typeof diagnosticCase.patientId === 'object'
+                        ? diagnosticCase.patientId._id || diagnosticCase.patientId.id
+                        : diagnosticCase.patientId,
                     symptoms: diagnosticCase.symptoms,
                     vitals: diagnosticCase.vitalSigns || {},
                     currentMedications: diagnosticCase.currentMedications || [],
@@ -267,9 +273,13 @@ class AIdiagnosticService {
             // Transform backend cases to frontend format
             return diagnosticCases.map((diagnosticCase: unknown) => ({
                 id: diagnosticCase._id,
-                patientId: diagnosticCase.patientId,
+                patientId: typeof diagnosticCase.patientId === 'object'
+                    ? diagnosticCase.patientId._id || diagnosticCase.patientId.id
+                    : diagnosticCase.patientId,
                 caseData: {
-                    patientId: diagnosticCase.patientId,
+                    patientId: typeof diagnosticCase.patientId === 'object'
+                        ? diagnosticCase.patientId._id || diagnosticCase.patientId.id
+                        : diagnosticCase.patientId,
                     symptoms: diagnosticCase.symptoms,
                     vitals: diagnosticCase.vitalSigns || {},
                     currentMedications: diagnosticCase.currentMedications || [],
