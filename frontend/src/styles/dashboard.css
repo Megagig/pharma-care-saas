@@ -3,8 +3,9 @@
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
-  background-color: #f5f5f5;
+  background-color: var(--color-bg-primary);
   min-height: 100vh;
+  transition: background-color 0.3s ease;
 }
 
 .dashboard-header {
@@ -14,14 +15,16 @@
 .dashboard-header h1 {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--color-text-primary);
   margin: 0 0 8px 0;
+  transition: color 0.3s ease;
 }
 
 .dashboard-header p {
   font-size: 1.1rem;
-  color: #666;
+  color: var(--color-text-secondary);
   margin: 0;
+  transition: color 0.3s ease;
 }
 
 /* Stats Cards Grid */
@@ -48,8 +51,9 @@
 .dashboard-actions h3 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-text-primary);
   margin: 0 0 20px 0;
+  transition: color 0.3s ease;
 }
 
 .actions-grid {
@@ -66,18 +70,23 @@
   align-items: center;
   min-height: 400px;
   font-size: 1.2rem;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .loading-spinner {
-  color: #666;
+  color: var(--color-text-secondary);
+  transition: color 0.3s ease;
 }
 
 .error-message {
   color: #f44336;
-  background-color: #ffebee;
+  background-color: var(--color-bg-secondary);
   padding: 16px 24px;
   border-radius: 8px;
-  border: 1px solid #ffcdd2;
+  border: 1px solid var(--color-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Dashboard specific styles */
@@ -223,4 +232,65 @@
   .dashboard-stats {
     grid-template-columns: 1fr;
   }
+}
+
+/* Dark mode specific overrides for dashboard */
+.dark .modern-dashboard {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.dark .dashboard-header h1 {
+  color: var(--color-text-primary);
+}
+
+.dark .dashboard-header p {
+  color: var(--color-text-secondary);
+}
+
+.dark .dashboard-actions h3 {
+  color: var(--color-text-primary);
+}
+
+.dark .dashboard-loading,
+.dark .dashboard-error {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.dark .loading-spinner {
+  color: var(--color-text-secondary);
+}
+
+.dark .error-message {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-border);
+  color: #f87171; /* Keep error text red but lighter for dark mode */
+}
+
+/* Ensure all dashboard cards inherit theme colors */
+.dark .dashboard-stats .MuiCard-root,
+.dark .dashboard-charts .MuiCard-root,
+.dark .actions-grid .MuiCard-root {
+  background-color: var(--color-bg-secondary) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border) !important;
+}
+
+.dark .dashboard-stats .MuiCardContent-root,
+.dark .dashboard-charts .MuiCardContent-root,
+.dark .actions-grid .MuiCardContent-root {
+  color: var(--color-text-primary) !important;
+}
+
+/* Typography in dark mode */
+.dark .MuiTypography-h6,
+.dark .MuiTypography-h3,
+.dark .MuiTypography-body1,
+.dark .MuiTypography-body2 {
+  color: inherit !important;
+}
+
+.dark .MuiTypography-colorTextSecondary {
+  color: var(--color-text-secondary) !important;
 }

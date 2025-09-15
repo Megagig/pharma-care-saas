@@ -1,4 +1,5 @@
 import React from 'react';
+import { Box, Typography, useTheme } from '@mui/material';
 import DashboardCard from './DashboardCard';
 import QuickActionCard from './QuickActionCard';
 import DashboardChart from './DashboardChart';
@@ -6,6 +7,7 @@ import { useDashboardData } from '../../hooks/useDashboardData';
 import '../../styles/dashboard.css';
 
 export const ModernDashboard: React.FC = () => {
+  const theme = useTheme();
   const {
     stats,
     patientsByMonth,
@@ -20,26 +22,77 @@ export const ModernDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="dashboard-loading">
-        <div className="loading-spinner">Loading dashboard...</div>
-      </div>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          fontSize: '1.2rem',
+          bgcolor: 'background.default',
+          color: 'text.primary',
+        }}
+      >
+        <Typography variant="h6" color="text.secondary">
+          Loading dashboard...
+        </Typography>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <div className="dashboard-error">
-        <div className="error-message">Error: {error}</div>
-      </div>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          bgcolor: 'background.default',
+        }}
+      >
+        <Box
+          sx={{
+            color: 'error.main',
+            bgcolor: 'background.paper',
+            p: 3,
+            borderRadius: 2,
+            border: 1,
+            borderColor: 'divider',
+          }}
+        >
+          Error: {error}
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div className="modern-dashboard">
-      <div className="dashboard-header">
-        <h1>Healthcare Dashboard</h1>
-        <p>Welcome back! Here's your healthcare system overview.</p>
-      </div>
+    <Box
+      sx={{
+        p: 3,
+        maxWidth: 1400,
+        mx: 'auto',
+        bgcolor: 'background.default',
+        minHeight: '100vh',
+      }}
+    >
+      <Box sx={{ mb: 4 }}>
+        <Typography
+          variant="h4"
+          component="h1"
+          sx={{
+            fontWeight: 700,
+            color: 'text.primary',
+            mb: 1,
+          }}
+        >
+          Healthcare Dashboard
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Welcome back! Here's your healthcare system overview.
+        </Typography>
+      </Box>
 
       {/* Stats Cards */}
       <div className="dashboard-stats">
@@ -131,9 +184,25 @@ export const ModernDashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="dashboard-actions">
-        <h3>Quick Actions</h3>
-        <div className="actions-grid">
+      <Box sx={{ mt: 4 }}>
+        <Typography
+          variant="h5"
+          component="h3"
+          sx={{
+            fontWeight: 600,
+            color: 'text.primary',
+            mb: 3,
+          }}
+        >
+          Quick Actions
+        </Typography>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 2.5,
+          }}
+        >
           <QuickActionCard
             title="Add New Patient"
             description="Register a new patient in the system"
@@ -166,9 +235,9 @@ export const ModernDashboard: React.FC = () => {
             navigateTo="/reports"
             buttonText="View Reports"
           />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 
