@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateRequest = exports.attachmentSchema = exports.visitParamsSchema = exports.updateVisitSchema = exports.createVisitSchema = exports.carePlanParamsSchema = exports.updateCarePlanSchema = exports.createCarePlanSchema = exports.dtpQuerySchema = exports.dtpParamsSchema = exports.updateDTPSchema = exports.createDTPSchema = exports.assessmentParamsSchema = exports.updateAssessmentSchema = exports.createAssessmentSchema = exports.medicationQuerySchema = exports.medicationParamsSchema = exports.updateMedicationSchema = exports.createMedicationSchema = exports.conditionParamsSchema = exports.updateConditionSchema = exports.createConditionSchema = exports.allergyParamsSchema = exports.updateAllergySchema = exports.createAllergySchema = exports.patientParamsSchema = exports.updatePatientSchema = exports.createPatientSchema = exports.searchSchema = exports.paginationSchema = void 0;
+exports.validateRequest = exports.attachmentSchema = exports.visitParamsSchema = exports.updateVisitSchema = exports.createVisitSchema = exports.carePlanParamsSchema = exports.updateCarePlanSchema = exports.createCarePlanSchema = exports.dtpQuerySchema = exports.dtpParamsSchema = exports.updateDTPSchema = exports.createDTPSchema = exports.assessmentParamsSchema = exports.updateAssessmentSchema = exports.createAssessmentSchema = exports.medicationQuerySchema = exports.medicationParamsSchema = exports.updateMedicationSchema = exports.createMedicationSchema = exports.conditionIdSchema = exports.conditionParamsSchema = exports.updateConditionSchema = exports.createConditionSchema = exports.allergyParamsSchema = exports.updateAllergySchema = exports.createAllergySchema = exports.patientParamsSchema = exports.updatePatientSchema = exports.createPatientSchema = exports.searchSchema = exports.paginationSchema = void 0;
 const zod_1 = require("zod");
 const tenancyGuard_1 = require("../utils/tenancyGuard");
 const phoneRegex = /^\+234[7-9]\d{9}$/;
@@ -55,8 +55,9 @@ exports.createPatientSchema = zod_1.z.object({
     phone: zod_1.z
         .string()
         .regex(phoneRegex, 'Phone must be in +234 format')
+        .or(zod_1.z.literal(''))
         .optional(),
-    email: zod_1.z.string().email('Invalid email format').optional(),
+    email: zod_1.z.string().email('Invalid email format').or(zod_1.z.literal('')).optional(),
     address: zod_1.z.string().max(200).trim().optional(),
     state: zod_1.z.enum(tenancyGuard_1.NIGERIAN_STATES).optional(),
     lga: zod_1.z.string().max(100).trim().optional(),
@@ -204,6 +205,9 @@ exports.createConditionSchema = zod_1.z.object({
 exports.updateConditionSchema = exports.createConditionSchema.partial();
 exports.conditionParamsSchema = zod_1.z.object({
     id: mongoIdSchema,
+    conditionId: mongoIdSchema,
+});
+exports.conditionIdSchema = zod_1.z.object({
     conditionId: mongoIdSchema,
 });
 exports.createMedicationSchema = zod_1.z.object({

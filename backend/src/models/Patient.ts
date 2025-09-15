@@ -47,6 +47,15 @@ export interface IPatient extends Document {
   // Clinical snapshots (latest vitals cached for list speed)
   latestVitals?: IPatientVitals;
 
+  // Notification preferences
+  notificationPreferences?: {
+    email: boolean;
+    sms: boolean;
+    push: boolean;
+    resultNotifications: boolean;
+    orderReminders: boolean;
+  };
+
   // Multi-location and sharing metadata
   metadata?: {
     sharedAccess?: {
@@ -238,6 +247,15 @@ const patientSchema = new Schema(
       recordedAt: Date,
     },
 
+    // Notification preferences
+    notificationPreferences: {
+      email: { type: Boolean, default: true },
+      sms: { type: Boolean, default: false },
+      push: { type: Boolean, default: true },
+      resultNotifications: { type: Boolean, default: true },
+      orderReminders: { type: Boolean, default: true },
+    },
+
     // Multi-location and sharing metadata
     metadata: {
       sharedAccess: {
@@ -351,6 +369,15 @@ patientSchema.virtual('computedAge').get(function (this: IPatient) {
     return age;
   }
   return this.age;
+});
+
+// Virtual for dateOfBirth alias to maintain backward compatibility
+patientSchema.virtual('dateOfBirth').get(function (this: IPatient) {
+  return this.dob;
+});
+
+patientSchema.virtual('dateOfBirth').set(function (this: IPatient, value: Date) {
+  this.dob = value;
 });
 
 // Instance methods

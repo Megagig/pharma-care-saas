@@ -30,14 +30,18 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import ScheduleIcon from '@mui/icons-material/Schedule';
+import ScienceIcon from '@mui/icons-material/Science';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CakeIcon from '@mui/icons-material/Cake';
 
 import { usePatient } from '../queries/usePatients';
+import { usePatientLabOrders } from '../hooks/useManualLabOrders';
 import { PatientMTRWidget } from './PatientMTRWidget';
 import PatientClinicalNotes from './PatientClinicalNotes';
+import PatientLabOrderWidget from './PatientLabOrderWidget';
+import PatientTimelineWidget from './PatientTimelineWidget';
 import type { Patient } from '../types/patientManagement';
 
 interface PatientDashboardProps {
@@ -59,6 +63,9 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
     isError: patientError,
     error,
   } = usePatient(patientId!);
+
+  const { data: labOrders = [], isLoading: labOrdersLoading } =
+    usePatientLabOrders(patientId!, { enabled: !!patientId });
 
   const patientData = extractData(patientResponse)?.patient;
 
@@ -336,6 +343,26 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
             </CardContent>
           </Card>
         </Box>
+
+        <Box sx={{ flex: '1 1 200px', minWidth: 0 }}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar sx={{ bgcolor: 'secondary.main' }}>
+                  <ScienceIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                    {labOrdersLoading ? '...' : labOrders.length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Lab Orders
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
       </Box>
 
       {/* MTR Integration Widget */}
@@ -352,7 +379,27 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
         />
       </Box>
 
-      {/* Patient Details and Recent Activity */}
+      {/* Lab Order History Widget */}
+      <Box sx={{ mb: 4 }}>
+        <PatientLabOrderWidget
+          patientId={patientId!}
+          maxOrders={3}
+          onViewOrder={(orderId) => {
+            // Navigate to order details
+            navigate(`/lab-orders/${orderId}`);
+          }}
+          onViewResults={(orderId) => {
+            // Navigate to results entry/view
+            navigate(`/lab-orders/${orderId}/results`);
+          }}
+          onViewAllOrders={() => {
+            // Navigate to full lab order history
+            navigate(`/patients/${patientId}/lab-orders`);
+          }}
+        />
+      </Box>
+
+      {/* Patient Details and Timeline */}
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
         {/* Patient Details */}
         <Box sx={{ flex: '1 1 400px', minWidth: 0 }}>
@@ -419,50 +466,21 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
           </Card>
         </Box>
 
-        {/* Recent Activity */}
-        <Box sx={{ flex: '1 1 400px', minWidth: 0 }}>
-          <Card>
-            <CardHeader
-              title="Recent Activity"
-              titleTypographyProps={{ variant: 'h6', fontWeight: 600 }}
-              avatar={<TimelineIcon color="primary" />}
-            />
-            <CardContent>
-              <List>
-                {overview?.recentActivity?.slice(0, 3).map((activity) => (
-                  <ListItem key={activity.id} sx={{ px: 0 }}>
-                    <ListItemIcon>
-                      <Avatar
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          bgcolor: 'primary.main',
-                          fontSize: '0.75rem',
-                        }}
-                      >
-                        {activity.type[0].toUpperCase()}
-                      </Avatar>
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={activity.description}
-                      secondary={new Date(activity.date).toLocaleDateString()}
-                      primaryTypographyProps={{ variant: 'body2' }}
-                      secondaryTypographyProps={{ variant: 'caption' }}
-                    />
-                  </ListItem>
-                )) || (
-                  <ListItem sx={{ px: 0 }}>
-                    <ListItemText
-                      primary="No recent activity"
-                      secondary="Patient activity will appear here"
-                      primaryTypographyProps={{ variant: 'body2' }}
-                      secondaryTypographyProps={{ variant: 'caption' }}
-                    />
-                  </ListItem>
-                )}
-              </List>
-            </CardContent>
-          </Card>
+        {/* Patient Timeline */}
+        <Box sx={{ flex: '1 1 600px', minWidth: 0 }}>
+          <PatientTimelineWidget
+            patientId={patientId!}
+            maxItems={5}
+            onViewLabOrder={(orderId) => {
+              navigate(`/lab-orders/${orderId}`);
+            }}
+            onViewClinicalNote={(noteId) => {
+              navigate(`/clinical-notes/${noteId}`);
+            }}
+            onViewMTR={(mtrId) => {
+              navigate(`/mtr/${mtrId}`);
+            }}
+          />
         </Box>
       </Box>
 

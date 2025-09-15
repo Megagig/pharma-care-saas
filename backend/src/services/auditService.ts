@@ -29,7 +29,14 @@ export interface AuditLogData {
     | 'Patient'
     | 'User'
     | 'ClinicalIntervention'
-    | 'ClinicalNote';
+    | 'ClinicalNote'
+    | 'System'
+    | 'diagnostic_request'
+    | 'diagnostic_result'
+    | 'lab_order'
+    | 'lab_result'
+    | 'follow_up'
+    | 'adherence';
   resourceId: mongoose.Types.ObjectId;
   patientId?: mongoose.Types.ObjectId;
   reviewId?: mongoose.Types.ObjectId;
@@ -196,6 +203,32 @@ class AuditService {
       },
       complianceCategory: 'data_access',
       riskLevel: accessType === 'delete' ? 'high' : 'medium',
+    });
+  }
+
+  /**
+   * Log general events - simplified interface for backward compatibility
+   */
+  static async logEvent(
+    context: AuditContext,
+    eventData: {
+      action: string;
+      resourceType?: any;
+      resourceId?: mongoose.Types.ObjectId;
+      patientId?: mongoose.Types.ObjectId;
+      details?: any;
+      complianceCategory?: string;
+      riskLevel?: string;
+    }
+  ): Promise<IMTRAuditLog> {
+    return this.logActivity(context, {
+      action: eventData.action,
+      resourceType: eventData.resourceType || 'System',
+      resourceId: eventData.resourceId || context.userId,
+      patientId: eventData.patientId,
+      details: eventData.details || {},
+      complianceCategory: eventData.complianceCategory as any || 'system_security',
+      riskLevel: eventData.riskLevel as any || 'low',
     });
   }
 

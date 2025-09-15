@@ -146,4 +146,65 @@ export const queryKeys = {
     duplicates: (patientId: string, category: string) =>
       ['clinicalInterventions', 'duplicates', patientId, category] as const,
   },
+
+  // Diagnostics queries
+  diagnostics: {
+    all: ['diagnostics'] as const,
+    requests: () => ['diagnostics', 'requests'] as const,
+    request: (id: string) => ['diagnostics', 'request', id] as const,
+    results: () => ['diagnostics', 'results'] as const,
+    result: (requestId: string) => ['diagnostics', 'result', requestId] as const,
+    history: (params: Record<string, unknown>) => ['diagnostics', 'history', params] as const,
+    analytics: (params?: Record<string, unknown>) => ['diagnostics', 'analytics', params] as const,
+    status: (requestId: string) => ['diagnostics', 'status', requestId] as const,
+  },
+
+  // Lab queries
+  lab: {
+    orders: {
+      all: ['lab', 'orders'] as const,
+      lists: () => ['lab', 'orders', 'list'] as const,
+      list: (params: Record<string, unknown>) => ['lab', 'orders', 'list', params] as const,
+      detail: (id: string) => ['lab', 'orders', 'detail', id] as const,
+      byPatient: (patientId: string) => ['lab', 'orders', 'patient', patientId] as const,
+      pending: () => ['lab', 'orders', 'pending'] as const,
+      completed: () => ['lab', 'orders', 'completed'] as const,
+    },
+    results: {
+      all: ['lab', 'results'] as const,
+      lists: () => ['lab', 'results', 'list'] as const,
+      list: (params: Record<string, unknown>) => ['lab', 'results', 'list', params] as const,
+      detail: (id: string) => ['lab', 'results', 'detail', id] as const,
+      byPatient: (patientId: string) => ['lab', 'results', 'patient', patientId] as const,
+      byOrder: (orderId: string) => ['lab', 'results', 'order', orderId] as const,
+      critical: (workplaceId?: string) => ['lab', 'results', 'critical', workplaceId] as const,
+      abnormal: (patientId: string, days?: number) => ['lab', 'results', 'abnormal', patientId, days] as const,
+    },
+    trends: (patientId: string, testCode: string, days?: number) =>
+      ['lab', 'trends', patientId, testCode, days] as const,
+    catalog: {
+      all: ['lab', 'catalog'] as const,
+      search: (search?: string) => ['lab', 'catalog', 'search', search] as const,
+    },
+    referenceRanges: (testCode: string) => ['lab', 'reference-ranges', testCode] as const,
+  },
+
+  // Interactions queries
+  interactions: {
+    all: ['interactions'] as const,
+    check: (medications: string[], allergies?: string[]) =>
+      ['interactions', 'check', { medications, allergies }] as const,
+    drugInfo: (drugName: string) => ['interactions', 'drug-info', drugName] as const,
+    search: (query: string, limit?: number) => ['interactions', 'search', query, limit] as const,
+    allergies: (medications: string[], allergies: string[]) =>
+      ['interactions', 'allergies', { medications, allergies }] as const,
+    details: (drug1: string, drug2: string) =>
+      ['interactions', 'details', drug1, drug2] as const,
+    classInteractions: (drugClass: string) =>
+      ['interactions', 'class', drugClass] as const,
+    foodInteractions: (drugName: string) =>
+      ['interactions', 'food', drugName] as const,
+    pregnancyInfo: (drugName: string) =>
+      ['interactions', 'pregnancy', drugName] as const,
+  },
 };

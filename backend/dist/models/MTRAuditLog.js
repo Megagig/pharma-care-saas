@@ -59,6 +59,7 @@ const mtrAuditLogSchema = new mongoose_1.Schema({
             'Patient',
             'User',
             'ClinicalNote',
+            'DiagnosticCase',
         ],
         required: [true, 'Resource type is required'],
         index: true,

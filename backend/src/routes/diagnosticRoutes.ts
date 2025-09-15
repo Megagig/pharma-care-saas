@@ -45,6 +45,14 @@ const diagnosticRateLimit = rateLimit({
   legacyHeaders: false,
 });
 
+// Timeout middleware for AI diagnostic requests
+const extendTimeout = (req: any, res: any, next: any) => {
+  // Set timeout to 90 seconds for AI processing
+  req.setTimeout(90000);
+  res.setTimeout(90000);
+  next();
+};
+
 /**
  * @route POST /api/diagnostics/ai
  * @desc Generate AI diagnostic analysis
@@ -52,6 +60,7 @@ const diagnosticRateLimit = rateLimit({
  */
 router.post(
   '/ai',
+  extendTimeout,
   aiRateLimit,
   auth,
   requireLicense,

@@ -3,7 +3,7 @@ import { IUser } from '../models/User';
 import { IWorkplace } from '../models/Workplace';
 import { ISubscription } from '../models/Subscription';
 import { ISubscriptionPlan } from '../models/SubscriptionPlan';
-export type UserRole = 'pharmacist' | 'pharmacy_team' | 'pharmacy_outlet' | 'intern_pharmacist' | 'super_admin';
+export type UserRole = 'pharmacist' | 'pharmacy_team' | 'pharmacy_outlet' | 'intern_pharmacist' | 'super_admin' | 'owner';
 export type WorkplaceRole = 'Owner' | 'Staff' | 'Pharmacist' | 'Cashier' | 'Technician' | 'Assistant';
 export type SubscriptionTier = 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
 export interface PermissionMatrix {

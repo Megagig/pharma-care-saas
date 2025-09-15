@@ -1,38 +1,29 @@
+import { z } from 'zod';
+import { symptomDataSchema, vitalSignsSchema, medicationEntrySchema } from '../modules/diagnostics/validators/diagnosticValidators';
+export type ISymptomData = z.infer<typeof symptomDataSchema>;
+export type VitalSigns = z.infer<typeof vitalSignsSchema>;
+export type MedicationEntry = z.infer<typeof medicationEntrySchema>;
+export interface LabResult {
+    testName: string;
+    value: string;
+    referenceRange: string;
+    abnormal?: boolean;
+}
 interface OpenRouterUsage {
     prompt_tokens: number;
     completion_tokens: number;
     total_tokens: number;
 }
-interface DiagnosticInput {
-    symptoms: {
-        subjective: string[];
-        objective: string[];
-        duration: string;
-        severity: 'mild' | 'moderate' | 'severe';
-        onset: 'acute' | 'chronic' | 'subacute';
-    };
-    labResults?: {
-        testName: string;
-        value: string;
-        referenceRange: string;
-        abnormal: boolean;
-    }[];
-    currentMedications?: {
-        name: string;
-        dosage: string;
-        frequency: string;
-    }[];
-    vitalSigns?: {
-        bloodPressure?: string;
-        heartRate?: number;
-        temperature?: number;
-        respiratoryRate?: number;
-        oxygenSaturation?: number;
-    };
+export interface DiagnosticInput {
+    symptoms: ISymptomData;
+    labResults?: LabResult[];
+    currentMedications?: MedicationEntry[];
+    vitalSigns?: VitalSigns;
     patientAge?: number;
     patientGender?: string;
     allergies?: string[];
     medicalHistory?: string[];
+    workplaceId?: string;
 }
 interface DiagnosticResponse {
     differentialDiagnoses: {
@@ -73,6 +64,7 @@ declare class OpenRouterService {
     private apiKey;
     private defaultModel;
     private timeout;
+    private retryConfig;
     constructor();
     generateDiagnosticAnalysis(input: DiagnosticInput): Promise<{
         analysis: DiagnosticResponse;
@@ -80,12 +72,18 @@ declare class OpenRouterService {
         requestId: string;
         processingTime: number;
     }>;
+    private executeWithRetry;
+    private shouldRetryError;
+    private calculateRetryDelay;
+    private sleep;
+    private enhanceError;
     private createSystemPrompt;
     private formatDiagnosticPrompt;
-    private parseAIResponse;
+    private parseAndValidateAIResponse;
+    private validateDiagnosticResponse;
     testConnection(): Promise<boolean>;
 }
 declare const _default: OpenRouterService;
 export default _default;
-export { DiagnosticInput, DiagnosticResponse };
+export { DiagnosticResponse };
 //# sourceMappingURL=openRouterService.d.ts.map

@@ -17,28 +17,35 @@ const generateDiagnosticAnalysis = async (req, res) => {
             res.status(400).json({
                 success: false,
                 message: 'Validation failed',
-                errors: errors.array()
+                errors: errors.array(),
             });
             return;
         }
-        const { patientId, symptoms, labResults, currentMedications, vitalSigns, patientConsent } = req.body;
+        const { patientId, symptoms, labResults, currentMedications, vitalSigns, patientConsent, } = req.body;
         const userId = req.user._id;
         const workplaceId = req.user.workplaceId;
+        if (!workplaceId) {
+            res.status(400).json({
+                success: false,
+                message: 'User workplace is required for diagnostic analysis',
+            });
+            return;
+        }
         if (!patientConsent?.provided) {
             res.status(400).json({
                 success: false,
-                message: 'Patient consent is required for AI diagnostic analysis'
+                message: 'Patient consent is required for AI diagnostic analysis',
             });
             return;
         }
         const patient = await Patient_1.default.findOne({
             _id: patientId,
-            pharmacyId: workplaceId
+            workplaceId: workplaceId,
         });
         if (!patient) {
             res.status(404).json({
                 success: false,
-                message: 'Patient not found or access denied'
+                message: 'Patient not found or access denied',
             });
             return;
         }
@@ -49,14 +56,16 @@ const generateDiagnosticAnalysis = async (req, res) => {
             vitalSigns,
             patientAge: patient.age,
             patientGender: patient.gender,
-            allergies: patient.allergies?.map((allergy) => allergy.allergen) || [],
-            medicalHistory: patient.conditions?.map((condition) => condition.name) || []
+            allergies: patient.allergies?.map((allergy) => allergy.allergen) ||
+                [],
+            medicalHistory: patient.conditions?.map((condition) => condition.name) ||
+                [],
         };
         logger_1.default.info('Starting AI diagnostic analysis', {
             patientId,
             pharmacistId: userId,
             workplaceId,
-            symptomsCount: symptoms.subjective.length + symptoms.objective.length
+            symptomsCount: symptoms.subjective.length + symptoms.objective.length,
         });
         const aiResult = await openRouterService_1.default.generateDiagnosticAnalysis(diagnosticInput);
         const drugInteractions = [];
@@ -65,11 +74,15 @@ const generateDiagnosticAnalysis = async (req, res) => {
             }
             catch (error) {
                 logger_1.default.warn('Drug interaction check failed', {
-                    error: error instanceof Error ? error.message : 'Unknown error'
+                    error: error instanceof Error ? error.message : 'Unknown error',
                 });
             }
         }
+        const timestamp = Date.now().toString(36);
+        const random = Math.random().toString(36).substring(2);
+        const caseId = `DX-${timestamp}-${random}`.toUpperCase();
         const diagnosticCase = new DiagnosticCase_1.default({
+            caseId,
             patientId,
             pharmacistId: userId,
             workplaceId,
@@ -79,38 +92,31 @@ const generateDiagnosticAnalysis = async (req, res) => {
             vitalSigns,
             aiAnalysis: {
                 ...aiResult.analysis,
-                processingTime: aiResult.processingTime
+                processingTime: aiResult.processingTime,
             },
             drugInteractions,
             patientConsent: {
                 provided: patientConsent.provided,
                 consentDate: new Date(),
-                consentMethod: patientConsent.method || 'electronic'
+                consentMethod: patientConsent.method || 'electronic',
             },
             aiRequestData: {
-                model: 'deepseek/deepseek-reasoner',
+                model: 'deepseek/deepseek-chat-v3.1:free',
                 promptTokens: aiResult.usage.prompt_tokens,
                 completionTokens: aiResult.usage.completion_tokens,
                 totalTokens: aiResult.usage.total_tokens,
                 requestId: aiResult.requestId,
-                processingTime: aiResult.processingTime
+                processingTime: aiResult.processingTime,
             },
             pharmacistDecision: {
                 accepted: false,
                 modifications: '',
                 finalRecommendation: '',
                 counselingPoints: [],
-                followUpRequired: false
-            }
+                followUpRequired: false,
+            },
         });
         await diagnosticCase.save();
-        if (!workplaceId) {
-            res.status(400).json({
-                success: false,
-                message: 'User workplace is required for diagnostic analysis'
-            });
-            return;
-        }
         const auditContext = {
             userId,
             userRole: req.user.role,
@@ -124,7 +130,7 @@ const generateDiagnosticAnalysis = async (req, res) => {
         logger_1.default.info('AI diagnostic analysis completed', {
             caseId: diagnosticCase.caseId,
             processingTime: aiResult.processingTime,
-            confidenceScore: aiResult.analysis.confidenceScore
+            confidenceScore: aiResult.analysis.confidenceScore,
         });
         res.status(200).json({
             success: true,
@@ -133,22 +139,24 @@ const generateDiagnosticAnalysis = async (req, res) => {
                 analysis: aiResult.analysis,
                 drugInteractions,
                 processingTime: aiResult.processingTime,
-                tokensUsed: aiResult.usage.total_tokens
-            }
+                tokensUsed: aiResult.usage.total_tokens,
+            },
         });
     }
     catch (error) {
         logger_1.default.error('AI diagnostic analysis failed', {
             error: error instanceof Error ? error.message : 'Unknown error',
             patientId: req.body.patientId,
-            pharmacistId: req.user?._id
+            pharmacistId: req.user?._id,
         });
         res.status(500).json({
             success: false,
             message: 'AI diagnostic analysis failed',
-            error: process.env.NODE_ENV === 'development' ?
-                (error instanceof Error ? error.message : 'Unknown error') :
-                'Internal server error'
+            error: process.env.NODE_ENV === 'development'
+                ? error instanceof Error
+                    ? error.message
+                    : 'Unknown error'
+                : 'Internal server error',
         });
     }
 };
@@ -160,21 +168,21 @@ const saveDiagnosticDecision = async (req, res) => {
             res.status(400).json({
                 success: false,
                 message: 'Validation failed',
-                errors: errors.array()
+                errors: errors.array(),
             });
             return;
         }
         const { caseId } = req.params;
-        const { accepted, modifications, finalRecommendation, counselingPoints, followUpRequired, followUpDate } = req.body;
+        const { accepted, modifications, finalRecommendation, counselingPoints, followUpRequired, followUpDate, } = req.body;
         const userId = req.user._id;
         const diagnosticCase = await DiagnosticCase_1.default.findOne({
             caseId,
-            pharmacistId: userId
+            pharmacistId: userId,
         });
         if (!diagnosticCase) {
             res.status(404).json({
                 success: false,
-                message: 'Diagnostic case not found or access denied'
+                message: 'Diagnostic case not found or access denied',
             });
             return;
         }
@@ -184,7 +192,7 @@ const saveDiagnosticDecision = async (req, res) => {
             finalRecommendation,
             counselingPoints: counselingPoints || [],
             followUpRequired: followUpRequired || false,
-            followUpDate: followUpRequired && followUpDate ? new Date(followUpDate) : undefined
+            followUpDate: followUpRequired && followUpDate ? new Date(followUpDate) : undefined,
         };
         diagnosticCase.status = 'completed';
         diagnosticCase.completedAt = new Date();
@@ -204,22 +212,24 @@ const saveDiagnosticDecision = async (req, res) => {
             data: {
                 caseId: diagnosticCase.caseId,
                 status: diagnosticCase.status,
-                completedAt: diagnosticCase.completedAt
-            }
+                completedAt: diagnosticCase.completedAt,
+            },
         });
     }
     catch (error) {
         logger_1.default.error('Failed to save diagnostic decision', {
             error: error instanceof Error ? error.message : 'Unknown error',
             caseId: req.params.caseId,
-            pharmacistId: req.user?._id
+            pharmacistId: req.user?._id,
         });
         res.status(500).json({
             success: false,
             message: 'Failed to save diagnostic decision',
-            error: process.env.NODE_ENV === 'development' ?
-                (error instanceof Error ? error.message : 'Unknown error') :
-                'Internal server error'
+            error: process.env.NODE_ENV === 'development'
+                ? error instanceof Error
+                    ? error.message
+                    : 'Unknown error'
+                : 'Internal server error',
         });
     }
 };
@@ -232,19 +242,19 @@ const getDiagnosticHistory = async (req, res) => {
         const workplaceId = req.user.workplaceId;
         const patient = await Patient_1.default.findOne({
             _id: patientId,
-            pharmacyId: workplaceId
+            workplaceId: workplaceId,
         });
         if (!patient) {
             res.status(404).json({
                 success: false,
-                message: 'Patient not found or access denied'
+                message: 'Patient not found or access denied',
             });
             return;
         }
         const skip = (Number(page) - 1) * Number(limit);
         const diagnosticCases = await DiagnosticCase_1.default.find({
             patientId,
-            workplaceId
+            workplaceId,
         })
             .populate('pharmacistId', 'firstName lastName')
             .sort({ createdAt: -1 })
@@ -253,7 +263,7 @@ const getDiagnosticHistory = async (req, res) => {
             .select('-aiRequestData -pharmacistDecision.modifications');
         const total = await DiagnosticCase_1.default.countDocuments({
             patientId,
-            workplaceId
+            workplaceId,
         });
         res.status(200).json({
             success: true,
@@ -263,23 +273,25 @@ const getDiagnosticHistory = async (req, res) => {
                     current: Number(page),
                     total: Math.ceil(total / Number(limit)),
                     count: diagnosticCases.length,
-                    totalCases: total
-                }
-            }
+                    totalCases: total,
+                },
+            },
         });
     }
     catch (error) {
         logger_1.default.error('Failed to get diagnostic history', {
             error: error instanceof Error ? error.message : 'Unknown error',
             patientId: req.params.patientId,
-            pharmacistId: req.user?._id
+            pharmacistId: req.user?._id,
         });
         res.status(500).json({
             success: false,
             message: 'Failed to get diagnostic history',
-            error: process.env.NODE_ENV === 'development' ?
-                (error instanceof Error ? error.message : 'Unknown error') :
-                'Internal server error'
+            error: process.env.NODE_ENV === 'development'
+                ? error instanceof Error
+                    ? error.message
+                    : 'Unknown error'
+                : 'Internal server error',
         });
     }
 };
@@ -290,34 +302,36 @@ const getDiagnosticCase = async (req, res) => {
         const workplaceId = req.user.workplaceId;
         const diagnosticCase = await DiagnosticCase_1.default.findOne({
             caseId,
-            workplaceId
+            workplaceId,
         })
             .populate('patientId', 'firstName lastName age gender')
             .populate('pharmacistId', 'firstName lastName');
         if (!diagnosticCase) {
             res.status(404).json({
                 success: false,
-                message: 'Diagnostic case not found or access denied'
+                message: 'Diagnostic case not found or access denied',
             });
             return;
         }
         res.status(200).json({
             success: true,
-            data: diagnosticCase
+            data: diagnosticCase,
         });
     }
     catch (error) {
         logger_1.default.error('Failed to get diagnostic case', {
             error: error instanceof Error ? error.message : 'Unknown error',
             caseId: req.params.caseId,
-            pharmacistId: req.user?._id
+            pharmacistId: req.user?._id,
         });
         res.status(500).json({
             success: false,
             message: 'Failed to get diagnostic case',
-            error: process.env.NODE_ENV === 'development' ?
-                (error instanceof Error ? error.message : 'Unknown error') :
-                'Internal server error'
+            error: process.env.NODE_ENV === 'development'
+                ? error instanceof Error
+                    ? error.message
+                    : 'Unknown error'
+                : 'Internal server error',
         });
     }
 };
@@ -329,7 +343,7 @@ const checkDrugInteractions = async (req, res) => {
             res.status(400).json({
                 success: false,
                 message: 'Validation failed',
-                errors: errors.array()
+                errors: errors.array(),
             });
             return;
         }
@@ -337,7 +351,7 @@ const checkDrugInteractions = async (req, res) => {
         if (!medications || medications.length < 2) {
             res.status(400).json({
                 success: false,
-                message: 'At least two medications are required for interaction checking'
+                message: 'At least two medications are required for interaction checking',
             });
             return;
         }
@@ -347,21 +361,23 @@ const checkDrugInteractions = async (req, res) => {
             data: {
                 interactions,
                 medicationsChecked: medications.length,
-                interactionsFound: interactions.length
-            }
+                interactionsFound: interactions.length,
+            },
         });
     }
     catch (error) {
         logger_1.default.error('Drug interaction check failed', {
             error: error instanceof Error ? error.message : 'Unknown error',
-            pharmacistId: req.user?._id
+            pharmacistId: req.user?._id,
         });
         res.status(500).json({
             success: false,
             message: 'Drug interaction check failed',
-            error: process.env.NODE_ENV === 'development' ?
-                (error instanceof Error ? error.message : 'Unknown error') :
-                'Internal server error'
+            error: process.env.NODE_ENV === 'development'
+                ? error instanceof Error
+                    ? error.message
+                    : 'Unknown error'
+                : 'Internal server error',
         });
     }
 };
@@ -371,7 +387,7 @@ const testAIConnection = async (req, res) => {
         if (req.user.role !== 'super_admin') {
             res.status(403).json({
                 success: false,
-                message: 'Access denied. Super admin required.'
+                message: 'Access denied. Super admin required.',
             });
             return;
         }
@@ -381,22 +397,24 @@ const testAIConnection = async (req, res) => {
             data: {
                 connected: isConnected,
                 service: 'OpenRouter API',
-                model: 'deepseek/deepseek-reasoner',
-                timestamp: new Date().toISOString()
-            }
+                model: 'deepseek/deepseek-chat-v3.1:free',
+                timestamp: new Date().toISOString(),
+            },
         });
     }
     catch (error) {
         logger_1.default.error('AI connection test failed', {
             error: error instanceof Error ? error.message : 'Unknown error',
-            pharmacistId: req.user?._id
+            pharmacistId: req.user?._id,
         });
         res.status(500).json({
             success: false,
             message: 'AI connection test failed',
-            error: process.env.NODE_ENV === 'development' ?
-                (error instanceof Error ? error.message : 'Unknown error') :
-                'Internal server error'
+            error: process.env.NODE_ENV === 'development'
+                ? error instanceof Error
+                    ? error.message
+                    : 'Unknown error'
+                : 'Internal server error',
         });
     }
 };
@@ -407,6 +425,6 @@ exports.default = {
     getDiagnosticHistory: exports.getDiagnosticHistory,
     getDiagnosticCase: exports.getDiagnosticCase,
     checkDrugInteractions: exports.checkDrugInteractions,
-    testAIConnection: exports.testAIConnection
+    testAIConnection: exports.testAIConnection,
 };
 //# sourceMappingURL=diagnosticController.js.map

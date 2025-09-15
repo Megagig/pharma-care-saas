@@ -31,6 +31,9 @@ const server = app.listen(PORT, () => {
   }
 });
 
+// Set server timeout to 90 seconds to handle long AI processing
+server.timeout = 90000; // 90 seconds
+
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err: Error) => {
   console.log(`Unhandled Rejection: ${err.message}`);

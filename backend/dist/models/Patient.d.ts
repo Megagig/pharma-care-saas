@@ -30,6 +30,13 @@ export interface IPatient extends Document {
     genotype?: 'AA' | 'AS' | 'SS' | 'AC' | 'SC' | 'CC';
     weightKg?: number;
     latestVitals?: IPatientVitals;
+    notificationPreferences?: {
+        email: boolean;
+        sms: boolean;
+        push: boolean;
+        resultNotifications: boolean;
+        orderReminders: boolean;
+    };
     metadata?: {
         sharedAccess?: {
             patientId: mongoose.Types.ObjectId;

@@ -141,8 +141,8 @@ const Sidebar = () => {
       show: true,
     },
     {
-      name: 'Lab Result Integration',
-      path: '/pharmacy/lab-integration',
+      name: 'AI Diagnostics & Therapeutics',
+      path: '/pharmacy/diagnostics',
       icon: ScienceIcon,
       show: true,
     },
@@ -216,8 +216,8 @@ const Sidebar = () => {
         getLicenseStatus() === 'pending'
           ? 'Pending'
           : getLicenseStatus() === 'rejected'
-          ? 'Rejected'
-          : null,
+            ? 'Rejected'
+            : null,
     },
     {
       name: 'Subscription Management',

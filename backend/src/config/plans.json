@@ -36,7 +36,10 @@
                 "multi_location_dashboard",
                 "shared_patient_records",
                 "group_analytics",
-                "cdss"
+                "cdss",
+                "ai_diagnostics",
+                "clinical_decision_support",
+                "drug_information"
             ],
             "limits": {
                 "patients": null,
@@ -155,7 +158,10 @@
                 "priority_support",
                 "adr_reporting",
                 "drug_interaction_checker",
-                "dose_calculator"
+                "dose_calculator",
+                "ai_diagnostics",
+                "clinical_decision_support",
+                "drug_information"
             ],
             "limits": {
                 "patients": 2000,
@@ -206,7 +212,10 @@
                 "multi_location_dashboard",
                 "shared_patient_records",
                 "group_analytics",
-                "integrations"
+                "integrations",
+                "ai_diagnostics",
+                "clinical_decision_support",
+                "drug_information"
             ],
             "limits": {
                 "patients": null,
@@ -259,7 +268,10 @@
                 "group_analytics",
                 "cdss",
                 "integrations",
-                "custom_integrations"
+                "custom_integrations",
+                "ai_diagnostics",
+                "clinical_decision_support",
+                "drug_information"
             ],
             "limits": {
                 "patients": null,
@@ -407,6 +419,21 @@
             "name": "Custom Integrations",
             "category": "integration",
             "description": "Custom API integrations and development"
+        },
+        "ai_diagnostics": {
+            "name": "AI Diagnostics",
+            "category": "advanced",
+            "description": "AI-powered diagnostic analysis and clinical decision support"
+        },
+        "clinical_decision_support": {
+            "name": "Clinical Decision Support",
+            "category": "advanced",
+            "description": "Clinical decision support system and diagnostic workflows"
+        },
+        "drug_information": {
+            "name": "Drug Information",
+            "category": "clinical",
+            "description": "Drug interaction checking, contraindications, and drug information lookup"
         }
     },
     "categories": {
