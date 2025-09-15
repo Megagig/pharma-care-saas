@@ -31,8 +31,8 @@ export declare const createPatientSchema: z.ZodObject<{
     gender: z.ZodOptional<z.ZodEnum<{
         [x: string]: string;
     }>>;
-    phone: z.ZodOptional<z.ZodString>;
-    email: z.ZodOptional<z.ZodString>;
+    phone: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodLiteral<"">]>>;
+    email: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodLiteral<"">]>>;
     address: z.ZodOptional<z.ZodString>;
     state: z.ZodOptional<z.ZodEnum<{
         [x: string]: string;
@@ -152,8 +152,8 @@ export declare const updatePatientSchema: z.ZodObject<{
     gender: z.ZodOptional<z.ZodOptional<z.ZodEnum<{
         [x: string]: string;
     }>>>;
-    phone: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    email: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    phone: z.ZodOptional<z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodLiteral<"">]>>>;
+    email: z.ZodOptional<z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodLiteral<"">]>>>;
     address: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     state: z.ZodOptional<z.ZodOptional<z.ZodEnum<{
         [x: string]: string;
@@ -311,6 +311,9 @@ export declare const updateConditionSchema: z.ZodObject<{
 }, z.core.$strip>;
 export declare const conditionParamsSchema: z.ZodObject<{
     id: z.ZodString;
+    conditionId: z.ZodString;
+}, z.core.$strip>;
+export declare const conditionIdSchema: z.ZodObject<{
     conditionId: z.ZodString;
 }, z.core.$strip>;
 export declare const createMedicationSchema: z.ZodObject<{

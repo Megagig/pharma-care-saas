@@ -1,5 +1,5 @@
 import { ApiClient } from '../utils/apiClient';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 
 export interface DrugInteraction {
   interactionPairs: Array<{

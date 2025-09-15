@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../middlewares/auth';
-export type ErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'UNAUTHORIZED' | 'FORBIDDEN' | 'DUPLICATE_RESOURCE' | 'PLAN_LIMIT_EXCEEDED' | 'TENANT_VIOLATION' | 'BUSINESS_RULE_VIOLATION' | 'SERVER_ERROR' | 'BAD_REQUEST';
+export type ErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'UNAUTHORIZED' | 'FORBIDDEN' | 'DUPLICATE_RESOURCE' | 'PLAN_LIMIT_EXCEEDED' | 'TENANT_VIOLATION' | 'BUSINESS_RULE_VIOLATION' | 'SERVER_ERROR' | 'BAD_REQUEST' | 'SERVICE_UNAVAILABLE';
 export interface ApiResponse<T = any> {
     success: boolean;
     message?: string;

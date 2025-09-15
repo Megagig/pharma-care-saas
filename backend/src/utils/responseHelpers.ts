@@ -18,7 +18,8 @@ export type ErrorCode =
   | 'TENANT_VIOLATION'
   | 'BUSINESS_RULE_VIOLATION'
   | 'SERVER_ERROR'
-  | 'BAD_REQUEST';
+  | 'BAD_REQUEST'
+  | 'SERVICE_UNAVAILABLE';
 
 // Standard API response interface
 export interface ApiResponse<T = any> {

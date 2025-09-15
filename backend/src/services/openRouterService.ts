@@ -1,5 +1,29 @@
 import axios, { AxiosResponse } from 'axios';
 import logger from '../utils/logger';
+import { z } from 'zod';
+import {
+  symptomDataSchema,
+  vitalSignsSchema,
+  medicationEntrySchema,
+} from '../modules/diagnostics/validators/diagnosticValidators';
+
+export type ISymptomData = z.infer<typeof symptomDataSchema>;
+export type VitalSigns = z.infer<typeof vitalSignsSchema>;
+export type MedicationEntry = z.infer<typeof medicationEntrySchema>;
+
+export interface LabResult {
+  testName: string;
+  value: string;
+  referenceRange: string;
+  abnormal?: boolean;
+}
+
+interface RetryConfig {
+  maxRetries: number;
+  baseDelay: number;
+  maxDelay: number;
+  backoffMultiplier: number;
+}
 
 interface OpenRouterMessage {
   role: 'system' | 'user' | 'assistant';
@@ -37,36 +61,16 @@ interface OpenRouterResponse {
   usage: OpenRouterUsage;
 }
 
-interface DiagnosticInput {
-  symptoms: {
-    subjective: string[];
-    objective: string[];
-    duration: string;
-    severity: 'mild' | 'moderate' | 'severe';
-    onset: 'acute' | 'chronic' | 'subacute';
-  };
-  labResults?: {
-    testName: string;
-    value: string;
-    referenceRange: string;
-    abnormal: boolean;
-  }[];
-  currentMedications?: {
-    name: string;
-    dosage: string;
-    frequency: string;
-  }[];
-  vitalSigns?: {
-    bloodPressure?: string;
-    heartRate?: number;
-    temperature?: number;
-    respiratoryRate?: number;
-    oxygenSaturation?: number;
-  };
+export interface DiagnosticInput {
+  symptoms: ISymptomData;
+  labResults?: LabResult[];
+  currentMedications?: MedicationEntry[];
+  vitalSigns?: VitalSigns;
   patientAge?: number;
   patientGender?: string;
   allergies?: string[];
   medicalHistory?: string[];
+  workplaceId?: string;
 }
 
 interface DiagnosticResponse {
@@ -109,13 +113,20 @@ class OpenRouterService {
   private apiKey: string;
   private defaultModel: string;
   private timeout: number;
+  private retryConfig: RetryConfig;
 
   constructor() {
     this.baseURL =
       process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
     this.apiKey = process.env.OPENROUTER_API_KEY || '';
     this.defaultModel = 'deepseek/deepseek-chat-v3.1:free'; // Use reasoning mode for complex diagnostics
-    this.timeout = 60000; // 60 seconds timeout
+    this.timeout = 180000; // 3 minutes timeout
+    this.retryConfig = {
+      maxRetries: 3,
+      baseDelay: 1000, // 1 second
+      maxDelay: 10000, // 10 seconds
+      backoffMultiplier: 2,
+    };
 
     if (!this.apiKey) {
       logger.error('OpenRouter API key not configured');
@@ -154,19 +165,21 @@ class OpenRouterService {
         promptLength: userPrompt.length,
       });
 
-      const response: AxiosResponse<OpenRouterResponse> = await axios.post(
-        `${this.baseURL}/chat/completions`,
-        request,
-        {
-          headers: {
-            Authorization: `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
-            'X-Title': 'PharmaCare SaaS - AI Diagnostic Module',
-          },
-          timeout: this.timeout,
-        }
-      );
+      const response = await this.executeWithRetry(async () => {
+        return await axios.post<OpenRouterResponse>(
+          `${this.baseURL}/chat/completions`,
+          request,
+          {
+            headers: {
+              Authorization: `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
+              'X-Title': 'PharmaCare SaaS - AI Diagnostic Module',
+            },
+            timeout: this.timeout,
+          }
+        );
+      });
 
       const processingTime = Date.now() - startTime;
 
@@ -179,7 +192,7 @@ class OpenRouterService {
       }
 
       const aiContent = message.content;
-      const analysis = this.parseAIResponse(aiContent);
+      const analysis = this.parseAndValidateAIResponse(aiContent);
 
       logger.info('Diagnostic analysis completed', {
         requestId: response.data.id,
@@ -195,50 +208,124 @@ class OpenRouterService {
       };
     } catch (error) {
       const processingTime = Date.now() - startTime;
-
-      let errorMessage = 'Unknown error';
-      let statusCode: number | null = null;
-      let responseData = 'N/A';
-
-      if (error instanceof Error) {
-        errorMessage = error.message;
-
-        // Check if it's an axios error with response data
-        if ('response' in error && error.response) {
-          const axiosError = error as any;
-          if (axiosError.response && axiosError.response.status) {
-            statusCode = parseInt(axiosError.response.status, 10);
-          }
-          responseData = JSON.stringify(axiosError.response.data);
-
-          // Specific error handling for common OpenRouter issues
-          if (statusCode) {
-            if (statusCode === 401) {
-              errorMessage = 'Invalid or missing OpenRouter API key';
-            } else if (statusCode === 402) {
-              errorMessage =
-                'OpenRouter API quota exceeded or payment required';
-            } else if (statusCode === 429) {
-              errorMessage = 'OpenRouter API rate limit exceeded';
-            } else if (statusCode >= 500) {
-              errorMessage = 'OpenRouter API server error';
-            }
-          }
-        }
-      }
+      const enhancedError = this.enhanceError(error);
 
       logger.error('OpenRouter API error', {
-        error: errorMessage,
-        statusCode,
-        responseData,
+        error: enhancedError.message,
+        statusCode: enhancedError.statusCode,
+        responseData: enhancedError.responseData,
         processingTime,
         apiKey: this.apiKey ? `${this.apiKey.substring(0, 10)}...` : 'NOT_SET',
         baseURL: this.baseURL,
         model: this.defaultModel,
       });
 
-      throw new Error(`AI diagnostic analysis failed: ${errorMessage}`);
+      throw new Error(`AI diagnostic analysis failed: ${enhancedError.message}`);
     }
+  }
+
+  /**
+   * Execute a function with retry logic for transient failures
+   */
+  private async executeWithRetry<T>(
+    operation: () => Promise<T>,
+    attempt: number = 1
+  ): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      const shouldRetry = this.shouldRetryError(error);
+
+      if (shouldRetry && attempt <= this.retryConfig.maxRetries) {
+        const delay = this.calculateRetryDelay(attempt);
+
+        logger.warn(`OpenRouter request failed, retrying in ${delay}ms`, {
+          attempt,
+          maxRetries: this.retryConfig.maxRetries,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+
+        await this.sleep(delay);
+        return this.executeWithRetry(operation, attempt + 1);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Determine if an error should trigger a retry
+   */
+  private shouldRetryError(error: any): boolean {
+    // Don't retry on authentication errors or client errors
+    if (error?.response?.status) {
+      const status = error.response.status;
+      // Retry on server errors (5xx) and rate limiting (429)
+      return status >= 500 || status === 429;
+    }
+
+    // Retry on network errors (no response)
+    if (error?.code === 'ECONNRESET' || error?.code === 'ETIMEDOUT') {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Calculate exponential backoff delay
+   */
+  private calculateRetryDelay(attempt: number): number {
+    const delay = this.retryConfig.baseDelay * Math.pow(this.retryConfig.backoffMultiplier, attempt - 1);
+    return Math.min(delay, this.retryConfig.maxDelay);
+  }
+
+  /**
+   * Sleep for specified milliseconds
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Enhance error information for better debugging
+   */
+  private enhanceError(error: any): {
+    message: string;
+    statusCode: number | null;
+    responseData: string;
+  } {
+    let errorMessage = 'Unknown error';
+    let statusCode: number | null = null;
+    let responseData = 'N/A';
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+
+      // Check if it's an axios error with response data
+      if ('response' in error && error.response) {
+        const axiosError = error as any;
+        if (axiosError.response && axiosError.response.status) {
+          statusCode = parseInt(axiosError.response.status, 10);
+        }
+        responseData = JSON.stringify(axiosError.response.data);
+
+        // Specific error handling for common OpenRouter issues
+        if (statusCode) {
+          if (statusCode === 401) {
+            errorMessage = 'Invalid or missing OpenRouter API key';
+          } else if (statusCode === 402) {
+            errorMessage = 'OpenRouter API quota exceeded or payment required';
+          } else if (statusCode === 429) {
+            errorMessage = 'OpenRouter API rate limit exceeded';
+          } else if (statusCode >= 500) {
+            errorMessage = 'OpenRouter API server error';
+          }
+        }
+      }
+    }
+
+    return { message: errorMessage, statusCode, responseData };
   }
 
   /**
@@ -389,9 +476,9 @@ Your response must be valid JSON in this exact format:
   }
 
   /**
-   * Parse AI response and extract structured diagnostic data
+   * Parse and validate AI response with comprehensive error handling
    */
-  private parseAIResponse(content: string): DiagnosticResponse {
+  private parseAndValidateAIResponse(content: string): DiagnosticResponse {
     try {
       // Extract JSON from response (handle cases where AI includes extra text)
       const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -401,26 +488,10 @@ Your response must be valid JSON in this exact format:
 
       const parsed = JSON.parse(jsonMatch[0]);
 
-      // Validate required fields
-      if (
-        !parsed.differentialDiagnoses ||
-        !Array.isArray(parsed.differentialDiagnoses)
-      ) {
-        throw new Error('Invalid differential diagnoses format');
-      }
+      // Comprehensive validation
+      const validatedResponse = this.validateDiagnosticResponse(parsed);
 
-      // Ensure disclaimer is present
-      if (!parsed.disclaimer) {
-        parsed.disclaimer =
-          'This AI-generated analysis is for pharmacist consultation only and does not replace professional medical diagnosis. Final clinical decisions must always be made by qualified healthcare professionals.';
-      }
-
-      // Ensure confidence score is present
-      if (typeof parsed.confidenceScore !== 'number') {
-        parsed.confidenceScore = 75; // Default confidence
-      }
-
-      return parsed as DiagnosticResponse;
+      return validatedResponse;
     } catch (error) {
       logger.error('Failed to parse AI response', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -428,6 +499,146 @@ Your response must be valid JSON in this exact format:
       });
       throw new Error('Failed to parse AI diagnostic response');
     }
+  }
+
+  /**
+   * Comprehensive validation of diagnostic response structure
+   */
+  private validateDiagnosticResponse(parsed: any): DiagnosticResponse {
+    const errors: string[] = [];
+
+    // Validate differential diagnoses
+    if (!parsed.differentialDiagnoses || !Array.isArray(parsed.differentialDiagnoses)) {
+      errors.push('Missing or invalid differential diagnoses array');
+    } else {
+      parsed.differentialDiagnoses.forEach((diagnosis: any, index: number) => {
+        if (!diagnosis.condition || typeof diagnosis.condition !== 'string') {
+          errors.push(`Diagnosis ${index}: missing or invalid condition`);
+        }
+        if (typeof diagnosis.probability !== 'number' || diagnosis.probability < 0 || diagnosis.probability > 100) {
+          errors.push(`Diagnosis ${index}: invalid probability (must be 0-100)`);
+        }
+        if (!diagnosis.reasoning || typeof diagnosis.reasoning !== 'string') {
+          errors.push(`Diagnosis ${index}: missing or invalid reasoning`);
+        }
+        if (!['low', 'medium', 'high'].includes(diagnosis.severity)) {
+          errors.push(`Diagnosis ${index}: invalid severity (must be low/medium/high)`);
+        }
+      });
+    }
+
+    // Validate recommended tests (optional but if present, must be valid)
+    if (parsed.recommendedTests) {
+      if (!Array.isArray(parsed.recommendedTests)) {
+        errors.push('Recommended tests must be an array');
+      } else {
+        parsed.recommendedTests.forEach((test: any, index: number) => {
+          if (!test.testName || typeof test.testName !== 'string') {
+            errors.push(`Test ${index}: missing or invalid test name`);
+          }
+          if (!['urgent', 'routine', 'optional'].includes(test.priority)) {
+            errors.push(`Test ${index}: invalid priority (must be urgent/routine/optional)`);
+          }
+          if (!test.reasoning || typeof test.reasoning !== 'string') {
+            errors.push(`Test ${index}: missing or invalid reasoning`);
+          }
+        });
+      }
+    }
+
+    // Validate therapeutic options (optional but if present, must be valid)
+    if (parsed.therapeuticOptions) {
+      if (!Array.isArray(parsed.therapeuticOptions)) {
+        errors.push('Therapeutic options must be an array');
+      } else {
+        parsed.therapeuticOptions.forEach((option: any, index: number) => {
+          if (!option.medication || typeof option.medication !== 'string') {
+            errors.push(`Therapeutic option ${index}: missing or invalid medication`);
+          }
+          if (!option.dosage || typeof option.dosage !== 'string') {
+            errors.push(`Therapeutic option ${index}: missing or invalid dosage`);
+          }
+          if (!option.frequency || typeof option.frequency !== 'string') {
+            errors.push(`Therapeutic option ${index}: missing or invalid frequency`);
+          }
+          if (!option.reasoning || typeof option.reasoning !== 'string') {
+            errors.push(`Therapeutic option ${index}: missing or invalid reasoning`);
+          }
+          if (option.safetyNotes && !Array.isArray(option.safetyNotes)) {
+            errors.push(`Therapeutic option ${index}: safety notes must be an array`);
+          }
+        });
+      }
+    }
+
+    // Validate red flags (optional but if present, must be valid)
+    if (parsed.redFlags) {
+      if (!Array.isArray(parsed.redFlags)) {
+        errors.push('Red flags must be an array');
+      } else {
+        parsed.redFlags.forEach((flag: any, index: number) => {
+          if (!flag.flag || typeof flag.flag !== 'string') {
+            errors.push(`Red flag ${index}: missing or invalid flag description`);
+          }
+          if (!['low', 'medium', 'high', 'critical'].includes(flag.severity)) {
+            errors.push(`Red flag ${index}: invalid severity (must be low/medium/high/critical)`);
+          }
+          if (!flag.action || typeof flag.action !== 'string') {
+            errors.push(`Red flag ${index}: missing or invalid action`);
+          }
+        });
+      }
+    }
+
+    // Validate referral recommendation (optional but if present, must be valid)
+    if (parsed.referralRecommendation) {
+      const ref = parsed.referralRecommendation;
+      if (typeof ref.recommended !== 'boolean') {
+        errors.push('Referral recommendation: recommended must be boolean');
+      }
+      if (ref.recommended) {
+        if (!['immediate', 'within_24h', 'routine'].includes(ref.urgency)) {
+          errors.push('Referral recommendation: invalid urgency (must be immediate/within_24h/routine)');
+        }
+        if (!ref.specialty || typeof ref.specialty !== 'string') {
+          errors.push('Referral recommendation: missing or invalid specialty');
+        }
+        if (!ref.reason || typeof ref.reason !== 'string') {
+          errors.push('Referral recommendation: missing or invalid reason');
+        }
+      }
+    }
+
+    // Validate confidence score
+    if (typeof parsed.confidenceScore !== 'number' || parsed.confidenceScore < 0 || parsed.confidenceScore > 100) {
+      // Set default if invalid
+      parsed.confidenceScore = 75;
+      logger.warn('Invalid confidence score, using default value of 75');
+    }
+
+    // Ensure disclaimer is present
+    if (!parsed.disclaimer || typeof parsed.disclaimer !== 'string') {
+      parsed.disclaimer =
+        'This AI-generated analysis is for pharmacist consultation only and does not replace professional medical diagnosis. Final clinical decisions must always be made by qualified healthcare professionals.';
+    }
+
+    // If there are validation errors, throw them
+    if (errors.length > 0) {
+      throw new Error(`Validation errors: ${errors.join('; ')}`);
+    }
+
+    // Set defaults for optional arrays if not present
+    if (!parsed.recommendedTests) {
+      parsed.recommendedTests = [];
+    }
+    if (!parsed.therapeuticOptions) {
+      parsed.therapeuticOptions = [];
+    }
+    if (!parsed.redFlags) {
+      parsed.redFlags = [];
+    }
+
+    return parsed as DiagnosticResponse;
   }
 
   /**
@@ -447,7 +658,7 @@ Your response must be valid JSON in this exact format:
           'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
           'X-Title': 'PharmaCare SaaS - AI Diagnostic Module',
         },
-        timeout: 10000,
+        timeout: 30000, // 30 seconds for connection test
       });
 
       logger.info('OpenRouter connection test successful', {
@@ -484,4 +695,4 @@ Your response must be valid JSON in this exact format:
 }
 
 export default new OpenRouterService();
-export { DiagnosticInput, DiagnosticResponse };
+export { DiagnosticResponse };

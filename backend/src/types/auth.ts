@@ -10,7 +10,8 @@ export type UserRole =
   | 'pharmacy_team'
   | 'pharmacy_outlet'
   | 'intern_pharmacist'
-  | 'super_admin';
+  | 'super_admin'
+  | 'owner';
 
 // Define workplace roles
 export type WorkplaceRole =

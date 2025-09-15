@@ -1,0 +1,463 @@
+{
+    "info": {
+        "name": "AI Diagnostics & Therapeutics API",
+        "description": "Comprehensive API collection for AI-powered clinical decision support",
+        "version": "1.0.0",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{jwt_token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:5000/api",
+            "type": "string"
+        },
+        {
+            "key": "workspace_id",
+            "value": "507f1f77bcf86cd799439011",
+            "type": "string"
+        },
+        {
+            "key": "patient_id",
+            "value": "507f1f77bcf86cd799439012",
+            "type": "string"
+        },
+        {
+            "key": "diagnostic_request_id",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Authentication",
+            "item": [
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"pharmacist@example.com\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Diagnostic Requests",
+            "item": [
+                {
+                    "name": "Create Diagnostic Request",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.collectionVariables.set('diagnostic_request_id', response.data.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Workspace-ID",
+                                "value": "{{workspace_id}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"patientId\": \"{{patient_id}}\",\n  \"symptoms\": {\n    \"subjective\": [\"chest pain\", \"shortness of breath\"],\n    \"objective\": [\"elevated blood pressure\", \"rapid heart rate\"],\n    \"duration\": \"2 days\",\n    \"severity\": \"moderate\",\n    \"onset\": \"acute\"\n  },\n  \"vitals\": {\n    \"bloodPressure\": \"150/95\",\n    \"heartRate\": 110,\n    \"temperature\": 98.6,\n    \"respiratoryRate\": 22\n  },\n  \"currentMedications\": [\n    {\n      \"name\": \"Lisinopril\",\n      \"dosage\": \"10mg\",\n      \"frequency\": \"once daily\"\n    }\n  ],\n  \"allergies\": [\"penicillin\", \"sulfa\"],\n  \"medicalHistory\": [\"hypertension\", \"diabetes\"],\n  \"consent\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/diagnostics",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "diagnostics"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Diagnostic Result",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Workspace-ID",
+                                "value": "{{workspace_id}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/diagnostics/{{diagnostic_request_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "diagnostics",
+                                "{{diagnostic_request_id}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Approve Diagnostic Result",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Workspace-ID",
+                                "value": "{{workspace_id}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"approved\",\n  \"modifications\": \"Agreed with AI assessment. Will proceed with cardiology referral.\",\n  \"createIntervention\": true,\n  \"interventionNotes\": \"Patient counseled on chest pain symptoms and advised to seek immediate care if symptoms worsen.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/diagnostics/{{diagnostic_request_id}}/approve",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "diagnostics",
+                                "{{diagnostic_request_id}}",
+                                "approve"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Patient Diagnostic History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Workspace-ID",
+                                "value": "{{workspace_id}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/diagnostics/history/{{patient_id}}?page=1&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "diagnostics",
+                                "history",
+                                "{{patient_id}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Diagnostic Dashboard",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Workspace-ID",
+                                "value": "{{workspace_id}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/diagnostics/dashboard",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "diagnostics",
+                                "dashboard"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Lab Management",
+            "item": [
+                {
+                    "name": "Create Lab Order",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Workspace-ID",
+                                "value": "{{workspace_id}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"patientId\": \"{{patient_id}}\",\n  \"tests\": [\n    {\n      \"code\": \"TROP_I\",\n      \"name\": \"Troponin I\",\n      \"loincCode\": \"10839-9\",\n      \"indication\": \"Rule out myocardial infarction\",\n      \"priority\": \"urgent\"\n    },\n    {\n      \"code\": \"BNP\",\n      \"name\": \"B-type Natriuretic Peptide\",\n      \"loincCode\": \"30934-4\",\n      \"indication\": \"Assess heart failure\",\n      \"priority\": \"routine\"\n    }\n  ],\n  \"indication\": \"Chest pain evaluation\",\n  \"expectedDate\": \"2024-01-16T08:00:00Z\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/lab/orders",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "lab",
+                                "orders"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Add Lab Result",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Workspace-ID",
+                                "value": "{{workspace_id}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"patientId\": \"{{patient_id}}\",\n  \"testCode\": \"TROP_I\",\n  \"testName\": \"Troponin I\",\n  \"value\": \"0.15\",\n  \"unit\": \"ng/mL\",\n  \"referenceRange\": {\n    \"low\": 0.0,\n    \"high\": 0.04,\n    \"text\": \"< 0.04 ng/mL\"\n  },\n  \"interpretation\": \"high\",\n  \"flags\": [\"H\", \"CRITICAL\"],\n  \"performedAt\": \"2024-01-16T08:30:00Z\",\n  \"loincCode\": \"10839-9\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/lab/results",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "lab",
+                                "results"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Lab Trends",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Workspace-ID",
+                                "value": "{{workspace_id}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/lab/trends/{{patient_id}}/TROP_I?period=30d",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "lab",
+                                "trends",
+                                "{{patient_id}}",
+                                "TROP_I"
+                            ],
+                            "query": [
+                                {
+                                    "key": "period",
+                                    "value": "30d"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Import FHIR Lab Results",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Workspace-ID",
+                                "value": "{{workspace_id}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fhirBundle\": {\n    \"resourceType\": \"Bundle\",\n    \"type\": \"collection\",\n    \"entry\": [\n      {\n        \"resource\": {\n          \"resourceType\": \"Observation\",\n          \"status\": \"final\",\n          \"code\": {\n            \"coding\": [\n              {\n                \"system\": \"http://loinc.org\",\n                \"code\": \"10839-9\",\n                \"display\": \"Troponin I\"\n              }\n            ]\n          },\n          \"subject\": {\n            \"reference\": \"Patient/123\"\n          },\n          \"valueQuantity\": {\n            \"value\": 0.15,\n            \"unit\": \"ng/mL\"\n          },\n          \"referenceRange\": [\n            {\n              \"low\": {\n                \"value\": 0.0,\n                \"unit\": \"ng/mL\"\n              },\n              \"high\": {\n                \"value\": 0.04,\n                \"unit\": \"ng/mL\"\n              }\n            }\n          ]\n        }\n      }\n    ]\n  },\n  \"patientMapping\": {\n    \"Patient/123\": \"{{patient_id}}\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/lab/import/fhir",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "lab",
+                                "import",
+                                "fhir"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Drug Interactions",
+            "item": [
+                {
+                    "name": "Check Drug Interactions",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Workspace-ID",
+                                "value": "{{workspace_id}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"medications\": [\"aspirin\", \"warfarin\", \"lisinopril\"],\n  \"patientAllergies\": [\"penicillin\", \"sulfa\"],\n  \"patientConditions\": [\"hypertension\", \"atrial fibrillation\"]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/interactions/check",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interactions",
+                                "check"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "System Health",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/health",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "health"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Auto-refresh JWT token if needed",
+                    "const token = pm.collectionVariables.get('jwt_token');",
+                    "if (!token) {",
+                    "    console.log('No JWT token found. Please login first.');",
+                    "}"
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Global test script for all requests",
+                    "pm.test('Response time is less than 5000ms', function () {",
+                    "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                    "});",
+                    "",
+                    "pm.test('Response has proper headers', function () {",
+                    "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                    "});",
+                    "",
+                    "if (pm.response.code !== 200 && pm.response.code !== 201) {",
+                    "    pm.test('Error response has proper format', function () {",
+                    "        const response = pm.response.json();",
+                    "        pm.expect(response).to.have.property('success', false);",
+                    "        pm.expect(response).to.have.property('error');",
+                    "        pm.expect(response.error).to.have.property('code');",
+                    "        pm.expect(response.error).to.have.property('message');",
+                    "    });",
+                    "}"
+                ]
+            }
+        }
+    ]
+}

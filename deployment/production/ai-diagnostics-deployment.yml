@@ -1,0 +1,338 @@
+# AI Diagnostics & Therapeutics Module - Production Deployment Configuration
+# Kubernetes deployment configuration for production environment
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pharmacare-prod
+  labels:
+    name: pharmacare-prod
+    environment: production
+
+---
+# ConfigMap for AI Diagnostics configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-diagnostics-config
+  namespace: pharmacare-prod
+data:
+  NODE_ENV: 'production'
+  PORT: '5000'
+  LOG_LEVEL: 'info'
+  LOG_FORMAT: 'json'
+  ENABLE_PERFORMANCE_MONITORING: 'true'
+  AI_DIAGNOSTICS_ENABLED: 'true'
+  LAB_INTEGRATION_ENABLED: 'true'
+  ADVANCED_ANALYTICS_ENABLED: 'true'
+  HIPAA_COMPLIANCE_MODE: 'true'
+  GDPR_COMPLIANCE_MODE: 'true'
+  AUDIT_LOG_ENABLED: 'true'
+  HEALTH_CHECK_ENABLED: 'true'
+  TRUST_PROXY: 'true'
+  FORCE_HTTPS: 'true'
+
+---
+# Secret for sensitive configuration
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ai-diagnostics-secrets
+  namespace: pharmacare-prod
+type: Opaque
+stringData:
+  MONGODB_URI: 'mongodb://username:password@mongodb-cluster:27017/pharmacare-prod?authSource=admin&replicaSet=rs0&ssl=true'
+  JWT_SECRET: 'your-super-secure-jwt-secret-256-bits-minimum'
+  JWT_REFRESH_SECRET: 'your-super-secure-refresh-secret-256-bits-minimum'
+  SESSION_SECRET: 'your-super-secure-session-secret-256-bits-minimum'
+  OPENROUTER_API_KEY: 'your-openrouter-api-key'
+  OPENFDA_API_KEY: 'your-openfda-api-key'
+  LOINC_API_KEY: 'your-loinc-api-key'
+  REDIS_PASSWORD: 'your-redis-password'
+  SMTP_PASS: 'your-resend-api-key'
+  CLOUDINARY_API_SECRET: 'your-cloudinary-secret'
+  SENTRY_DSN: 'your-sentry-dsn'
+  DB_ENCRYPTION_KEY: 'your-database-encryption-key-256-bits'
+  BACKUP_ENCRYPTION_KEY: 'your-backup-encryption-key'
+
+---
+# Deployment for AI Diagnostics API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-diagnostics-api
+  namespace: pharmacare-prod
+  labels:
+    app: ai-diagnostics-api
+    version: v1.0.0
+    component: backend
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: ai-diagnostics-api
+  template:
+    metadata:
+      labels:
+        app: ai-diagnostics-api
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '9090'
+        prometheus.io/path: '/metrics'
+    spec:
+      serviceAccountName: ai-diagnostics-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: ai-diagnostics-api
+          image: pharmacare/ai-diagnostics-api:v1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+              name: http
+              protocol: TCP
+            - containerPort: 9090
+              name: metrics
+              protocol: TCP
+          env:
+            - name: INSTANCE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          envFrom:
+            - configMapRef:
+                name: ai-diagnostics-config
+            - secretRef:
+                name: ai-diagnostics-secrets
+          resources:
+            requests:
+              memory: '1Gi'
+              cpu: '500m'
+            limits:
+              memory: '2Gi'
+              cpu: '1000m'
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health/ready
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /api/health/startup
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+          volumeMounts:
+            - name: logs
+              mountPath: /var/log/pharmacare
+            - name: uploads
+              mountPath: /var/uploads/pharmacare
+            - name: ssl-certs
+              mountPath: /etc/ssl/certs
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: logs
+          persistentVolumeClaim:
+            claimName: ai-diagnostics-logs-pvc
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: ai-diagnostics-uploads-pvc
+        - name: ssl-certs
+          secret:
+            secretName: ssl-certificates
+      nodeSelector:
+        node-type: application
+      tolerations:
+        - key: 'application'
+          operator: 'Equal'
+          value: 'true'
+          effect: 'NoSchedule'
+
+---
+# Service for AI Diagnostics API
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-diagnostics-api-service
+  namespace: pharmacare-prod
+  labels:
+    app: ai-diagnostics-api
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: 'nlb'
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: 'http'
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 5000
+      protocol: TCP
+      name: http
+    - port: 443
+      targetPort: 5000
+      protocol: TCP
+      name: https
+  selector:
+    app: ai-diagnostics-api
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ai-diagnostics-api-hpa
+  namespace: pharmacare-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-diagnostics-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60
+
+---
+# PersistentVolumeClaim for logs
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ai-diagnostics-logs-pvc
+  namespace: pharmacare-prod
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: efs-storage-class
+
+---
+# PersistentVolumeClaim for uploads
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ai-diagnostics-uploads-pvc
+  namespace: pharmacare-prod
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: efs-storage-class
+
+---
+# ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-diagnostics-service-account
+  namespace: pharmacare-prod
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT-ID:role/ai-diagnostics-pod-role
+
+---
+# NetworkPolicy for security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ai-diagnostics-network-policy
+  namespace: pharmacare-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: ai-diagnostics-api
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: pharmacare-prod
+        - podSelector:
+            matchLabels:
+              app: nginx-ingress
+      ports:
+        - protocol: TCP
+          port: 5000
+  egress:
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 27017 # MongoDB
+        - protocol: TCP
+          port: 6379 # Redis
+        - protocol: TCP
+          port: 443 # HTTPS for external APIs
+        - protocol: TCP
+          port: 53 # DNS
+        - protocol: UDP
+          port: 53 # DNS
+
+---
+# PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ai-diagnostics-api-pdb
+  namespace: pharmacare-prod
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: ai-diagnostics-api

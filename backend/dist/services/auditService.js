@@ -101,6 +101,17 @@ class AuditService {
             riskLevel: accessType === 'delete' ? 'high' : 'medium',
         });
     }
+    static async logEvent(context, eventData) {
+        return this.logActivity(context, {
+            action: eventData.action,
+            resourceType: eventData.resourceType || 'System',
+            resourceId: eventData.resourceId || context.userId,
+            patientId: eventData.patientId,
+            details: eventData.details || {},
+            complianceCategory: eventData.complianceCategory || 'system_security',
+            riskLevel: eventData.riskLevel || 'low',
+        });
+    }
     static async logAuthEvent(context, action, details = {}) {
         if (!context.userId || !context.workplaceId) {
             logger_1.default.warn('Incomplete context for auth event', { action, context });

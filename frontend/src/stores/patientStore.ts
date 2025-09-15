@@ -93,16 +93,6 @@ export const usePatientStore = create<PatientStore>()(
 
       // CRUD operations
       fetchPatients: async (filters) => {
-        // Prevent automatic API calls in development/testing
-        const isProduction = import.meta.env.PROD;
-
-        if (!isProduction) {
-          console.warn(
-            'Skipping API call - no token found in development mode'
-          );
-          return;
-        }
-
         const { setLoading, setError } = get();
         setLoading('fetchPatients', true);
         setError('fetchPatients', null);

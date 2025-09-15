@@ -95,15 +95,6 @@ const patientSchema = new mongoose_1.Schema({
     },
     phone: {
         type: String,
-        validate: {
-            validator: function (value) {
-                if (value) {
-                    return /^\+234[789][01]\d{8}$/.test(value);
-                }
-                return true;
-            },
-            message: 'Phone must be in E.164 format (+234...)',
-        },
     },
     email: {
         type: String,
@@ -182,15 +173,24 @@ const patientSchema = new mongoose_1.Schema({
         },
         recordedAt: Date,
     },
+    notificationPreferences: {
+        email: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false },
+        push: { type: Boolean, default: true },
+        resultNotifications: { type: Boolean, default: true },
+        orderReminders: { type: Boolean, default: true },
+    },
     metadata: {
         sharedAccess: {
             patientId: {
                 type: mongoose_1.Schema.Types.ObjectId,
                 ref: 'Patient',
             },
-            sharedWithLocations: [{
+            sharedWithLocations: [
+                {
                     type: String,
-                }],
+                },
+            ],
             sharedBy: {
                 type: mongoose_1.Schema.Types.ObjectId,
                 ref: 'User',
@@ -227,14 +227,16 @@ const patientSchema = new mongoose_1.Schema({
                 type: mongoose_1.Schema.Types.ObjectId,
                 ref: 'User',
             },
-            steps: [{
+            steps: [
+                {
                     step: String,
                     completedAt: Date,
                     completedBy: {
                         type: mongoose_1.Schema.Types.ObjectId,
                         ref: 'User',
                     },
-                }],
+                },
+            ],
         },
     },
     hasActiveDTP: {
@@ -273,6 +275,12 @@ patientSchema.virtual('computedAge').get(function () {
         return age;
     }
     return this.age;
+});
+patientSchema.virtual('dateOfBirth').get(function () {
+    return this.dob;
+});
+patientSchema.virtual('dateOfBirth').set(function (value) {
+    this.dob = value;
 });
 patientSchema.methods.getAge = function () {
     if (this.dob) {

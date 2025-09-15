@@ -45,6 +45,13 @@ export interface IUser extends Document {
         criticalAlerts: boolean;
         dailyDigest: boolean;
         weeklyReport: boolean;
+        manualLab?: {
+            criticalAlerts: boolean;
+            resultNotifications: boolean;
+            orderReminders: boolean;
+            aiUpdates: boolean;
+            weeklyReports: boolean;
+        };
     };
     themePreference?: 'light' | 'dark' | 'system';
     createdAt: Date;

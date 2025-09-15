@@ -73,6 +73,11 @@ export interface IClinicalNote extends Document {
   deletedBy?: mongoose.Types.ObjectId;
 }
 
+export interface IClinicalNoteModel extends mongoose.Model<IClinicalNote> {
+    findActive(filter?: any): Promise<IClinicalNote[]>;
+    findDeleted(filter?: any): Promise<IClinicalNote[]>;
+}
+
 const attachmentSchema = new Schema({
   fileName: {
     type: String,
@@ -362,7 +367,7 @@ clinicalNoteSchema.statics.findDeleted = function (filter = {}) {
   return this.find({ ...filter, deletedAt: { $exists: true } });
 };
 
-export default mongoose.model<IClinicalNote>(
+export default mongoose.model<IClinicalNote, IClinicalNoteModel>(
   'ClinicalNote',
   clinicalNoteSchema
 );
