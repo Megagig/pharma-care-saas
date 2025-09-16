@@ -489,80 +489,102 @@ export const ModernDashboard: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <Grid container spacing={3} sx={{ mb: 4 }}>
+        {/* First Row - 3 Charts */}
+        <Grid container spacing={4} sx={{ mb: 4 }}>
           {/* Patients by Month - Line Chart */}
-          <Grid item xs={12} md={6} lg={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <DashboardChart
               title="Patients by Month"
               data={patientsByMonth}
               type="line"
-              height={350}
+              height={400}
               colors={[theme.palette.primary.main]}
+              subtitle="Monthly patient registration trends"
+              showLegend={false}
+              interactive={true}
             />
           </Grid>
 
           {/* Medications by Status - Pie Chart */}
-          <Grid item xs={12} md={6} lg={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <DashboardChart
               title="Medications by Status"
               data={medicationsByStatus}
               type="pie"
-              height={350}
+              height={400}
               colors={[
                 theme.palette.success.main,
                 theme.palette.info.main,
                 theme.palette.warning.main,
                 theme.palette.grey[400],
               ]}
+              subtitle="Current medication status distribution"
+              showLegend={true}
+              interactive={true}
             />
           </Grid>
 
           {/* Clinical Notes by Type - Bar Chart */}
-          <Grid item xs={12} md={6} lg={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <DashboardChart
               title="Clinical Notes by Type"
               data={clinicalNotesByType}
               type="bar"
-              height={350}
+              height={400}
               colors={[theme.palette.secondary.main]}
+              subtitle="Distribution of clinical note types"
+              showLegend={false}
+              interactive={true}
             />
           </Grid>
+        </Grid>
 
+        {/* Second Row - 3 Charts */}
+        <Grid container spacing={4} sx={{ mb: 4 }}>
           {/* MTR Sessions by Status - Pie Chart */}
-          <Grid item xs={12} md={6} lg={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <DashboardChart
               title="MTR Sessions by Status"
               data={mtrsByStatus}
               type="pie"
-              height={350}
+              height={400}
               colors={[
                 theme.palette.warning.main,
                 theme.palette.success.main,
                 theme.palette.grey[400],
                 theme.palette.info.main,
               ]}
+              subtitle="Medication therapy review status"
+              showLegend={true}
+              interactive={true}
             />
           </Grid>
 
           {/* Patient Age Distribution - Bar Chart */}
-          <Grid item xs={12} md={6} lg={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <DashboardChart
               title="Patient Age Distribution"
               data={patientAgeDistribution}
               type="bar"
-              height={350}
+              height={400}
               colors={[theme.palette.info.main]}
+              subtitle="Age demographics of patients"
+              showLegend={false}
+              interactive={true}
             />
           </Grid>
 
           {/* Monthly Activity Trend - Line Chart */}
-          <Grid item xs={12} md={6} lg={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <DashboardChart
               title="Monthly Activity Trend"
               data={monthlyActivity}
               type="line"
-              height={350}
+              height={400}
               colors={[theme.palette.success.main]}
+              subtitle="Overall system activity trends"
+              showLegend={false}
+              interactive={true}
             />
           </Grid>
         </Grid>

@@ -119,6 +119,47 @@
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
+/* Professional Chart Grid Layout */
+.dashboard-charts-professional {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-bottom: 40px;
+}
+
+.dashboard-charts-professional .MuiCard-root {
+  min-height: 450px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dashboard-charts-professional .MuiCard-root:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Enhanced Chart Container Spacing */
+.dashboard-charts-professional .MuiCardContent-root {
+  padding: 24px !important;
+}
+
+/* Chart Title Styling */
+.dashboard-charts-professional .MuiTypography-h6 {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+/* Chart Subtitle Styling */
+.dashboard-charts-professional .MuiTypography-body2 {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+}
+
 /* Grid and Layout Improvements */
 .dashboard-grid-item {
   display: flex;
@@ -274,7 +315,16 @@
   }
 
   .dashboard-chart-container {
-    min-height: 300px;
+    min-height: 350px;
+  }
+
+  /* Adjust professional chart grid for medium screens */
+  .dashboard-charts-professional {
+    gap: 24px;
+  }
+
+  .dashboard-charts-professional .MuiCard-root {
+    min-height: 400px;
   }
 }
 
@@ -292,16 +342,26 @@
   }
 
   .dashboard-chart-container {
-    min-height: 250px;
+    min-height: 300px;
   }
 
   .recharts-responsive-container {
-    min-height: 250px !important;
+    min-height: 300px !important;
   }
 
   .dashboard-fab {
     bottom: 16px;
     right: 16px;
+  }
+
+  /* Mobile: Stack charts vertically */
+  .dashboard-charts-professional {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .dashboard-charts-professional .MuiCard-root {
+    min-height: 350px;
   }
 }
 
