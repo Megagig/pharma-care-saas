@@ -241,9 +241,21 @@ const UsageDashboard: React.FC = () => {
         <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
           Usage & Limits
         </Typography>
-        <Grid container spacing={3}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: '1fr 1fr',
+              md: 'repeat(3, 1fr)',
+              lg: 'repeat(5, 1fr)',
+            },
+            gap: 3,
+            width: '100%',
+          }}
+        >
           {[...Array(5)].map((_, index) => (
-            <Grid item xs={12} sm={6} md={4} lg={2.4} key={index}>
+            <Box key={index} sx={{ width: '100%' }}>
               <Card sx={{ height: 200 }}>
                 <CardContent>
                   <Box sx={{ animation: 'pulse 1.5s ease-in-out infinite' }}>
@@ -285,9 +297,9 @@ const UsageDashboard: React.FC = () => {
                   </Box>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
       </Box>
     );
   }
@@ -360,8 +372,22 @@ const UsageDashboard: React.FC = () => {
         </Box>
 
         {/* Usage Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={4} lg={2.4}>
+        <Box
+          className="usage-cards-grid"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: '1fr 1fr',
+              md: 'repeat(3, 1fr)',
+              lg: 'repeat(5, 1fr)',
+            },
+            gap: 3,
+            mb: 4,
+            width: '100%',
+          }}
+        >
+          <Box sx={{ width: '100%' }}>
             <UsageCard
               title="Patients"
               current={usageData.patients.current}
@@ -370,9 +396,9 @@ const UsageDashboard: React.FC = () => {
               icon={<PeopleIcon />}
               color={theme.palette.primary.main}
             />
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={4} lg={2.4}>
+          <Box sx={{ width: '100%' }}>
             <UsageCard
               title="Team Members"
               current={usageData.users.current}
@@ -381,9 +407,9 @@ const UsageDashboard: React.FC = () => {
               icon={<PeopleIcon />}
               color={theme.palette.success.main}
             />
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={4} lg={2.4}>
+          <Box sx={{ width: '100%' }}>
             <UsageCard
               title="Storage"
               current={usageData.storage.current}
@@ -393,9 +419,9 @@ const UsageDashboard: React.FC = () => {
               color={theme.palette.info.main}
               formatValue={formatStorage}
             />
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={4} lg={2.4}>
+          <Box sx={{ width: '100%' }}>
             <UsageCard
               title="API Calls"
               current={usageData.apiCalls.current}
@@ -405,9 +431,9 @@ const UsageDashboard: React.FC = () => {
               color={theme.palette.warning.main}
               formatValue={formatApiCalls}
             />
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={4} lg={2.4}>
+          <Box sx={{ width: '100%' }}>
             <UsageCard
               title="Locations"
               current={usageData.locations.current}
@@ -416,25 +442,35 @@ const UsageDashboard: React.FC = () => {
               icon={<LocationIcon />}
               color={theme.palette.secondary.main}
             />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* API Usage Chart */}
         {apiUsageChartData.length > 0 && (
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
+          <Box
+            className="usage-chart-grid"
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' },
+              gap: 3,
+              width: '100%',
+            }}
+          >
+            <Box sx={{ width: '100%' }}>
               <DashboardChart
                 title="API Usage (Last 7 Days)"
                 data={apiUsageChartData}
                 type="area"
-                height={300}
+                height={350}
                 colors={[theme.palette.warning.main]}
                 subtitle="Daily API call usage trend"
+                showLegend={false}
+                interactive={true}
               />
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} md={4}>
-              <Card sx={{ height: 300 }}>
+            <Box sx={{ width: '100%' }}>
+              <Card sx={{ height: 350 }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
                     Usage Summary
@@ -565,8 +601,8 @@ const UsageDashboard: React.FC = () => {
                   </Box>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         )}
       </Box>
     </motion.div>

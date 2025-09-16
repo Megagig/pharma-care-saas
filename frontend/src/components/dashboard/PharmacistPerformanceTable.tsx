@@ -291,36 +291,50 @@ const PharmacistPerformanceTable: React.FC = () => {
         </Typography>
 
         {/* Performance Charts */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={8}>
+        <Box
+          className="performance-charts-grid"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' },
+            gap: 3,
+            mb: 4,
+            width: '100%',
+          }}
+        >
+          <Box sx={{ width: '100%' }}>
             <DashboardChart
               title="Performance Metrics Comparison"
               data={performanceChartData}
               type="bar"
-              height={300}
+              height={350}
               colors={[
                 theme.palette.primary.main,
                 theme.palette.success.main,
                 theme.palette.warning.main,
               ]}
-              showLegend
+              subtitle="Comparative performance analysis"
+              showLegend={true}
+              interactive={true}
             />
-          </Grid>
-          <Grid item xs={12} md={4}>
+          </Box>
+          <Box sx={{ width: '100%' }}>
             <DashboardChart
               title="Cost Savings by Pharmacist"
               data={costSavingsData}
               type="pie"
-              height={300}
+              height={350}
               colors={[
                 theme.palette.primary.main,
                 theme.palette.secondary.main,
                 theme.palette.success.main,
                 theme.palette.warning.main,
               ]}
+              subtitle="Individual cost savings contribution"
+              showLegend={true}
+              interactive={true}
             />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Performance Table */}
         <Card>
@@ -587,8 +601,21 @@ const PharmacistPerformanceTable: React.FC = () => {
         </Card>
 
         {/* Summary Cards */}
-        <Grid container spacing={3} sx={{ mt: 2 }}>
-          <Grid item xs={12} sm={6} md={3}>
+        <Box
+          className="performance-summary-grid"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: '1fr 1fr',
+              md: 'repeat(4, 1fr)',
+            },
+            gap: 3,
+            mt: 2,
+            width: '100%',
+          }}
+        >
+          <Box sx={{ width: '100%' }}>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" mb={1}>
@@ -611,9 +638,9 @@ const PharmacistPerformanceTable: React.FC = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ width: '100%' }}>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" mb={1}>
@@ -635,9 +662,9 @@ const PharmacistPerformanceTable: React.FC = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ width: '100%' }}>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" mb={1}>
@@ -657,9 +684,9 @@ const PharmacistPerformanceTable: React.FC = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ width: '100%' }}>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" mb={1}>
@@ -681,8 +708,8 @@ const PharmacistPerformanceTable: React.FC = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Box>
     </motion.div>
   );
