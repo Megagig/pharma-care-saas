@@ -1,4 +1,4 @@
-import { apiClient } from './apiClient';
+import { api } from '../lib/api';
 
 export interface SystemActivity {
     id: string;
@@ -35,18 +35,19 @@ class ActivityService {
         try {
             // Fetch recent activities from multiple endpoints and combine them
             const [patientsResponse, notesResponse, medicationsResponse, mtrsResponse] = await Promise.allSettled([
-                apiClient.get('/api/patients', { params: { limit: 5, sort: '-createdAt' } }),
-                apiClient.get('/api/notes', { params: { limit: 5, sort: '-createdAt' } }),
-                apiClient.get('/api/medications', { params: { limit: 5, sort: '-updatedAt' } }),
-                apiClient.get('/api/mtr', { params: { limit: 5, sort: '-createdAt' } }),
+                api.get('/patients', { params: { limit: 5, sort: '-createdAt' } }),
+                api.get('/notes', { params: { limit: 5, sort: '-createdAt' } }),
+                api.get('/medications', { params: { limit: 5, sort: '-updatedAt' } }),
+                api.get('/mtr', { params: { limit: 5, sort: '-createdAt' } }),
             ]);
 
             const systemActivities: SystemActivity[] = [];
             const userActivities: UserActivity[] = [];
 
             // Process patient registrations
-            if (patientsResponse.status === 'fulfilled' && patientsResponse.value.data?.data) {
-                patientsResponse.value.data.data.forEach((patient: any) => {
+            if (patientsResponse.status === 'fulfilled' && patientsResponse.value?.data) {
+                const patientsArray = this.extractArrayFromResponse(patientsResponse.value.data);
+                patientsArray.forEach((patient: any) => {
                     systemActivities.push({
                         id: `patient-${patient._id}`,
                         type: 'patient_registration',
@@ -63,8 +64,9 @@ class ActivityService {
             }
 
             // Process clinical notes
-            if (notesResponse.status === 'fulfilled' && notesResponse.value.data?.data) {
-                notesResponse.value.data.data.forEach((note: any) => {
+            if (notesResponse.status === 'fulfilled' && notesResponse.value?.data) {
+                const notesArray = this.extractArrayFromResponse(notesResponse.value.data);
+                notesArray.forEach((note: any) => {
                     systemActivities.push({
                         id: `note-${note._id}`,
                         type: 'clinical_note',
@@ -81,8 +83,9 @@ class ActivityService {
             }
 
             // Process medication updates
-            if (medicationsResponse.status === 'fulfilled' && medicationsResponse.value.data?.medications) {
-                medicationsResponse.value.data.medications.forEach((medication: any) => {
+            if (medicationsResponse.status === 'fulfilled' && medicationsResponse.value?.data) {
+                const medicationsArray = this.extractArrayFromResponse(medicationsResponse.value.data, 'medications');
+                medicationsArray.forEach((medication: any) => {
                     systemActivities.push({
                         id: `medication-${medication._id}`,
                         type: 'medication_update',
@@ -99,8 +102,9 @@ class ActivityService {
             }
 
             // Process MTR sessions
-            if (mtrsResponse.status === 'fulfilled' && mtrsResponse.value.data?.data) {
-                mtrsResponse.value.data.data.forEach((mtr: unknown) => {
+            if (mtrsResponse.status === 'fulfilled' && mtrsResponse.value?.data) {
+                const mtrsArray = this.extractArrayFromResponse(mtrsResponse.value.data);
+                mtrsArray.forEach((mtr: any) => {
                     systemActivities.push({
                         id: `mtr-${mtr._id}`,
                         type: 'mtr_session',
@@ -230,6 +234,56 @@ class ActivityService {
             default:
                 return '📌';
         }
+    }
+
+    // Helper method to extract array from different response structures
+    private extractArrayFromResponse(responseData: any, arrayKey?: string): unknown[] {
+        if (!responseData) return [];
+
+        // Handle the specific API response structure: { success: true, data: { patients: [...] } }
+        if (responseData.success && responseData.data) {
+            // For patients endpoint
+            if (responseData.data.patients && Array.isArray(responseData.data.patients)) {
+                return responseData.data.patients;
+            }
+            // For medications endpoint
+            if (responseData.data.medications && Array.isArray(responseData.data.medications)) {
+                return responseData.data.medications;
+            }
+            // For notes endpoint
+            if (responseData.data.notes && Array.isArray(responseData.data.notes)) {
+                return responseData.data.notes;
+            }
+            // For MTR endpoint
+            if (responseData.data.mtrs && Array.isArray(responseData.data.mtrs)) {
+                return responseData.data.mtrs;
+            }
+            // If data itself is an array
+            if (Array.isArray(responseData.data)) {
+                return responseData.data;
+            }
+        }
+
+        // If arrayKey is specified, try to get that specific array
+        if (arrayKey && responseData[arrayKey] && Array.isArray(responseData[arrayKey])) {
+            return responseData[arrayKey];
+        }
+
+        // Try common array keys
+        const commonKeys = ['data', 'results', 'items', 'patients', 'medications', 'notes', 'mtrs'];
+        for (const key of commonKeys) {
+            if (responseData[key] && Array.isArray(responseData[key])) {
+                return responseData[key];
+            }
+        }
+
+        // If responseData itself is an array
+        if (Array.isArray(responseData)) {
+            return responseData;
+        }
+
+        // Return empty array if no valid array found
+        return [];
     }
 
     // Helper method to format relative time
