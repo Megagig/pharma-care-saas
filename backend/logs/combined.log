@@ -6200,3 +6200,12 @@
 {"action":"LIST_CLINICAL_NOTES","auditId":"68c92cfab783d39aa993ec15","complianceCategory":"data_access","level":"info","message":"MTR Audit Log Created","resourceId":"68c92cfab783d39aa993ec14","resourceType":"ClinicalNote","riskLevel":"low","service":"mtr-audit","timestamp":"2025-09-16 10:25:15","userId":"68b5cb81f1f0f9758b8afadd","workplaceId":"68b5cb82f1f0f9758b8afadf"}
 {"action":"CLINICAL_NOTE_ROUTE_ACCESS","auditId":"68c92cfbb783d39aa993ec18","category":"data_access","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-16 10:25:15","userId":"68b5cb81f1f0f9758b8afadd"}
 {"action":"LIST_CLINICAL_NOTES","auditId":"68c92cfbb783d39aa993ec19","category":"data_access","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-16 10:25:15","userId":"68b5cb81f1f0f9758b8afadd"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-16 10:43:32"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-16 10:43:39"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-16 10:43:39"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-16 10:43:39"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-16 10:43:39"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-16 10:43:39"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-16 10:43:39"}
+{"alertId":"d2vizwtsr","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.29888002526657%, threshold is 85%","metric":"memory_heap_usage_percent","ruleId":"ve9vz396x","service":"pharma-care-api","threshold":85,"timestamp":"2025-09-16 10:44:02","value":96.29888002526657}
+{"alertId":"d2vizwtsr","duration":30000,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.29888002526657%, threshold is 85%","service":"pharma-care-api","timestamp":"2025-09-16 10:44:32"}
