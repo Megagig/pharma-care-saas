@@ -48,7 +48,10 @@ import {
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboardData } from '../../hooks/useDashboardData';
+import { useDashboardCharts } from '../../hooks/useDashboardCharts';
 import { useClinicalInterventionDashboard } from '../../hooks/useClinicalInterventionDashboard';
+import { useRecentActivities } from '../../hooks/useRecentActivities';
+import { activityService } from '../../services/activityService';
 import DashboardChart from './DashboardChart';
 import QuickActionCard from './QuickActionCard';
 import { useResponsive } from '../../hooks/useResponsive';
@@ -270,15 +273,22 @@ export const ModernDashboard: React.FC = () => {
   // Dashboard data hooks
   const {
     stats,
-    patientsByMonth,
-    medicationsByStatus,
-    clinicalNotesByType,
-    mtrsByStatus,
-    patientAgeDistribution,
-    monthlyActivity,
     loading: dashboardLoading,
     error: dashboardError,
   } = useDashboardData();
+
+  // Chart data hooks - separate for better performance and real data
+  const {
+    clinicalNotesByType,
+    mtrsByStatus,
+    patientsByMonth,
+    medicationsByStatus,
+    patientAgeDistribution,
+    monthlyActivity,
+    loading: chartsLoading,
+    error: chartsError,
+    refresh: refreshCharts,
+  } = useDashboardCharts();
 
   const {
     dashboardMetrics: clinicalMetrics,
@@ -287,6 +297,14 @@ export const ModernDashboard: React.FC = () => {
     refresh: refreshClinical,
   } = useClinicalInterventionDashboard('month');
 
+  const {
+    systemActivities,
+    userActivities,
+    loading: activitiesLoading,
+    error: activitiesError,
+    refresh: refreshActivities,
+  } = useRecentActivities(10);
+
   const [refreshing, setRefreshing] = useState(false);
 
   // Handle refresh
@@ -294,6 +312,8 @@ export const ModernDashboard: React.FC = () => {
     setRefreshing(true);
     try {
       await refreshClinical();
+      refreshCharts(); // Refresh chart data as well
+      refreshActivities(); // Refresh activities
       // Add a small delay for better UX
       setTimeout(() => setRefreshing(false), 1000);
     } catch (error) {
@@ -548,96 +568,318 @@ export const ModernDashboard: React.FC = () => {
         >
           {/* Patients by Month - Line Chart */}
           <Box sx={{ width: '100%' }}>
-            <DashboardChart
-              title="Patients by Month"
-              data={patientsByMonth}
-              type="line"
-              height={450}
-              colors={[theme.palette.primary.main]}
-              subtitle="Monthly patient registration trends"
-              showLegend={false}
-              interactive={true}
-            />
+            {chartsLoading ? (
+              <Card
+                sx={{
+                  height: 450,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Box sx={{ textAlign: 'center' }}>
+                  <Skeleton
+                    variant="text"
+                    width="60%"
+                    height={40}
+                    sx={{ mb: 2 }}
+                  />
+                  <Skeleton variant="rectangular" width="100%" height={300} />
+                </Box>
+              </Card>
+            ) : chartsError ? (
+              <Card
+                sx={{
+                  height: 450,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Alert severity="error">
+                  Error loading chart: {chartsError}
+                </Alert>
+              </Card>
+            ) : (
+              <DashboardChart
+                title="Patients by Month"
+                data={patientsByMonth}
+                type="line"
+                height={450}
+                colors={[theme.palette.primary.main]}
+                subtitle={`Monthly patient registration trends (${patientsByMonth.reduce(
+                  (sum, item) => sum + item.value,
+                  0
+                )} total)`}
+                showLegend={false}
+                interactive={true}
+              />
+            )}
           </Box>
 
           {/* Medications by Status - Pie Chart */}
           <Box sx={{ width: '100%' }}>
-            <DashboardChart
-              title="Medications by Status"
-              data={medicationsByStatus}
-              type="pie"
-              height={450}
-              colors={[
-                theme.palette.success.main,
-                theme.palette.info.main,
-                theme.palette.warning.main,
-                theme.palette.grey[400],
-              ]}
-              subtitle="Current medication status distribution"
-              showLegend={true}
-              interactive={true}
-            />
+            {chartsLoading ? (
+              <Card
+                sx={{
+                  height: 450,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Box sx={{ textAlign: 'center' }}>
+                  <Skeleton
+                    variant="text"
+                    width="60%"
+                    height={40}
+                    sx={{ mb: 2 }}
+                  />
+                  <Skeleton variant="circular" width={300} height={300} />
+                </Box>
+              </Card>
+            ) : chartsError ? (
+              <Card
+                sx={{
+                  height: 450,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Alert severity="error">
+                  Error loading chart: {chartsError}
+                </Alert>
+              </Card>
+            ) : (
+              <DashboardChart
+                title="Medications by Status"
+                data={medicationsByStatus}
+                type="pie"
+                height={450}
+                colors={[
+                  theme.palette.success.main,
+                  theme.palette.info.main,
+                  theme.palette.warning.main,
+                  theme.palette.grey[400],
+                ]}
+                subtitle={`Current medication status distribution (${medicationsByStatus.reduce(
+                  (sum, item) => sum + item.value,
+                  0
+                )} total)`}
+                showLegend={true}
+                interactive={true}
+              />
+            )}
           </Box>
 
           {/* Clinical Notes by Type - Bar Chart */}
           <Box sx={{ width: '100%' }}>
-            <DashboardChart
-              title="Clinical Notes by Type"
-              data={clinicalNotesByType}
-              type="bar"
-              height={450}
-              colors={[theme.palette.secondary.main]}
-              subtitle="Distribution of clinical note types"
-              showLegend={false}
-              interactive={true}
-            />
+            {chartsLoading ? (
+              <Card
+                sx={{
+                  height: 450,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Box sx={{ textAlign: 'center' }}>
+                  <Skeleton
+                    variant="text"
+                    width="60%"
+                    height={40}
+                    sx={{ mb: 2 }}
+                  />
+                  <Skeleton variant="rectangular" width="100%" height={300} />
+                </Box>
+              </Card>
+            ) : chartsError ? (
+              <Card
+                sx={{
+                  height: 450,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Alert severity="error">
+                  Error loading chart: {chartsError}
+                </Alert>
+              </Card>
+            ) : (
+              <DashboardChart
+                title="Clinical Notes by Type"
+                data={clinicalNotesByType}
+                type="bar"
+                height={450}
+                colors={[theme.palette.secondary.main]}
+                subtitle={`Distribution of clinical note types (${clinicalNotesByType.reduce(
+                  (sum, item) => sum + item.value,
+                  0
+                )} total)`}
+                showLegend={false}
+                interactive={true}
+              />
+            )}
           </Box>
 
           {/* MTR Sessions by Status - Pie Chart */}
           <Box sx={{ width: '100%' }}>
-            <DashboardChart
-              title="MTR Sessions by Status"
-              data={mtrsByStatus}
-              type="pie"
-              height={450}
-              colors={[
-                theme.palette.warning.main,
-                theme.palette.success.main,
-                theme.palette.grey[400],
-                theme.palette.info.main,
-              ]}
-              subtitle="Medication therapy review status"
-              showLegend={true}
-              interactive={true}
-            />
+            {chartsLoading ? (
+              <Card
+                sx={{
+                  height: 450,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Box sx={{ textAlign: 'center' }}>
+                  <Skeleton
+                    variant="text"
+                    width="60%"
+                    height={40}
+                    sx={{ mb: 2 }}
+                  />
+                  <Skeleton variant="circular" width={300} height={300} />
+                </Box>
+              </Card>
+            ) : chartsError ? (
+              <Card
+                sx={{
+                  height: 450,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Alert severity="error">
+                  Error loading chart: {chartsError}
+                </Alert>
+              </Card>
+            ) : (
+              <DashboardChart
+                title="MTR Sessions by Status"
+                data={mtrsByStatus}
+                type="pie"
+                height={450}
+                colors={[
+                  theme.palette.warning.main,
+                  theme.palette.success.main,
+                  theme.palette.grey[400],
+                  theme.palette.info.main,
+                ]}
+                subtitle={`Medication therapy review status (${mtrsByStatus.reduce(
+                  (sum, item) => sum + item.value,
+                  0
+                )} total)`}
+                showLegend={true}
+                interactive={true}
+              />
+            )}
           </Box>
 
           {/* Patient Age Distribution - Bar Chart */}
           <Box sx={{ width: '100%' }}>
-            <DashboardChart
-              title="Patient Age Distribution"
-              data={patientAgeDistribution}
-              type="bar"
-              height={450}
-              colors={[theme.palette.info.main]}
-              subtitle="Age demographics of patients"
-              showLegend={false}
-              interactive={true}
-            />
+            {chartsLoading ? (
+              <Card
+                sx={{
+                  height: 450,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Box sx={{ textAlign: 'center' }}>
+                  <Skeleton
+                    variant="text"
+                    width="60%"
+                    height={40}
+                    sx={{ mb: 2 }}
+                  />
+                  <Skeleton variant="rectangular" width="100%" height={300} />
+                </Box>
+              </Card>
+            ) : chartsError ? (
+              <Card
+                sx={{
+                  height: 450,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Alert severity="error">
+                  Error loading chart: {chartsError}
+                </Alert>
+              </Card>
+            ) : (
+              <DashboardChart
+                title="Patient Age Distribution"
+                data={patientAgeDistribution}
+                type="bar"
+                height={450}
+                colors={[theme.palette.info.main]}
+                subtitle={`Age demographics of patients (${patientAgeDistribution.reduce(
+                  (sum, item) => sum + item.value,
+                  0
+                )} total)`}
+                showLegend={false}
+                interactive={true}
+              />
+            )}
           </Box>
 
           {/* Monthly Activity Trend - Line Chart */}
           <Box sx={{ width: '100%' }}>
-            <DashboardChart
-              title="Monthly Activity Trend"
-              data={monthlyActivity}
-              type="line"
-              height={450}
-              colors={[theme.palette.success.main]}
-              subtitle="Overall system activity trends"
-              showLegend={false}
-              interactive={true}
-            />
+            {chartsLoading ? (
+              <Card
+                sx={{
+                  height: 450,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Box sx={{ textAlign: 'center' }}>
+                  <Skeleton
+                    variant="text"
+                    width="60%"
+                    height={40}
+                    sx={{ mb: 2 }}
+                  />
+                  <Skeleton variant="rectangular" width="100%" height={300} />
+                </Box>
+              </Card>
+            ) : chartsError ? (
+              <Card
+                sx={{
+                  height: 450,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Alert severity="error">
+                  Error loading chart: {chartsError}
+                </Alert>
+              </Card>
+            ) : (
+              <DashboardChart
+                title="Monthly Activity Trend"
+                data={monthlyActivity}
+                type="line"
+                height={450}
+                colors={[theme.palette.success.main]}
+                subtitle={`Overall system activity trends (${monthlyActivity.reduce(
+                  (sum, item) => sum + item.value,
+                  0
+                )} total activities)`}
+                showLegend={false}
+                interactive={true}
+              />
+            )}
           </Box>
         </Box>
       </motion.div>
@@ -672,128 +914,167 @@ export const ModernDashboard: React.FC = () => {
                   <Typography variant="h6">System Activities</Typography>
                 </Box>
                 <List dense sx={{ maxHeight: 400, overflow: 'auto' }}>
-                  <ListItem>
-                    <ListItemAvatar>
-                      <Avatar
-                        sx={{ bgcolor: 'success.main', width: 32, height: 32 }}
-                      >
-                        <PersonAddIcon sx={{ fontSize: 16 }} />
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary="New Patient Registration"
-                      secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            John Doe registered by Dr. Smith
+                  {activitiesLoading ? (
+                    // Loading skeleton
+                    [...Array(5)].map((_, index) => (
+                      <Box key={index}>
+                        <ListItem>
+                          <ListItemAvatar>
+                            <Avatar
+                              sx={{
+                                bgcolor: 'grey.200',
+                                width: 32,
+                                height: 32,
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  width: 16,
+                                  height: 16,
+                                  bgcolor: 'grey.300',
+                                  borderRadius: '50%',
+                                }}
+                              />
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={
+                              <Box
+                                sx={{
+                                  bgcolor: 'grey.200',
+                                  height: 16,
+                                  width: '60%',
+                                  borderRadius: 1,
+                                }}
+                              />
+                            }
+                            secondary={
+                              <Box>
+                                <Box
+                                  sx={{
+                                    bgcolor: 'grey.200',
+                                    height: 12,
+                                    width: '80%',
+                                    borderRadius: 1,
+                                    mb: 0.5,
+                                  }}
+                                />
+                                <Box
+                                  sx={{
+                                    bgcolor: 'grey.200',
+                                    height: 10,
+                                    width: '40%',
+                                    borderRadius: 1,
+                                  }}
+                                />
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                        {index < 4 && (
+                          <Divider variant="inset" component="li" />
+                        )}
+                      </Box>
+                    ))
+                  ) : activitiesError ? (
+                    <ListItem>
+                      <ListItemText
+                        primary={
+                          <Typography color="error" variant="body2">
+                            Error loading activities: {activitiesError}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            2 minutes ago
+                        }
+                      />
+                    </ListItem>
+                  ) : systemActivities.length === 0 ? (
+                    <ListItem>
+                      <ListItemText
+                        primary={
+                          <Typography color="text.secondary" variant="body2">
+                            No recent system activities
                           </Typography>
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                  <Divider variant="inset" component="li" />
+                        }
+                      />
+                    </ListItem>
+                  ) : (
+                    systemActivities.map((activity, index) => {
+                      const getActivityColor = (type: string) => {
+                        switch (type) {
+                          case 'patient_registration':
+                            return 'success.main';
+                          case 'clinical_note':
+                            return 'info.main';
+                          case 'medication_update':
+                            return 'warning.main';
+                          case 'mtr_session':
+                            return 'secondary.main';
+                          case 'system_alert':
+                            return 'error.main';
+                          default:
+                            return 'primary.main';
+                        }
+                      };
 
-                  <ListItem>
-                    <ListItemAvatar>
-                      <Avatar
-                        sx={{ bgcolor: 'info.main', width: 32, height: 32 }}
-                      >
-                        <NoteAddIcon sx={{ fontSize: 16 }} />
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary="Clinical Note Added"
-                      secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            MTR session completed for Patient #1234
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            15 minutes ago
-                          </Typography>
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                  <Divider variant="inset" component="li" />
+                      const getActivityIcon = (type: string) => {
+                        switch (type) {
+                          case 'patient_registration':
+                            return <PersonAddIcon sx={{ fontSize: 16 }} />;
+                          case 'clinical_note':
+                            return <NoteAddIcon sx={{ fontSize: 16 }} />;
+                          case 'medication_update':
+                            return <MedicationIcon sx={{ fontSize: 16 }} />;
+                          case 'mtr_session':
+                            return <EventIcon sx={{ fontSize: 16 }} />;
+                          case 'system_alert':
+                            return <WarningIcon sx={{ fontSize: 16 }} />;
+                          default:
+                            return <NotificationsIcon sx={{ fontSize: 16 }} />;
+                        }
+                      };
 
-                  <ListItem>
-                    <ListItemAvatar>
-                      <Avatar
-                        sx={{ bgcolor: 'warning.main', width: 32, height: 32 }}
-                      >
-                        <MedicationIcon sx={{ fontSize: 16 }} />
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary="Medication Update"
-                      secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            Dosage adjusted for Patient Jane Smith
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            1 hour ago
-                          </Typography>
+                      return (
+                        <Box key={activity.id}>
+                          <ListItem>
+                            <ListItemAvatar>
+                              <Avatar
+                                sx={{
+                                  bgcolor: getActivityColor(activity.type),
+                                  width: 32,
+                                  height: 32,
+                                }}
+                              >
+                                {getActivityIcon(activity.type)}
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={activity.title}
+                              secondary={
+                                <Box>
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    {activity.description}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {activityService.formatRelativeTime(
+                                      activity.createdAt
+                                    )}
+                                  </Typography>
+                                </Box>
+                              }
+                            />
+                          </ListItem>
+                          {index < systemActivities.length - 1 && (
+                            <Divider variant="inset" component="li" />
+                          )}
                         </Box>
-                      }
-                    />
-                  </ListItem>
-                  <Divider variant="inset" component="li" />
-
-                  <ListItem>
-                    <ListItemAvatar>
-                      <Avatar
-                        sx={{
-                          bgcolor: 'secondary.main',
-                          width: 32,
-                          height: 32,
-                        }}
-                      >
-                        <EventIcon sx={{ fontSize: 16 }} />
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary="MTR Session Completed"
-                      secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            Dr. Johnson completed MTR for 3 patients
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            2 hours ago
-                          </Typography>
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                  <Divider variant="inset" component="li" />
-
-                  <ListItem>
-                    <ListItemAvatar>
-                      <Avatar
-                        sx={{ bgcolor: 'error.main', width: 32, height: 32 }}
-                      >
-                        <WarningIcon sx={{ fontSize: 16 }} />
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary="System Alert"
-                      secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            High medication interaction detected
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            3 hours ago
-                          </Typography>
-                        </Box>
-                      }
-                    />
-                  </ListItem>
+                      );
+                    })
+                  )}
                 </List>
               </CardContent>
             </Card>
