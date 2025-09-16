@@ -17,6 +17,11 @@ import {
   Chip,
   Avatar,
   LinearProgress,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Divider,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -32,6 +37,14 @@ import {
   Schedule as ScheduleIcon,
   Notifications as NotificationsIcon,
   Settings as SettingsIcon,
+  PersonAdd as PersonAddIcon,
+  NoteAdd as NoteAddIcon,
+  Event as EventIcon,
+  Warning as WarningIcon,
+  Login as LoginIcon,
+  Assignment as AssignmentIcon,
+  Security as SecurityIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboardData } from '../../hooks/useDashboardData';
@@ -294,17 +307,29 @@ export const ModernDashboard: React.FC = () => {
       <Box sx={{ p: 3 }}>
         <Skeleton variant="text" width="40%" height={60} sx={{ mb: 2 }} />
         <Skeleton variant="text" width="60%" height={30} sx={{ mb: 4 }} />
-        <Grid container spacing={3}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: '1fr 1fr',
+              md: 'repeat(3, 1fr)',
+              lg: 'repeat(6, 1fr)',
+            },
+            gap: 3,
+            width: '100%',
+          }}
+        >
           {[...Array(6)].map((_, index) => (
-            <Grid item xs={12} sm={6} md={4} lg={2} key={index}>
+            <Box key={index} sx={{ width: '100%' }}>
               <Skeleton
                 variant="rectangular"
                 height={160}
                 sx={{ borderRadius: 2 }}
               />
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
       </Box>
     );
   }
@@ -418,8 +443,22 @@ export const ModernDashboard: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={4} lg={2}>
+        <Box
+          className="main-kpis-grid"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: '1fr 1fr',
+              md: 'repeat(3, 1fr)',
+              lg: 'repeat(6, 1fr)',
+            },
+            gap: 3,
+            mb: 4,
+            width: '100%',
+          }}
+        >
+          <Box sx={{ width: '100%' }}>
             <KPICard
               title="Total Patients"
               value={stats.totalPatients}
@@ -430,9 +469,9 @@ export const ModernDashboard: React.FC = () => {
               loading={dashboardLoading}
               onClick={() => navigate('/patients')}
             />
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={4} lg={2}>
+          <Box sx={{ width: '100%' }}>
             <KPICard
               title="Clinical Notes"
               value={stats.totalClinicalNotes}
@@ -443,9 +482,9 @@ export const ModernDashboard: React.FC = () => {
               loading={dashboardLoading}
               onClick={() => navigate('/clinical-notes')}
             />
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={4} lg={2}>
+          <Box sx={{ width: '100%' }}>
             <KPICard
               title="Medications"
               value={stats.totalMedications}
@@ -456,9 +495,9 @@ export const ModernDashboard: React.FC = () => {
               loading={dashboardLoading}
               onClick={() => navigate('/medications')}
             />
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={4} lg={2}>
+          <Box sx={{ width: '100%' }}>
             <KPICard
               title="MTR Sessions"
               value={stats.totalMTRs}
@@ -469,9 +508,9 @@ export const ModernDashboard: React.FC = () => {
               loading={dashboardLoading}
               onClick={() => navigate('/mtr')}
             />
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={4} lg={2}>
+          <Box sx={{ width: '100%' }}>
             <KPICard
               title="Diagnostics"
               value={stats.totalDiagnostics}
@@ -482,12 +521,12 @@ export const ModernDashboard: React.FC = () => {
               loading={dashboardLoading}
               onClick={() => navigate('/diagnostics')}
             />
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={4} lg={2}>
+          <Box sx={{ width: '100%' }}>
             <SystemHealthCard />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </motion.div>
 
       {/* Charts Section */}
@@ -599,6 +638,303 @@ export const ModernDashboard: React.FC = () => {
               showLegend={false}
               interactive={true}
             />
+          </Box>
+        </Box>
+      </motion.div>
+
+      {/* Recent Activities Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
+          Recent Activities
+        </Typography>
+        <Box
+          className="recent-activities-grid"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: 3,
+            mb: 4,
+            width: '100%',
+          }}
+        >
+          {/* Recent System Activities */}
+          <Box sx={{ width: '100%' }}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={2}>
+                  <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                    <NotificationsIcon />
+                  </Avatar>
+                  <Typography variant="h6">System Activities</Typography>
+                </Box>
+                <List dense sx={{ maxHeight: 400, overflow: 'auto' }}>
+                  <ListItem>
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{ bgcolor: 'success.main', width: 32, height: 32 }}
+                      >
+                        <PersonAddIcon sx={{ fontSize: 16 }} />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary="New Patient Registration"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            John Doe registered by Dr. Smith
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            2 minutes ago
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  <Divider variant="inset" component="li" />
+
+                  <ListItem>
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{ bgcolor: 'info.main', width: 32, height: 32 }}
+                      >
+                        <NoteAddIcon sx={{ fontSize: 16 }} />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary="Clinical Note Added"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            MTR session completed for Patient #1234
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            15 minutes ago
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  <Divider variant="inset" component="li" />
+
+                  <ListItem>
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{ bgcolor: 'warning.main', width: 32, height: 32 }}
+                      >
+                        <MedicationIcon sx={{ fontSize: 16 }} />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary="Medication Update"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Dosage adjusted for Patient Jane Smith
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            1 hour ago
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  <Divider variant="inset" component="li" />
+
+                  <ListItem>
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{
+                          bgcolor: 'secondary.main',
+                          width: 32,
+                          height: 32,
+                        }}
+                      >
+                        <EventIcon sx={{ fontSize: 16 }} />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary="MTR Session Completed"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Dr. Johnson completed MTR for 3 patients
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            2 hours ago
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  <Divider variant="inset" component="li" />
+
+                  <ListItem>
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{ bgcolor: 'error.main', width: 32, height: 32 }}
+                      >
+                        <WarningIcon sx={{ fontSize: 16 }} />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary="System Alert"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            High medication interaction detected
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            3 hours ago
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                </List>
+              </CardContent>
+            </Card>
+          </Box>
+
+          {/* Recent User Activities */}
+          <Box sx={{ width: '100%' }}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={2}>
+                  <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
+                    <PeopleIcon />
+                  </Avatar>
+                  <Typography variant="h6">User Activities</Typography>
+                </Box>
+                <List dense sx={{ maxHeight: 400, overflow: 'auto' }}>
+                  <ListItem>
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}
+                      >
+                        <LoginIcon sx={{ fontSize: 16 }} />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary="User Login"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Dr. Sarah Wilson logged in
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            5 minutes ago
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  <Divider variant="inset" component="li" />
+
+                  <ListItem>
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{ bgcolor: 'info.main', width: 32, height: 32 }}
+                      >
+                        <AssignmentIcon sx={{ fontSize: 16 }} />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary="Report Generated"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Monthly performance report by Admin
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            30 minutes ago
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  <Divider variant="inset" component="li" />
+
+                  <ListItem>
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{ bgcolor: 'warning.main', width: 32, height: 32 }}
+                      >
+                        <SettingsIcon sx={{ fontSize: 16 }} />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary="Settings Updated"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Notification preferences changed
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            1 hour ago
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  <Divider variant="inset" component="li" />
+
+                  <ListItem>
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{
+                          bgcolor: 'secondary.main',
+                          width: 32,
+                          height: 32,
+                        }}
+                      >
+                        <SecurityIcon sx={{ fontSize: 16 }} />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary="Security Update"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Password changed for user account
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            4 hours ago
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  <Divider variant="inset" component="li" />
+
+                  <ListItem>
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{ bgcolor: 'success.main', width: 32, height: 32 }}
+                      >
+                        <CheckCircleIcon sx={{ fontSize: 16 }} />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary="Task Completed"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Data backup completed successfully
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            6 hours ago
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                </List>
+              </CardContent>
+            </Card>
           </Box>
         </Box>
       </motion.div>
