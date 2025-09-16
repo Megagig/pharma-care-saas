@@ -1,10 +1,23 @@
-/* Modern Dashboard Layout */
+/* Modern Dashboard Layout - Full Width */
 .modern-dashboard {
   padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
   min-height: 100vh;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+/* Dashboard Charts Grid - Full Width */
+.dashboard-charts-grid {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 32px !important;
+  margin-bottom: 32px !important;
+}
+
+.dashboard-charts-grid > * {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 /* Dashboard Header */
@@ -119,20 +132,21 @@
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
-/* Professional Chart Grid Layout */
+/* Professional Chart Grid Layout - 2 Column */
 .dashboard-charts-professional {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 32px;
   margin-bottom: 40px;
 }
 
 .dashboard-charts-professional .MuiCard-root {
-  min-height: 450px;
+  min-height: 500px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border-radius: 16px;
   transition: all 0.3s ease;
   border: 1px solid rgba(0, 0, 0, 0.06);
+  width: 100%;
 }
 
 .dashboard-charts-professional .MuiCard-root:hover {
@@ -140,13 +154,26 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
+/* Ensure full width utilization */
+.MuiGrid-container {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.MuiGrid-item {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
 /* Enhanced Chart Container Spacing */
-.dashboard-charts-professional .MuiCardContent-root {
+.dashboard-charts-professional .MuiCardContent-root,
+.dashboard-charts-grid .MuiCardContent-root {
   padding: 24px !important;
 }
 
 /* Chart Title Styling */
-.dashboard-charts-professional .MuiTypography-h6 {
+.dashboard-charts-professional .MuiTypography-h6,
+.dashboard-charts-grid .MuiTypography-h6 {
   font-weight: 700;
   font-size: 1.125rem;
   color: #1e293b;
@@ -154,10 +181,27 @@
 }
 
 /* Chart Subtitle Styling */
-.dashboard-charts-professional .MuiTypography-body2 {
+.dashboard-charts-professional .MuiTypography-body2,
+.dashboard-charts-grid .MuiTypography-body2 {
   color: #64748b;
   font-size: 0.875rem;
   margin-bottom: 16px;
+}
+
+/* Force full width for all chart cards */
+.dashboard-charts-grid .MuiCard-root {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 500px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dashboard-charts-grid .MuiCard-root:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
 /* Grid and Layout Improvements */
@@ -321,10 +365,11 @@
   /* Adjust professional chart grid for medium screens */
   .dashboard-charts-professional {
     gap: 24px;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .dashboard-charts-professional .MuiCard-root {
-    min-height: 400px;
+    min-height: 450px;
   }
 }
 
@@ -355,13 +400,18 @@
   }
 
   /* Mobile: Stack charts vertically */
+  .dashboard-charts-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
   .dashboard-charts-professional {
     grid-template-columns: 1fr;
     gap: 20px;
   }
 
   .dashboard-charts-professional .MuiCard-root {
-    min-height: 350px;
+    min-height: 400px;
   }
 }
 
