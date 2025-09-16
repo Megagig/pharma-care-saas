@@ -1049,21 +1049,27 @@ export const ModernDashboard: React.FC = () => {
                             <ListItemText
                               primary={activity.title}
                               secondary={
-                                <Box>
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
+                                <Box component="div">
+                                  <Box
+                                    component="div"
+                                    sx={{
+                                      color: 'text.secondary',
+                                      fontSize: '0.875rem',
+                                    }}
                                   >
                                     {activity.description}
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
+                                  </Box>
+                                  <Box
+                                    component="div"
+                                    sx={{
+                                      color: 'text.secondary',
+                                      fontSize: '0.75rem',
+                                    }}
                                   >
                                     {activityService.formatRelativeTime(
                                       activity.createdAt
                                     )}
-                                  </Typography>
+                                  </Box>
                                 </Box>
                               }
                             />
@@ -1102,13 +1108,25 @@ export const ModernDashboard: React.FC = () => {
                     <ListItemText
                       primary="User Login"
                       secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
+                        <Box component="div">
+                          <Box
+                            component="div"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.875rem',
+                            }}
+                          >
                             Dr. Sarah Wilson logged in
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          </Box>
+                          <Box
+                            component="div"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.75rem',
+                            }}
+                          >
                             5 minutes ago
-                          </Typography>
+                          </Box>
                         </Box>
                       }
                     />
@@ -1126,13 +1144,25 @@ export const ModernDashboard: React.FC = () => {
                     <ListItemText
                       primary="Report Generated"
                       secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
+                        <Box component="div">
+                          <Box
+                            component="div"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.875rem',
+                            }}
+                          >
                             Monthly performance report by Admin
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          </Box>
+                          <Box
+                            component="div"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.75rem',
+                            }}
+                          >
                             30 minutes ago
-                          </Typography>
+                          </Box>
                         </Box>
                       }
                     />
@@ -1150,13 +1180,25 @@ export const ModernDashboard: React.FC = () => {
                     <ListItemText
                       primary="Settings Updated"
                       secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
+                        <Box component="div">
+                          <Box
+                            component="div"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.875rem',
+                            }}
+                          >
                             Notification preferences changed
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          </Box>
+                          <Box
+                            component="div"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.75rem',
+                            }}
+                          >
                             1 hour ago
-                          </Typography>
+                          </Box>
                         </Box>
                       }
                     />
@@ -1178,13 +1220,25 @@ export const ModernDashboard: React.FC = () => {
                     <ListItemText
                       primary="Security Update"
                       secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
+                        <Box component="div">
+                          <Box
+                            component="div"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.875rem',
+                            }}
+                          >
                             Password changed for user account
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          </Box>
+                          <Box
+                            component="div"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.75rem',
+                            }}
+                          >
                             4 hours ago
-                          </Typography>
+                          </Box>
                         </Box>
                       }
                     />
@@ -1202,13 +1256,25 @@ export const ModernDashboard: React.FC = () => {
                     <ListItemText
                       primary="Task Completed"
                       secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
+                        <Box component="div">
+                          <Box
+                            component="div"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.875rem',
+                            }}
+                          >
                             Data backup completed successfully
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          </Box>
+                          <Box
+                            component="div"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.75rem',
+                            }}
+                          >
                             6 hours ago
-                          </Typography>
+                          </Box>
                         </Box>
                       }
                     />

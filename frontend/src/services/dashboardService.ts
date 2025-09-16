@@ -1,4 +1,4 @@
-import { apiClient } from './apiClient';
+import { api } from '../lib/api';
 
 export interface DashboardStats {
     totalPatients: number;
@@ -25,6 +25,58 @@ export interface DashboardAnalytics {
 }
 
 class DashboardService {
+    /**
+     * Helper method to extract array from different response structures
+     */
+    private extractArrayFromResponse(responseData: any, arrayKey?: string): any[] {
+        if (!responseData) return [];
+
+        // Handle the specific API response structure: { success: true, data: { patients: [...] } }
+        if (responseData.success && responseData.data) {
+            // For patients endpoint
+            if (responseData.data.patients && Array.isArray(responseData.data.patients)) {
+                return responseData.data.patients;
+            }
+            // For medications endpoint
+            if (responseData.data.medications && Array.isArray(responseData.data.medications)) {
+                return responseData.data.medications;
+            }
+            // For notes endpoint
+            if (responseData.data.notes && Array.isArray(responseData.data.notes)) {
+                return responseData.data.notes;
+            }
+            // For MTR endpoint
+            if (responseData.data.mtrs && Array.isArray(responseData.data.mtrs)) {
+                return responseData.data.mtrs;
+            }
+            // If data itself is an array
+            if (Array.isArray(responseData.data)) {
+                return responseData.data;
+            }
+        }
+
+        // If arrayKey is specified, try to get that specific array
+        if (arrayKey && responseData[arrayKey] && Array.isArray(responseData[arrayKey])) {
+            return responseData[arrayKey];
+        }
+
+        // Try common array keys in order of preference
+        const commonKeys = ['data', 'results', 'items', 'patients', 'medications', 'notes', 'mtrs'];
+        for (const key of commonKeys) {
+            if (responseData[key] && Array.isArray(responseData[key])) {
+                return responseData[key];
+            }
+        }
+
+        // If responseData itself is an array
+        if (Array.isArray(responseData)) {
+            return responseData;
+        }
+
+        // Return empty array if no valid array found
+        return [];
+    }
+
     /**
      * Fetch comprehensive dashboard analytics from real API data
      */
@@ -92,22 +144,11 @@ class DashboardService {
      */
     private async fetchPatients(): Promise<any[]> {
         try {
-            const response = await apiClient.get('/api/patients', {
+            const response = await api.get('/patients', {
                 params: { limit: 10000 } // Get all patients for analytics
             });
 
-            // Handle different response structures
-            if (response.data?.data?.results) {
-                return response.data.data.results;
-            } else if (response.data?.data) {
-                return Array.isArray(response.data.data) ? response.data.data : [];
-            } else if (response.data?.results) {
-                return response.data.results;
-            } else if (Array.isArray(response.data)) {
-                return response.data;
-            }
-
-            return [];
+            return this.extractArrayFromResponse(response.data);
         } catch (error) {
             console.error('Error fetching patients:', error);
             return [];
@@ -119,22 +160,11 @@ class DashboardService {
      */
     private async fetchClinicalNotes(): Promise<any[]> {
         try {
-            const response = await apiClient.get('/api/notes', {
+            const response = await api.get('/notes', {
                 params: { limit: 10000 } // Get all notes for analytics
             });
 
-            // Handle different response structures
-            if (response.data?.data?.results) {
-                return response.data.data.results;
-            } else if (response.data?.data) {
-                return Array.isArray(response.data.data) ? response.data.data : [];
-            } else if (response.data?.results) {
-                return response.data.results;
-            } else if (Array.isArray(response.data)) {
-                return response.data;
-            }
-
-            return [];
+            return this.extractArrayFromResponse(response.data);
         } catch (error) {
             console.error('Error fetching clinical notes:', error);
             return [];
@@ -146,24 +176,12 @@ class DashboardService {
      */
     private async fetchMedications(): Promise<any[]> {
         try {
-            const response = await apiClient.get('/api/medications', {
+            const response = await api.get('/medications', {
                 params: { limit: 10000 } // Get all medications for analytics
             });
 
-            // Handle different response structures
-            if (response.data?.data?.medications) {
-                return response.data.data.medications;
-            } else if (response.data?.medications) {
-                return response.data.medications;
-            } else if (response.data?.data?.results) {
-                return response.data.data.results;
-            } else if (response.data?.data) {
-                return Array.isArray(response.data.data) ? response.data.data : [];
-            } else if (Array.isArray(response.data)) {
-                return response.data;
-            }
-
-            return [];
+            // Try medications key first, then fall back to standard extraction
+            return this.extractArrayFromResponse(response.data, 'medications');
         } catch (error) {
             console.error('Error fetching medications:', error);
             return [];
@@ -175,22 +193,11 @@ class DashboardService {
      */
     private async fetchMTRSessions(): Promise<any[]> {
         try {
-            const response = await apiClient.get('/api/mtr', {
+            const response = await api.get('/mtr', {
                 params: { limit: 10000 } // Get all MTR sessions for analytics
             });
 
-            // Handle different response structures
-            if (response.data?.data?.results) {
-                return response.data.data.results;
-            } else if (response.data?.data) {
-                return Array.isArray(response.data.data) ? response.data.data : [];
-            } else if (response.data?.results) {
-                return response.data.results;
-            } else if (Array.isArray(response.data)) {
-                return response.data;
-            }
-
-            return [];
+            return this.extractArrayFromResponse(response.data);
         } catch (error) {
             console.error('Error fetching MTR sessions:', error);
             return [];
@@ -383,7 +390,7 @@ class DashboardService {
     /**
      * Process monthly activity trend for line chart
      */
-    private processMonthlyActivity(notes: any[], medications: any[], mtrs: any[]): ChartDataPoint[] {
+    private processMonthlyActivity(notes: any[], medications: any[], mtrs: unknown[]): ChartDataPoint[] {
         const monthCounts: { [key: string]: number } = {};
         const currentDate = new Date();
 
@@ -412,34 +419,6 @@ class DashboardService {
         });
 
         return Object.entries(monthCounts).map(([name, value]) => ({ name, value }));
-    }
-
-    /**
-     * Get system activities for recent activities section
-     */
-    async getSystemActivities(limit: number = 10): Promise<any[]> {
-        try {
-            // This will be handled by the existing activityService
-            // Just return empty array for now as activityService handles this
-            return [];
-        } catch (error) {
-            console.error('Error fetching system activities:', error);
-            return [];
-        }
-    }
-
-    /**
-     * Get user activities for recent activities section
-     */
-    async getUserActivities(limit: number = 10): Promise<any[]> {
-        try {
-            // This will be handled by the existing activityService
-            // Just return empty array for now as activityService handles this
-            return [];
-        } catch (error) {
-            console.error('Error fetching user activities:', error);
-            return [];
-        }
     }
 }
 
