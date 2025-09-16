@@ -486,13 +486,19 @@
 }
 
 .admin-kpis-grid {
-  grid-template-columns: repeat(4, 1fr) !important;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
   gap: 24px !important;
+  justify-content: center !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
 }
 
 .admin-charts-grid {
-  grid-template-columns: repeat(3, 1fr) !important;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
   gap: 24px !important;
+  justify-content: center !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
 }
 
 .admin-alerts-grid {
@@ -508,8 +514,11 @@
 }
 
 .usage-cards-grid {
-  grid-template-columns: repeat(5, 1fr) !important;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
   gap: 24px !important;
+  justify-content: center !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
 }
 
 .usage-chart-grid {
@@ -530,8 +539,11 @@
 }
 
 .performance-summary-grid {
-  grid-template-columns: repeat(4, 1fr) !important;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
   gap: 24px !important;
+  justify-content: center !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
 }
 
 /* Clinical Interventions and Quick Actions Grids */
@@ -539,8 +551,11 @@
 .quick-actions-grid {
   width: 100% !important;
   display: grid !important;
-  grid-template-columns: repeat(4, 1fr) !important;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
   gap: 24px !important;
+  justify-content: center !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
 }
 
 /* Recent Activities Grid */
@@ -555,8 +570,11 @@
 .main-kpis-grid {
   width: 100% !important;
   display: grid !important;
-  grid-template-columns: repeat(6, 1fr) !important;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
   gap: 24px !important;
+  justify-content: center !important;
+  max-width: 1400px !important;
+  margin: 0 auto !important;
 }
 
 /* Universal Card Styling for All Grids */
@@ -573,6 +591,7 @@
 .main-kpis-grid .MuiCard-root {
   width: 100% !important;
   max-width: 100% !important;
+  min-width: 0 !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border-radius: 16px;
   transition: all 0.3s ease;
@@ -619,25 +638,30 @@
 @media (max-width: 1200px) {
   /* Tablet responsive adjustments */
   .admin-kpis-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+    max-width: 800px !important;
   }
 
   .admin-charts-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)) !important;
+    max-width: 900px !important;
   }
 
   .usage-cards-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+    max-width: 900px !important;
   }
 
   .performance-summary-grid,
   .clinical-interventions-grid,
   .quick-actions-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+    max-width: 800px !important;
   }
 
   .main-kpis-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    max-width: 900px !important;
   }
 
   .recent-activities-grid {
