@@ -8,25 +8,21 @@ import {
   Alert,
   Skeleton,
   Chip,
-  LinearProgress,
   useTheme,
-  alpha,
   Avatar,
   List,
   ListItem,
   ListItemText,
   ListItemAvatar,
-  Divider,
 } from '@mui/material';
 import {
-  Business as BusinessIcon,
+  BusinessOutlined as BusinessIcon,
   People as PeopleIcon,
   CreditCard as CreditCardIcon,
-  Email as EmailIcon,
-  Security as SecurityIcon,
+  SecurityOutlined as SecurityIcon,
   TrendingUp as TrendingUpIcon,
   Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
+  CheckCircleOutlined as CheckCircleIcon,
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
@@ -94,7 +90,13 @@ interface SystemHealthData {
   };
   application: {
     uptime: number;
-    memory: NodeJS.MemoryUsage;
+    memory: {
+      rss: number;
+      heapTotal: number;
+      heapUsed: number;
+      external: number;
+      used: number;
+    };
     nodeVersion: string;
     environment: string;
   };
@@ -103,7 +105,7 @@ interface SystemHealthData {
     invitations: Array<{ _id: string; count: number }>;
     subscriptions: Array<{ _id: string; count: number }>;
   };
-  recentErrors: any[];
+  recentErrors: unknown[];
 }
 
 const AdminDashboardIntegration: React.FC = () => {
@@ -228,8 +230,21 @@ const AdminDashboardIntegration: React.FC = () => {
         </Typography>
 
         {/* Admin KPIs */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
+        <Box
+          className="admin-kpis-grid"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: '1fr 1fr',
+              md: 'repeat(4, 1fr)',
+            },
+            gap: 3,
+            mb: 4,
+            width: '100%',
+          }}
+        >
+          <Box sx={{ width: '100%' }}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Box display="flex" alignItems="center" mb={2}>
@@ -279,9 +294,9 @@ const AdminDashboardIntegration: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ width: '100%' }}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Box display="flex" alignItems="center" mb={2}>
@@ -320,9 +335,9 @@ const AdminDashboardIntegration: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ width: '100%' }}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Box display="flex" alignItems="center" mb={2}>
@@ -340,9 +355,9 @@ const AdminDashboardIntegration: React.FC = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ width: '100%' }}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Box display="flex" alignItems="center" mb={2}>
@@ -374,8 +389,8 @@ const AdminDashboardIntegration: React.FC = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Charts */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -421,9 +436,16 @@ const AdminDashboardIntegration: React.FC = () => {
         {/* Alerts */}
         {(dashboardData.alerts.trialExpiring.length > 0 ||
           dashboardData.alerts.failedPayments.length > 0) && (
-          <Grid container spacing={3}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+              gap: 3,
+              width: '100%',
+            }}
+          >
             {dashboardData.alerts.trialExpiring.length > 0 && (
-              <Grid item xs={12} md={6}>
+              <Box sx={{ width: '100%' }}>
                 <Card>
                   <CardContent>
                     <Box display="flex" alignItems="center" mb={2}>
@@ -451,11 +473,11 @@ const AdminDashboardIntegration: React.FC = () => {
                     </List>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             )}
 
             {dashboardData.alerts.failedPayments.length > 0 && (
-              <Grid item xs={12} md={6}>
+              <Box sx={{ width: '100%' }}>
                 <Card>
                   <CardContent>
                     <Box display="flex" alignItems="center" mb={2}>
@@ -485,9 +507,9 @@ const AdminDashboardIntegration: React.FC = () => {
                     </List>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             )}
-          </Grid>
+          </Box>
         )}
       </Box>
     </motion.div>
