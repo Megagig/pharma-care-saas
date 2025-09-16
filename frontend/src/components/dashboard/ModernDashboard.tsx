@@ -480,7 +480,7 @@ export const ModernDashboard: React.FC = () => {
               color={theme.palette.success.main}
               trend={{ value: 8, isPositive: true, period: 'last month' }}
               loading={dashboardLoading}
-              onClick={() => navigate('/clinical-notes')}
+              onClick={() => navigate('/notes')}
             />
           </Box>
 
@@ -506,7 +506,7 @@ export const ModernDashboard: React.FC = () => {
               color={theme.palette.secondary.main}
               trend={{ value: 15, isPositive: true, period: 'last month' }}
               loading={dashboardLoading}
-              onClick={() => navigate('/mtr')}
+              onClick={() => navigate('/pharmacy/medication-therapy')}
             />
           </Box>
 
@@ -519,7 +519,7 @@ export const ModernDashboard: React.FC = () => {
               color={theme.palette.error.main}
               trend={{ value: -3, isPositive: false, period: 'last month' }}
               loading={dashboardLoading}
-              onClick={() => navigate('/diagnostics')}
+              onClick={() => navigate('/pharmacy/diagnostics')}
             />
           </Box>
 
@@ -958,8 +958,21 @@ export const ModernDashboard: React.FC = () => {
           <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
             Clinical Interventions Overview
           </Typography>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={3}>
+          <Box
+            className="clinical-interventions-grid"
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: '1fr 1fr',
+                md: 'repeat(4, 1fr)',
+              },
+              gap: 3,
+              mb: 4,
+              width: '100%',
+            }}
+          >
+            <Box sx={{ width: '100%' }}>
               <KPICard
                 title="Total Interventions"
                 value={clinicalMetrics.totalInterventions || 0}
@@ -968,8 +981,8 @@ export const ModernDashboard: React.FC = () => {
                 color={theme.palette.primary.main}
                 loading={clinicalLoading}
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            </Box>
+            <Box sx={{ width: '100%' }}>
               <KPICard
                 title="Active"
                 value={clinicalMetrics.activeInterventions || 0}
@@ -978,8 +991,8 @@ export const ModernDashboard: React.FC = () => {
                 color={theme.palette.info.main}
                 loading={clinicalLoading}
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            </Box>
+            <Box sx={{ width: '100%' }}>
               <KPICard
                 title="Success Rate"
                 value={`${Math.round(clinicalMetrics.successRate || 0)}%`}
@@ -988,8 +1001,8 @@ export const ModernDashboard: React.FC = () => {
                 color={theme.palette.success.main}
                 loading={clinicalLoading}
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            </Box>
+            <Box sx={{ width: '100%' }}>
               <KPICard
                 title="Cost Savings"
                 value={`₦${(
@@ -1000,8 +1013,8 @@ export const ModernDashboard: React.FC = () => {
                 color={theme.palette.success.main}
                 loading={clinicalLoading}
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </motion.div>
       )}
 
@@ -1014,8 +1027,20 @@ export const ModernDashboard: React.FC = () => {
         <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
           Quick Actions
         </Typography>
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} md={3}>
+        <Box
+          className="quick-actions-grid"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: '1fr 1fr',
+              md: 'repeat(4, 1fr)',
+            },
+            gap: 3,
+            width: '100%',
+          }}
+        >
+          <Box sx={{ width: '100%' }}>
             <QuickActionCard
               title="Add New Patient"
               description="Register a new patient in the system"
@@ -1024,28 +1049,28 @@ export const ModernDashboard: React.FC = () => {
               navigateTo="/patients/new"
               buttonText="Add Patient"
             />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box sx={{ width: '100%' }}>
             <QuickActionCard
               title="Create Clinical Note"
               description="Document a new clinical observation"
               icon="📝"
               color={theme.palette.success.main}
-              navigateTo="/clinical-notes/new"
+              navigateTo="/notes/new"
               buttonText="Create Note"
             />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box sx={{ width: '100%' }}>
             <QuickActionCard
               title="Schedule MTR"
               description="Schedule a medication therapy review"
               icon="📅"
               color={theme.palette.secondary.main}
-              navigateTo="/mtr/new"
+              navigateTo="/pharmacy/medication-therapy/new"
               buttonText="Schedule"
             />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box sx={{ width: '100%' }}>
             <QuickActionCard
               title="View Reports"
               description="Access detailed analytics and reports"
@@ -1054,8 +1079,8 @@ export const ModernDashboard: React.FC = () => {
               navigateTo="/reports"
               buttonText="View Reports"
             />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </motion.div>
 
       {/* Floating Action Button */}
