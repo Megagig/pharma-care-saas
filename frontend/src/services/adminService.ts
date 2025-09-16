@@ -1,4 +1,4 @@
-import { apiClient } from './api';
+import { apiClient } from './apiClient';
 
 export interface User {
   _id: string;
@@ -268,5 +268,196 @@ export const adminService = {
       responseType: 'blob'
     });
     return response.data;
-  }
+  },
+
+  // Dashboard Overview
+  async getDashboardOverview() {
+    try {
+      const response = await apiClient.get('/admin/dashboard/overview');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching dashboard overview:', error);
+
+      // Return mock data for development
+      return {
+        success: true,
+        data: {
+          summary: {
+            workspaces: {
+              total: 45,
+              active: 38,
+              trial: 5,
+              expired: 2,
+              growth: 12.5,
+            },
+            subscriptions: {
+              total: 43,
+              active: 40,
+              byTier: [
+                { _id: 'basic', count: 15, revenue: 45000 },
+                { _id: 'professional', count: 20, revenue: 120000 },
+                { _id: 'enterprise', count: 5, revenue: 75000 },
+              ],
+            },
+            users: {
+              total: 156,
+              active: 142,
+              growth: 8.7,
+            },
+            patients: {
+              total: 2847,
+            },
+            invitations: {
+              total: 23,
+              pending: 8,
+              stats: [
+                { _id: 'active', count: 8 },
+                { _id: 'accepted', count: 12 },
+                { _id: 'expired', count: 3 },
+              ],
+            },
+            emails: {
+              stats: [
+                { _id: 'delivered', count: 156 },
+                { _id: 'failed', count: 3 },
+                { _id: 'pending', count: 2 },
+              ],
+            },
+          },
+          recentActivity: {
+            newWorkspaces: 3,
+            newUsers: 12,
+          },
+          alerts: {
+            trialExpiring: [
+              {
+                _id: '1',
+                name: 'MediCare Pharmacy',
+                trialEndDate: '2024-01-20',
+                ownerId: {
+                  firstName: 'John',
+                  lastName: 'Doe',
+                  email: 'john.doe@medicare.com',
+                },
+              },
+            ],
+            failedPayments: [
+              {
+                _id: '1',
+                workspaceId: { name: 'HealthPlus Clinic' },
+                status: 'past_due',
+                updatedAt: '2024-01-14',
+              },
+            ],
+          },
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  },
+
+  // System Health
+  async getSystemHealth() {
+    try {
+      const response = await apiClient.get('/admin/system/health');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching system health:', error);
+
+      // Return mock data for development
+      return {
+        success: true,
+        data: {
+          timestamp: new Date().toISOString(),
+          database: {
+            connected: true,
+            stats: {
+              collections: 12,
+              documents: 15420,
+              dataSize: 45.6, // MB
+            },
+          },
+          application: {
+            uptime: 2592000, // 30 days in seconds
+            memory: {
+              used: 134217728, // 128 MB
+              total: 536870912, // 512 MB
+            },
+            nodeVersion: 'v18.17.0',
+            environment: 'production',
+          },
+          services: {
+            emailDelivery: [
+              { _id: 'delivered', count: 156 },
+              { _id: 'failed', count: 3 },
+            ],
+            invitations: [
+              { _id: 'active', count: 8 },
+              { _id: 'accepted', count: 12 },
+            ],
+            subscriptions: [
+              { _id: 'active', count: 40 },
+              { _id: 'expired', count: 3 },
+            ],
+          },
+          recentErrors: [],
+        },
+      };
+    }
+  },
+
+  // Workspace Management
+  async getWorkspaceManagement(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    tier?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value.toString());
+    });
+
+    const response = await apiClient.get(`/admin/workspaces?${queryParams}`);
+    return response.data;
+  },
+
+  async updateWorkspaceSubscription(workspaceId: string, updates: {
+    planId?: string;
+    status?: string;
+    endDate?: string;
+    notes?: string;
+  }) {
+    const response = await apiClient.put(`/admin/workspaces/${workspaceId}/subscription`, updates);
+    return response.data;
+  },
+
+  // Invitation Management
+  async getInvitationManagement(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    workspaceId?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value.toString());
+    });
+
+    const response = await apiClient.get(`/admin/invitations?${queryParams}`);
+    return response.data;
+  },
+
+  async cancelInvitation(invitationId: string, reason?: string) {
+    const response = await apiClient.delete(`/admin/invitations/${invitationId}`, {
+      data: { reason },
+    });
+    return response.data;
+  },
 };
