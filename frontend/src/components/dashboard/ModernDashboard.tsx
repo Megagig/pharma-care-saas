@@ -332,7 +332,14 @@ export const ModernDashboard: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1400, mx: 'auto' }}>
+    <Box
+      sx={{
+        p: { xs: 2, sm: 3 },
+        width: '100%',
+        maxWidth: '100%',
+        mx: 0,
+      }}
+    >
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -489,29 +496,38 @@ export const ModernDashboard: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        {/* First Row - 3 Charts */}
-        <Grid container spacing={4} sx={{ mb: 4 }}>
+        {/* Charts Grid - Full Width Layout */}
+        <Box
+          className="dashboard-charts-grid"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: 4,
+            mb: 4,
+            width: '100%',
+          }}
+        >
           {/* Patients by Month - Line Chart */}
-          <Grid item xs={12} sm={6} md={4}>
+          <Box sx={{ width: '100%' }}>
             <DashboardChart
               title="Patients by Month"
               data={patientsByMonth}
               type="line"
-              height={400}
+              height={450}
               colors={[theme.palette.primary.main]}
               subtitle="Monthly patient registration trends"
               showLegend={false}
               interactive={true}
             />
-          </Grid>
+          </Box>
 
           {/* Medications by Status - Pie Chart */}
-          <Grid item xs={12} sm={6} md={4}>
+          <Box sx={{ width: '100%' }}>
             <DashboardChart
               title="Medications by Status"
               data={medicationsByStatus}
               type="pie"
-              height={400}
+              height={450}
               colors={[
                 theme.palette.success.main,
                 theme.palette.info.main,
@@ -522,32 +538,29 @@ export const ModernDashboard: React.FC = () => {
               showLegend={true}
               interactive={true}
             />
-          </Grid>
+          </Box>
 
           {/* Clinical Notes by Type - Bar Chart */}
-          <Grid item xs={12} sm={6} md={4}>
+          <Box sx={{ width: '100%' }}>
             <DashboardChart
               title="Clinical Notes by Type"
               data={clinicalNotesByType}
               type="bar"
-              height={400}
+              height={450}
               colors={[theme.palette.secondary.main]}
               subtitle="Distribution of clinical note types"
               showLegend={false}
               interactive={true}
             />
-          </Grid>
-        </Grid>
+          </Box>
 
-        {/* Second Row - 3 Charts */}
-        <Grid container spacing={4} sx={{ mb: 4 }}>
           {/* MTR Sessions by Status - Pie Chart */}
-          <Grid item xs={12} sm={6} md={4}>
+          <Box sx={{ width: '100%' }}>
             <DashboardChart
               title="MTR Sessions by Status"
               data={mtrsByStatus}
               type="pie"
-              height={400}
+              height={450}
               colors={[
                 theme.palette.warning.main,
                 theme.palette.success.main,
@@ -558,36 +571,36 @@ export const ModernDashboard: React.FC = () => {
               showLegend={true}
               interactive={true}
             />
-          </Grid>
+          </Box>
 
           {/* Patient Age Distribution - Bar Chart */}
-          <Grid item xs={12} sm={6} md={4}>
+          <Box sx={{ width: '100%' }}>
             <DashboardChart
               title="Patient Age Distribution"
               data={patientAgeDistribution}
               type="bar"
-              height={400}
+              height={450}
               colors={[theme.palette.info.main]}
               subtitle="Age demographics of patients"
               showLegend={false}
               interactive={true}
             />
-          </Grid>
+          </Box>
 
           {/* Monthly Activity Trend - Line Chart */}
-          <Grid item xs={12} sm={6} md={4}>
+          <Box sx={{ width: '100%' }}>
             <DashboardChart
               title="Monthly Activity Trend"
               data={monthlyActivity}
               type="line"
-              height={400}
+              height={450}
               colors={[theme.palette.success.main]}
               subtitle="Overall system activity trends"
               showLegend={false}
               interactive={true}
             />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </motion.div>
 
       {/* Admin Dashboard Integration */}
