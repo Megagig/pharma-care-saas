@@ -402,17 +402,6 @@ export const ModernDashboard: React.FC = () => {
         mx: 0,
       }}
     >
-      {/* Debug Info - Remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-          <Typography variant="caption" display="block">
-            Debug Info: Loading={dashboardLoading.toString()}, Stats=
-            {JSON.stringify(stats)}, ChartsLoading={chartsLoading.toString()},
-            ChartsError={chartsError || 'none'}
-          </Typography>
-        </Box>
-      )}
-
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
