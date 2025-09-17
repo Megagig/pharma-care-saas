@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthRequest } from '../../../middlewares/auth';
+import { AuthRequest } from '../../../types/auth';
 export declare const enhancedOrderCreationRateLimit: import("express-rate-limit").RateLimitRequestHandler;
 export declare const enhancedPDFAccessRateLimit: import("express-rate-limit").RateLimitRequestHandler;
 export declare const sanitizeInput: (req: Request, res: Response, next: NextFunction) => void;

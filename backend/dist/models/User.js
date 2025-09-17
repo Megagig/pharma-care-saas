@@ -79,6 +79,7 @@ const userSchema = new mongoose_1.Schema({
             'pharmacy_outlet',
             'intern_pharmacist',
             'super_admin',
+            'owner',
         ],
         default: 'pharmacist',
         index: true,
