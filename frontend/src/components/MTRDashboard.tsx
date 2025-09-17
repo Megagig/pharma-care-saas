@@ -554,6 +554,20 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         return;
       }
 
+      // Debug logging to understand the current state
+      console.log('🔍 Manual save triggered - Current review state:', {
+        id: currentReview._id,
+        status: currentReview.status,
+        stepsCompleted: currentReview.steps
+          ? Object.entries(currentReview.steps).map(([key, step]) => ({
+              step: key,
+              completed: step.completed,
+            }))
+          : 'No steps',
+        canComplete: canCompleteReview(),
+        loadingSave: loading.saveReview,
+      });
+
       await saveReview();
       setLastSaved(new Date());
       setSnackbarMessage('Review saved successfully');

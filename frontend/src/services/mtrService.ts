@@ -290,34 +290,38 @@ export const validateMedicationEntry = (
 /**
  * Validate therapy plan data
  */
-export const validateTherapyPlan = (plan: Partial<TherapyPlan>): string[] => {
+export const validateTherapyPlan = (plan: Partial<TherapyPlan>, strict: boolean = false): string[] => {
   const errors: string[] = [];
 
-  if (!plan.problems || plan.problems.length === 0) {
-    errors.push(
-      'At least one problem must be associated with the therapy plan'
-    );
+  // Only enforce strict validation when explicitly requested (e.g., when completing the plan step)
+  if (strict) {
+    if (!plan.problems || plan.problems.length === 0) {
+      errors.push(
+        'At least one problem must be associated with the therapy plan'
+      );
+    }
+
+    if (!plan.recommendations || plan.recommendations.length === 0) {
+      errors.push('At least one recommendation is required');
+    }
+
+    if (!plan.timeline?.trim()) {
+      errors.push('Timeline is required');
+    }
   }
 
-  if (!plan.recommendations || plan.recommendations.length === 0) {
-    errors.push('At least one recommendation is required');
-  }
-
+  // Always validate recommendation structure if recommendations exist
   plan.recommendations?.forEach((rec, index) => {
-    if (!rec.type) {
-      errors.push(`Recommendation ${index + 1}: Type is required`);
+    if (rec.type && !rec.rationale?.trim()) {
+      errors.push(`Recommendation ${index + 1}: Rationale is required when type is specified`);
     }
-    if (!rec.rationale?.trim()) {
-      errors.push(`Recommendation ${index + 1}: Rationale is required`);
+    if (rec.rationale && !rec.type) {
+      errors.push(`Recommendation ${index + 1}: Type is required when rationale is provided`);
     }
-    if (!rec.priority) {
-      errors.push(`Recommendation ${index + 1}: Priority is required`);
+    if ((rec.type || rec.rationale) && !rec.priority) {
+      errors.push(`Recommendation ${index + 1}: Priority is required for complete recommendations`);
     }
   });
-
-  if (!plan.timeline?.trim()) {
-    errors.push('Timeline is required');
-  }
 
   return errors;
 };
@@ -684,9 +688,9 @@ export const mtrService = {
         }
       }
 
-      // Validate therapy plan if provided
+      // Validate therapy plan if provided (non-strict for regular updates)
       if (sessionData.plan) {
-        const planErrors = validateTherapyPlan(sessionData.plan);
+        const planErrors = validateTherapyPlan(sessionData.plan, false);
         if (planErrors.length > 0) {
           throw new MTRValidationError('Therapy plan validation failed', {
             plan: planErrors,
@@ -779,6 +783,16 @@ export const mtrService = {
         );
       }
 
+      // Special validation for plan development step
+      if (stepName === 'planDevelopment' && stepData?.plan) {
+        const planErrors = validateTherapyPlan(stepData.plan as Partial<TherapyPlan>, true);
+        if (planErrors.length > 0) {
+          throw new MTRValidationError('Cannot complete plan development - validation failed', {
+            plan: planErrors,
+          });
+        }
+      }
+
       // Transform step data for API
       const transformedStepData = stepData
         ? transformDatesForAPI(stepData)
@@ -789,13 +803,13 @@ export const mtrService = {
         { data: transformedStepData }
       );
 
-      if (!response.data?.data?.review) {
+      if (!response.data?.review) {
         throw new Error('Invalid response structure');
       }
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
-        response.data.data.review as unknown as DateTransformable
+        response.data.review as unknown as DateTransformable
       ) as MedicationTherapyReview;
       const enhancedReview = {
         ...transformed,
@@ -1367,10 +1381,10 @@ export const mtrService = {
         '/mtr/followups',
         followUpData
       );
-      if (!response.data?.data) {
+      if (!response.data?.followUp) {
         throw new Error('Invalid response structure');
       }
-      return { followUp: response.data.data };
+      return { followUp: response.data.followUp };
     } catch (error) {
       return handleMTRError(error, 'createFollowUp');
     }
@@ -1453,10 +1467,10 @@ export const mtrService = {
         `/mtr/followups/${followUpId}/reschedule`,
         { newDate, reason }
       );
-      if (!response.data?.data) {
+      if (!response.data?.followUp) {
         throw new Error('Invalid response structure');
       }
-      return { followUp: response.data.data };
+      return { followUp: response.data.followUp };
     } catch (error) {
       return handleMTRError(error, 'rescheduleFollowUp');
     }
@@ -1728,7 +1742,7 @@ export const mtrService = {
     }
 
     if (sessionData.plan) {
-      const planErrors = validateTherapyPlan(sessionData.plan);
+      const planErrors = validateTherapyPlan(sessionData.plan, false);
       errors.push(...planErrors);
     }
 
