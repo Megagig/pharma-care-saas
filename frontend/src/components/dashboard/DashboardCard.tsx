@@ -1,7 +1,23 @@
 import React from 'react';
-import { Card, CardContent, Typography, Box, IconButton } from '@mui/material';
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  IconButton,
+  Skeleton,
+  Avatar,
+  Chip,
+  alpha,
+  useTheme,
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import {
+  ArrowForward as ArrowForwardIcon,
+  TrendingUp as TrendingUpIcon,
+  TrendingDown as TrendingDownIcon,
+} from '@mui/icons-material';
+import { motion } from 'framer-motion';
 
 interface DashboardCardProps {
   title: string;
@@ -11,6 +27,15 @@ interface DashboardCardProps {
   navigateTo?: string;
   subtitle?: string;
   loading?: boolean;
+  trend?: {
+    value: number;
+    isPositive: boolean;
+    period?: string;
+  };
+  badge?: {
+    label: string;
+    color: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
+  };
 }
 
 const DashboardCard: React.FC<DashboardCardProps> = ({
@@ -21,8 +46,11 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   navigateTo,
   subtitle,
   loading = false,
+  trend,
+  badge,
 }) => {
   const navigate = useNavigate();
+  const theme = useTheme();
 
   const handleClick = () => {
     if (navigateTo) {
@@ -31,52 +59,166 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   };
 
   return (
-    <Card
-      sx={{
-        height: '100%',
-        cursor: navigateTo ? 'pointer' : 'default',
-        transition: 'all 0.3s ease',
-        '&:hover': navigateTo
-          ? {
-              transform: 'translateY(-4px)',
-              boxShadow: 4,
-            }
-          : {},
-        background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
-        border: `1px solid ${color}30`,
-      }}
-      onClick={handleClick}
+    <motion.div
+      whileHover={{ y: -4, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
     >
-      <CardContent sx={{ p: 3 }}>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box>
-            <Typography variant="h6" color="text.secondary" gutterBottom>
+      <Card
+        sx={{
+          height: '100%',
+          cursor: navigateTo ? 'pointer' : 'default',
+          background: `linear-gradient(135deg, ${alpha(color, 0.1)} 0%, ${alpha(
+            color,
+            0.05
+          )} 100%)`,
+          border: `1px solid ${alpha(color, 0.2)}`,
+          position: 'relative',
+          overflow: 'visible',
+          '&:hover': navigateTo
+            ? {
+                boxShadow: `0 8px 32px ${alpha(color, 0.3)}`,
+                transform: 'translateY(-2px)',
+              }
+            : {},
+        }}
+        onClick={handleClick}
+      >
+        <CardContent sx={{ p: 3, position: 'relative' }}>
+          {/* Background Pattern */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: -20,
+              right: -20,
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${alpha(
+                color,
+                0.1
+              )}, ${alpha(color, 0.05)})`,
+              zIndex: 0,
+            }}
+          />
+
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            {/* Header with Icon and Badge */}
+            <Box
+              display="flex"
+              alignItems="center"
+              justifyContent="space-between"
+              mb={2}
+            >
+              <Avatar
+                sx={{
+                  bgcolor: alpha(color, 0.15),
+                  color: color,
+                  width: 56,
+                  height: 56,
+                }}
+              >
+                {icon}
+              </Avatar>
+
+              <Box
+                display="flex"
+                flexDirection="column"
+                alignItems="flex-end"
+                gap={1}
+              >
+                {badge && (
+                  <Chip
+                    label={badge.label}
+                    color={badge.color}
+                    size="small"
+                    variant="outlined"
+                  />
+                )}
+                {trend && (
+                  <Chip
+                    icon={
+                      trend.isPositive ? (
+                        <TrendingUpIcon />
+                      ) : (
+                        <TrendingDownIcon />
+                      )
+                    }
+                    label={`${trend.isPositive ? '+' : ''}${trend.value}%`}
+                    size="small"
+                    color={trend.isPositive ? 'success' : 'error'}
+                    variant="filled"
+                    sx={{ fontSize: '0.75rem' }}
+                  />
+                )}
+                {navigateTo && (
+                  <IconButton
+                    size="small"
+                    sx={{
+                      color: color,
+                      bgcolor: alpha(color, 0.1),
+                      '&:hover': { bgcolor: alpha(color, 0.2) },
+                    }}
+                  >
+                    <ArrowForwardIcon fontSize="small" />
+                  </IconButton>
+                )}
+              </Box>
+            </Box>
+
+            {/* Title */}
+            <Typography
+              variant="h6"
+              color="text.secondary"
+              gutterBottom
+              sx={{ fontWeight: 500 }}
+            >
               {title}
             </Typography>
-            <Typography
-              variant="h3"
-              component="div"
-              sx={{ color, fontWeight: 'bold' }}
-            >
-              {loading ? '...' : value}
-            </Typography>
+
+            {/* Value */}
+            {loading ? (
+              <Skeleton variant="text" width="60%" height={48} />
+            ) : (
+              <Typography
+                variant="h3"
+                component="div"
+                sx={{
+                  color: color,
+                  fontWeight: 'bold',
+                  mb: 1,
+                  fontSize: { xs: '1.75rem', sm: '2.125rem' },
+                }}
+              >
+                {value}
+              </Typography>
+            )}
+
+            {/* Subtitle */}
             {subtitle && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ opacity: 0.8 }}
+              >
                 {subtitle}
               </Typography>
             )}
-          </Box>
-          <Box display="flex" flexDirection="column" alignItems="center">
-            <Box sx={{ color, fontSize: '2.5rem', mb: 1 }}>{icon}</Box>
-            {navigateTo && (
-              <IconButton size="small" sx={{ color }}>
-                <ArrowForwardIcon />
-              </IconButton>
+
+            {/* Trend Period */}
+            {trend?.period && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 1, display: 'block', opacity: 0.7 }}
+              >
+                vs {trend.period}
+              </Typography>
             )}
           </Box>
-        </Box>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 };
 

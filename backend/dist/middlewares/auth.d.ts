@@ -8,7 +8,7 @@ export interface AuthRequest extends Request {
     };
     subscription?: ISubscription | null;
 }
-type UserRole = 'pharmacist' | 'pharmacy_team' | 'pharmacy_outlet' | 'intern_pharmacist' | 'super_admin';
+type UserRole = 'pharmacist' | 'pharmacy_team' | 'pharmacy_outlet' | 'intern_pharmacist' | 'super_admin' | 'owner';
 export declare const auth: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const authOptionalSubscription: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const authorize: (...roles: UserRole[]) => (req: AuthRequest, res: Response, next: NextFunction) => void;

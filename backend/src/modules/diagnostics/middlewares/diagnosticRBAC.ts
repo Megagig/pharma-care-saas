@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest } from '../../../middlewares/auth';
-import { requirePermission, requireFeature, requireActiveSubscription } from '../../../middlewares/rbac';
+import { AuthRequest, requireFeature } from '../../../middlewares/auth';
+import { requirePermission, requireActiveSubscription } from '../../../middlewares/rbac';
 import logger from '../../../utils/logger';
 
 /**

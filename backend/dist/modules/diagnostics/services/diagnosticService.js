@@ -17,7 +17,7 @@ const auditService_1 = __importDefault(require("../../../services/auditService")
 class DiagnosticService {
     constructor() {
         this.maxRetries = 3;
-        this.processingTimeout = 60000;
+        this.processingTimeout = 180000;
     }
     async createDiagnosticRequest(data) {
         try {

@@ -13,7 +13,7 @@ class AIOrchestrationService {
         this.defaultOptions = {
             temperature: 0.1,
             maxTokens: 4000,
-            timeout: 60000,
+            timeout: 180000,
             retryAttempts: 3,
             promptVersion: 'v1.0',
         };
@@ -323,7 +323,6 @@ class AIOrchestrationService {
             }, {
                 action: 'ai_diagnostic_request',
                 resourceType: 'AIAnalysis',
-                resourceId: '',
                 details: {
                     patientId: consent.patientId,
                     symptomsCount: input.symptoms.subjective.length,
@@ -349,8 +348,9 @@ class AIOrchestrationService {
             }, {
                 action: 'ai_diagnostic_response',
                 resourceType: 'AIAnalysis',
-                resourceId: new mongoose_1.Types.ObjectId(response.metadata.requestId),
+                resourceId: new mongoose_1.Types.ObjectId(),
                 details: {
+                    requestId: response.metadata.requestId,
                     patientId: consent.patientId,
                     processingTime: response.metadata.processingTime,
                     confidenceScore: response.metadata.confidenceScore,

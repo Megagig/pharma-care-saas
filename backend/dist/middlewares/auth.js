@@ -11,11 +11,13 @@ const FeatureFlag_1 = __importDefault(require("../models/FeatureFlag"));
 const ROLE_HIERARCHY = {
     super_admin: [
         'super_admin',
+        'owner',
         'pharmacy_outlet',
         'pharmacy_team',
         'pharmacist',
         'intern_pharmacist',
     ],
+    owner: ['owner', 'pharmacy_outlet', 'pharmacy_team', 'pharmacist'],
     pharmacy_outlet: ['pharmacy_outlet', 'pharmacy_team', 'pharmacist'],
     pharmacy_team: ['pharmacy_team', 'pharmacist'],
     pharmacist: ['pharmacist'],
@@ -389,7 +391,7 @@ const requireTeamAccess = (req, res, next) => {
         res.status(401).json({ message: 'Access denied.' });
         return;
     }
-    const allowedRoles = ['pharmacy_team', 'pharmacy_outlet', 'super_admin'];
+    const allowedRoles = ['pharmacy_team', 'pharmacy_outlet', 'super_admin', 'owner'];
     if (!allowedRoles.includes(req.user.role)) {
         res.status(403).json({
             message: 'Team features not available for your role.',

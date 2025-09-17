@@ -52,7 +52,7 @@ export declare const respondWithPaginatedResults: <T>(res: Response, results: T[
 export declare const isSuperAdmin: (req: AuthRequest) => boolean;
 export declare const getRequestContext: (req: AuthRequest) => {
     userId: any;
-    userRole: "pharmacist" | "pharmacy_team" | "pharmacy_outlet" | "intern_pharmacist" | "super_admin" | undefined;
+    userRole: "pharmacist" | "pharmacy_team" | "pharmacy_outlet" | "intern_pharmacist" | "super_admin" | "owner" | undefined;
     workplaceId: string;
     isAdmin: any;
     isSuperAdmin: boolean;
@@ -64,7 +64,7 @@ export declare const createAuditLog: (action: string, resourceType: string, reso
     resourceType: string;
     resourceId: string;
     userId: any;
-    userRole: "pharmacist" | "pharmacy_team" | "pharmacy_outlet" | "intern_pharmacist" | "super_admin" | undefined;
+    userRole: "pharmacist" | "pharmacy_team" | "pharmacy_outlet" | "intern_pharmacist" | "super_admin" | "owner" | undefined;
     workplaceId: string;
     changes: any;
     timestamp: string;

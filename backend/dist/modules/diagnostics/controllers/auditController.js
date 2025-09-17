@@ -20,9 +20,10 @@ const searchAuditEvents = async (req, res) => {
             });
         }
         const { workplaceId } = req.user;
+        const workplaceIdString = workplaceId;
         const { startDate, endDate, eventTypes, entityTypes, userIds, patientIds, severity, entityId, searchText, limit, offset } = req.query;
         const criteria = {
-            workplaceId: workplaceId.toString(),
+            workplaceId: workplaceIdString,
             limit: limit ? parseInt(limit) : 50,
             offset: offset ? parseInt(offset) : 0
         };
@@ -83,6 +84,7 @@ const getEntityAuditTrail = async (req, res) => {
             });
         }
         const { workplaceId } = req.user;
+        const workplaceIdString = workplaceId;
         const { entityType, entityId } = req.params;
         if (!entityType || !entityId) {
             return res.status(400).json({
@@ -93,7 +95,7 @@ const getEntityAuditTrail = async (req, res) => {
                 }
             });
         }
-        const auditTrail = await diagnosticAuditService_1.default.getEntityAuditTrail(entityType, entityId, workplaceId.toString());
+        const auditTrail = await diagnosticAuditService_1.default.getEntityAuditTrail(entityType, entityId, workplaceIdString);
         return res.json({
             success: true,
             data: {
