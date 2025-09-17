@@ -23,6 +23,7 @@ const server = app_1.default.listen(PORT, () => {
         EmailDeliveryCronService_1.emailDeliveryCronService.start();
     }
 });
+server.timeout = 90000;
 process.on('unhandledRejection', (err) => {
     console.log(`Unhandled Rejection: ${err.message}`);
     server.close(() => {

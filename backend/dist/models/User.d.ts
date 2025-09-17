@@ -5,7 +5,7 @@ export interface IUser extends Document {
     passwordHash: string;
     firstName: string;
     lastName: string;
-    role: 'pharmacist' | 'pharmacy_team' | 'pharmacy_outlet' | 'intern_pharmacist' | 'super_admin';
+    role: 'pharmacist' | 'pharmacy_team' | 'pharmacy_outlet' | 'intern_pharmacist' | 'super_admin' | 'owner';
     status: 'pending' | 'active' | 'suspended' | 'license_pending' | 'license_rejected';
     emailVerified: boolean;
     verificationToken?: string;
