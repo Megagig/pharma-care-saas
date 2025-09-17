@@ -1192,7 +1192,7 @@ export const useMTRStore = create<MTRStore>()(
             problems: identifiedProblems,
             plan: therapyPlan || undefined,
             interventions,
-            followUps,
+            followUps, // Send follow-ups so backend can handle them properly
             updatedAt: new Date().toISOString(),
           };
 
@@ -1204,6 +1204,32 @@ export const useMTRStore = create<MTRStore>()(
           if (currentReview.status) {
             updateData.status = currentReview.status;
           }
+
+          // Auto-complete follow-up step if follow-ups are present
+          if (updateData.followUps.length > 0 && currentReview.steps?.followUp && !currentReview.steps.followUp.completed) {
+            console.log('🔄 Auto-completing follow-up step since follow-ups are present');
+            currentReview.steps.followUp.completed = true;
+            currentReview.steps.followUp.completedAt = new Date();
+            currentReview.steps.followUp.data = {
+              completedAt: new Date().toISOString(),
+              stepName: 'Follow-Up',
+              followUpsCount: updateData.followUps.length
+            };
+            updateData.steps = currentReview.steps;
+          }
+
+          // Debug logging
+          console.log('🔍 Saving MTR with data:', {
+            reviewId: currentReview._id,
+            medicationsCount: updateData.medications.length,
+            problemsCount: updateData.problems.length,
+            interventionsCount: updateData.interventions.length,
+            followUpsCount: updateData.followUps.length,
+            hasPlan: !!updateData.plan,
+            status: updateData.status,
+            stepsCompleted: currentReview.steps ? Object.entries(currentReview.steps).filter(([_, step]) => step.completed).length : 0,
+            followUpStepCompleted: currentReview.steps?.followUp?.completed
+          });
 
           // Call the API to save the review
           const response = await mtrService.updateMTRSession(
@@ -1988,10 +2014,9 @@ export const useMTRStore = create<MTRStore>()(
             (step) => step && step.completed
           );
 
-          // Check if at least one follow-up is scheduled
-          const hasFollowUp = followUps.length > 0;
-
-          return allStepsCompleted && hasFollowUp;
+          // For completion, we only require all steps to be completed
+          // Follow-ups are optional - they can be scheduled later if needed
+          return allStepsCompleted;
         } catch (error) {
           console.error('Error checking if review can be completed:', error);
           return false;
