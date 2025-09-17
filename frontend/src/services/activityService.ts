@@ -37,8 +37,8 @@ class ActivityService {
             const [patientsResponse, notesResponse, medicationsResponse, mtrsResponse] = await Promise.allSettled([
                 api.get('/patients', { params: { limit: 5, sort: '-createdAt' } }),
                 api.get('/notes', { params: { limit: 5, sort: '-createdAt' } }),
-                api.get('/medications', { params: { limit: 5, sort: '-updatedAt' } }),
-                api.get('/mtr', { params: { limit: 5, sort: '-createdAt' } }),
+                api.get('/medication-management/dashboard/recent-patients', {}),
+                api.get('/mtr', { params: { page: 1, limit: 5, sort: '-createdAt' } }),
             ]);
 
             const systemActivities: SystemActivity[] = [];
@@ -237,7 +237,7 @@ class ActivityService {
     }
 
     // Helper method to extract array from different response structures
-    private extractArrayFromResponse(responseData: any, arrayKey?: string): unknown[] {
+    private extractArrayFromResponse(responseData: unknown, arrayKey?: string): unknown[] {
         if (!responseData) return [];
 
         // Handle the specific API response structure: { success: true, data: { patients: [...] } }

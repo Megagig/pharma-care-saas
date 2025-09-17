@@ -31,7 +31,12 @@ const diagnosticRateLimit = (0, express_rate_limit_1.default)({
     standardHeaders: true,
     legacyHeaders: false,
 });
-router.post('/ai', aiRateLimit, auth_1.auth, auth_1.requireLicense, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)({
+const extendTimeout = (req, res, next) => {
+    req.setTimeout(90000);
+    res.setTimeout(90000);
+    next();
+};
+router.post('/ai', extendTimeout, aiRateLimit, auth_1.auth, auth_1.requireLicense, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)({
     action: 'AI_DIAGNOSTIC_REQUEST',
     resourceType: 'DiagnosticCase',
     complianceCategory: 'clinical_documentation',

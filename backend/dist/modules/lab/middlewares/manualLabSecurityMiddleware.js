@@ -48,7 +48,7 @@ exports.enhancedOrderCreationRateLimit = (0, express_rate_limit_1.default)({
     skip: (req) => {
         return false;
     },
-    onLimitReached: (req) => {
+    handler: (req, res) => {
         const userId = req.user?._id?.toString();
         if (userId) {
             updateSecurityMetrics(userId, 'orderCreationLimit');
@@ -58,6 +58,13 @@ exports.enhancedOrderCreationRateLimit = (0, express_rate_limit_1.default)({
             ip: req.ip,
             userAgent: req.get('User-Agent'),
             service: 'manual-lab-security'
+        });
+        res.status(429).json({
+            success: false,
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: 'Too many order creation attempts. Please try again later.',
+            retryAfter: Math.ceil(15 * 60),
+            userId: req.user?._id
         });
     }
 });
@@ -82,7 +89,7 @@ exports.enhancedPDFAccessRateLimit = (0, express_rate_limit_1.default)({
     keyGenerator: (req) => {
         return req.user?._id?.toString() || req.ip || 'anonymous';
     },
-    onLimitReached: (req) => {
+    handler: (req, res) => {
         const userId = req.user?._id?.toString();
         if (userId) {
             updateSecurityMetrics(userId, 'pdfAccessLimit');
@@ -92,6 +99,12 @@ exports.enhancedPDFAccessRateLimit = (0, express_rate_limit_1.default)({
             orderId: req.params.orderId,
             ip: req.ip,
             service: 'manual-lab-security'
+        });
+        res.status(429).json({
+            success: false,
+            code: 'PDF_ACCESS_RATE_LIMIT_EXCEEDED',
+            message: 'Too many PDF access attempts. Please try again later.',
+            retryAfter: Math.ceil(5 * 60)
         });
     }
 });

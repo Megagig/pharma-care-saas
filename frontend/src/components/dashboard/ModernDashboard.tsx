@@ -52,6 +52,8 @@ import { useDashboardCharts } from '../../hooks/useDashboardCharts';
 import { useClinicalInterventionDashboard } from '../../hooks/useClinicalInterventionDashboard';
 import { useRecentActivities } from '../../hooks/useRecentActivities';
 import { activityService } from '../../services/activityService';
+import { testApiEndpoints } from '../../debug/testApiData';
+import { testDashboardService } from '../../debug/testDashboardService';
 import DashboardChart from './DashboardChart';
 import QuickActionCard from './QuickActionCard';
 import { useResponsive } from '../../hooks/useResponsive';
@@ -180,7 +182,9 @@ const KPICard: React.FC<KPICardProps> = ({
                   mb: 1,
                 }}
               >
-                {value}
+                {typeof value === 'number'
+                  ? value.toLocaleString()
+                  : value || '0'}
               </Typography>
             )}
 
@@ -270,6 +274,15 @@ export const ModernDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { isMobile, isTablet } = useResponsive();
 
+  // Debug API endpoints and dashboard service
+  useEffect(() => {
+    console.log('🔍 Running API debug test...');
+    testApiEndpoints();
+
+    console.log('🔍 Running Dashboard Service test...');
+    testDashboardService().catch(console.error);
+  }, []);
+
   // Dashboard data hooks
   const {
     stats,
@@ -321,8 +334,12 @@ export const ModernDashboard: React.FC = () => {
     }
   };
 
-  // Loading state
-  if (dashboardLoading && !stats.totalPatients) {
+  // Loading state - only show loading if we're actually loading and have no data at all
+  if (
+    dashboardLoading &&
+    stats.totalPatients === 0 &&
+    stats.totalClinicalNotes === 0
+  ) {
     return (
       <Box sx={{ p: 3 }}>
         <Skeleton variant="text" width="40%" height={60} sx={{ mb: 2 }} />
@@ -385,6 +402,17 @@ export const ModernDashboard: React.FC = () => {
         mx: 0,
       }}
     >
+      {/* Debug Info - Remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+          <Typography variant="caption" display="block">
+            Debug Info: Loading={dashboardLoading.toString()}, Stats=
+            {JSON.stringify(stats)}, ChartsLoading={chartsLoading.toString()},
+            ChartsError={chartsError || 'none'}
+          </Typography>
+        </Box>
+      )}
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -481,7 +509,7 @@ export const ModernDashboard: React.FC = () => {
           <Box sx={{ width: '100%' }}>
             <KPICard
               title="Total Patients"
-              value={stats.totalPatients}
+              value={stats.totalPatients || 0}
               subtitle="Active patients in system"
               icon={<PeopleIcon />}
               color={theme.palette.primary.main}
@@ -494,7 +522,7 @@ export const ModernDashboard: React.FC = () => {
           <Box sx={{ width: '100%' }}>
             <KPICard
               title="Clinical Notes"
-              value={stats.totalClinicalNotes}
+              value={stats.totalClinicalNotes || 0}
               subtitle="Total notes recorded"
               icon={<DescriptionIcon />}
               color={theme.palette.success.main}
@@ -507,7 +535,7 @@ export const ModernDashboard: React.FC = () => {
           <Box sx={{ width: '100%' }}>
             <KPICard
               title="Medications"
-              value={stats.totalMedications}
+              value={stats.totalMedications || 0}
               subtitle="Medication records"
               icon={<MedicationIcon />}
               color={theme.palette.warning.main}
@@ -520,7 +548,7 @@ export const ModernDashboard: React.FC = () => {
           <Box sx={{ width: '100%' }}>
             <KPICard
               title="MTR Sessions"
-              value={stats.totalMTRs}
+              value={stats.totalMTRs || 0}
               subtitle="Medication therapy reviews"
               icon={<AssessmentIcon />}
               color={theme.palette.secondary.main}
@@ -533,7 +561,7 @@ export const ModernDashboard: React.FC = () => {
           <Box sx={{ width: '100%' }}>
             <KPICard
               title="Diagnostics"
-              value={stats.totalDiagnostics}
+              value={stats.totalDiagnostics || 0}
               subtitle="Diagnostic tests"
               icon={<ScienceIcon />}
               color={theme.palette.error.main}
@@ -603,7 +631,11 @@ export const ModernDashboard: React.FC = () => {
             ) : (
               <DashboardChart
                 title="Patients by Month"
-                data={patientsByMonth}
+                data={
+                  patientsByMonth.length > 0
+                    ? patientsByMonth
+                    : [{ name: 'No Data', value: 0 }]
+                }
                 type="line"
                 height={450}
                 colors={[theme.palette.primary.main]}
@@ -654,7 +686,17 @@ export const ModernDashboard: React.FC = () => {
             ) : (
               <DashboardChart
                 title="Medications by Status"
-                data={medicationsByStatus}
+                data={
+                  medicationsByStatus.length > 0
+                    ? medicationsByStatus
+                    : [
+                        {
+                          name: 'No Data',
+                          value: 1,
+                          color: theme.palette.grey[400],
+                        },
+                      ]
+                }
                 type="pie"
                 height={450}
                 colors={[
@@ -817,7 +859,11 @@ export const ModernDashboard: React.FC = () => {
             ) : (
               <DashboardChart
                 title="Patient Age Distribution"
-                data={patientAgeDistribution}
+                data={
+                  patientAgeDistribution.length > 0
+                    ? patientAgeDistribution
+                    : [{ name: 'No Data', value: 0 }]
+                }
                 type="bar"
                 height={450}
                 colors={[theme.palette.info.main]}

@@ -4,12 +4,16 @@ exports.validateVitalSigns = exports.validateMedication = exports.validateDrugIn
 const express_validator_1 = require("express-validator");
 exports.validateDiagnosticAnalysis = [
     (0, express_validator_1.body)('patientId')
+        .notEmpty()
+        .withMessage('Patient ID is required')
         .isMongoId()
         .withMessage('Valid patient ID is required'),
     (0, express_validator_1.body)('symptoms')
         .isObject()
         .withMessage('Symptoms object is required'),
     (0, express_validator_1.body)('symptoms.subjective')
+        .notEmpty()
+        .withMessage('Subjective symptoms are required')
         .isArray({ min: 1 })
         .withMessage('At least one subjective symptom is required')
         .custom((value) => {
@@ -19,22 +23,26 @@ exports.validateDiagnosticAnalysis = [
         return true;
     }),
     (0, express_validator_1.body)('symptoms.objective')
+        .optional()
         .isArray()
         .withMessage('Objective symptoms must be an array')
         .custom((value) => {
-        if (!Array.isArray(value) || value.some(item => typeof item !== 'string')) {
+        if (value && (!Array.isArray(value) || value.some(item => typeof item !== 'string'))) {
             throw new Error('Objective symptoms must be strings');
         }
         return true;
     }),
     (0, express_validator_1.body)('symptoms.duration')
+        .optional()
         .isString()
         .isLength({ min: 1, max: 100 })
-        .withMessage('Duration is required and must be between 1-100 characters'),
+        .withMessage('Duration must be between 1-100 characters'),
     (0, express_validator_1.body)('symptoms.severity')
+        .optional()
         .isIn(['mild', 'moderate', 'severe'])
         .withMessage('Severity must be mild, moderate, or severe'),
     (0, express_validator_1.body)('symptoms.onset')
+        .optional()
         .isIn(['acute', 'chronic', 'subacute'])
         .withMessage('Onset must be acute, chronic, or subacute'),
     (0, express_validator_1.body)('labResults')
@@ -84,16 +92,18 @@ exports.validateDiagnosticAnalysis = [
         .withMessage('Temperature must be between 30-45°C'),
     (0, express_validator_1.body)('vitalSigns.respiratoryRate')
         .optional()
-        .isInt({ min: 5, max: 60 })
-        .withMessage('Respiratory rate must be between 5-60 breaths/min'),
+        .isInt({ min: 5, max: 100 })
+        .withMessage('Respiratory rate must be between 5-100 breaths/min'),
     (0, express_validator_1.body)('vitalSigns.oxygenSaturation')
         .optional()
         .isInt({ min: 50, max: 100 })
         .withMessage('Oxygen saturation must be between 50-100%'),
     (0, express_validator_1.body)('patientConsent')
+        .optional()
         .isObject()
-        .withMessage('Patient consent object is required'),
+        .withMessage('Patient consent must be an object'),
     (0, express_validator_1.body)('patientConsent.provided')
+        .optional()
         .isBoolean()
         .withMessage('Patient consent provided must be a boolean'),
     (0, express_validator_1.body)('patientConsent.method')
@@ -221,8 +231,8 @@ const validateVitalSigns = (vitalSigns) => {
     }
     if (vitalSigns.respiratoryRate !== undefined) {
         const rr = Number(vitalSigns.respiratoryRate);
-        if (isNaN(rr) || rr < 5 || rr > 60) {
-            errors.push('Respiratory rate must be between 5-60 breaths/min');
+        if (isNaN(rr) || rr < 5 || rr > 100) {
+            errors.push('Respiratory rate must be between 5-100 breaths/min');
         }
     }
     if (vitalSigns.oxygenSaturation !== undefined) {

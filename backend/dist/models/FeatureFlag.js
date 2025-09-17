@@ -60,12 +60,12 @@ const featureFlagSchema = new mongoose_1.Schema({
     },
     allowedTiers: [{
             type: String,
-            enum: ['free_trial', 'basic', 'pro', 'enterprise'],
+            enum: ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'],
             index: true
         }],
     allowedRoles: [{
             type: String,
-            enum: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist', 'super_admin'],
+            enum: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist', 'super_admin', 'owner'],
             index: true
         }],
     customRules: {

@@ -53,12 +53,25 @@ export const useDashboardData = (): DashboardData => {
                 });
 
             } catch (error) {
-                console.error('Error fetching dashboard data:', error);
-                setData(prev => ({
-                    ...prev,
-                    loading: false,
-                    error: error instanceof Error ? error.message : 'Failed to load dashboard data',
-                }));
+                console.error('❌ Error fetching dashboard data:', error);
+
+                // Try to get fallback data from the service
+                try {
+                    console.log('🔄 Attempting to get fallback data...');
+                    const fallbackAnalytics = await dashboardService.getDashboardAnalytics();
+                    setData({
+                        ...fallbackAnalytics,
+                        loading: false,
+                        error: null, // Don't show error if fallback works
+                    });
+                } catch (fallbackError) {
+                    console.error('❌ Fallback data also failed:', fallbackError);
+                    setData(prev => ({
+                        ...prev,
+                        loading: false,
+                        error: error instanceof Error ? error.message : 'Failed to load dashboard data',
+                    }));
+                }
             }
         };
 
