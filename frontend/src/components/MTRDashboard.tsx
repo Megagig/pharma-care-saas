@@ -212,8 +212,13 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       return;
     }
 
-    if (!currentReview._id) {
-      console.error('Auto-save skipped: Review ID is missing', currentReview);
+    // Enhanced validation for review ID
+    if (!currentReview._id || currentReview._id.trim() === '') {
+      console.error('Auto-save skipped: Review ID is missing or invalid', {
+        hasReview: !!currentReview,
+        reviewId: currentReview._id,
+        reviewKeys: Object.keys(currentReview || {}),
+      });
       return;
     }
 
@@ -401,8 +406,13 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
           return;
         }
 
-        if (!currentReview._id) {
-          console.error('Auto-save skipped: Review ID is missing');
+        // Enhanced validation for review ID
+        if (!currentReview._id || currentReview._id.trim() === '') {
+          console.error('Auto-save skipped: Review ID is missing or invalid', {
+            hasReview: !!currentReview,
+            reviewId: currentReview._id,
+            reviewKeys: Object.keys(currentReview || {}),
+          });
           return;
         }
 
