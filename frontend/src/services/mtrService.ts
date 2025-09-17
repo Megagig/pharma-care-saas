@@ -81,7 +81,7 @@ export class MTRPermissionError extends Error implements MTRServiceError {
 interface DateTransformable {
   steps?: Record<
     string,
-    { completedAt?: string | Date; [key: string]: unknown }
+    { completedAt?: string | Date;[key: string]: unknown }
   >;
   createdAt?: string | Date;
   updatedAt?: string | Date;
@@ -458,8 +458,8 @@ export const handleMTRError = (error: unknown, context: string): never => {
   // Generic error
   const serviceError = new Error(
     apiError.response?.data?.message ||
-      apiError.message ||
-      'An unexpected error occurred'
+    apiError.message ||
+    'An unexpected error occurred'
   ) as MTRServiceError;
 
   serviceError.code = apiError.response?.data?.code || 'MTR_SERVICE_ERROR';
@@ -545,12 +545,12 @@ export const mtrService = {
         `/mtr/${sessionId}`
       );
 
-      if (!response?.data?.data) {
+      if (!response?.data?.data?.review) {
         throw new Error('Invalid response structure');
       }
 
       // Extract the review data directly from the response structure
-      const reviewData = response.data.data;
+      const reviewData = response.data.data.review;
 
       // Transform dates
       const transformed =
@@ -593,13 +593,22 @@ export const mtrService = {
         transformedData
       );
 
-      if (!response.data?.data) {
+      if (!response.data?.data?.review) {
+        console.error('Invalid response structure - expected review in data.data:', {
+          hasData: !!response.data,
+          hasDataData: !!response.data?.data,
+          hasReview: !!response.data?.data?.review,
+          responseKeys: Object.keys(response),
+          dataKeys: response.data ? Object.keys(response.data) : [],
+          dataDataKeys: response.data?.data ? Object.keys(response.data.data) : [],
+          fullResponse: response
+        });
         throw new Error('Invalid response structure');
       }
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
-        response.data.data as unknown as DateTransformable
+        response.data.data.review as unknown as DateTransformable
       ) as MedicationTherapyReview;
 
       // Validate that the transformed object has the required structure
@@ -695,13 +704,13 @@ export const mtrService = {
         transformedData
       );
 
-      if (!response.data?.data) {
+      if (!response.data?.data?.review) {
         throw new Error('Invalid response structure');
       }
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
-        response.data.data as unknown as DateTransformable
+        response.data.data.review as unknown as DateTransformable
       ) as MedicationTherapyReview;
       const enhancedReview = {
         ...transformed,
@@ -780,13 +789,13 @@ export const mtrService = {
         { data: transformedStepData }
       );
 
-      if (!response.data?.data) {
+      if (!response.data?.data?.review) {
         throw new Error('Invalid response structure');
       }
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
-        response.data.data as unknown as DateTransformable
+        response.data.data.review as unknown as DateTransformable
       ) as MedicationTherapyReview;
       const enhancedReview = {
         ...transformed,
@@ -1603,9 +1612,8 @@ export const mtrService = {
       }
 
       const queryString = params.toString();
-      const url = `/mtr/problems/statistics${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/mtr/problems/statistics${queryString ? `?${queryString}` : ''
+        }`;
 
       const response = await apiHelpers.get(url);
       return response.data?.data || response.data;
@@ -1629,9 +1637,8 @@ export const mtrService = {
       }
 
       const queryString = params.toString();
-      const url = `/mtr/interventions/statistics${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/mtr/interventions/statistics${queryString ? `?${queryString}` : ''
+        }`;
 
       const response = await apiHelpers.get(url);
       return response.data?.data || response.data;
@@ -1655,9 +1662,8 @@ export const mtrService = {
       }
 
       const queryString = params.toString();
-      const url = `/mtr/followups/statistics${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/mtr/followups/statistics${queryString ? `?${queryString}` : ''
+        }`;
 
       const response = await apiHelpers.get(url);
       return response.data?.data || response.data;
@@ -1843,9 +1849,8 @@ export const mtrService = {
     try {
       const searchParams = formatSearchParams(params as SearchParamsType);
       const queryString = searchParams.toString();
-      const url = `/mtr/reports/interventions${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/mtr/reports/interventions${queryString ? `?${queryString}` : ''
+        }`;
 
       const response = await apiHelpers.get(url);
       return response.data?.data || response.data;
@@ -1867,9 +1872,8 @@ export const mtrService = {
     try {
       const searchParams = formatSearchParams(params as SearchParamsType);
       const queryString = searchParams.toString();
-      const url = `/mtr/reports/pharmacists${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/mtr/reports/pharmacists${queryString ? `?${queryString}` : ''
+        }`;
 
       const response = await apiHelpers.get(url);
       return response.data?.data || response.data;
@@ -1912,9 +1916,8 @@ export const mtrService = {
     try {
       const searchParams = formatSearchParams(params as SearchParamsType);
       const queryString = searchParams.toString();
-      const url = `/mtr/reports/outcomes${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/mtr/reports/outcomes${queryString ? `?${queryString}` : ''
+        }`;
 
       const response = await apiHelpers.get(url);
       const responseData = response.data?.data || response.data || {};

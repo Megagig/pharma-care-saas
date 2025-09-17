@@ -125,7 +125,7 @@ export const getMTRSession = asyncHandler(
 
     // Create response with computed properties
     const responseData = {
-      session: {
+      review: {
         ...session!.toObject(),
         completionPercentage: session!.getCompletionPercentage(),
         nextStep: session!.getNextStep(),
@@ -229,7 +229,7 @@ export const createMTRSession = asyncHandler(
     sendSuccess(
       res,
       {
-        session: {
+        review: {
           ...session.toObject(),
           completionPercentage: session.getCompletionPercentage(),
           nextStep: session.getNextStep(),
@@ -290,7 +290,7 @@ export const updateMTRSession = asyncHandler(
     sendSuccess(
       res,
       {
-        session: {
+        review: {
           ...session!.toObject(),
           completionPercentage: session!.getCompletionPercentage(),
           nextStep: session!.getNextStep(),
@@ -403,7 +403,7 @@ export const updateMTRStep = asyncHandler(
     sendSuccess(
       res,
       {
-        session: {
+        review: {
           ...session!.toObject(),
           completionPercentage: session!.getCompletionPercentage(),
           nextStep: session!.getNextStep(),
@@ -586,7 +586,7 @@ export const createPatientMTRSession = asyncHandler(
     sendSuccess(
       res,
       {
-        session: {
+        review: {
           ...session.toObject(),
           completionPercentage: session.getCompletionPercentage(),
           nextStep: session.getNextStep(),
@@ -1061,9 +1061,9 @@ export const getMTRReports = asyncHandler(
     const dateRange =
       startDate && endDate
         ? {
-            start: new Date(startDate),
-            end: new Date(endDate),
-          }
+          start: new Date(startDate),
+          end: new Date(endDate),
+        }
         : undefined;
 
     // Build match criteria
@@ -1146,9 +1146,9 @@ export const getMTROutcomes = asyncHandler(
     const dateRange =
       startDate && endDate
         ? {
-            start: new Date(startDate),
-            end: new Date(endDate),
-          }
+          start: new Date(startDate),
+          end: new Date(endDate),
+        }
         : undefined;
 
     // Build match criteria
