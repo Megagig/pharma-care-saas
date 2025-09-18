@@ -114,7 +114,7 @@ export const useCreateMTRSession = () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.mtr.active() });
 
             // Add optimistic update for the new session
-            const newSession = data?.data?.review;
+            const newSession = data?.review || data?.data?.review;
             if (newSession) {
                 queryClient.setQueryData(queryKeys.mtr.detail(newSession._id), data);
             }

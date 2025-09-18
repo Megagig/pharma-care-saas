@@ -36,7 +36,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CakeIcon from '@mui/icons-material/Cake';
 
-import { usePatient } from '../queries/usePatients';
+import { usePatient, usePatientSummary } from '../queries/usePatients';
 import { usePatientLabOrders } from '../hooks/useManualLabOrders';
 import { PatientMTRWidget } from './PatientMTRWidget';
 import PatientClinicalNotes from './PatientClinicalNotes';
@@ -64,45 +64,38 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
     error,
   } = usePatient(patientId!);
 
+  const {
+    data: summaryResponse,
+    isLoading: summaryLoading,
+    isError: summaryError,
+  } = usePatientSummary(patientId!);
+
   const { data: labOrders = [], isLoading: labOrdersLoading } =
     usePatientLabOrders(patientId!, { enabled: !!patientId });
 
   const patientData = extractData(patientResponse)?.patient;
+  const summaryData = extractData(summaryResponse);
 
-  // Mock overview data (replace with actual hook when available)
-  const overview = {
-    totalActiveMedications: 5,
-    totalActiveDTPs: 2,
-    totalActiveConditions: 3,
-    recentVisits: 8,
-    recentActivity: [
-      {
-        id: 1,
-        type: 'medication',
-        description: 'New medication prescribed',
-        date: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        type: 'assessment',
-        description: 'Clinical assessment completed',
-        date: new Date(Date.now() - 86400000).toISOString(),
-      },
-      {
-        id: 3,
-        type: 'visit',
-        description: 'Follow-up visit scheduled',
-        date: new Date(Date.now() - 172800000).toISOString(),
-      },
-    ],
-    clinicalInsights: [
-      'Blood pressure within normal range',
-      'Medication adherence good',
-      'Regular monitoring recommended',
-    ],
-  };
+  // Extract real data from API response
+  const overview = summaryData
+    ? {
+        totalActiveMedications: summaryData.counts?.currentMedications || 0,
+        totalActiveDTPs: summaryData.counts?.hasActiveDTP ? 1 : 0, // Convert boolean to count
+        totalActiveConditions: summaryData.counts?.conditions || 0,
+        recentVisits: summaryData.counts?.visits || 0,
+        totalInterventions: summaryData.counts?.interventions || 0,
+        activeInterventions: summaryData.counts?.activeInterventions || 0,
+      }
+    : {
+        totalActiveMedications: 0,
+        totalActiveDTPs: 0,
+        totalActiveConditions: 0,
+        recentVisits: 0,
+        totalInterventions: 0,
+        activeInterventions: 0,
+      };
 
-  if (patientLoading) {
+  if (patientLoading || summaryLoading) {
     return (
       <Box sx={{ p: 3 }}>
         <Skeleton
@@ -122,7 +115,7 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
     );
   }
 
-  if (patientError) {
+  if (patientError || summaryError) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -375,6 +368,26 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
             </CardContent>
           </Card>
         </Box>
+
+        <Box sx={{ flex: '1 1 200px', minWidth: 0 }}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar sx={{ bgcolor: 'info.main' }}>
+                  <TimelineIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                    {overview?.totalInterventions || 0}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Interventions
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
       </Box>
 
       {/* MTR Integration Widget */}
@@ -496,28 +509,51 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
         </Box>
       </Box>
 
-      {/* Clinical Insights */}
+      {/* Patient Summary */}
       <Card>
         <CardHeader
-          title="Clinical Insights"
+          title="Patient Summary"
           titleTypographyProps={{ variant: 'h6', fontWeight: 600 }}
           avatar={<AssignmentIcon color="primary" />}
         />
         <CardContent>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-            {overview?.clinicalInsights?.map((insight, index) => (
+            {summaryData?.counts?.hasActiveDTP && (
               <Chip
-                key={index}
-                label={insight}
-                variant="outlined"
-                color="success"
+                label="Has Active DTP"
+                color="warning"
+                icon={<WarningIcon />}
               />
-            )) || (
-              <Typography variant="body2" color="text.secondary">
-                Clinical insights will appear here based on patient data
-                analysis
-              </Typography>
             )}
+            {summaryData?.counts?.hasActiveInterventions && (
+              <Chip
+                label="Active Interventions"
+                color="info"
+                icon={<TimelineIcon />}
+              />
+            )}
+            {overview?.totalActiveMedications > 0 && (
+              <Chip
+                label={`${overview.totalActiveMedications} Active Medications`}
+                color="primary"
+                variant="outlined"
+              />
+            )}
+            {overview?.totalActiveConditions > 0 && (
+              <Chip
+                label={`${overview.totalActiveConditions} Active Conditions`}
+                color="secondary"
+                variant="outlined"
+              />
+            )}
+            {!summaryData?.counts?.hasActiveDTP &&
+              !summaryData?.counts?.hasActiveInterventions &&
+              overview?.totalActiveMedications === 0 &&
+              overview?.totalActiveConditions === 0 && (
+                <Typography variant="body2" color="text.secondary">
+                  No active clinical issues identified
+                </Typography>
+              )}
           </Box>
         </CardContent>
       </Card>
