@@ -40,42 +40,30 @@ import {
 } from '@mui/icons-material';
 import { format, parseISO } from 'date-fns';
 import { usePatientInterventions } from '../queries/useClinicalInterventions';
+import { useSearchPatients } from '../queries/usePatients';
 import type { ClinicalIntervention } from '../stores/clinicalInterventionStore';
 
-// Mock patient data - replace with actual patient service
-const mockPatients = [
-  { _id: '1', firstName: 'John', lastName: 'Doe', dateOfBirth: '1980-01-01' },
-  { _id: '2', firstName: 'Jane', lastName: 'Smith', dateOfBirth: '1975-05-15' },
-  {
-    _id: '3',
-    firstName: 'Bob',
-    lastName: 'Johnson',
-    dateOfBirth: '1990-12-10',
-  },
-  {
-    _id: '4',
-    firstName: 'Alice',
-    lastName: 'Brown',
-    dateOfBirth: '1985-08-22',
-  },
-  {
-    _id: '5',
-    firstName: 'Charlie',
-    lastName: 'Wilson',
-    dateOfBirth: '1970-03-30',
-  },
-];
+// Patient search interface for consistent typing
+interface PatientSearchResult {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth?: string;
+  mrn?: string;
+}
 
 const PatientInterventions: React.FC = () => {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
 
   // State
-  const [selectedPatient, setSelectedPatient] = useState<any>(
-    patientId ? mockPatients.find((p) => p._id === patientId) : null
-  );
+  const [selectedPatient, setSelectedPatient] =
+    useState<PatientSearchResult | null>(null);
+  const [patientSearchQuery, setPatientSearchQuery] = useState<string>('');
 
   // API queries
+  const { data: patientSearchResults, isLoading: searchingPatients } =
+    useSearchPatients(patientSearchQuery);
   const {
     data: interventionsResponse,
     isLoading,
@@ -86,6 +74,23 @@ const PatientInterventions: React.FC = () => {
   const interventions = useMemo(() => {
     return interventionsResponse?.data || [];
   }, [interventionsResponse]);
+
+  // Extract patients from search results with proper error handling
+  const patients: PatientSearchResult[] = React.useMemo(() => {
+    try {
+      const results = patientSearchResults?.data?.results || [];
+      return results.map((patient: any) => ({
+        _id: patient._id,
+        firstName: patient.firstName || '',
+        lastName: patient.lastName || '',
+        dateOfBirth: patient.dateOfBirth || patient.dob || '',
+        mrn: patient.mrn || '',
+      }));
+    } catch (error) {
+      console.error('Error processing patient search results:', error);
+      return [];
+    }
+  }, [patientSearchResults]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -201,10 +206,16 @@ const PatientInterventions: React.FC = () => {
             Select Patient
           </Typography>
           <Autocomplete
-            options={mockPatients}
-            getOptionLabel={(option) =>
-              `${option.firstName} ${option.lastName} (DOB: ${option.dateOfBirth})`
-            }
+            options={patients}
+            loading={searchingPatients}
+            getOptionLabel={(option) => {
+              const name = `${option.firstName} ${option.lastName}`.trim();
+              const mrn = option.mrn ? ` (MRN: ${option.mrn})` : '';
+              const dob = option.dateOfBirth
+                ? ` - DOB: ${option.dateOfBirth}`
+                : '';
+              return `${name}${mrn}${dob}`;
+            }}
             value={selectedPatient}
             onChange={(_, value) => {
               setSelectedPatient(value);
@@ -216,13 +227,24 @@ const PatientInterventions: React.FC = () => {
                 navigate('/pharmacy/clinical-interventions/patients');
               }
             }}
+            onInputChange={(_, newInputValue) => {
+              setPatientSearchQuery(newInputValue);
+            }}
             renderInput={(params) => (
               <TextField
                 {...params}
-                placeholder="Search and select a patient..."
+                placeholder="Search patients by name or MRN..."
                 InputProps={{
                   ...params.InputProps,
                   startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
+                  endAdornment: (
+                    <>
+                      {searchingPatients ? (
+                        <CircularProgress color="inherit" size={20} />
+                      ) : null}
+                      {params.InputProps.endAdornment}
+                    </>
+                  ),
                 }}
               />
             )}
@@ -234,11 +256,21 @@ const PatientInterventions: React.FC = () => {
                     {option.firstName} {option.lastName}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    DOB: {format(parseISO(option.dateOfBirth), 'MMM dd, yyyy')}
+                    {option.mrn && `MRN: ${option.mrn}`}
+                    {option.mrn && option.dateOfBirth && ' • '}
+                    {option.dateOfBirth && `DOB: ${option.dateOfBirth}`}
                   </Typography>
                 </Box>
               </Box>
             )}
+            noOptionsText={
+              patientSearchQuery.length < 2
+                ? 'Type at least 2 characters to search patients'
+                : searchingPatients
+                ? 'Searching patients...'
+                : 'No patients found'
+            }
+            filterOptions={(x) => x} // Disable client-side filtering since we're using server-side search
           />
         </CardContent>
       </Card>
@@ -260,21 +292,30 @@ const PatientInterventions: React.FC = () => {
                       <Typography variant="h6">
                         {selectedPatient.firstName} {selectedPatient.lastName}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Date of Birth:{' '}
-                        {format(
-                          parseISO(selectedPatient.dateOfBirth),
-                          'MMM dd, yyyy'
-                        )}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Age:{' '}
-                        {new Date().getFullYear() -
-                          new Date(
-                            selectedPatient.dateOfBirth
-                          ).getFullYear()}{' '}
-                        years
-                      </Typography>
+                      {selectedPatient.mrn && (
+                        <Typography variant="body2" color="text.secondary">
+                          MRN: {selectedPatient.mrn}
+                        </Typography>
+                      )}
+                      {selectedPatient.dateOfBirth && (
+                        <>
+                          <Typography variant="body2" color="text.secondary">
+                            Date of Birth:{' '}
+                            {format(
+                              parseISO(selectedPatient.dateOfBirth),
+                              'MMM dd, yyyy'
+                            )}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Age:{' '}
+                            {new Date().getFullYear() -
+                              new Date(
+                                selectedPatient.dateOfBirth
+                              ).getFullYear()}{' '}
+                            years
+                          </Typography>
+                        </>
+                      )}
                     </Box>
                   </Box>
                 </CardContent>
@@ -409,7 +450,7 @@ const PatientInterventions: React.FC = () => {
                                   .replace(/\b\w/g, (l) => l.toUpperCase())}
                                 size="small"
                                 color={
-                                  getStatusColor(intervention.status) as any
+                                  getStatusColor(intervention.status) as unknown
                                 }
                               />
                             </TableCell>

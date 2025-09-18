@@ -432,110 +432,150 @@ const ClinicalInterventionsList: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {interventions.map((intervention: ClinicalIntervention) => (
-                <TableRow key={intervention._id} hover>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="medium">
-                      {intervention.interventionNumber}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <PersonIcon fontSize="small" color="action" />
-                      <Box>
-                        <Typography variant="body2">
-                          {intervention.patient
-                            ? `${intervention.patient.firstName} ${intervention.patient.lastName}`
-                            : 'Unknown Patient'}
-                        </Typography>
-                        {intervention.patient?.dateOfBirth && (
-                          <Typography variant="caption" color="text.secondary">
-                            DOB:{' '}
-                            {format(
-                              parseISO(intervention.patient.dateOfBirth),
-                              'MMM dd, yyyy'
-                            )}
+              {interventions.length > 0 ? (
+                interventions.map((intervention: ClinicalIntervention) => (
+                  <TableRow key={intervention._id} hover>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight="medium">
+                        {intervention.interventionNumber}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <PersonIcon fontSize="small" color="action" />
+                        <Box>
+                          <Typography variant="body2">
+                            {intervention.patient
+                              ? `${intervention.patient.firstName} ${intervention.patient.lastName}`
+                              : 'Unknown Patient'}
                           </Typography>
-                        )}
+                          {intervention.patient?.dateOfBirth && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              DOB:{' '}
+                              {format(
+                                parseISO(intervention.patient.dateOfBirth),
+                                'MMM dd, yyyy'
+                              )}
+                            </Typography>
+                          )}
+                        </Box>
                       </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={intervention.category
-                        .replace(/_/g, ' ')
-                        .replace(/\b\w/g, (l) => l.toUpperCase())}
-                      size="small"
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={intervention.priority.toUpperCase()}
-                      size="small"
-                      color={getPriorityColor(intervention.priority) as any}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      icon={getStatusIcon(intervention.status)}
-                      label={intervention.status
-                        .replace(/_/g, ' ')
-                        .replace(/\b\w/g, (l) => l.toUpperCase())}
-                      size="small"
-                      color={getStatusColor(intervention.status) as any}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {format(
-                        parseISO(intervention.identifiedDate),
-                        'MMM dd, yyyy'
-                      )}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {format(parseISO(intervention.identifiedDate), 'HH:mm')}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" gap={0.5}>
-                      <Tooltip title="View Details">
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            navigate(
-                              `/pharmacy/clinical-interventions/details/${intervention._id}`
-                            )
-                          }
-                        >
-                          <ViewIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Edit">
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            navigate(
-                              `/pharmacy/clinical-interventions/edit/${intervention._id}`
-                            )
-                          }
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteClick(intervention._id)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={intervention.category
+                          .replace(/_/g, ' ')
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                        size="small"
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={intervention.priority.toUpperCase()}
+                        size="small"
+                        color={getPriorityColor(intervention.priority) as any}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        icon={getStatusIcon(intervention.status)}
+                        label={intervention.status
+                          .replace(/_/g, ' ')
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                        size="small"
+                        color={getStatusColor(intervention.status) as unknown}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {format(
+                          parseISO(intervention.identifiedDate),
+                          'MMM dd, yyyy'
+                        )}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {format(parseISO(intervention.identifiedDate), 'HH:mm')}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" gap={0.5}>
+                        <Tooltip title="View Details">
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              navigate(
+                                `/pharmacy/clinical-interventions/details/${intervention._id}`
+                              )
+                            }
+                          >
+                            <ViewIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              navigate(
+                                `/pharmacy/clinical-interventions/edit/${intervention._id}`
+                              )
+                            }
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteClick(intervention._id)}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}>
+                    <Box>
+                      <Typography
+                        variant="h6"
+                        color="text.secondary"
+                        gutterBottom
+                      >
+                        No Clinical Interventions Found
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        paragraph
+                      >
+                        {filters.search ||
+                        filters.category ||
+                        filters.priority ||
+                        filters.status
+                          ? 'No interventions match your current filters. Try adjusting your search criteria.'
+                          : 'No clinical interventions have been created yet. Create your first intervention to get started.'}
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() =>
+                          navigate('/pharmacy/clinical-interventions/create')
+                        }
+                      >
+                        Create First Intervention
+                      </Button>
                     </Box>
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </TableContainer>

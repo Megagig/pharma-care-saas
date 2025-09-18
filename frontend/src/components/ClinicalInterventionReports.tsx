@@ -175,150 +175,19 @@ const ClinicalInterventionReports: React.FC = () => {
     setReportError(null);
 
     try {
-      // Mock data for demonstration - replace with actual API call
-      const mockReport: OutcomeReport = {
-        summary: {
-          totalInterventions: 156,
-          completedInterventions: 142,
-          successfulInterventions: 128,
-          successRate: 90.1,
-          totalCostSavings: 45600,
-          averageResolutionTime: 5.2,
-          patientSatisfactionScore: 4.6,
-        },
-        categoryAnalysis: [
-          {
-            category: 'Drug Therapy Problem',
-            total: 45,
-            successful: 42,
-            successRate: 93.3,
-            avgCostSavings: 320,
-            avgResolutionTime: 4.8,
-          },
-          {
-            category: 'Adverse Drug Reaction',
-            total: 32,
-            successful: 28,
-            successRate: 87.5,
-            avgCostSavings: 280,
-            avgResolutionTime: 3.2,
-          },
-          {
-            category: 'Medication Non-adherence',
-            total: 28,
-            successful: 26,
-            successRate: 92.9,
-            avgCostSavings: 150,
-            avgResolutionTime: 7.1,
-          },
-          {
-            category: 'Drug Interaction',
-            total: 22,
-            successful: 18,
-            successRate: 81.8,
-            avgCostSavings: 450,
-            avgResolutionTime: 2.8,
-          },
-          {
-            category: 'Dosing Issue',
-            total: 18,
-            successful: 16,
-            successRate: 88.9,
-            avgCostSavings: 200,
-            avgResolutionTime: 4.5,
-          },
-          {
-            category: 'Contraindication',
-            total: 11,
-            successful: 10,
-            successRate: 90.9,
-            avgCostSavings: 600,
-            avgResolutionTime: 1.5,
-          },
-        ],
-        trendAnalysis: [
-          {
-            period: '2024-01',
-            interventions: 32,
-            successRate: 87.5,
-            costSavings: 8900,
-            resolutionTime: 5.8,
-          },
-          {
-            period: '2024-02',
-            interventions: 28,
-            successRate: 89.3,
-            costSavings: 7800,
-            resolutionTime: 5.2,
-          },
-          {
-            period: '2024-03',
-            interventions: 35,
-            successRate: 91.4,
-            costSavings: 9200,
-            resolutionTime: 4.9,
-          },
-          {
-            period: '2024-04',
-            interventions: 41,
-            successRate: 90.2,
-            costSavings: 11500,
-            resolutionTime: 5.1,
-          },
-          {
-            period: '2024-05',
-            interventions: 38,
-            successRate: 92.1,
-            costSavings: 10800,
-            resolutionTime: 4.7,
-          },
-          {
-            period: '2024-06',
-            interventions: 42,
-            successRate: 88.1,
-            costSavings: 12400,
-            resolutionTime: 5.3,
-          },
-        ],
-        comparativeAnalysis: {
-          currentPeriod: {
-            interventions: 156,
-            successRate: 90.1,
-            costSavings: 45600,
-          },
-          previousPeriod: {
-            interventions: 134,
-            successRate: 87.3,
-            costSavings: 38200,
-          },
-          percentageChange: {
-            interventions: 16.4,
-            successRate: 3.2,
-            costSavings: 19.4,
-          },
-        },
-        detailedOutcomes: Array.from({ length: 50 }, (_, i) => ({
-          interventionId: `int_${i + 1}`,
-          interventionNumber: `CI-202406-${String(i + 1).padStart(4, '0')}`,
-          patientName: `Patient ${i + 1}`,
-          category: [
-            'Drug Therapy Problem',
-            'Adverse Drug Reaction',
-            'Medication Non-adherence',
-          ][i % 3],
-          priority: ['high', 'medium', 'low'][i % 3],
-          outcome: ['improved', 'no_change', 'worsened'][i % 3],
-          costSavings: Math.floor(Math.random() * 500) + 100,
-          resolutionTime: Math.floor(Math.random() * 10) + 1,
-          patientResponse: ['improved', 'no_change', 'worsened'][i % 3],
-          completedDate: format(
-            subDays(new Date(), Math.floor(Math.random() * 30)),
-            'yyyy-MM-dd'
-          ),
-        })),
-      };
+      // TODO: Replace with actual API call to get reports data
+      // const response = await clinicalInterventionService.getOutcomeReports(filters);
+      // if (response.success && response.data) {
+      //   setReportData(response.data);
+      // } else {
+      //   setReportError(response.message || 'Failed to load report data');
+      // }
 
-      setReportData(mockReport);
+      // For now, show empty state since no real data is available
+      setReportData(null);
+      setReportError(
+        'Reports functionality is not yet connected to the API. Please implement the backend endpoint for outcome reports.'
+      );
     } catch (error) {
       setReportError(
         error instanceof Error ? error.message : 'Failed to load report data'
@@ -402,9 +271,34 @@ const ClinicalInterventionReports: React.FC = () => {
 
   if (!reportData) {
     return (
-      <Alert severity="info" sx={{ m: 2 }}>
-        No report data available
-      </Alert>
+      <Box sx={{ p: 3 }}>
+        <Typography
+          variant="h4"
+          component="h1"
+          gutterBottom
+          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+        >
+          <AssessmentIcon />
+          Outcome Reports & Analytics
+        </Typography>
+        <Alert severity="info" sx={{ mt: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            Reports Feature Coming Soon
+          </Typography>
+          <Typography variant="body2">
+            The reports and analytics functionality is currently being
+            developed. Once clinical interventions are created and processed,
+            comprehensive reports will be available including:
+          </Typography>
+          <Box component="ul" sx={{ mt: 1, mb: 0 }}>
+            <li>Success rates by category</li>
+            <li>Cost savings analysis</li>
+            <li>Trend analysis over time</li>
+            <li>Comparative performance metrics</li>
+            <li>Detailed outcome tracking</li>
+          </Box>
+        </Alert>
+      </Box>
     );
   }
 
@@ -1106,7 +1000,7 @@ const ClinicalInterventionReports: React.FC = () => {
               <Select
                 value={exportFormat}
                 label="Export Format"
-                onChange={(e) => setExportFormat(e.target.value as any)}
+                onChange={(e) => setExportFormat(e.target.value as unknown)}
               >
                 <MenuItem value="pdf">PDF Report</MenuItem>
                 <MenuItem value="excel">Excel Spreadsheet</MenuItem>
