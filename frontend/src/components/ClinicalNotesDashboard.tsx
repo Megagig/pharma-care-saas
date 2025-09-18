@@ -54,6 +54,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ClearIcon from '@mui/icons-material/Clear';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import NoteIcon from '@mui/icons-material/Note';
 import { format, parseISO } from 'date-fns';
 import { useEnhancedClinicalNoteStore } from '../stores/enhancedClinicalNoteStore';
 import { useClinicalNotes } from '../queries/clinicalNoteQueries';
@@ -374,14 +375,40 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
     priority: ClinicalNote['priority'];
   }) => {
     const priorityInfo = NOTE_PRIORITIES.find((p) => p.value === priority);
+    const priorityConfig = {
+      high: {
+        color: theme.palette.error.main,
+        bg: `${theme.palette.error.main}15`,
+        icon: '🔴',
+      },
+      medium: {
+        color: theme.palette.warning.main,
+        bg: `${theme.palette.warning.main}15`,
+        icon: '🟡',
+      },
+      low: {
+        color: theme.palette.success.main,
+        bg: `${theme.palette.success.main}15`,
+        icon: '🟢',
+      },
+    };
+
+    const config = priorityConfig[priority] || priorityConfig.low;
+
     return (
       <Chip
-        label={priorityInfo?.label || priority}
+        label={`${config.icon} ${priorityInfo?.label || priority}`}
         size="small"
         sx={{
-          backgroundColor: priorityInfo?.color || '#757575',
-          color: 'white',
-          fontWeight: 500,
+          backgroundColor: config.bg,
+          color: config.color,
+          fontWeight: 600,
+          border: `1px solid ${config.color}30`,
+          fontSize: '0.75rem',
+          '&:hover': {
+            backgroundColor: `${config.color}25`,
+          },
+          transition: 'all 0.2s ease-in-out',
         }}
       />
     );
@@ -390,12 +417,31 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
   // Type chip component
   const TypeChip = ({ type }: { type: ClinicalNote['type'] }) => {
     const typeInfo = NOTE_TYPES.find((t) => t.value === type);
+    const typeConfig = {
+      consultation: { icon: '👩‍⚕️', color: theme.palette.primary.main },
+      medication_review: { icon: '💊', color: theme.palette.secondary.main },
+      follow_up: { icon: '📅', color: theme.palette.info.main },
+      adverse_event: { icon: '⚠️', color: theme.palette.error.main },
+      other: { icon: '📝', color: theme.palette.grey[600] },
+    };
+
+    const config = typeConfig[type] || typeConfig.other;
+
     return (
       <Chip
-        label={typeInfo?.label || type}
+        label={`${config.icon} ${typeInfo?.label || type}`}
         size="small"
-        variant="outlined"
-        color="primary"
+        sx={{
+          backgroundColor: `${config.color}10`,
+          color: config.color,
+          border: `1px solid ${config.color}30`,
+          fontWeight: 500,
+          fontSize: '0.75rem',
+          '&:hover': {
+            backgroundColor: `${config.color}20`,
+          },
+          transition: 'all 0.2s ease-in-out',
+        }}
       />
     );
   };
@@ -562,23 +608,53 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
     return (
       <Card
         sx={{
-          mb: 2,
+          mb: 3,
           border: isSelected
             ? `2px solid ${theme.palette.primary.main}`
-            : '1px solid #e0e0e0',
+            : `1px solid ${theme.palette.divider}`,
+          borderRadius: 3,
+          background: isSelected
+            ? `linear-gradient(135deg, ${theme.palette.primary.main}08, ${theme.palette.background.paper})`
+            : theme.palette.background.paper,
+          boxShadow: isSelected
+            ? '0 8px 30px rgba(37, 99, 235, 0.15)'
+            : '0 2px 12px rgba(0,0,0,0.08)',
           '&:hover': {
-            boxShadow: theme.shadows[4],
+            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            transform: 'translateY(-2px)',
+          },
+          transition: 'all 0.3s ease-in-out',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '4px',
+            height: '100%',
+            background:
+              note.priority === 'high'
+                ? theme.palette.error.main
+                : note.priority === 'medium'
+                ? theme.palette.warning.main
+                : theme.palette.success.main,
           },
         }}
       >
-        <CardContent sx={{ pb: 1 }}>
+        <CardContent sx={{ pb: 1, pl: 3 }}>
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
             <Box sx={{ flex: 1 }}>
               <Typography
                 variant="h6"
                 component="h3"
-                sx={{ fontWeight: 600, mb: 1 }}
+                sx={{
+                  fontWeight: 700,
+                  mb: 1.5,
+                  color: theme.palette.text.primary,
+                  lineHeight: 1.3,
+                }}
               >
                 {note.title}
               </Typography>
@@ -587,10 +663,17 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                 <PriorityChip priority={note.priority} />
                 {note.isConfidential && (
                   <Chip
-                    icon={<SecurityIcon />}
+                    icon={<SecurityIcon sx={{ fontSize: '0.875rem' }} />}
                     label="Confidential"
                     size="small"
-                    color="warning"
+                    sx={{
+                      backgroundColor: theme.palette.warning.main,
+                      color: 'white',
+                      fontWeight: 500,
+                      '& .MuiChip-icon': {
+                        color: 'white',
+                      },
+                    }}
                   />
                 )}
               </Stack>
@@ -598,28 +681,118 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
             <IconButton
               size="small"
               onClick={() => toggleNoteSelection(note._id)}
-              color={isSelected ? 'primary' : 'default'}
+              sx={{
+                color: isSelected
+                  ? theme.palette.primary.main
+                  : theme.palette.text.secondary,
+                backgroundColor: isSelected
+                  ? `${theme.palette.primary.main}15`
+                  : 'transparent',
+                border: `2px solid ${
+                  isSelected
+                    ? theme.palette.primary.main
+                    : theme.palette.divider
+                }`,
+                borderRadius: '50%',
+                width: 32,
+                height: 32,
+                '&:hover': {
+                  backgroundColor: `${theme.palette.primary.main}20`,
+                  borderColor: theme.palette.primary.main,
+                },
+                transition: 'all 0.2s ease-in-out',
+              }}
             >
               {isSelected ? '✓' : '○'}
             </IconButton>
           </Box>
 
           {/* Patient Info */}
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Patient: <strong>{formatPatientName(note.patient)}</strong> (MRN:{' '}
-              {note.patient.mrn})
+          <Box
+            sx={{
+              mb: 2,
+              p: 2,
+              backgroundColor: `${theme.palette.grey[50]}`,
+              borderRadius: 2,
+              border: `1px solid ${theme.palette.divider}`,
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{ mb: 1, display: 'flex', alignItems: 'center' }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  color: theme.palette.text.secondary,
+                  minWidth: '70px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Patient:
+              </Box>
+              <Box
+                component="span"
+                sx={{ fontWeight: 600, color: theme.palette.text.primary }}
+              >
+                {formatPatientName(note.patient)}
+              </Box>
+              <Chip
+                label={`MRN: ${note.patient.mrn}`}
+                size="small"
+                variant="outlined"
+                sx={{ ml: 1, fontSize: '0.7rem', height: '20px' }}
+              />
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Pharmacist: {formatPharmacistName(note.pharmacist)}
+            <Typography
+              variant="body2"
+              sx={{ mb: 1, display: 'flex', alignItems: 'center' }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  color: theme.palette.text.secondary,
+                  minWidth: '70px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Provider:
+              </Box>
+              <Box component="span" sx={{ color: theme.palette.text.primary }}>
+                {formatPharmacistName(note.pharmacist)}
+              </Box>
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Created: {formatDate(note.createdAt)}
+            <Typography
+              variant="body2"
+              sx={{ display: 'flex', alignItems: 'center' }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  color: theme.palette.text.secondary,
+                  minWidth: '70px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Created:
+              </Box>
+              <Box component="span" sx={{ color: theme.palette.text.primary }}>
+                {formatDate(note.createdAt)}
+              </Box>
             </Typography>
           </Box>
 
           {/* Indicators */}
-          <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
             {note.followUpRequired && (
               <Tooltip
                 title={`Follow-up: ${
@@ -628,27 +801,35 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                     : 'Not scheduled'
                 }`}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <ScheduleIcon
-                    color="warning"
-                    fontSize="small"
-                    sx={{ mr: 0.5 }}
-                  />
-                  <Typography variant="caption">Follow-up</Typography>
-                </Box>
+                <Chip
+                  icon={<ScheduleIcon sx={{ fontSize: '0.875rem' }} />}
+                  label="Follow-up"
+                  size="small"
+                  sx={{
+                    backgroundColor: theme.palette.warning.main,
+                    color: 'white',
+                    fontWeight: 500,
+                    '& .MuiChip-icon': {
+                      color: 'white',
+                    },
+                  }}
+                />
               </Tooltip>
             )}
             {note.attachments?.length > 0 && (
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <AttachFileIcon
-                  color="action"
-                  fontSize="small"
-                  sx={{ mr: 0.5 }}
-                />
-                <Typography variant="caption">
-                  {note.attachments.length} files
-                </Typography>
-              </Box>
+              <Chip
+                icon={<AttachFileIcon sx={{ fontSize: '0.875rem' }} />}
+                label={`${note.attachments.length} files`}
+                size="small"
+                variant="outlined"
+                sx={{
+                  borderColor: theme.palette.primary.main,
+                  color: theme.palette.primary.main,
+                  '& .MuiChip-icon': {
+                    color: theme.palette.primary.main,
+                  },
+                }}
+              />
             )}
           </Stack>
 
@@ -715,28 +896,60 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
           </Collapse>
         </CardContent>
 
-        <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
+        <CardActions
+          sx={{
+            justifyContent: 'space-between',
+            px: 3,
+            pb: 2,
+            borderTop: `1px solid ${theme.palette.divider}`,
+            backgroundColor: `${theme.palette.grey[25]}`,
+          }}
+        >
           <Button
             size="small"
             onClick={() => setCardExpanded(!cardExpanded)}
             startIcon={cardExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            sx={{
+              color: theme.palette.text.secondary,
+              '&:hover': {
+                backgroundColor: `${theme.palette.primary.main}10`,
+                color: theme.palette.primary.main,
+              },
+              transition: 'all 0.2s ease-in-out',
+            }}
           >
-            {cardExpanded ? 'Less' : 'More'}
+            {cardExpanded ? 'Show Less' : 'Show More'}
           </Button>
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={0.5}>
             <IconButton
               size="small"
               onClick={() => handleViewNote(note)}
-              color="primary"
+              sx={{
+                color: theme.palette.primary.main,
+                backgroundColor: `${theme.palette.primary.main}10`,
+                '&:hover': {
+                  backgroundColor: `${theme.palette.primary.main}20`,
+                  transform: 'scale(1.1)',
+                },
+                transition: 'all 0.2s ease-in-out',
+              }}
             >
-              <ViewIcon />
+              <ViewIcon fontSize="small" />
             </IconButton>
             <IconButton
               size="small"
               onClick={() => handleEditNote(note)}
-              color="primary"
+              sx={{
+                color: theme.palette.secondary.main,
+                backgroundColor: `${theme.palette.secondary.main}10`,
+                '&:hover': {
+                  backgroundColor: `${theme.palette.secondary.main}20`,
+                  transform: 'scale(1.1)',
+                },
+                transition: 'all 0.2s ease-in-out',
+              }}
             >
-              <EditIcon />
+              <EditIcon fontSize="small" />
             </IconButton>
             <IconButton
               size="small"
@@ -744,9 +957,17 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                 setSelectedNoteForAction(note);
                 setDeleteConfirmOpen(true);
               }}
-              color="error"
+              sx={{
+                color: theme.palette.error.main,
+                backgroundColor: `${theme.palette.error.main}10`,
+                '&:hover': {
+                  backgroundColor: `${theme.palette.error.main}20`,
+                  transform: 'scale(1.1)',
+                },
+                transition: 'all 0.2s ease-in-out',
+              }}
             >
-              <DeleteIcon />
+              <DeleteIcon fontSize="small" />
             </IconButton>
           </Stack>
         </CardActions>
@@ -757,35 +978,83 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
   return (
     <Box sx={{ height: maxHeight || (embedded ? 600 : '100%'), width: '100%' }}>
       {!embedded && (
-        <Box sx={{ mb: 3 }}>
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{ fontWeight: 600, mb: 1 }}
+        <Box sx={{ mb: 4 }}>
+          <Box
+            sx={{
+              background: `linear-gradient(135deg, ${theme.palette.primary.main}15 0%, ${theme.palette.secondary.main}10 100%)`,
+              borderRadius: 3,
+              p: 4,
+              mb: 3,
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background:
+                  'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.03"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+                opacity: 0.5,
+              },
+            }}
           >
-            Clinical Notes
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Manage SOAP notes and clinical documentation
-          </Typography>
+            <Box sx={{ position: 'relative', zIndex: 1 }}>
+              <Typography
+                variant="h4"
+                component="h1"
+                sx={{
+                  fontWeight: 700,
+                  mb: 1,
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  display: 'inline-block',
+                }}
+              >
+                Clinical Notes
+              </Typography>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ fontSize: '1.1rem', opacity: 0.8 }}
+              >
+                Manage SOAP notes and clinical documentation with enhanced
+                workflow
+              </Typography>
+            </Box>
+          </Box>
         </Box>
       )}
 
       {/* Toolbar */}
-      <Card sx={{ mb: 2 }}>
+      <Card
+        sx={{
+          mb: 3,
+          background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
+          border: `1px solid ${theme.palette.divider}`,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          '&:hover': {
+            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          },
+          transition: 'all 0.3s ease-in-out',
+        }}
+      >
         <CardContent sx={{ pb: 2 }}>
           {isMobile ? (
             // Mobile Toolbar Layout
             <Stack spacing={2}>
               {/* Search Row */}
               <TextField
-                placeholder="Search notes..."
+                placeholder="Search notes, patients, or content..."
                 value={searchInput}
                 onChange={handleSearchInputChange}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon />
+                      <SearchIcon sx={{ color: theme.palette.primary.main }} />
                     </InputAdornment>
                   ),
                   endAdornment: searchInput && (
@@ -796,6 +1065,11 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                           setSearchInput('');
                           handleSearch('');
                         }}
+                        sx={{
+                          '&:hover': {
+                            backgroundColor: theme.palette.action.hover,
+                          },
+                        }}
                       >
                         <ClearIcon />
                       </IconButton>
@@ -804,6 +1078,23 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                 }}
                 fullWidth
                 size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: theme.palette.background.paper,
+                    borderRadius: 3,
+                    '&:hover': {
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: theme.palette.primary.main,
+                      },
+                    },
+                    '&.Mui-focused': {
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: theme.palette.primary.main,
+                        borderWidth: 2,
+                      },
+                    },
+                  },
+                }}
               />
 
               {/* Action Buttons Row */}
@@ -850,6 +1141,17 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                   }
                   variant="contained"
                   size="small"
+                  sx={{
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                    boxShadow: '0 4px 15px rgba(37, 99, 235, 0.3)',
+                    '&:hover': {
+                      background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                      boxShadow: '0 6px 20px rgba(37, 99, 235, 0.4)',
+                      transform: 'translateY(-1px)',
+                    },
+                    transition: 'all 0.3s ease-in-out',
+                    borderRadius: 2,
+                  }}
                 >
                   New
                 </Button>
@@ -865,13 +1167,13 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
             >
               {/* Search */}
               <TextField
-                placeholder="Search notes..."
+                placeholder="Search notes, patients, or content..."
                 value={searchInput}
                 onChange={handleSearchInputChange}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon />
+                      <SearchIcon sx={{ color: theme.palette.primary.main }} />
                     </InputAdornment>
                   ),
                   endAdornment: searchInput && (
@@ -882,13 +1184,36 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                           setSearchInput('');
                           handleSearch('');
                         }}
+                        sx={{
+                          '&:hover': {
+                            backgroundColor: theme.palette.action.hover,
+                          },
+                        }}
                       >
                         <ClearIcon />
                       </IconButton>
                     </InputAdornment>
                   ),
                 }}
-                sx={{ minWidth: 300, flex: 1 }}
+                sx={{
+                  minWidth: 300,
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: theme.palette.background.paper,
+                    borderRadius: 3,
+                    '&:hover': {
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: theme.palette.primary.main,
+                      },
+                    },
+                    '&.Mui-focused': {
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: theme.palette.primary.main,
+                        borderWidth: 2,
+                      },
+                    },
+                  },
+                }}
               />
 
               {/* Filters */}
@@ -896,6 +1221,17 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                 startIcon={<FilterIcon />}
                 onClick={(e) => setFilterMenuAnchor(e.currentTarget)}
                 variant="outlined"
+                sx={{
+                  borderColor: theme.palette.primary.main,
+                  color: theme.palette.primary.main,
+                  '&:hover': {
+                    borderColor: theme.palette.primary.dark,
+                    backgroundColor: `${theme.palette.primary.main}08`,
+                    transform: 'translateY(-1px)',
+                  },
+                  transition: 'all 0.3s ease-in-out',
+                  borderRadius: 2,
+                }}
               >
                 Filters
               </Button>
@@ -922,6 +1258,18 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                   onNoteCreate ? onNoteCreate() : setCreateModalOpen(true)
                 }
                 variant="contained"
+                sx={{
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                  boxShadow: '0 4px 15px rgba(37, 99, 235, 0.3)',
+                  '&:hover': {
+                    background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                    boxShadow: '0 6px 20px rgba(37, 99, 235, 0.4)',
+                    transform: 'translateY(-1px)',
+                  },
+                  transition: 'all 0.3s ease-in-out',
+                  borderRadius: 2,
+                  px: 3,
+                }}
               >
                 New Note
               </Button>
@@ -997,27 +1345,90 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
         // Mobile Card Layout
         <Box>
           {isLoading || loading.fetchNotes ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress />
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                py: 8,
+                gap: 2,
+              }}
+            >
+              <CircularProgress
+                size={48}
+                sx={{
+                  color: theme.palette.primary.main,
+                  '& .MuiCircularProgress-circle': {
+                    strokeLinecap: 'round',
+                  },
+                }}
+              />
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ fontWeight: 500 }}
+              >
+                Loading clinical notes...
+              </Typography>
             </Box>
           ) : (data?.notes || []).length === 0 ? (
-            <Card sx={{ textAlign: 'center', py: 8 }}>
+            <Card
+              sx={{
+                textAlign: 'center',
+                py: 8,
+                background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
+                border: `2px dashed ${theme.palette.divider}`,
+                borderRadius: 3,
+              }}
+            >
               <CardContent>
-                <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+                <Box sx={{ mb: 3 }}>
+                  <NoteIcon
+                    sx={{
+                      fontSize: 64,
+                      color: theme.palette.text.secondary,
+                      opacity: 0.5,
+                      mb: 2,
+                    }}
+                  />
+                </Box>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    mb: 2,
+                    fontWeight: 600,
+                    color: theme.palette.text.primary,
+                  }}
+                >
                   No clinical notes found
                 </Typography>
                 <Typography
-                  variant="body2"
+                  variant="body1"
                   color="text.secondary"
-                  sx={{ mb: 3 }}
+                  sx={{ mb: 4, maxWidth: 400, mx: 'auto', lineHeight: 1.6 }}
                 >
                   {searchQuery || filters.type || filters.priority
-                    ? 'Try adjusting your search or filters'
-                    : 'Create your first clinical note to get started'}
+                    ? "Try adjusting your search criteria or filters to find the notes you're looking for."
+                    : 'Get started by creating your first clinical note. Document patient consultations, medication reviews, and follow-ups all in one place.'}
                 </Typography>
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
+                  size="large"
+                  sx={{
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                    boxShadow: '0 4px 15px rgba(37, 99, 235, 0.3)',
+                    '&:hover': {
+                      background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                      boxShadow: '0 6px 20px rgba(37, 99, 235, 0.4)',
+                      transform: 'translateY(-1px)',
+                    },
+                    transition: 'all 0.3s ease-in-out',
+                    borderRadius: 2,
+                    px: 4,
+                    py: 1.5,
+                  }}
                   onClick={() =>
                     onNoteCreate ? onNoteCreate() : setCreateModalOpen(true)
                   }
