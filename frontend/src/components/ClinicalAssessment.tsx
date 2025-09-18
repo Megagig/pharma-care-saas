@@ -142,6 +142,9 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
   });
 
   const handleOpenDialog = (assessment?: ClinicalAssessment) => {
+    console.log('handleOpenDialog called with:', assessment);
+    console.log('Current isDialogOpen state:', isDialogOpen);
+
     if (assessment) {
       setSelectedAssessment(assessment);
       reset({
@@ -179,6 +182,7 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
         recordedAt: new Date(),
       });
     }
+
     setIsDialogOpen(true);
   };
 
@@ -298,15 +302,13 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                 <MonitorHeartIcon
                   sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }}
                 />
-                <RBACGuard action="canCreate">
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenDialog()}
-                  >
-                    Add First Assessment
-                  </Button>
-                </RBACGuard>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => handleOpenDialog()}
+                >
+                  Add First Assessment
+                </Button>
               </Box>
             </ResponsiveCard>
           }
@@ -468,436 +470,428 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
               </CardContent>
             </Card>
           )}
-
-          {/* Add/Edit Assessment Dialog */}
-          <Dialog
-            open={isDialogOpen}
-            onClose={handleCloseDialog}
-            maxWidth="md"
-            fullWidth
-            fullScreen={isMobile}
-          >
-            <DialogTitle>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <MonitorHeartIcon color="primary" />
-                <Typography variant="h6">
-                  {selectedAssessment
-                    ? 'Edit Assessment'
-                    : 'Add New Assessment'}
-                </Typography>
-              </Box>
-            </DialogTitle>
-
-            <DialogContent>
-              <form onSubmit={handleSubmit(handleSaveAssessment)}>
-                <Stack spacing={3} sx={{ mt: 1 }}>
-                  <Controller
-                    name="recordedAt"
-                    control={control}
-                    rules={{ required: 'Date and time is required' }}
-                    render={({ field }) => (
-                      <DateTimePicker
-                        {...field}
-                        label="Date & Time *"
-                        maxDate={new Date()}
-                        slotProps={{
-                          textField: {
-                            fullWidth: true,
-                            error: !!errors.recordedAt,
-                            helperText: errors.recordedAt?.message,
-                          },
-                        }}
-                      />
-                    )}
-                  />
-
-                  <Divider />
-
-                  {/* Vitals Section */}
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        mb: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                      }}
-                    >
-                      <FavoriteIcon color="primary" />
-                      Vital Signs
-                    </Typography>
-
-                    <Box
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                        gap: 2,
-                      }}
-                    >
-                      <Controller
-                        name="bpSys"
-                        control={control}
-                        rules={{
-                          min: {
-                            value: 50,
-                            message: 'Systolic BP must be at least 50',
-                          },
-                          max: {
-                            value: 300,
-                            message: 'Systolic BP cannot exceed 300',
-                          },
-                        }}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="Systolic BP"
-                            type="number"
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  mmHg
-                                </InputAdornment>
-                              ),
-                            }}
-                            error={!!errors.bpSys}
-                            helperText={errors.bpSys?.message}
-                            fullWidth
-                          />
-                        )}
-                      />
-
-                      <Controller
-                        name="bpDia"
-                        control={control}
-                        rules={{
-                          min: {
-                            value: 30,
-                            message: 'Diastolic BP must be at least 30',
-                          },
-                          max: {
-                            value: 200,
-                            message: 'Diastolic BP cannot exceed 200',
-                          },
-                        }}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="Diastolic BP"
-                            type="number"
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  mmHg
-                                </InputAdornment>
-                              ),
-                            }}
-                            error={!!errors.bpDia}
-                            helperText={errors.bpDia?.message}
-                            fullWidth
-                          />
-                        )}
-                      />
-
-                      <Controller
-                        name="tempC"
-                        control={control}
-                        rules={{
-                          min: {
-                            value: 30,
-                            message: 'Temperature must be at least 30°C',
-                          },
-                          max: {
-                            value: 45,
-                            message: 'Temperature cannot exceed 45°C',
-                          },
-                        }}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="Temperature"
-                            type="number"
-                            inputProps={{ step: '0.1' }}
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  °C
-                                </InputAdornment>
-                              ),
-                            }}
-                            error={!!errors.tempC}
-                            helperText={errors.tempC?.message}
-                            fullWidth
-                          />
-                        )}
-                      />
-
-                      <Controller
-                        name="rr"
-                        control={control}
-                        rules={{
-                          min: {
-                            value: 5,
-                            message: 'Respiratory rate must be at least 5',
-                          },
-                          max: {
-                            value: 60,
-                            message: 'Respiratory rate cannot exceed 60',
-                          },
-                        }}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="Respiratory Rate"
-                            type="number"
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  /min
-                                </InputAdornment>
-                              ),
-                            }}
-                            error={!!errors.rr}
-                            helperText={errors.rr?.message}
-                            fullWidth
-                          />
-                        )}
-                      />
-                    </Box>
-
-                    <Box
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
-                        gap: 2,
-                        mt: 2,
-                      }}
-                    >
-                      <Controller
-                        name="pallor"
-                        control={control}
-                        render={({ field }) => (
-                          <FormControl fullWidth>
-                            <InputLabel>Pallor</InputLabel>
-                            <Select {...field} label="Pallor">
-                              {PALLOR_LEVELS.map((level) => (
-                                <MenuItem key={level.value} value={level.value}>
-                                  {level.label}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        )}
-                      />
-
-                      <Controller
-                        name="dehydration"
-                        control={control}
-                        render={({ field }) => (
-                          <FormControl fullWidth>
-                            <InputLabel>Dehydration</InputLabel>
-                            <Select {...field} label="Dehydration">
-                              {PALLOR_LEVELS.map((level) => (
-                                <MenuItem key={level.value} value={level.value}>
-                                  {level.label}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        )}
-                      />
-
-                      <Controller
-                        name="heartSounds"
-                        control={control}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="Heart Sounds"
-                            placeholder="e.g., Normal S1, S2"
-                            fullWidth
-                          />
-                        )}
-                      />
-                    </Box>
-                  </Box>
-
-                  <Divider />
-
-                  {/* Lab Results Section */}
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        mb: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                      }}
-                    >
-                      <BiotechIcon color="primary" />
-                      Lab Results
-                    </Typography>
-
-                    <Box
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                        gap: 2,
-                      }}
-                    >
-                      <Controller
-                        name="pcv"
-                        control={control}
-                        rules={{
-                          min: {
-                            value: 10,
-                            message: 'PCV must be at least 10%',
-                          },
-                          max: { value: 60, message: 'PCV cannot exceed 60%' },
-                        }}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="PCV"
-                            type="number"
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  %
-                                </InputAdornment>
-                              ),
-                            }}
-                            error={!!errors.pcv}
-                            helperText={errors.pcv?.message}
-                            fullWidth
-                          />
-                        )}
-                      />
-
-                      <Controller
-                        name="fbs"
-                        control={control}
-                        rules={{
-                          min: {
-                            value: 30,
-                            message: 'FBS must be at least 30 mg/dL',
-                          },
-                          max: {
-                            value: 500,
-                            message: 'FBS cannot exceed 500 mg/dL',
-                          },
-                        }}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="FBS"
-                            type="number"
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  mg/dL
-                                </InputAdornment>
-                              ),
-                            }}
-                            error={!!errors.fbs}
-                            helperText={errors.fbs?.message}
-                            fullWidth
-                          />
-                        )}
-                      />
-
-                      <Controller
-                        name="hba1c"
-                        control={control}
-                        rules={{
-                          min: {
-                            value: 3,
-                            message: 'HbA1c must be at least 3%',
-                          },
-                          max: {
-                            value: 15,
-                            message: 'HbA1c cannot exceed 15%',
-                          },
-                        }}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="HbA1c"
-                            type="number"
-                            inputProps={{ step: '0.1' }}
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  %
-                                </InputAdornment>
-                              ),
-                            }}
-                            error={!!errors.hba1c}
-                            helperText={errors.hba1c?.message}
-                            fullWidth
-                          />
-                        )}
-                      />
-
-                      <Controller
-                        name="mcs"
-                        control={control}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="MCS"
-                            placeholder="Microscopy, Culture & Sensitivity"
-                            fullWidth
-                          />
-                        )}
-                      />
-
-                      <Controller
-                        name="eucr"
-                        control={control}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="E/U/Cr"
-                            placeholder="Electrolytes, Urea, Creatinine"
-                            fullWidth
-                          />
-                        )}
-                      />
-
-                      <Controller
-                        name="fbc"
-                        control={control}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="FBC"
-                            placeholder="Full Blood Count"
-                            fullWidth
-                          />
-                        )}
-                      />
-                    </Box>
-                  </Box>
-                </Stack>
-              </form>
-            </DialogContent>
-
-            <DialogActions>
-              <Button onClick={handleCloseDialog}>Cancel</Button>
-              <Button
-                onClick={handleSubmit(handleSaveAssessment)}
-                variant="contained"
-                disabled={
-                  isLoading('createAssessment') || isLoading('updateAssessment')
-                }
-              >
-                {selectedAssessment ? 'Update' : 'Add'}
-              </Button>
-            </DialogActions>
-          </Dialog>
         </LoadingState>
+
+        {/* Add/Edit Assessment Dialog - Outside LoadingState so it can always render */}
+        <Dialog
+          open={isDialogOpen}
+          onClose={handleCloseDialog}
+          maxWidth="md"
+          fullWidth
+          fullScreen={isMobile}
+        >
+          <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <MonitorHeartIcon color="primary" />
+              <Typography variant="h6">
+                {selectedAssessment ? 'Edit Assessment' : 'Add New Assessment'}
+              </Typography>
+            </Box>
+          </DialogTitle>
+
+          <DialogContent>
+            <form onSubmit={handleSubmit(handleSaveAssessment)}>
+              <Stack spacing={3} sx={{ mt: 1 }}>
+                <Controller
+                  name="recordedAt"
+                  control={control}
+                  rules={{ required: 'Date and time is required' }}
+                  render={({ field }) => (
+                    <DateTimePicker
+                      {...field}
+                      label="Date & Time *"
+                      maxDate={new Date()}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          error: !!errors.recordedAt,
+                          helperText: errors.recordedAt?.message,
+                        },
+                      }}
+                    />
+                  )}
+                />
+
+                <Divider />
+
+                {/* Vitals Section */}
+                <Box>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      mb: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <FavoriteIcon color="primary" />
+                    Vital Signs
+                  </Typography>
+
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                      gap: 2,
+                    }}
+                  >
+                    <Controller
+                      name="bpSys"
+                      control={control}
+                      rules={{
+                        min: {
+                          value: 50,
+                          message: 'Systolic BP must be at least 50',
+                        },
+                        max: {
+                          value: 300,
+                          message: 'Systolic BP cannot exceed 300',
+                        },
+                      }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Systolic BP"
+                          type="number"
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                mmHg
+                              </InputAdornment>
+                            ),
+                          }}
+                          error={!!errors.bpSys}
+                          helperText={errors.bpSys?.message}
+                          fullWidth
+                        />
+                      )}
+                    />
+
+                    <Controller
+                      name="bpDia"
+                      control={control}
+                      rules={{
+                        min: {
+                          value: 30,
+                          message: 'Diastolic BP must be at least 30',
+                        },
+                        max: {
+                          value: 200,
+                          message: 'Diastolic BP cannot exceed 200',
+                        },
+                      }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Diastolic BP"
+                          type="number"
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                mmHg
+                              </InputAdornment>
+                            ),
+                          }}
+                          error={!!errors.bpDia}
+                          helperText={errors.bpDia?.message}
+                          fullWidth
+                        />
+                      )}
+                    />
+
+                    <Controller
+                      name="tempC"
+                      control={control}
+                      rules={{
+                        min: {
+                          value: 30,
+                          message: 'Temperature must be at least 30°C',
+                        },
+                        max: {
+                          value: 45,
+                          message: 'Temperature cannot exceed 45°C',
+                        },
+                      }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Temperature"
+                          type="number"
+                          inputProps={{ step: '0.1' }}
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">°C</InputAdornment>
+                            ),
+                          }}
+                          error={!!errors.tempC}
+                          helperText={errors.tempC?.message}
+                          fullWidth
+                        />
+                      )}
+                    />
+
+                    <Controller
+                      name="rr"
+                      control={control}
+                      rules={{
+                        min: {
+                          value: 5,
+                          message: 'Respiratory rate must be at least 5',
+                        },
+                        max: {
+                          value: 60,
+                          message: 'Respiratory rate cannot exceed 60',
+                        },
+                      }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Respiratory Rate"
+                          type="number"
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                /min
+                              </InputAdornment>
+                            ),
+                          }}
+                          error={!!errors.rr}
+                          helperText={errors.rr?.message}
+                          fullWidth
+                        />
+                      )}
+                    />
+                  </Box>
+
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+                      gap: 2,
+                      mt: 2,
+                    }}
+                  >
+                    <Controller
+                      name="pallor"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl fullWidth>
+                          <InputLabel>Pallor</InputLabel>
+                          <Select {...field} label="Pallor">
+                            {PALLOR_LEVELS.map((level) => (
+                              <MenuItem key={level.value} value={level.value}>
+                                {level.label}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
+                    />
+
+                    <Controller
+                      name="dehydration"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl fullWidth>
+                          <InputLabel>Dehydration</InputLabel>
+                          <Select {...field} label="Dehydration">
+                            {PALLOR_LEVELS.map((level) => (
+                              <MenuItem key={level.value} value={level.value}>
+                                {level.label}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
+                    />
+
+                    <Controller
+                      name="heartSounds"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Heart Sounds"
+                          placeholder="e.g., Normal S1, S2"
+                          fullWidth
+                        />
+                      )}
+                    />
+                  </Box>
+                </Box>
+
+                <Divider />
+
+                {/* Lab Results Section */}
+                <Box>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      mb: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <BiotechIcon color="primary" />
+                    Lab Results
+                  </Typography>
+
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                      gap: 2,
+                    }}
+                  >
+                    <Controller
+                      name="pcv"
+                      control={control}
+                      rules={{
+                        min: {
+                          value: 10,
+                          message: 'PCV must be at least 10%',
+                        },
+                        max: { value: 60, message: 'PCV cannot exceed 60%' },
+                      }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="PCV"
+                          type="number"
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">%</InputAdornment>
+                            ),
+                          }}
+                          error={!!errors.pcv}
+                          helperText={errors.pcv?.message}
+                          fullWidth
+                        />
+                      )}
+                    />
+
+                    <Controller
+                      name="fbs"
+                      control={control}
+                      rules={{
+                        min: {
+                          value: 30,
+                          message: 'FBS must be at least 30 mg/dL',
+                        },
+                        max: {
+                          value: 500,
+                          message: 'FBS cannot exceed 500 mg/dL',
+                        },
+                      }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="FBS"
+                          type="number"
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                mg/dL
+                              </InputAdornment>
+                            ),
+                          }}
+                          error={!!errors.fbs}
+                          helperText={errors.fbs?.message}
+                          fullWidth
+                        />
+                      )}
+                    />
+
+                    <Controller
+                      name="hba1c"
+                      control={control}
+                      rules={{
+                        min: {
+                          value: 3,
+                          message: 'HbA1c must be at least 3%',
+                        },
+                        max: {
+                          value: 15,
+                          message: 'HbA1c cannot exceed 15%',
+                        },
+                      }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="HbA1c"
+                          type="number"
+                          inputProps={{ step: '0.1' }}
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">%</InputAdornment>
+                            ),
+                          }}
+                          error={!!errors.hba1c}
+                          helperText={errors.hba1c?.message}
+                          fullWidth
+                        />
+                      )}
+                    />
+
+                    <Controller
+                      name="mcs"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="MCS"
+                          placeholder="e.g., No growth"
+                          fullWidth
+                        />
+                      )}
+                    />
+
+                    <Controller
+                      name="eucr"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="E/U/Cr"
+                          placeholder="e.g., Normal"
+                          fullWidth
+                        />
+                      )}
+                    />
+
+                    <Controller
+                      name="fbc"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="FBC"
+                          placeholder="e.g., Normal"
+                          fullWidth
+                        />
+                      )}
+                    />
+                  </Box>
+                </Box>
+              </Stack>
+            </form>
+          </DialogContent>
+
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button
+              onClick={handleSubmit(handleSaveAssessment)}
+              variant="contained"
+              disabled={
+                isLoading('createAssessment') || isLoading('updateAssessment')
+              }
+            >
+              {selectedAssessment ? 'Update' : 'Add'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </ResponsiveContainer>
     </LocalizationProvider>
   );
