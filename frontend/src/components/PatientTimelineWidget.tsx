@@ -53,7 +53,7 @@ interface TimelineEvent {
   date: string;
   status?: string;
   priority?: string;
-  data?: any;
+  data?: unknown;
 }
 
 const PatientTimelineWidget: React.FC<PatientTimelineWidgetProps> = ({
@@ -255,7 +255,10 @@ const PatientTimelineWidget: React.FC<PatientTimelineWidgetProps> = ({
         <CardContent>
           <Alert severity="error">
             <Typography variant="body2">
-              Failed to load timeline data
+              Failed to load timeline data:{' '}
+              {labOrdersError instanceof Error
+                ? labOrdersError.message
+                : 'Unknown error'}
             </Typography>
             <Button
               size="small"

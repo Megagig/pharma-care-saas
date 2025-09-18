@@ -219,11 +219,25 @@ export const getPatientLabOrders = asyncHandler(
         const { page, limit, status, sort } = req.query as any;
         const context = getRequestContext(req);
 
+        // For super_admin, we need to find the patient's actual workplace
+        let workplaceId = context.workplaceId;
+
         try {
+
+            if (context.isSuperAdmin) {
+                // Import Patient model to find patient's workplace
+                const Patient = require('../../../models/Patient').default;
+                const patient = await Patient.findById(patientId);
+                if (!patient) {
+                    return sendError(res, 'NOT_FOUND', 'Patient not found', 404);
+                }
+                workplaceId = patient.workplaceId.toString();
+            }
+
             // Get patient orders with pagination
             const result = await ManualLabService.getOrdersByPatient(
                 new mongoose.Types.ObjectId(patientId),
-                new mongoose.Types.ObjectId(context.workplaceId),
+                new mongoose.Types.ObjectId(workplaceId),
                 {
                     page: parseInt(page) || 1,
                     limit: parseInt(limit) || 20,
@@ -253,18 +267,20 @@ export const getPatientLabOrders = asyncHandler(
 
             logger.info('Patient lab orders retrieved via API', {
                 patientId,
-                workplaceId: context.workplaceId,
+                workplaceId: workplaceId,
                 userId: context.userId,
                 resultCount: result.data.length,
                 totalCount: result.pagination.total,
+                isSuperAdmin: context.isSuperAdmin,
                 service: 'manual-lab-api',
             });
         } catch (error) {
             logger.error('Failed to retrieve patient lab orders via API', {
                 patientId,
                 error: error instanceof Error ? error.message : 'Unknown error',
-                workplaceId: context.workplaceId,
+                workplaceId: workplaceId,
                 userId: context.userId,
+                isSuperAdmin: context.isSuperAdmin,
                 service: 'manual-lab-api',
             });
 
