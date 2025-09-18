@@ -156,11 +156,27 @@ class ClinicalNoteService {
         }
       });
 
-      const response = await api.get<ClinicalNotesResponse>(
-        `${this.baseUrl}/patient/${patientId}?${searchParams.toString()}`
-      );
+      const url = `${this.baseUrl}/patient/${patientId}?${searchParams.toString()}`;
+      console.log('Clinical Notes Service: Fetching patient notes', {
+        patientId,
+        url,
+        filters
+      });
+
+      const response = await api.get<ClinicalNotesResponse>(url);
+      console.log('Clinical Notes Service: Successfully fetched patient notes', {
+        patientId,
+        notesCount: response.data.notes?.length || 0,
+        total: response.data.total
+      });
+
       return response.data;
     } catch (error: any) {
+      console.error('Clinical Notes Service: Failed to fetch patient notes', {
+        patientId,
+        error: error.message,
+        status: error.response?.status
+      });
       throw this.handleError(error, 'Failed to fetch patient notes');
     }
   }
@@ -292,15 +308,25 @@ class ClinicalNoteService {
    * Handle API errors with proper error transformation
    */
   private handleError(error: any, defaultMessage: string): Error {
-    if (error.response?.data?.message) {
-      return new Error(error.response.data.message);
-    }
+    console.error('Clinical Notes Service Error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      url: error.config?.url,
+      method: error.config?.method
+    });
 
-    if (error.message) {
-      return new Error(error.message);
-    }
+    // Create enhanced error with response details
+    const enhancedError = new Error(
+      error.response?.data?.message || error.message || defaultMessage
+    ) as any;
 
-    return new Error(defaultMessage);
+    // Preserve response details for better error handling
+    enhancedError.response = error.response;
+    enhancedError.status = error.response?.status;
+
+    return enhancedError;
   }
 
   /**
