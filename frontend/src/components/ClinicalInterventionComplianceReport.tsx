@@ -76,17 +76,24 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const response = await clinicalInterventionService.getComplianceReport({
-        startDate,
-        endDate,
-        includeDetails,
-      });
+      // TODO: Replace with actual API call when compliance reporting is implemented
+      // const response = await clinicalInterventionService.getComplianceReport({
+      //   startDate,
+      //   endDate,
+      //   includeDetails,
+      // });
 
-      if (response.success && response.data) {
-        setComplianceData(response.data);
-      } else {
-        setError(response.message || 'Failed to generate compliance report');
-      }
+      // if (response.success && response.data) {
+      //   setComplianceData(response.data);
+      // } else {
+      //   setError(response.message || 'Failed to generate compliance report');
+      // }
+
+      // For now, show that the feature is not yet implemented
+      setComplianceData(null);
+      setError(
+        'Compliance reporting functionality is not yet connected to the API. Please implement the backend endpoint for compliance reports.'
+      );
     } catch (err: any) {
       setError(err.message || 'An error occurred while generating the report');
     } finally {
@@ -226,8 +233,23 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
           </Grid>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Compliance Reporting Coming Soon
+              </Typography>
+              <Typography variant="body2">
+                The compliance reporting functionality is currently being
+                developed. Once clinical interventions are created and audit
+                trails are established, comprehensive compliance reports will be
+                available including:
+              </Typography>
+              <Box component="ul" sx={{ mt: 1, mb: 0 }}>
+                <li>Compliance score tracking</li>
+                <li>Risk activity monitoring</li>
+                <li>Audit trail analysis</li>
+                <li>Regulatory compliance metrics</li>
+                <li>Automated compliance recommendations</li>
+              </Box>
             </Alert>
           )}
 

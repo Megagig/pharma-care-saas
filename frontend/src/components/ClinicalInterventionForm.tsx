@@ -42,6 +42,7 @@ import {
   useUpdateIntervention,
   useStrategyRecommendations,
 } from '../queries/useClinicalInterventions';
+import { useSearchPatients } from '../queries/usePatients';
 import type {
   CreateInterventionData,
   UpdateInterventionData,
@@ -57,17 +58,14 @@ interface StrategyRecommendation {
   priority: 'primary' | 'secondary';
 }
 
-// Mock patient search - replace with actual patient service
-const mockPatients = [
-  { _id: '1', firstName: 'John', lastName: 'Doe', dateOfBirth: '1980-01-01' },
-  { _id: '2', firstName: 'Jane', lastName: 'Smith', dateOfBirth: '1975-05-15' },
-  {
-    _id: '3',
-    firstName: 'Bob',
-    lastName: 'Johnson',
-    dateOfBirth: '1990-12-10',
-  },
-];
+// Patient search interface for consistent typing
+interface PatientSearchResult {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth?: string;
+  mrn?: string;
+}
 
 const validationSchema = Yup.object({
   patientId: Yup.string().required('Patient is required'),
@@ -91,26 +89,42 @@ const ClinicalInterventionForm: React.FC = () => {
     Omit<InterventionStrategy, '_id'>[]
   >([]);
   const [strategyDialogOpen, setStrategyDialogOpen] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<{
-    _id: string;
-    firstName: string;
-    lastName: string;
-    dateOfBirth: string;
-  } | null>(null);
+  const [selectedPatient, setSelectedPatient] =
+    useState<PatientSearchResult | null>(null);
   const [currentCategory, setCurrentCategory] = useState<string>(
     'drug_therapy_problem'
   );
+  const [patientSearchQuery, setPatientSearchQuery] = useState<string>('');
 
   // API queries
   const { data: interventionResponse, isLoading: loadingIntervention } =
     useClinicalIntervention(id || '');
   const { data: recommendationsResponse } =
     useStrategyRecommendations(currentCategory);
+  const { data: patientSearchResults, isLoading: searchingPatients } =
+    useSearchPatients(patientSearchQuery);
   const createMutation = useCreateIntervention();
   const updateMutation = useUpdateIntervention();
 
   const intervention = interventionResponse?.data;
   const recommendations = recommendationsResponse?.data || [];
+
+  // Extract patients from search results with proper error handling
+  const patients: PatientSearchResult[] = React.useMemo(() => {
+    try {
+      const results = patientSearchResults?.data?.results || [];
+      return results.map((patient: any) => ({
+        _id: patient._id,
+        firstName: patient.firstName || '',
+        lastName: patient.lastName || '',
+        dateOfBirth: patient.dateOfBirth || patient.dob || '',
+        mrn: patient.mrn || '',
+      }));
+    } catch (error) {
+      console.error('Error processing patient search results:', error);
+      return [];
+    }
+  }, [patientSearchResults]);
 
   // Form handling
   const formik = useFormik<CreateInterventionData>({
@@ -280,7 +294,13 @@ const ClinicalInterventionForm: React.FC = () => {
                               variant="caption"
                               color="text.secondary"
                             >
-                              DOB: {selectedPatient.dateOfBirth}
+                              {selectedPatient.mrn &&
+                                `MRN: ${selectedPatient.mrn}`}
+                              {selectedPatient.mrn &&
+                                selectedPatient.dateOfBirth &&
+                                ' • '}
+                              {selectedPatient.dateOfBirth &&
+                                `DOB: ${selectedPatient.dateOfBirth}`}
                             </Typography>
                           </Box>
                           <Button
@@ -295,18 +315,30 @@ const ClinicalInterventionForm: React.FC = () => {
                         </Box>
                       ) : (
                         <Autocomplete
-                          options={mockPatients}
-                          getOptionLabel={(option) =>
-                            `${option.firstName} ${option.lastName} (DOB: ${option.dateOfBirth})`
-                          }
+                          options={patients}
+                          loading={searchingPatients}
+                          getOptionLabel={(option) => {
+                            const name =
+                              `${option.firstName} ${option.lastName}`.trim();
+                            const mrn = option.mrn
+                              ? ` (MRN: ${option.mrn})`
+                              : '';
+                            const dob = option.dateOfBirth
+                              ? ` - DOB: ${option.dateOfBirth}`
+                              : '';
+                            return `${name}${mrn}${dob}`;
+                          }}
                           onChange={(_, value) => {
                             setSelectedPatient(value);
                             formik.setFieldValue('patientId', value?._id || '');
                           }}
+                          onInputChange={(_, newInputValue) => {
+                            setPatientSearchQuery(newInputValue);
+                          }}
                           renderInput={(params) => (
                             <TextField
                               {...params}
-                              placeholder="Search and select patient..."
+                              placeholder="Search patients by name or MRN..."
                               error={
                                 formik.touched.patientId &&
                                 Boolean(formik.errors.patientId)
@@ -315,8 +347,54 @@ const ClinicalInterventionForm: React.FC = () => {
                                 formik.touched.patientId &&
                                 formik.errors.patientId
                               }
+                              InputProps={{
+                                ...params.InputProps,
+                                endAdornment: (
+                                  <>
+                                    {searchingPatients ? (
+                                      <CircularProgress
+                                        color="inherit"
+                                        size={20}
+                                      />
+                                    ) : null}
+                                    {params.InputProps.endAdornment}
+                                  </>
+                                ),
+                              }}
                             />
                           )}
+                          renderOption={(props, option) => (
+                            <Box component="li" {...props}>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  width: '100%',
+                                }}
+                              >
+                                <Typography variant="body2" fontWeight={500}>
+                                  {option.firstName} {option.lastName}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  {option.mrn && `MRN: ${option.mrn}`}
+                                  {option.mrn && option.dateOfBirth && ' • '}
+                                  {option.dateOfBirth &&
+                                    `DOB: ${option.dateOfBirth}`}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          )}
+                          noOptionsText={
+                            patientSearchQuery.length < 2
+                              ? 'Type at least 2 characters to search patients'
+                              : searchingPatients
+                              ? 'Searching patients...'
+                              : 'No patients found'
+                          }
+                          filterOptions={(x) => x} // Disable client-side filtering since we're using server-side search
                         />
                       )}
                     </Box>

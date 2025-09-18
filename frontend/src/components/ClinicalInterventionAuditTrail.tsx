@@ -88,6 +88,20 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
       setLoading(true);
       setError(null);
 
+      // Check if we have an intervention ID to fetch audit trail for
+      if (!interventionId) {
+        setAuditLogs([]);
+        setTotalPages(1);
+        setSummary({
+          totalActions: 0,
+          uniqueUsers: 0,
+          lastActivity: null,
+          riskActivities: 0,
+        });
+        setError('No intervention selected for audit trail');
+        return;
+      }
+
       const options: {
         page: number;
         limit: number;
@@ -103,7 +117,7 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
 
       const response =
         await clinicalInterventionService.getInterventionAuditTrail(
-          interventionId || '',
+          interventionId,
           options
         );
 
@@ -112,15 +126,56 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
         setTotalPages(Math.ceil(response.data.total / limit));
         setSummary(response.data.summary);
       } else {
-        setError(response.message || 'Failed to fetch audit trail');
+        // Handle specific error messages
+        const errorMessage = response.message || 'Failed to fetch audit trail';
+        if (
+          errorMessage.includes('workspace') ||
+          errorMessage.includes('Workspace')
+        ) {
+          setError(
+            'Audit trail functionality requires proper workspace configuration. Please contact your administrator.'
+          );
+        } else {
+          setError(errorMessage);
+        }
+
+        // Set empty state
+        setAuditLogs([]);
+        setTotalPages(1);
+        setSummary({
+          totalActions: 0,
+          uniqueUsers: 0,
+          lastActivity: null,
+          riskActivities: 0,
+        });
       }
     } catch (error: unknown) {
       const err = error as Error;
-      setError(
+      const errorMessage =
         err instanceof Error
           ? err.message
-          : 'An error occurred while fetching audit trail'
-      );
+          : 'An error occurred while fetching audit trail';
+
+      if (
+        errorMessage.includes('workspace') ||
+        errorMessage.includes('Workspace')
+      ) {
+        setError(
+          'Audit trail functionality requires proper workspace configuration. Please contact your administrator.'
+        );
+      } else {
+        setError(errorMessage);
+      }
+
+      // Set empty state
+      setAuditLogs([]);
+      setTotalPages(1);
+      setSummary({
+        totalActions: 0,
+        uniqueUsers: 0,
+        lastActivity: null,
+        riskActivities: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -554,11 +609,33 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
             </Box>
           )}
 
-          {auditLogs.length === 0 && !loading && (
+          {auditLogs.length === 0 && !loading && !error && (
             <Box textAlign="center" py={4}>
               <Typography color="textSecondary">
                 No audit logs found for the selected criteria.
               </Typography>
+            </Box>
+          )}
+
+          {auditLogs.length === 0 && !loading && error && (
+            <Box textAlign="center" py={4}>
+              <Alert severity="info">
+                <Typography variant="h6" gutterBottom>
+                  Audit Trail Coming Soon
+                </Typography>
+                <Typography variant="body2">
+                  The audit trail functionality is currently being developed.
+                  Once clinical interventions are created and user actions are
+                  tracked, detailed audit logs will be available including:
+                </Typography>
+                <Box component="ul" sx={{ mt: 1, mb: 0, textAlign: 'left' }}>
+                  <li>User action tracking</li>
+                  <li>Data change history</li>
+                  <li>Risk level assessment</li>
+                  <li>Compliance monitoring</li>
+                  <li>Detailed activity logs</li>
+                </Box>
+              </Alert>
             </Box>
           )}
         </CardContent>
