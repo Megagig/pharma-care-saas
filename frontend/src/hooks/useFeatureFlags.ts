@@ -3,7 +3,7 @@
  * Provides access to feature flag state and real-time updates
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
 
@@ -15,7 +15,7 @@ interface FeatureFlag {
   rolloutPercentage: number;
   environments: string[];
   dependencies?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface FeatureFlagContext {
@@ -235,10 +235,10 @@ export const FeatureFlag: React.FC<FeatureFlagProps> = ({
   const { isFeatureEnabled } = useFeatureFlags();
 
   if (isFeatureEnabled(flag)) {
-    return <>{ children } </>;
+    return React.createElement(React.Fragment, null, children);
   }
 
-  return <>{ fallback } </>;
+  return React.createElement(React.Fragment, null, fallback);
 };
 
 /**
@@ -264,10 +264,10 @@ export const MultipleFeatureFlags: React.FC<MultipleFeatureFlagsProps> = ({
     : flags.some(flag => isFeatureEnabled(flag));
 
   if (isEnabled) {
-    return <>{ children } </>;
+    return React.createElement(React.Fragment, null, children);
   }
 
-  return <>{ fallback } </>;
+  return React.createElement(React.Fragment, null, fallback);
 };
 
 /**
