@@ -195,21 +195,21 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
   const handleSaveAssessment = async (formData: AssessmentFormData) => {
     const assessmentData: CreateAssessmentData | UpdateAssessmentData = {
       vitals: {
-        bpSys: formData.bpSys,
-        bpDia: formData.bpDia,
-        rr: formData.rr,
-        tempC: formData.tempC,
+        bpSys: formData.bpSys ? Number(formData.bpSys) : undefined,
+        bpDia: formData.bpDia ? Number(formData.bpDia) : undefined,
+        rr: formData.rr ? Number(formData.rr) : undefined,
+        tempC: formData.tempC ? Number(formData.tempC) : undefined,
         heartSounds: formData.heartSounds?.trim() || undefined,
         pallor: formData.pallor,
         dehydration: formData.dehydration,
       },
       labs: {
-        pcv: formData.pcv,
-        mcs: formData.mcs || undefined,
-        eucr: formData.eucr || undefined,
-        fbc: formData.fbc || undefined,
-        fbs: formData.fbs,
-        hba1c: formData.hba1c,
+        pcv: formData.pcv ? Number(formData.pcv) : undefined,
+        mcs: formData.mcs?.trim() || undefined,
+        eucr: formData.eucr?.trim() || undefined,
+        fbc: formData.fbc?.trim() || undefined,
+        fbs: formData.fbs ? Number(formData.fbs) : undefined,
+        hba1c: formData.hba1c ? Number(formData.hba1c) : undefined,
       },
       recordedAt: formData.recordedAt.toISOString(),
     };
@@ -549,9 +549,14 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                           message: 'Systolic BP cannot exceed 300',
                         },
                       }}
-                      render={({ field }) => (
+                      render={({ field: { onChange, value, ...field } }) => (
                         <TextField
                           {...field}
+                          value={value || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            onChange(val === '' ? undefined : Number(val));
+                          }}
                           label="Systolic BP"
                           type="number"
                           InputProps={{
@@ -581,9 +586,14 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                           message: 'Diastolic BP cannot exceed 200',
                         },
                       }}
-                      render={({ field }) => (
+                      render={({ field: { onChange, value, ...field } }) => (
                         <TextField
                           {...field}
+                          value={value || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            onChange(val === '' ? undefined : Number(val));
+                          }}
                           label="Diastolic BP"
                           type="number"
                           InputProps={{
@@ -613,9 +623,14 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                           message: 'Temperature cannot exceed 45°C',
                         },
                       }}
-                      render={({ field }) => (
+                      render={({ field: { onChange, value, ...field } }) => (
                         <TextField
                           {...field}
+                          value={value || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            onChange(val === '' ? undefined : Number(val));
+                          }}
                           label="Temperature"
                           type="number"
                           inputProps={{ step: '0.1' }}
@@ -644,9 +659,14 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                           message: 'Respiratory rate cannot exceed 60',
                         },
                       }}
-                      render={({ field }) => (
+                      render={({ field: { onChange, value, ...field } }) => (
                         <TextField
                           {...field}
+                          value={value || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            onChange(val === '' ? undefined : Number(val));
+                          }}
                           label="Respiratory Rate"
                           type="number"
                           InputProps={{
@@ -755,9 +775,14 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                         },
                         max: { value: 60, message: 'PCV cannot exceed 60%' },
                       }}
-                      render={({ field }) => (
+                      render={({ field: { onChange, value, ...field } }) => (
                         <TextField
                           {...field}
+                          value={value || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            onChange(val === '' ? undefined : Number(val));
+                          }}
                           label="PCV"
                           type="number"
                           InputProps={{
@@ -785,9 +810,14 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                           message: 'FBS cannot exceed 500 mg/dL',
                         },
                       }}
-                      render={({ field }) => (
+                      render={({ field: { onChange, value, ...field } }) => (
                         <TextField
                           {...field}
+                          value={value || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            onChange(val === '' ? undefined : Number(val));
+                          }}
                           label="FBS"
                           type="number"
                           InputProps={{
@@ -817,9 +847,14 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                           message: 'HbA1c cannot exceed 15%',
                         },
                       }}
-                      render={({ field }) => (
+                      render={({ field: { onChange, value, ...field } }) => (
                         <TextField
                           {...field}
+                          value={value || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            onChange(val === '' ? undefined : Number(val));
+                          }}
                           label="HbA1c"
                           type="number"
                           inputProps={{ step: '0.1' }}
