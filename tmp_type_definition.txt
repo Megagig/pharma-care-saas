@@ -1,9 +1,0 @@
-// First, let's define more precise error response types
-interface ApiErrorResponse {
-  success: boolean;
-  error: string;
-  message?: string;
-}
-
-// Add type definition to drugInfoApi.ts
-export const drugInfoApi = {
