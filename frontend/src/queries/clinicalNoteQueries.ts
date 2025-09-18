@@ -35,11 +35,11 @@ export const useClinicalNotes = (filters: ClinicalNoteFilters = {}) => {
   return useQuery({
     queryKey: filters.search
       ? clinicalNoteKeys.search(
-          filters.search,
-          Object.fromEntries(
-            Object.entries(filters).filter(([key]) => key !== 'search')
-          ) as Omit<ClinicalNoteFilters, 'search'>
-        )
+        filters.search,
+        Object.fromEntries(
+          Object.entries(filters).filter(([key]) => key !== 'search')
+        ) as Omit<ClinicalNoteFilters, 'search'>
+      )
       : clinicalNoteKeys.list(filters),
     queryFn: () => {
       console.log('Query function called, filters:', filters); // Debug log
@@ -77,7 +77,14 @@ export const usePatientNotes = (
     queryFn: () => clinicalNoteService.getPatientNotes(patientId, filters),
     enabled: !!patientId,
     staleTime: 2 * 60 * 1000, // 2 minutes for patient-specific data
-    retry: 3,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 404 (not found) or 403 (forbidden) errors
+      if (error?.response?.status === 404 || error?.response?.status === 403) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 

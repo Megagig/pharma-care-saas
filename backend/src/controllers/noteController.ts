@@ -601,22 +601,38 @@ export const getPatientNotes = async (
   res: Response
 ): Promise<void> => {
   try {
+    // Debug logging for troubleshooting (can be removed in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('GET PATIENT NOTES - User:', req.user?.role, 'Patient:', req.params.patientId);
+    }
+
     const { page = 1, limit = 10, type, priority } = req.query;
 
-    // Verify patient exists and belongs to the same workplace
-    const patient = await Patient.findOne({
-      _id: req.params.patientId,
-      workplaceId: req.user?.workplaceId || req.workspace?._id,
-    });
+    // For super_admin, find patient without workplace restriction
+    let patient;
+    if (req.user?.role === 'super_admin') {
+      patient = await Patient.findById(req.params.patientId);
+    } else {
+      // Verify patient exists and belongs to the same workplace
+      patient = await Patient.findOne({
+        _id: req.params.patientId,
+        workplaceId: req.user?.workplaceId || req.workspace?._id,
+      });
+    }
 
     if (!patient) {
       res.status(404).json({ message: 'Patient not found or access denied' });
       return;
     }
 
+    // Build query - for super_admin, use patient's workplaceId
+    const workplaceId = req.user?.role === 'super_admin'
+      ? patient.workplaceId
+      : (req.user?.workplaceId || req.workspace?._id);
+
     const query: any = {
       patient: req.params.patientId,
-      workplaceId: req.user?.workplaceId || req.workspace?._id,
+      workplaceId: workplaceId,
       deletedAt: { $exists: false }, // Exclude soft-deleted notes
     };
 

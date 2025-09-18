@@ -42,6 +42,7 @@ import { PatientMTRWidget } from './PatientMTRWidget';
 import PatientClinicalNotes from './PatientClinicalNotes';
 import PatientLabOrderWidget from './PatientLabOrderWidget';
 import PatientTimelineWidget from './PatientTimelineWidget';
+import { useFeatureFlags } from '../hooks/useFeatureFlags';
 import type { Patient } from '../types/patientManagement';
 
 interface PatientDashboardProps {
@@ -55,6 +56,10 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
   const navigate = useNavigate();
 
   const patientId = propPatientId || routePatientId;
+
+  // Feature flags
+  const { isFeatureEnabled } = useFeatureFlags();
+  const hasClinicalNotesFeature = isFeatureEnabled('clinical_notes');
 
   // React Query hooks
   const {
@@ -395,14 +400,16 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
         <PatientMTRWidget patientId={patientId!} />
       </Box>
 
-      {/* Clinical Notes Widget */}
-      <Box sx={{ mb: 4 }}>
-        <PatientClinicalNotes
-          patientId={patientId!}
-          maxNotes={5}
-          showCreateButton={true}
-        />
-      </Box>
+      {/* Clinical Notes Widget - Only show if feature is enabled */}
+      {hasClinicalNotesFeature && (
+        <Box sx={{ mb: 4 }}>
+          <PatientClinicalNotes
+            patientId={patientId!}
+            maxNotes={5}
+            showCreateButton={true}
+          />
+        </Box>
+      )}
 
       {/* Lab Order History Widget */}
       <Box sx={{ mb: 4 }}>
