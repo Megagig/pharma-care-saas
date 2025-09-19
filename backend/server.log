@@ -32,5 +32,5 @@ Paystack Service initialized with:  {
   publicKeyFirstChars: 'pk_te...'
 }
 Twilio SMS service not configured - using mock mode. Please set valid TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in your .env file
-[32minfo[39m: System metrics collection started {"service":"pharma-care-api","timestamp":"2025-09-15 04:56:51"}
+[32minfo[39m: System metrics collection started {"service":"pharma-care-api","timestamp":"2025-09-18 19:24:17"}
 Uncaught Exception: listen EADDRINUSE: address already in use :::5000

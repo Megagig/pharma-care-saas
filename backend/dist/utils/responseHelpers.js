@@ -196,15 +196,18 @@ const isSuperAdmin = (req) => {
     return req.user?.role === 'super_admin';
 };
 exports.isSuperAdmin = isSuperAdmin;
-const getRequestContext = (req) => ({
-    userId: req.user?._id,
-    userRole: req.user?.role,
-    workplaceId: req.user?.workplaceId?.toString() || '',
-    isAdmin: req.isAdmin || false,
-    isSuperAdmin: (0, exports.isSuperAdmin)(req),
-    canManage: req.canManage || false,
-    timestamp: new Date().toISOString(),
-});
+const getRequestContext = (req) => {
+    const userIsSuperAdmin = (0, exports.isSuperAdmin)(req);
+    return {
+        userId: req.user?._id,
+        userRole: req.user?.role,
+        workplaceId: req.user?.workplaceId?.toString() || '',
+        isAdmin: req.isAdmin || userIsSuperAdmin,
+        isSuperAdmin: userIsSuperAdmin,
+        canManage: req.canManage || userIsSuperAdmin,
+        timestamp: new Date().toISOString(),
+    };
+};
 exports.getRequestContext = getRequestContext;
 const createAuditLog = (action, resourceType, resourceId, context, changes) => ({
     action,

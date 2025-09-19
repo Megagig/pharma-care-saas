@@ -3,8 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = __importDefault(require("mongoose"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
-const auditService_1 = __importDefault(require("../../../services/auditService"));
+const auditService_1 = require("../../../services/auditService");
 class ManualLabSecurityService {
     static async analyzeRequest(context, requestData) {
         const threats = [];
@@ -82,7 +83,7 @@ class ManualLabSecurityService {
             return {
                 type: 'suspicious_pattern',
                 severity: 'medium',
-                userId: context.userId,
+                userId: new mongoose_1.default.Types.ObjectId(context.userId),
                 ipAddress: context.ipAddress,
                 userAgent: context.userAgent,
                 details: {
@@ -102,7 +103,7 @@ class ManualLabSecurityService {
                 return {
                     type: 'data_exfiltration',
                     severity: 'high',
-                    userId: context.userId,
+                    userId: new mongoose_1.default.Types.ObjectId(context.userId),
                     ipAddress: context.ipAddress,
                     details: {
                         pattern: 'excessive_pdf_access',
@@ -122,7 +123,7 @@ class ManualLabSecurityService {
             return {
                 type: 'data_exfiltration',
                 severity: 'medium',
-                userId: context.userId,
+                userId: new mongoose_1.default.Types.ObjectId(context.userId),
                 ipAddress: context.ipAddress,
                 details: {
                     pattern: 'bulk_data_request',
@@ -140,7 +141,7 @@ class ManualLabSecurityService {
             return {
                 type: 'unauthorized_access',
                 severity: 'high',
-                userId: context.userId,
+                userId: new mongoose_1.default.Types.ObjectId(context.userId),
                 ipAddress: context.ipAddress,
                 userAgent: context.userAgent,
                 details: {
@@ -182,7 +183,7 @@ class ManualLabSecurityService {
             if (this.threatLog.length > this.MAX_THREAT_LOG_SIZE) {
                 this.threatLog.shift();
             }
-            await auditService_1.default.logActivity(context, {
+            await auditService_1.AuditService.logActivity(context, {
                 action: 'MANUAL_LAB_SECURITY_THREAT_DETECTED',
                 resourceType: 'System',
                 resourceId: context.userId,
@@ -274,7 +275,7 @@ class ManualLabSecurityService {
                 details: threat.details,
                 service: 'manual-lab-security'
             });
-            await auditService_1.default.logActivity(context, {
+            await auditService_1.AuditService.logActivity(context, {
                 action: 'MANUAL_LAB_SECURITY_ALERT_TRIGGERED',
                 resourceType: 'System',
                 resourceId: context.userId,

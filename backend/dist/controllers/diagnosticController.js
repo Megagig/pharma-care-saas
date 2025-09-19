@@ -12,8 +12,20 @@ const logger_1 = __importDefault(require("../utils/logger"));
 const responseHelpers_1 = require("../utils/responseHelpers");
 const generateDiagnosticAnalysis = async (req, res) => {
     try {
+        logger_1.default.info('Diagnostic analysis request received:', {
+            body: req.body,
+            userId: req.user?._id,
+            contentType: req.headers['content-type']
+        });
+        const userId = req.user._id;
+        const workplaceId = req.user.workplaceId;
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
+            logger_1.default.error('Diagnostic validation failed:', {
+                errors: errors.array(),
+                body: req.body,
+                userId
+            });
             res.status(400).json({
                 success: false,
                 message: 'Validation failed',
@@ -22,8 +34,6 @@ const generateDiagnosticAnalysis = async (req, res) => {
             return;
         }
         const { patientId, symptoms, labResults, currentMedications, vitalSigns, patientConsent, } = req.body;
-        const userId = req.user._id;
-        const workplaceId = req.user.workplaceId;
         if (!workplaceId) {
             res.status(400).json({
                 success: false,

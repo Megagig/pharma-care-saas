@@ -31,4 +31,8 @@ export declare const syncWithMTR: (req: import("express").Request, res: Response
 export declare const getInterventionAuditTrail: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getComplianceReport: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const exportAuditData: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const checkDuplicates: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getCategoryCounts: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getPriorityDistribution: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const sendNotifications: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 //# sourceMappingURL=clinicalInterventionController.d.ts.map

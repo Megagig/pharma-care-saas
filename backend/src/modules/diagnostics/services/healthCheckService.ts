@@ -88,7 +88,7 @@ class HealthCheckService {
 
         for (let i = 0; i < results.length; i++) {
             const result = results[i];
-            if (result.status === 'fulfilled') {
+            if (result && result.status === 'fulfilled') {
                 healthResults.push((result as PromiseFulfilledResult<HealthCheckResult>).value);
             } else {
                 const rejectedResult = result as PromiseRejectedResult;

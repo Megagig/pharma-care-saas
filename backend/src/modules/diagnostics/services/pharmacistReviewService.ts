@@ -4,7 +4,7 @@ import DiagnosticResult, { IDiagnosticResult, IPharmacistReview } from '../model
 import DiagnosticRequest, { IDiagnosticRequest } from '../models/DiagnosticRequest';
 import ClinicalIntervention from '../../../models/ClinicalIntervention';
 import User from '../../../models/User';
-import auditService from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
 
 export interface ReviewDecisionData {
     status: 'approved' | 'modified' | 'rejected';
@@ -125,14 +125,15 @@ export class PharmacistReviewService {
             const updatedResult = await result.save();
 
             // Log audit event
-            await auditService.logEvent({
-                userId: new Types.ObjectId(reviewData.reviewedBy),
-                workplaceId: new Types.ObjectId(reviewData.workplaceId),
+            await AuditService.logActivity({
+                userId: reviewData.reviewedBy,
+                workplaceId: reviewData.workplaceId,
                 userRole: reviewer.role, // Assuming reviewer.role is available
             }, {
                 action: 'diagnostic_result_reviewed',
                 resourceType: 'DiagnosticResult',
-                resourceId: new Types.ObjectId(resultId),
+                resourceId: resultId,
+                complianceCategory: 'clinical_review',
                 details: {
                     reviewStatus: reviewData.status,
                     hasModifications: !!reviewData.modifications,
@@ -225,14 +226,15 @@ export class PharmacistReviewService {
             await result.save();
 
             // Log audit event
-            await auditService.logEvent({
-                userId: new Types.ObjectId(createdBy),
-                workplaceId: new Types.ObjectId(workplaceId),
+            await AuditService.logActivity({
+                userId: createdBy,
+                workplaceId: workplaceId,
                 userRole: 'pharmacist', // Assuming the user creating intervention is a pharmacist
             }, {
                 action: 'intervention_created_from_diagnostic',
                 resourceType: 'ClinicalIntervention',
-                resourceId: new Types.ObjectId(savedIntervention._id.toString()),
+                resourceId: savedIntervention._id.toString(),
+                complianceCategory: 'clinical_intervention',
                 details: {
                     diagnosticResultId: resultId,
                     interventionType: interventionData.type,

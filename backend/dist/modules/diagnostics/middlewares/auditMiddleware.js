@@ -46,27 +46,28 @@ const diagnosticAuditLogger = (options = {}) => {
                 const isError = res.statusCode >= 400;
                 if (options.skipSuccessLog && isSuccess)
                     return;
-                const eventType = req.auditData?.eventType ||
+                const data = req.auditData;
+                const eventType = data?.eventType ||
                     options.eventType ||
                     generateEventTypeFromRequest(req);
-                const entityType = req.auditData?.entityType ||
+                const entityType = data?.entityType ||
                     options.entityType ||
                     determineEntityType(req.path);
-                const entityId = req.auditData?.entityId ||
+                const entityId = data?.entityId ||
                     req.params.id ||
                     req.params.requestId ||
                     req.params.resultId ||
                     extractEntityIdFromResponse(responseBody);
-                const patientId = req.auditData?.patientId ||
+                const patientId = data?.patientId ||
                     req.params.patientId ||
                     req.body?.patientId ||
                     extractPatientIdFromResponse(responseBody);
-                const severity = req.auditData?.severity ||
+                const severity = data?.severity ||
                     options.severity ||
                     determineSeverity(req, res, isError);
                 if (options.requireConsent) {
                     const consentObtained = req.body?.consentObtained ||
-                        req.auditData?.details?.consentObtained;
+                        data?.details?.consentObtained;
                     if (!consentObtained) {
                         await diagnosticAuditService_1.default.logSecurityViolation(req.user.id.toString(), req.user.workplaceId.toString(), 'missing_consent', {
                             eventType,
@@ -84,7 +85,7 @@ const diagnosticAuditLogger = (options = {}) => {
                     }
                 }
                 const auditDetails = {
-                    ...req.auditData?.details,
+                    ...data?.details,
                     requestMethod: req.method,
                     requestPath: req.path,
                     requestQuery: sanitizeQuery(req.query),
@@ -101,8 +102,8 @@ const diagnosticAuditLogger = (options = {}) => {
                     auditDetails.errorCode = responseBody.error.code;
                     auditDetails.errorMessage = responseBody.error.message;
                 }
-                if (options.aiProcessing && req.auditData?.aiMetadata) {
-                    auditDetails.aiMetadata = req.auditData.aiMetadata;
+                if (options.aiProcessing && data?.aiMetadata) {
+                    auditDetails.aiMetadata = data.aiMetadata;
                 }
                 const regulatoryContext = {
                     hipaaCompliant: true,
@@ -110,7 +111,7 @@ const diagnosticAuditLogger = (options = {}) => {
                     dataRetentionPeriod: getRetentionPeriod(entityType),
                     consentRequired: options.requireConsent || false,
                     consentObtained: req.body?.consentObtained || false,
-                    ...req.auditData?.regulatoryContext
+                    ...data?.regulatoryContext
                 };
                 await diagnosticAuditService_1.default.logAuditEvent({
                     eventType: eventType,
@@ -129,7 +130,7 @@ const diagnosticAuditLogger = (options = {}) => {
                     timestamp: new Date(),
                     severity,
                     regulatoryContext,
-                    aiMetadata: req.auditData?.aiMetadata
+                    aiMetadata: data?.aiMetadata
                 });
                 if (severity === 'critical' || severity === 'high') {
                     logger_1.default.warn('High-risk diagnostic activity detected', {
@@ -192,18 +193,37 @@ exports.auditDataExport = (0, exports.diagnosticAuditLogger)({
     severity: 'high'
 });
 const setAuditData = (req, data) => {
-    req.auditData = { ...req.auditData, ...data };
+    if (!req.auditData) {
+        req.auditData = {
+            action: data?.action || 'UNKNOWN_ACTION',
+            details: data?.details || {},
+            complianceCategory: data?.complianceCategory || 'general'
+        };
+    }
+    else {
+        req.auditData = { ...req.auditData, ...data };
+    }
 };
 exports.setAuditData = setAuditData;
 const setAIMetadata = (req, aiMetadata) => {
-    if (!req.auditData)
-        req.auditData = {};
+    if (!req.auditData) {
+        req.auditData = {
+            action: 'AI_PROCESSING',
+            details: {},
+            complianceCategory: 'ai_processing'
+        };
+    }
     req.auditData.aiMetadata = aiMetadata;
 };
 exports.setAIMetadata = setAIMetadata;
 const setRegulatoryContext = (req, regulatoryContext) => {
-    if (!req.auditData)
-        req.auditData = {};
+    if (!req.auditData) {
+        req.auditData = {
+            action: 'REGULATORY_CONTEXT',
+            details: {},
+            complianceCategory: 'regulatory'
+        };
+    }
     req.auditData.regulatoryContext = regulatoryContext;
 };
 exports.setRegulatoryContext = setRegulatoryContext;

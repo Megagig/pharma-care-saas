@@ -31,7 +31,7 @@ import {
 } from '../../../utils/responseHelpers';
 
 // Import audit services
-import AuditService from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
 import ManualLabAuditService from '../services/manualLabAuditService';
 
 // Import security utilities
@@ -76,7 +76,7 @@ export const createManualLabOrder = asyncHandler(
             // Create audit context
             const auditContext = {
                 userId: context.userId,
-                workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
+                workspaceId: context.workplaceId,
                 userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
@@ -158,7 +158,7 @@ export const getManualLabOrder = asyncHandler(
             // Create audit context
             const auditContext = {
                 userId: context.userId,
-                workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
+                workspaceId: context.workplaceId,
                 userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
@@ -314,7 +314,7 @@ export const updateOrderStatus = asyncHandler(
             // Create audit context
             const auditContext = {
                 userId: context.userId,
-                workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
+                workspaceId: context.workplaceId,
                 userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
@@ -414,7 +414,7 @@ export const getManualLabOrders = asyncHandler(
             // Create audit context
             const auditContext = {
                 userId: context.userId,
-                workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
+                workspaceId: context.workplaceId,
                 userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
@@ -492,7 +492,7 @@ export const addLabResults = asyncHandler(
             // Create audit context
             const auditContext = {
                 userId: context.userId,
-                workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
+                workspaceId: context.workplaceId,
                 userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
@@ -574,7 +574,7 @@ export const getLabResults = asyncHandler(
             // Create audit context
             const auditContext = {
                 userId: context.userId,
-                workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
+                workspaceId: context.workplaceId,
                 userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
@@ -654,7 +654,7 @@ export const resolveOrderToken = asyncHandler(
             // Create audit context
             const auditContext = {
                 userId: context.userId,
-                workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
+                workspaceId: context.workplaceId,
                 userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
@@ -771,7 +771,7 @@ export const servePDFRequisition = asyncHandler(
             // Create audit context
             const auditContext = {
                 userId: context.userId,
-                workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
+                workspaceId: context.workplaceId,
                 userRole: context.userRole || 'unknown',
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),

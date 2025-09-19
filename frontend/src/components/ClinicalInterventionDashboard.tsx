@@ -526,7 +526,7 @@ const ClinicalInterventionDashboard: React.FC<
           />
           <KPICard
             title="Cost Savings"
-            value={`$${(
+            value={`₦${(
               dashboardMetrics.totalCostSavings || 0
             ).toLocaleString()}`}
             subtitle="Estimated savings"

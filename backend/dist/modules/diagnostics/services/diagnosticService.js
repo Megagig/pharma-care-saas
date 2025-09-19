@@ -13,11 +13,11 @@ const User_1 = __importDefault(require("../../../models/User"));
 const openRouterService_1 = __importDefault(require("../../../services/openRouterService"));
 const clinicalApiService_1 = __importDefault(require("./clinicalApiService"));
 const labService_1 = __importDefault(require("./labService"));
-const auditService_1 = __importDefault(require("../../../services/auditService"));
+const auditService_1 = require("../../../services/auditService");
 class DiagnosticService {
     constructor() {
         this.maxRetries = 3;
-        this.processingTimeout = 60000;
+        this.processingTimeout = 180000;
     }
     async createDiagnosticRequest(data) {
         try {
@@ -61,7 +61,7 @@ class DiagnosticService {
                 createdBy: new mongoose_1.Types.ObjectId(data.pharmacistId),
             });
             const savedRequest = await diagnosticRequest.save();
-            await auditService_1.default.logEvent({
+            await auditService_1.AuditService.logActivity({
                 userId: new mongoose_1.Types.ObjectId(data.pharmacistId),
                 workplaceId: new mongoose_1.Types.ObjectId(data.workplaceId),
                 userRole: pharmacist.role,
@@ -157,10 +157,9 @@ class DiagnosticService {
             const processingTime = Date.now() - startTime;
             const pharmacist = await User_1.default.findById(request.pharmacistId);
             const userRole = pharmacist?.role || 'unknown';
-            await auditService_1.default.logEvent({
-                userId: request.pharmacistId,
-                workplaceId: request.workplaceId,
-                userRole: userRole,
+            await auditService_1.AuditService.logActivity({
+                userId: request.pharmacistId.toString(),
+                workspaceId: request.workplaceId.toString(),
             }, {
                 action: 'diagnostic_analysis_completed',
                 resourceType: 'DiagnosticResult',
@@ -197,7 +196,7 @@ class DiagnosticService {
             if (request) {
                 const pharmacist = await User_1.default.findById(request.pharmacistId);
                 const userRole = pharmacist?.role || 'unknown';
-                await auditService_1.default.logEvent({
+                await auditService_1.AuditService.logActivity({
                     userId: request.pharmacistId,
                     workplaceId: request.workplaceId,
                     userRole: userRole,
@@ -557,10 +556,9 @@ class DiagnosticService {
             await request.save();
             const cancelledByUser = await User_1.default.findById(cancelledBy);
             const userRole = cancelledByUser?.role || 'unknown';
-            await auditService_1.default.logEvent({
-                userId: new mongoose_1.Types.ObjectId(cancelledBy),
-                workplaceId: new mongoose_1.Types.ObjectId(workplaceId),
-                userRole: userRole,
+            await auditService_1.AuditService.logActivity({
+                userId: cancelledBy,
+                workspaceId: workplaceId,
             }, {
                 action: 'diagnostic_request_cancelled',
                 resourceType: 'DiagnosticRequest',

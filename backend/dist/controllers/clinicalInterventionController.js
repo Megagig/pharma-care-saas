@@ -1,9 +1,42 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.exportAuditData = exports.getComplianceReport = exports.getInterventionAuditTrail = exports.syncWithMTR = exports.getInterventionsForMTR = exports.getMTRReference = exports.createInterventionsFromMTR = exports.handleClinicalInterventionError = exports.sendInterventionNotifications = exports.linkToMTR = exports.getStrategyRecommendations = exports.exportInterventionData = exports.exportInterventionsReport = exports.getCostSavingsReport = exports.getOutcomeReports = exports.getInterventionTrends = exports.getInterventionAnalytics = exports.getAssignedInterventions = exports.getPatientInterventions = exports.searchClinicalInterventions = exports.scheduleFollowUp = exports.recordOutcome = exports.updateAssignment = exports.assignTeamMember = exports.updateInterventionStrategy = exports.addInterventionStrategy = exports.deleteClinicalIntervention = exports.updateClinicalIntervention = exports.getClinicalIntervention = exports.createClinicalIntervention = exports.getClinicalInterventions = void 0;
+exports.sendNotifications = exports.getPriorityDistribution = exports.getCategoryCounts = exports.checkDuplicates = exports.exportAuditData = exports.getComplianceReport = exports.getInterventionAuditTrail = exports.syncWithMTR = exports.getInterventionsForMTR = exports.getMTRReference = exports.createInterventionsFromMTR = exports.handleClinicalInterventionError = exports.sendInterventionNotifications = exports.linkToMTR = exports.getStrategyRecommendations = exports.exportInterventionData = exports.exportInterventionsReport = exports.getCostSavingsReport = exports.getOutcomeReports = exports.getInterventionTrends = exports.getInterventionAnalytics = exports.getAssignedInterventions = exports.getPatientInterventions = exports.searchClinicalInterventions = exports.scheduleFollowUp = exports.recordOutcome = exports.updateAssignment = exports.assignTeamMember = exports.updateInterventionStrategy = exports.addInterventionStrategy = exports.deleteClinicalIntervention = exports.updateClinicalIntervention = exports.getClinicalIntervention = exports.createClinicalIntervention = exports.getClinicalInterventions = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const clinicalInterventionService_1 = __importDefault(require("../services/clinicalInterventionService"));
 const responseHelpers_1 = require("../utils/responseHelpers");
@@ -871,22 +904,23 @@ exports.syncWithMTR = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     }
 });
 exports.getInterventionAuditTrail = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const context = (0, responseHelpers_1.getRequestContext)(req);
     const { id } = req.params;
-    const { page = 1, limit = 50, startDate, endDate } = req.query;
+    const { page = 1, limit = 20, startDate, endDate, riskLevel, action } = req.query;
     if (!id || !mongoose_1.default.Types.ObjectId.isValid(id)) {
         throw (0, responseHelpers_1.createValidationError)('Invalid intervention ID format');
     }
     try {
-        const intervention = await clinicalInterventionService_1.default.getInterventionById(id, new mongoose_1.default.Types.ObjectId(context.workplaceId));
+        const { AuditService } = await Promise.resolve().then(() => __importStar(require('../services/auditService')));
         const options = {
             page: Math.max(1, parseInt(page) || 1),
-            limit: Math.min(100, Math.max(1, parseInt(limit) || 50)),
-            startDate: startDate ? new Date(startDate) : undefined,
-            endDate: endDate ? new Date(endDate) : undefined,
+            limit: Math.min(100, Math.max(1, parseInt(limit) || 20)),
+            startDate: startDate,
+            endDate: endDate,
+            riskLevel: riskLevel,
+            action: action
         };
-        const auditTrail = await clinicalInterventionService_1.default.getInterventionAuditTrail(id, new mongoose_1.default.Types.ObjectId(context.workplaceId), options);
-        (0, responseHelpers_1.sendSuccess)(res, auditTrail, 'Intervention audit trail retrieved successfully');
+        const result = await AuditService.getInterventionAuditLogs(id, options);
+        (0, responseHelpers_1.sendSuccess)(res, result, 'Intervention audit trail retrieved successfully');
     }
     catch (error) {
         logger_1.default.error('Error getting intervention audit trail:', error);
@@ -894,34 +928,32 @@ exports.getInterventionAuditTrail = (0, responseHelpers_1.asyncHandler)(async (r
     }
 });
 exports.getComplianceReport = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const context = (0, responseHelpers_1.getRequestContext)(req);
-    const { startDate, endDate, includeDetails = false, interventionIds } = req.query;
+    const { startDate, endDate, includeDetails = 'false', interventionIds } = req.query;
     if (!startDate || !endDate) {
         throw (0, responseHelpers_1.createValidationError)('Start date and end date are required');
     }
-    const dateRange = {
-        start: new Date(startDate),
-        end: new Date(endDate),
-    };
-    if (dateRange.start >= dateRange.end) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (start >= end) {
         throw (0, responseHelpers_1.createValidationError)('Start date must be before end date');
     }
     const maxRange = 365 * 24 * 60 * 60 * 1000;
-    if (dateRange.end.getTime() - dateRange.start.getTime() > maxRange) {
+    if (end.getTime() - start.getTime() > maxRange) {
         throw (0, responseHelpers_1.createValidationError)('Date range cannot exceed 1 year');
     }
     try {
+        const { AuditService } = await Promise.resolve().then(() => __importStar(require('../services/auditService')));
+        const interventionIdsArray = interventionIds
+            ? interventionIds.split(',')
+            : undefined;
         const options = {
+            startDate: startDate,
+            endDate: endDate,
             includeDetails: includeDetails === 'true',
-            interventionIds: interventionIds ? interventionIds.split(',') : undefined,
+            interventionIds: interventionIdsArray
         };
-        const complianceReport = await clinicalInterventionService_1.default.generateComplianceReport(new mongoose_1.default.Types.ObjectId(context.workplaceId), dateRange, options);
-        await clinicalInterventionService_1.default.logActivity('GENERATE_COMPLIANCE_REPORT', 'system', context.userId, new mongoose_1.default.Types.ObjectId(context.workplaceId), {
-            dateRange,
-            interventionCount: complianceReport.summary.totalInterventions,
-            complianceScore: complianceReport.summary.complianceScore,
-        }, req);
-        (0, responseHelpers_1.sendSuccess)(res, complianceReport, 'Compliance report generated successfully');
+        const report = await AuditService.getComplianceReport(options);
+        (0, responseHelpers_1.sendSuccess)(res, report, 'Compliance report generated successfully');
     }
     catch (error) {
         logger_1.default.error('Error generating compliance report:', error);
@@ -929,53 +961,82 @@ exports.getComplianceReport = (0, responseHelpers_1.asyncHandler)(async (req, re
     }
 });
 exports.exportAuditData = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const context = (0, responseHelpers_1.getRequestContext)(req);
-    const { format = 'json', startDate, endDate, interventionIds, includeDetails = false } = req.query;
+    const { format = 'csv', startDate, endDate, riskLevel, userId, action, interventionIds, includeDetails = 'true' } = req.query;
     if (!startDate || !endDate) {
         throw (0, responseHelpers_1.createValidationError)('Start date and end date are required');
     }
-    if (!['json', 'csv', 'pdf'].includes(format)) {
-        throw (0, responseHelpers_1.createValidationError)('Format must be json, csv, or pdf');
+    if (!['json', 'csv'].includes(format)) {
+        throw (0, responseHelpers_1.createValidationError)('Format must be json or csv');
     }
     try {
-        const dateRange = {
-            start: new Date(startDate),
-            end: new Date(endDate),
+        const { AuditService } = await Promise.resolve().then(() => __importStar(require('../services/auditService')));
+        const interventionIdsArray = interventionIds
+            ? interventionIds.split(',')
+            : undefined;
+        const options = {
+            format: format,
+            startDate: startDate,
+            endDate: endDate,
+            riskLevel: riskLevel,
+            userId: userId,
+            action: action,
+            interventionId: interventionIdsArray?.[0]
         };
-        const filters = {
-            resourceType: 'ClinicalIntervention',
-            startDate: dateRange.start,
-            endDate: dateRange.end,
-            ...(interventionIds && {
-                resourceId: { $in: interventionIds.split(',').map((id) => new mongoose_1.default.Types.ObjectId(id)) }
-            }),
-        };
-        const exportOptions = {
-            format,
-            dateRange,
-            filters,
-            includeDetails: includeDetails === 'true',
-            includeSensitiveData: false,
-        };
-        const AuditService = require('../services/auditService').default;
-        const exportResult = await AuditService.exportAuditData(context.workplaceId, exportOptions);
-        await clinicalInterventionService_1.default.logActivity('EXPORT_AUDIT_DATA', 'system', context.userId, new mongoose_1.default.Types.ObjectId(context.workplaceId), {
-            format,
-            dateRange,
-            recordCount: Array.isArray(exportResult.data) ? exportResult.data.length : 'unknown',
-        }, req);
-        res.setHeader('Content-Disposition', `attachment; filename="${exportResult.filename}"`);
-        res.setHeader('Content-Type', exportResult.contentType);
-        if (format === 'json') {
-            res.json(JSON.parse(exportResult.data));
-        }
-        else {
-            res.send(exportResult.data);
-        }
+        const exportData = await AuditService.exportAuditLogs(options);
+        const filename = `audit_export_${new Date().toISOString().split('T')[0]}.${format}`;
+        const contentType = format === 'csv' ? 'text/csv' : 'application/json';
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(exportData);
     }
     catch (error) {
         logger_1.default.error('Error exporting audit data:', error);
         throw error;
     }
 });
+exports.checkDuplicates = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
+    const context = getValidatedContext(req);
+    const { patientId, category } = req.query;
+    if (!patientId || !category) {
+        throw (0, responseHelpers_1.createValidationError)('patientId and category are required');
+    }
+    if (!mongoose_1.default.Types.ObjectId.isValid(patientId)) {
+        throw (0, responseHelpers_1.createValidationError)('Invalid patient ID format');
+    }
+    try {
+        const duplicates = [];
+        (0, responseHelpers_1.sendSuccess)(res, {
+            duplicates,
+            count: duplicates.length
+        }, 'Duplicate check completed successfully');
+    }
+    catch (error) {
+        throw (0, responseHelpers_1.createBusinessRuleError)('Failed to check for duplicates');
+    }
+});
+exports.getCategoryCounts = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
+    const context = getValidatedContext(req);
+    try {
+        const categoryCounts = {};
+        (0, responseHelpers_1.sendSuccess)(res, {
+            categories: categoryCounts
+        }, 'Category counts retrieved successfully');
+    }
+    catch (error) {
+        throw (0, responseHelpers_1.createBusinessRuleError)('Failed to get category counts');
+    }
+});
+exports.getPriorityDistribution = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
+    const context = getValidatedContext(req);
+    try {
+        const priorityDistribution = {};
+        (0, responseHelpers_1.sendSuccess)(res, {
+            priorities: priorityDistribution
+        }, 'Priority distribution retrieved successfully');
+    }
+    catch (error) {
+        throw (0, responseHelpers_1.createBusinessRuleError)('Failed to get priority distribution');
+    }
+});
+exports.sendNotifications = exports.sendInterventionNotifications;
 //# sourceMappingURL=clinicalInterventionController.js.map

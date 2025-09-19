@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import ClinicalNote from '../models/ClinicalNote';
 import Patient from '../models/Patient';
 import Medication from '../models/Medication';
-import AuditService from '../services/auditService';
+import { AuditService } from '../services/auditService';
 import ConfidentialNoteService from '../services/confidentialNoteService';
 import { EnhancedTenancyGuard } from '../utils/tenancyGuard';
 import { upload, deleteFile, getFileUrl } from '../utils/uploadService';
@@ -101,11 +101,9 @@ export const getNotes = async (
     console.log('=== END GET NOTES DEBUG ===');
 
     // Log audit trail for data access
-    const auditContext = AuditService.createAuditContext(req);
-    await AuditService.logActivity(auditContext, {
+    await AuditService.createAuditLog({
       action: 'LIST_CLINICAL_NOTES',
-      resourceType: 'ClinicalNote',
-      resourceId: new mongoose.Types.ObjectId(),
+      userId: req.user?.id || 'unknown',
       details: {
         filters: {
           type,
@@ -224,9 +222,9 @@ export const getNote = async (
 
     // Log confidential note access if applicable
     if (note.isConfidential) {
-      const auditContext = AuditService.createAuditContext(req);
-      await AuditService.logActivity(auditContext, {
+      await AuditService.createAuditLog({
         action: 'VIEW_CONFIDENTIAL_NOTE',
+        userId: req.user?.id || 'unknown',
         resourceType: 'ClinicalNote',
         resourceId: note._id,
         patientId: note.patient._id || note.patient,
@@ -312,11 +310,11 @@ export const createNote = async (
       .populate('medications', 'name dosage');
 
     // Log audit trail with enhanced details
-    const auditContext = AuditService.createAuditContext(req);
-    await AuditService.logActivity(auditContext, {
+    await AuditService.createAuditLog({
       action: req.body.isConfidential
         ? 'CREATE_CONFIDENTIAL_NOTE'
         : 'CREATE_CLINICAL_NOTE',
+      userId: req.user?.id || 'unknown',
       resourceType: 'ClinicalNote',
       resourceId: note._id,
       patientId: new mongoose.Types.ObjectId(patientId),
@@ -444,21 +442,22 @@ export const updateNote = async (
     }
 
     // Log audit trail
-    const auditContext = AuditService.createAuditContext(req);
-    await AuditService.logActivity(auditContext, {
+    await AuditService.createAuditLog({
       action: 'UPDATE_CLINICAL_NOTE',
+      userId: req.user?.id || 'unknown',
       resourceType: 'ClinicalNote',
       resourceId: note._id,
-      patientId: note.patient._id,
-      oldValues,
-      newValues: note.toObject(),
-      changedFields: Object.keys(req.body),
       details: {
+        noteId: note._id,
+        patientId: note.patient._id,
         noteType: note.type,
         title: note.title,
         priority: note.priority,
         isConfidential: note.isConfidential,
       },
+      oldValues,
+      newValues: note.toObject(),
+      changedFields: Object.keys(req.body),
       complianceCategory: 'clinical_documentation',
       riskLevel: note.isConfidential ? 'high' : 'medium',
     });
@@ -572,20 +571,21 @@ export const deleteNote = async (
     }
 
     // Log audit trail
-    const auditContext = AuditService.createAuditContext(req);
-    await AuditService.logActivity(auditContext, {
+    await AuditService.createAuditLog({
       action: 'DELETE_CLINICAL_NOTE',
+      userId: req.user?.id || 'unknown',
       resourceType: 'ClinicalNote',
       resourceId: note._id,
-      patientId: note.patient,
-      oldValues: noteData,
       details: {
+        noteId: note._id,
+        patientId: note.patient,
         noteType: note.type,
         title: note.title,
         priority: note.priority,
         isConfidential: note.isConfidential,
         attachmentCount: note.attachments?.length || 0,
       },
+      oldValues: noteData,
       complianceCategory: 'clinical_documentation',
       riskLevel: 'critical',
     });
@@ -649,17 +649,19 @@ export const getPatientNotes = async (
     const total = await ClinicalNote.countDocuments(query);
 
     // Log audit trail for patient data access
-    const auditContext = AuditService.createAuditContext(req);
-    await AuditService.logPatientAccess(
-      auditContext,
-      new mongoose.Types.ObjectId(req.params.patientId),
-      'view',
-      {
+    await AuditService.createAuditLog({
+      action: 'PATIENT_DATA_ACCESSED',
+      userId: req.user?.id || 'unknown',
+      details: {
+        patientId: req.params.patientId,
         accessType: 'clinical_notes',
+        resultCount: notes.length,
         noteCount: notes.length,
         filters: { type, priority },
-      }
-    );
+      },
+      complianceCategory: 'patient_privacy',
+      riskLevel: 'medium',
+    });
 
     res.json({
       notes,
@@ -782,9 +784,9 @@ export const searchNotes = async (
     console.log('=== END SEARCH NOTES DEBUG ===');
 
     // Log audit trail for search
-    const auditContext = AuditService.createAuditContext(req);
-    await AuditService.logActivity(auditContext, {
+    await AuditService.createAuditLog({
       action: 'SEARCH_CLINICAL_NOTES',
+      userId: req.user?.id || 'unknown',
       resourceType: 'ClinicalNote',
       resourceId: new mongoose.Types.ObjectId(),
       details: {

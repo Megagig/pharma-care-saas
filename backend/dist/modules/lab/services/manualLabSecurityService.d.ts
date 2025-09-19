@@ -1,5 +1,11 @@
 import mongoose from 'mongoose';
-import { AuditContext } from '../../../services/auditService';
+export interface AuditContext {
+    userId: string;
+    workspaceId: string;
+    sessionId?: string;
+    ipAddress?: string;
+    userAgent?: string;
+}
 interface SecurityThreat {
     type: 'rate_limit_exceeded' | 'suspicious_pattern' | 'unauthorized_access' | 'data_exfiltration' | 'injection_attempt';
     severity: 'low' | 'medium' | 'high' | 'critical';

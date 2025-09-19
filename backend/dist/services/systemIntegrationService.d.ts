@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { AuthRequest } from '../types/auth';
 interface IntegrationHealth {
     service: string;
     status: 'healthy' | 'degraded' | 'unhealthy';
@@ -17,7 +18,6 @@ export declare class SystemIntegrationService {
     private static instance;
     private healthChecks;
     private featureFlagService;
-    private auditService;
     private constructor();
     static getInstance(): SystemIntegrationService;
     private initializeHealthChecks;
@@ -28,7 +28,7 @@ export declare class SystemIntegrationService {
         warnings: string[];
     }>;
     backwardCompatibilityMiddleware(): (req: Request, res: Response, next: NextFunction) => void;
-    gradualRolloutMiddleware(): (req: AuthRequest, res: Response, next: NextFunction) => Response<any, Record<string, any>> | undefined;
+    gradualRolloutMiddleware(): (req: AuthRequest, res: Response, next: NextFunction) => void;
     getIntegrationHealth(): Promise<{
         overall: 'healthy' | 'degraded' | 'unhealthy';
         services: IntegrationHealth[];

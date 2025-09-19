@@ -60,8 +60,8 @@ export interface IClinicalNote extends Document {
     deletedBy?: mongoose.Types.ObjectId;
 }
 export interface IClinicalNoteModel extends mongoose.Model<IClinicalNote> {
-    findActive(filter?: any): Promise<IClinicalNote[]>;
-    findDeleted(filter?: any): Promise<IClinicalNote[]>;
+    findActive(filter?: any): mongoose.Query<IClinicalNote[], IClinicalNote>;
+    findDeleted(filter?: any): mongoose.Query<IClinicalNote[], IClinicalNote>;
 }
 declare const _default: IClinicalNoteModel;
 export default _default;

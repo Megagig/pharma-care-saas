@@ -1,7 +1,23 @@
 import mongoose from 'mongoose';
 import { IManualLabOrder, IManualLabTest } from '../models/ManualLabOrder';
 import { IManualLabResult, IManualLabResultValue } from '../models/ManualLabResult';
-import { AuditContext } from '../../../services/auditService';
+export interface AuditContext {
+    userId: string;
+    workspaceId: string;
+    sessionId?: string;
+}
+export interface AuditLogData {
+    action: string;
+    userId: string;
+    interventionId?: string;
+    details: Record<string, any>;
+    riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+    complianceCategory: string;
+    changedFields?: string[];
+    oldValues?: Record<string, any>;
+    newValues?: Record<string, any>;
+    workspaceId?: string;
+}
 export interface CreateOrderRequest {
     patientId: mongoose.Types.ObjectId;
     workplaceId: mongoose.Types.ObjectId;

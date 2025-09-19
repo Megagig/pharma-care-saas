@@ -1,14 +1,9 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthRequest } from '../types/auth';
-export declare class AuditController {
-    getAuditLogs(req: AuthRequest, res: Response): Promise<void>;
-    getAuditSummary(req: AuthRequest, res: Response): Promise<void>;
-    getSecurityAlerts(req: AuthRequest, res: Response): Promise<void>;
-    exportAuditLogs(req: AuthRequest, res: Response): Promise<void>;
-    private calculateOverallRiskScore;
-    private calculateComplianceScore;
-    private analyzeSecurityPatterns;
-    private convertToCSV;
-}
-export declare const auditController: AuditController;
+export declare const getAllAuditTrail: (req: Request, res: Response) => Promise<void>;
+export declare const getInterventionAuditTrail: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const exportAuditData: (req: Request, res: Response) => Promise<void>;
+export declare const getComplianceReport: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getAuditStatistics: (req: Request, res: Response) => Promise<void>;
+export declare const cleanupAuditLogs: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
 //# sourceMappingURL=auditController.d.ts.map

@@ -6,7 +6,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const dotenv_1 = require("dotenv");
-const auditService_1 = __importDefault(require("../services/auditService"));
+const auditService_1 = require("../services/auditService");
 const MTRAuditLog_1 = __importDefault(require("../models/MTRAuditLog"));
 (0, dotenv_1.config)();
 async function connectToDatabase() {
@@ -38,12 +38,11 @@ async function testAuditLogging() {
     };
     try {
         console.log('1️⃣ Testing MTR session creation audit log...');
-        const sessionLog = await auditService_1.default.logActivity(testContext, {
+        const sessionLog = await auditService_1.AuditService.logActivity(testContext, {
             action: 'CREATE_MTR_SESSION',
             resourceType: 'MedicationTherapyReview',
             resourceId: testReviewId,
             patientId: testPatientId,
-            reviewId: testReviewId,
             details: {
                 reviewNumber: 'MTR-2024-001',
                 status: 'in_progress',
@@ -55,12 +54,11 @@ async function testAuditLogging() {
         });
         console.log('✅ MTR session audit log created:', sessionLog._id);
         console.log('\n2️⃣ Testing high-risk activity audit log...');
-        const highRiskLog = await auditService_1.default.logActivity(testContext, {
+        const highRiskLog = await auditService_1.AuditService.logActivity(testContext, {
             action: 'DELETE_MTR_SESSION',
             resourceType: 'MedicationTherapyReview',
             resourceId: testReviewId,
             patientId: testPatientId,
-            reviewId: testReviewId,
             details: {
                 reason: 'Test deletion',
                 deletedBy: 'test-user',
@@ -70,16 +68,31 @@ async function testAuditLogging() {
         });
         console.log('✅ High-risk activity audit log created:', highRiskLog._id);
         console.log('\n3️⃣ Testing patient access audit log...');
-        const accessLog = await auditService_1.default.logPatientAccess(testContext, testPatientId, 'view', {
-            accessReason: 'MTR review',
-            dataAccessed: ['demographics', 'medications', 'allergies'],
+        const accessLog = await auditService_1.AuditService.logActivity(testContext, {
+            action: 'PATIENT_DATA_ACCESSED',
+            resourceType: 'Patient',
+            resourceId: testPatientId,
+            patientId: testPatientId,
+            details: {
+                accessReason: 'MTR review',
+                dataAccessed: ['demographics', 'medications', 'allergies'],
+            },
+            complianceCategory: 'data_access',
+            riskLevel: 'medium',
         });
         console.log('✅ Patient access audit log created:', accessLog._id);
         console.log('\n4️⃣ Testing authentication audit log...');
-        const authLog = await auditService_1.default.logAuthEvent(testContext, 'LOGIN', {
-            loginMethod: 'email',
-            deviceInfo: 'Test Device',
-            location: 'Test Location',
+        const authLog = await auditService_1.AuditService.logActivity(testContext, {
+            action: 'USER_LOGIN',
+            resourceType: 'User',
+            resourceId: testContext.userId,
+            details: {
+                loginMethod: 'email',
+                deviceInfo: 'Test Device',
+                location: 'Test Location',
+            },
+            complianceCategory: 'authentication',
+            riskLevel: 'low',
         });
         console.log('✅ Authentication audit log created:', authLog?._id);
         console.log('\n5️⃣ Testing audit log retrieval with filters...');

@@ -1,45 +1,39 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest } from './auth';
-interface AuditableRequest extends AuthRequest {
-    auditData?: {
-        action?: string;
-        resourceType?: string;
-        resourceId?: string;
-        patientId?: string;
-        reviewId?: string;
-        oldValues?: any;
-        newValues?: any;
-        details?: any;
-        complianceCategory?: string;
-        riskLevel?: string;
-    };
-    startTime?: number;
+import { AuthRequest } from '../types/auth';
+declare global {
+    namespace Express {
+        interface Request {
+            auditData?: {
+                action: string;
+                details: Record<string, any>;
+                complianceCategory: string;
+                riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+                interventionId?: string;
+                oldValues?: Record<string, any>;
+                newValues?: Record<string, any>;
+                changedFields?: string[];
+            };
+            originalBody?: any;
+        }
+    }
 }
-export declare const auditTimer: (req: AuditableRequest, res: Response, next: NextFunction) => void;
-export declare const auditLogger: (options?: {
-    action?: string;
-    resourceType?: string;
+export declare const captureAuditData: (action: string, complianceCategory: string, riskLevel?: "low" | "medium" | "high" | "critical") => (req: AuthRequest, res: Response, next: NextFunction) => void;
+export declare const logAuditTrail: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const auditIntervention: (action: string) => ((req: AuthRequest, res: Response, next: NextFunction) => void)[];
+export declare const createManualAuditLog: (req: AuthRequest, action: string, details: Record<string, any>, options?: {
+    interventionId?: string;
+    riskLevel?: "low" | "medium" | "high" | "critical";
     complianceCategory?: string;
-    riskLevel?: string;
-    skipSuccessLog?: boolean;
-}) => (req: AuditableRequest, res: Response, next: NextFunction) => Promise<void>;
-export declare const auditMTRActivity: (action: string) => (req: AuditableRequest, res: Response, next: NextFunction) => Promise<void>;
-export declare const auditPatientAccess: (action: string) => (req: AuditableRequest, res: Response, next: NextFunction) => Promise<void>;
-export declare const auditHighRiskActivity: (action: string, resourceType: string) => (req: AuditableRequest, res: Response, next: NextFunction) => Promise<void>;
-export declare const setAuditData: (req: AuditableRequest, data: Partial<AuditableRequest["auditData"]>) => void;
-declare const _default: {
-    auditTimer: (req: AuditableRequest, res: Response, next: NextFunction) => void;
-    auditLogger: (options?: {
-        action?: string;
-        resourceType?: string;
-        complianceCategory?: string;
-        riskLevel?: string;
-        skipSuccessLog?: boolean;
-    }) => (req: AuditableRequest, res: Response, next: NextFunction) => Promise<void>;
-    auditMTRActivity: (action: string) => (req: AuditableRequest, res: Response, next: NextFunction) => Promise<void>;
-    auditPatientAccess: (action: string) => (req: AuditableRequest, res: Response, next: NextFunction) => Promise<void>;
-    auditHighRiskActivity: (action: string, resourceType: string) => (req: AuditableRequest, res: Response, next: NextFunction) => Promise<void>;
-    setAuditData: (req: AuditableRequest, data: Partial<AuditableRequest["auditData"]>) => void;
-};
-export default _default;
+}) => Promise<void>;
+export declare const auditTimer: (action: string) => (req: AuthRequest, res: Response, next: NextFunction) => void;
+export declare const auditMTRActivity: (activityType: string) => (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const auditPatientAccess: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const auditLogger: (action: string, complianceCategory?: string) => (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+declare global {
+    namespace Express {
+        interface Request {
+            auditStartTime?: number;
+        }
+    }
+}
 //# sourceMappingURL=auditMiddleware.d.ts.map

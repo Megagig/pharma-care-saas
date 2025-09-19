@@ -8,7 +8,7 @@ const logger_1 = __importDefault(require("../utils/logger"));
 const ClinicalIntervention_1 = __importDefault(require("../models/ClinicalIntervention"));
 const Patient_1 = __importDefault(require("../models/Patient"));
 const User_1 = __importDefault(require("../models/User"));
-const auditService_1 = __importDefault(require("./auditService"));
+const auditService_1 = require("./auditService");
 const performanceOptimization_1 = require("../utils/performanceOptimization");
 const databaseOptimization_1 = require("../utils/databaseOptimization");
 const performanceMonitoring_1 = __importDefault(require("../utils/performanceMonitoring"));
@@ -673,19 +673,14 @@ class ClinicalInterventionService {
     static async logActivity(action, interventionId, userId, workplaceId, details, req, oldValues, newValues) {
         try {
             const auditContext = {
-                userId,
-                workplaceId,
-                userRole: req?.user?.role || 'unknown',
+                userId: userId.toString(),
+                workspaceId: workplaceId.toString(),
                 sessionId: req?.sessionID,
-                ipAddress: req?.ip || req?.connection?.remoteAddress,
-                userAgent: req?.get?.('User-Agent'),
-                requestMethod: req?.method,
-                requestUrl: req?.originalUrl,
             };
             const auditData = {
                 action: `INTERVENTION_${action.toUpperCase()}`,
-                resourceType: 'ClinicalIntervention',
-                resourceId: new mongoose_1.default.Types.ObjectId(interventionId),
+                userId: userId.toString(),
+                interventionId: interventionId,
                 oldValues,
                 newValues,
                 changedFields: oldValues && newValues
@@ -699,7 +694,7 @@ class ClinicalInterventionService {
                 complianceCategory: 'clinical_documentation',
                 riskLevel: this.determineRiskLevel(action, details),
             };
-            await auditService_1.default.logActivity(auditContext, auditData);
+            await auditService_1.AuditService.logActivity(auditContext, auditData);
             logger_1.default.info('Clinical Intervention Activity', {
                 action,
                 interventionId,
@@ -717,19 +712,14 @@ class ClinicalInterventionService {
     static async logInterventionAccess(interventionId, userId, workplaceId, accessType, req, details = {}) {
         try {
             const auditContext = {
-                userId,
-                workplaceId,
-                userRole: req?.user?.role || 'unknown',
+                userId: userId.toString(),
+                workspaceId: workplaceId.toString(),
                 sessionId: req?.sessionID,
-                ipAddress: req?.ip,
-                userAgent: req?.get?.('User-Agent'),
-                requestMethod: req?.method,
-                requestUrl: req?.originalUrl,
             };
             const auditData = {
                 action: `ACCESS_INTERVENTION_${accessType.toUpperCase()}`,
-                resourceType: 'ClinicalIntervention',
-                resourceId: new mongoose_1.default.Types.ObjectId(interventionId),
+                userId: userId.toString(),
+                interventionId: interventionId,
                 details: {
                     accessType,
                     ...details,
@@ -737,7 +727,7 @@ class ClinicalInterventionService {
                 complianceCategory: 'data_access',
                 riskLevel: accessType === 'delete' ? 'high' : 'medium',
             };
-            await auditService_1.default.logActivity(auditContext, auditData);
+            await auditService_1.AuditService.logActivity(auditContext, auditData);
         }
         catch (error) {
             logger_1.default.error('Error logging intervention access:', error);
@@ -750,10 +740,12 @@ class ClinicalInterventionService {
                 startDate: options.startDate,
                 endDate: options.endDate,
             };
-            const { logs, total } = await auditService_1.default.getAuditLogs(workplaceId, filters, {
+            const { logs, total } = await auditService_1.AuditService.getAuditLogs({
+                ...filters,
+                startDate: filters.startDate?.toISOString(),
+                endDate: filters.endDate?.toISOString(),
                 page: options.page || 1,
                 limit: options.limit || 50,
-                sort: '-timestamp',
             });
             const uniqueUsers = new Set(logs.map((log) => log.userId?.toString()).filter(Boolean)).size;
             const lastActivity = logs.length > 0 ? logs[0]?.timestamp : null;
@@ -794,9 +786,14 @@ class ClinicalInterventionService {
                 startDate: dateRange.start,
                 endDate: dateRange.end,
             };
-            const { logs: auditLogs } = await auditService_1.default.getAuditLogs(workplaceId, auditFilters, { limit: 10000 });
+            const { logs: auditLogs } = await auditService_1.AuditService.getAuditLogs({
+                ...auditFilters,
+                startDate: auditFilters.startDate?.toISOString(),
+                endDate: auditFilters.endDate?.toISOString(),
+                limit: 10000
+            });
             const interventionCompliance = interventions.map((intervention) => {
-                const interventionAudits = auditLogs.filter((log) => log.resourceId?.toString() === intervention._id.toString());
+                const interventionAudits = auditLogs.filter((log) => log.interventionId?.toString() === intervention._id.toString());
                 const auditCount = interventionAudits.length;
                 const lastAudit = interventionAudits.length > 0
                     ? interventionAudits.reduce((latest, log) => log.timestamp > (latest || new Date(0))
@@ -2756,6 +2753,79 @@ function formatPriorityName(priority) {
         critical: 'Critical',
     };
     return priorityMap[priority] || priority;
+}
+async function checkDuplicates(patientId, category, workplaceId) {
+    try {
+        const duplicates = await ClinicalIntervention_1.default.find({
+            patientId,
+            category,
+            workplaceId,
+            status: { $nin: ['completed', 'cancelled'] },
+            isDeleted: false,
+        })
+            .populate('identifiedByUser', 'firstName lastName email')
+            .sort({ identifiedDate: -1 })
+            .lean();
+        return duplicates;
+    }
+    catch (error) {
+        logger_1.default.error('Error checking for duplicates:', error);
+        throw error;
+    }
+}
+async function getCategoryCounts(workplaceId) {
+    try {
+        const categoryCounts = await ClinicalIntervention_1.default.aggregate([
+            {
+                $match: {
+                    workplaceId,
+                    isDeleted: false,
+                },
+            },
+            {
+                $group: {
+                    _id: '$category',
+                    count: { $sum: 1 },
+                },
+            },
+        ]);
+        const result = {};
+        categoryCounts.forEach((item) => {
+            result[item._id] = item.count;
+        });
+        return result;
+    }
+    catch (error) {
+        logger_1.default.error('Error getting category counts:', error);
+        throw error;
+    }
+}
+async function getPriorityDistribution(workplaceId) {
+    try {
+        const priorityDistribution = await ClinicalIntervention_1.default.aggregate([
+            {
+                $match: {
+                    workplaceId,
+                    isDeleted: false,
+                },
+            },
+            {
+                $group: {
+                    _id: '$priority',
+                    count: { $sum: 1 },
+                },
+            },
+        ]);
+        const result = {};
+        priorityDistribution.forEach((item) => {
+            result[item._id] = item.count;
+        });
+        return result;
+    }
+    catch (error) {
+        logger_1.default.error('Error getting priority distribution:', error);
+        throw error;
+    }
 }
 ClinicalInterventionService.getDashboardMetrics = getDashboardMetrics;
 exports.default = ClinicalInterventionService;

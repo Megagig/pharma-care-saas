@@ -4,12 +4,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
-const auditService_1 = __importDefault(require("../../../services/auditService"));
+const auditService_1 = require("../../../services/auditService");
 const logger_1 = __importDefault(require("../../../utils/logger"));
 class ManualLabAuditService {
     static async logOrderCreation(context, order, pdfGenerated = false, generationTime) {
         try {
-            await auditService_1.default.logActivity(context, {
+            await auditService_1.AuditService.logActivity(context, {
                 action: 'MANUAL_LAB_ORDER_CREATED',
                 resourceType: 'Patient',
                 resourceId: order._id,
@@ -34,7 +34,7 @@ class ManualLabAuditService {
             logger_1.default.info('Manual lab order creation audited', {
                 orderId: order.orderId,
                 patientId: order.patientId,
-                workplaceId: context.workplaceId,
+                workplaceId: context.workspaceId,
                 userId: context.userId,
                 testCount: order.tests.length,
                 service: 'manual-lab-audit'
@@ -50,7 +50,7 @@ class ManualLabAuditService {
     }
     static async logPDFAccess(context, auditData) {
         try {
-            await auditService_1.default.logActivity(context, {
+            await auditService_1.AuditService.logActivity(context, {
                 action: 'MANUAL_LAB_PDF_ACCESSED',
                 resourceType: 'Patient',
                 resourceId: new mongoose_1.default.Types.ObjectId(),
@@ -64,7 +64,6 @@ class ManualLabAuditService {
                     userAgent: auditData.userAgent,
                     referrer: auditData.referrer,
                     timestamp: new Date(),
-                    ipAddress: context.ipAddress,
                     sessionId: context.sessionId
                 },
                 complianceCategory: 'data_access',
@@ -89,7 +88,7 @@ class ManualLabAuditService {
     }
     static async logResultEntry(context, result, auditData) {
         try {
-            await auditService_1.default.logActivity(context, {
+            await auditService_1.AuditService.logActivity(context, {
                 action: 'MANUAL_LAB_RESULTS_ENTERED',
                 resourceType: 'Patient',
                 resourceId: result._id,
@@ -135,7 +134,7 @@ class ManualLabAuditService {
     static async logResultModification(context, orderId, oldValues, newValues, modificationReason) {
         try {
             const changedFields = this.getChangedFields(oldValues, newValues);
-            await auditService_1.default.logActivity(context, {
+            await auditService_1.AuditService.logActivity(context, {
                 action: 'MANUAL_LAB_RESULTS_MODIFIED',
                 resourceType: 'Patient',
                 resourceId: new mongoose_1.default.Types.ObjectId(),
@@ -173,7 +172,7 @@ class ManualLabAuditService {
     static async logStatusChange(context, orderId, oldStatus, newStatus, statusChangeReason) {
         try {
             const isValidTransition = this.validateStatusTransition(oldStatus, newStatus);
-            await auditService_1.default.logActivity(context, {
+            await auditService_1.AuditService.logActivity(context, {
                 action: 'MANUAL_LAB_ORDER_STATUS_CHANGED',
                 resourceType: 'Patient',
                 resourceId: new mongoose_1.default.Types.ObjectId(),
@@ -214,7 +213,7 @@ class ManualLabAuditService {
     }
     static async logTokenResolution(context, orderId, tokenType, success, errorReason) {
         try {
-            await auditService_1.default.logActivity(context, {
+            await auditService_1.AuditService.logActivity(context, {
                 action: 'MANUAL_LAB_TOKEN_RESOLVED',
                 resourceType: 'Patient',
                 resourceId: new mongoose_1.default.Types.ObjectId(),
@@ -226,13 +225,10 @@ class ManualLabAuditService {
                     errorReason,
                     resolvedBy: context.userId,
                     resolvedAt: new Date(),
-                    ipAddress: context.ipAddress,
-                    userAgent: context.userAgent,
                     sessionId: context.sessionId
                 },
                 complianceCategory: 'data_access',
-                riskLevel: success ? 'low' : 'medium',
-                errorMessage: errorReason
+                riskLevel: success ? 'low' : 'medium'
             });
             logger_1.default.info('Token resolution audited', {
                 orderId,
@@ -252,11 +248,11 @@ class ManualLabAuditService {
     }
     static async generateComplianceReport(reportData) {
         try {
-            const { logs, total } = await auditService_1.default.getAuditLogs(reportData.workplaceId, {
-                startDate: reportData.dateRange.start,
-                endDate: reportData.dateRange.end,
+            const { logs, total } = await auditService_1.AuditService.getAuditLogs({
+                startDate: reportData.dateRange.start.toISOString(),
+                endDate: reportData.dateRange.end.toISOString(),
                 action: 'MANUAL_LAB_'
-            }, { limit: 10000 });
+            });
             const complianceMetrics = this.analyzeComplianceMetrics(logs);
             const report = {
                 reportId: new mongoose_1.default.Types.ObjectId(),
@@ -276,7 +272,7 @@ class ManualLabAuditService {
                 violations: complianceMetrics.violations,
                 recommendations: this.generateComplianceRecommendations(complianceMetrics)
             };
-            await auditService_1.default.logActivity({
+            await auditService_1.AuditService.logActivity({
                 userId: new mongoose_1.default.Types.ObjectId(),
                 workplaceId: reportData.workplaceId,
                 userRole: 'system'
@@ -306,15 +302,15 @@ class ManualLabAuditService {
     }
     static async trackPDFAccessPattern(context, auditData) {
         try {
-            const recentAccesses = await auditService_1.default.getAuditLogs(context.workplaceId, {
+            const recentAccesses = await auditService_1.AuditService.getAuditLogs({
                 userId: context.userId,
                 action: 'MANUAL_LAB_PDF_ACCESSED',
-                startDate: new Date(Date.now() - 60 * 60 * 1000)
-            }, { limit: 100 });
+                startDate: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+            });
             const accessCount = recentAccesses.total;
             const uniqueOrders = new Set(recentAccesses.logs.map(log => log.details?.orderId)).size;
             if (accessCount > 50 || (accessCount > 10 && uniqueOrders < 3)) {
-                await auditService_1.default.logActivity(context, {
+                await auditService_1.AuditService.logActivity(context, {
                     action: 'MANUAL_LAB_SUSPICIOUS_PDF_ACCESS_PATTERN',
                     resourceType: 'System',
                     resourceId: context.userId,
@@ -346,7 +342,7 @@ class ManualLabAuditService {
     }
     static async logIndividualTestResult(context, orderId, testValue) {
         try {
-            await auditService_1.default.logActivity(context, {
+            await auditService_1.AuditService.logActivity(context, {
                 action: 'MANUAL_LAB_INDIVIDUAL_TEST_RESULT',
                 resourceType: 'Patient',
                 resourceId: new mongoose_1.default.Types.ObjectId(),

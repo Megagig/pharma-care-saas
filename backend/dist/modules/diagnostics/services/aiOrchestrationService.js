@@ -7,13 +7,13 @@ exports.AIOrchestrationService = void 0;
 const mongoose_1 = require("mongoose");
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const openRouterService_1 = __importDefault(require("../../../services/openRouterService"));
-const auditService_1 = __importDefault(require("../../../services/auditService"));
+const auditService_1 = require("../../../services/auditService");
 class AIOrchestrationService {
     constructor() {
         this.defaultOptions = {
             temperature: 0.1,
             maxTokens: 4000,
-            timeout: 60000,
+            timeout: 180000,
             retryAttempts: 3,
             promptVersion: 'v1.0',
         };
@@ -316,14 +316,13 @@ class AIOrchestrationService {
     }
     async logAIRequest(input, consent, options) {
         try {
-            await auditService_1.default.logEvent({
-                userId: new mongoose_1.Types.ObjectId(consent.pharmacistId),
-                workplaceId: new mongoose_1.Types.ObjectId(input.workplaceId),
+            await auditService_1.AuditService.logActivity({
+                userId: consent.pharmacistId,
+                workplaceId: input.workplaceId,
                 userRole: consent.pharmacistRole,
             }, {
                 action: 'ai_diagnostic_request',
                 resourceType: 'AIAnalysis',
-                resourceId: '',
                 details: {
                     patientId: consent.patientId,
                     symptomsCount: input.symptoms.subjective.length,
@@ -334,6 +333,7 @@ class AIOrchestrationService {
                     temperature: options.temperature,
                     maxTokens: options.maxTokens,
                 },
+                complianceCategory: 'ai_diagnostics'
             });
         }
         catch (error) {
@@ -342,15 +342,16 @@ class AIOrchestrationService {
     }
     async logAIResponse(response, consent, workplaceId) {
         try {
-            await auditService_1.default.logEvent({
-                userId: new mongoose_1.Types.ObjectId(consent.pharmacistId),
-                workplaceId: workplaceId,
+            await auditService_1.AuditService.logActivity({
+                userId: consent.pharmacistId,
+                workplaceId: workplaceId.toString(),
                 userRole: consent.pharmacistRole,
             }, {
                 action: 'ai_diagnostic_response',
                 resourceType: 'AIAnalysis',
-                resourceId: new mongoose_1.Types.ObjectId(response.metadata.requestId),
+                resourceId: new mongoose_1.Types.ObjectId().toString(),
                 details: {
+                    requestId: response.metadata.requestId,
                     patientId: consent.patientId,
                     processingTime: response.metadata.processingTime,
                     confidenceScore: response.metadata.confidenceScore,
@@ -360,6 +361,7 @@ class AIOrchestrationService {
                     tokenUsage: response.metadata.tokenUsage,
                     validationFlags: response.validationFlags,
                 },
+                complianceCategory: 'ai_diagnostics'
             });
         }
         catch (error) {
@@ -368,14 +370,15 @@ class AIOrchestrationService {
     }
     async logAIError(error, consent, processingTime, workplaceId) {
         try {
-            await auditService_1.default.logEvent({
-                userId: new mongoose_1.Types.ObjectId(consent.pharmacistId),
-                workplaceId: workplaceId,
+            await auditService_1.AuditService.logActivity({
+                userId: consent.pharmacistId,
+                workplaceId: workplaceId.toString(),
                 userRole: consent.pharmacistRole,
             }, {
                 action: 'ai_diagnostic_error',
                 resourceType: 'AIAnalysis',
-                resourceId: new mongoose_1.Types.ObjectId(),
+                resourceId: new mongoose_1.Types.ObjectId().toString(),
+                complianceCategory: 'ai_diagnostics',
                 details: {
                     patientId: consent.patientId,
                     error: error instanceof Error ? error.message : 'Unknown error',

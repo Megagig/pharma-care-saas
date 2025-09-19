@@ -2,12 +2,19 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../../../types/auth';
 export interface AuditableRequest extends AuthRequest {
     auditData?: {
+        action: string;
+        details: Record<string, any>;
+        complianceCategory: string;
+        riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+        interventionId?: string;
+        oldValues?: Record<string, any>;
+        newValues?: Record<string, any>;
+        changedFields?: string[];
         eventType?: string;
         entityType?: string;
         entityId?: string;
         patientId?: string;
         severity?: 'low' | 'medium' | 'high' | 'critical';
-        details?: any;
         aiMetadata?: any;
         regulatoryContext?: any;
     };

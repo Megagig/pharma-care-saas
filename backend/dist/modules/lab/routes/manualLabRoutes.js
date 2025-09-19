@@ -22,7 +22,6 @@ router.use(manualLabSecurityMiddleware_1.sanitizeInput);
 router.use(manualLabSecurityMiddleware_1.detectSuspiciousActivity);
 router.use(manualLabSecurityMiddleware_1.generateCSRFToken);
 router.use(manualLabAuditMiddleware_1.monitorCompliance);
-router.use((0, featureFlags_1.requireFeatureFlag)('manual_lab_orders'));
 const tokenScanLimiter = (0, express_rate_limit_1.default)({
     windowMs: 1 * 60 * 1000,
     max: 30,
@@ -36,7 +35,7 @@ const tokenScanLimiter = (0, express_rate_limit_1.default)({
 });
 router.post('/', manualLabSecurityMiddleware_1.enhancedOrderCreationRateLimit, rbac_1.default.requireRole('pharmacist', 'owner'), manualLabSecurityMiddleware_1.csrfProtection, (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.createManualLabOrderSchema, 'body'), (0, manualLabAuditMiddleware_1.auditManualLabOperation)('order_creation'), manualLabController_1.createManualLabOrder);
 router.get('/', rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.orderQuerySchema, 'query'), manualLabController_1.getManualLabOrders);
-router.get('/scan', (0, featureFlags_1.requireFeatureFlag)('manual_lab_qr_scanning'), tokenScanLimiter, rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.tokenQuerySchema, 'query'), manualLabAuditMiddleware_1.auditTokenResolution, manualLabController_1.resolveOrderToken);
+router.get('/scan', tokenScanLimiter, rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.tokenQuerySchema, 'query'), manualLabAuditMiddleware_1.auditTokenResolution, manualLabController_1.resolveOrderToken);
 router.get('/patient/:patientId', rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.patientParamsSchema, 'params'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.patientOrderQuerySchema, 'query'), manualLabController_1.getPatientLabOrders);
 router.get('/:orderId', rbac_1.default.requireRole('pharmacist', 'owner'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.orderParamsSchema, 'params'), manualLabController_1.getManualLabOrder);
 router.put('/:orderId/status', rbac_1.default.requireRole('pharmacist', 'owner'), manualLabSecurityMiddleware_1.csrfProtection, (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.orderParamsSchema, 'params'), (0, manualLabValidators_1.validateRequest)(manualLabValidators_1.updateOrderStatusSchema, 'body'), manualLabAuditMiddleware_1.auditStatusChange, manualLabController_1.updateOrderStatus);

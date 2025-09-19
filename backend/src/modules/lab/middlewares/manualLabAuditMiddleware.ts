@@ -4,7 +4,7 @@ import ManualLabAuditService from '../services/manualLabAuditService';
 import ManualLabSecurityService from '../services/manualLabSecurityService';
 import logger from '../../../utils/logger';
 import { Types } from 'mongoose';
-import AuditService from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
 
 /**
  * Enhanced audit middleware for manual lab operations
@@ -36,14 +36,11 @@ export const auditPDFAccess = (req: AuthRequest, res: Response, next: NextFuncti
             try {
                 if (res.statusCode === 200 && req.user) {
                     const auditContext = {
-                        userId: req.user._id,
-                        workplaceId: req.user.workplaceId!,
-                        userRole: req.user.role,
+                        userId: req.user._id.toString(),
+                        workspaceId: req.user.workplaceId!.toString(),
                         sessionId: (req as any).sessionID,
                         ipAddress: req.ip,
-                        userAgent: req.get('User-Agent'),
-                        requestMethod: req.method,
-                        requestUrl: req.originalUrl
+                        userAgent: req.get('User-Agent')
                     };
 
                     // Determine download method based on referrer
@@ -99,14 +96,11 @@ export const auditResultEntry = (req: AuthRequest, res: Response, next: NextFunc
                     const result = body.data?.result;
                     if (result) {
                         const auditContext = {
-                            userId: req.user._id,
-                            workplaceId: new Types.ObjectId(req.user.workplaceId!),
-                            userRole: req.user.role,
+                            userId: req.user._id.toString(),
+                            workspaceId: req.user.workplaceId!.toString(),
                             sessionId: (req as any).sessionID,
                             ipAddress: req.ip,
-                            userAgent: req.get('User-Agent'),
-                            requestMethod: req.method,
-                            requestUrl: req.originalUrl
+                            userAgent: req.get('User-Agent')
                         };
 
                         // Count abnormal and critical results
@@ -155,16 +149,13 @@ export const auditStatusChange = (req: AuthRequest, res: Response, next: NextFun
             try {
                 if (res.statusCode === 200 && req.user && body.success) {
                     const auditContext = {
-                        userId: req.user._id,
-                        workplaceId: req.user.workplaceId!,
-                        userRole: req.user.role,
+                        userId: req.user._id.toString(),
+                        workspaceId: req.user.workplaceId!.toString(),
                         sessionId: (req as any).sessionID,
                         ipAddress: req.ip,
-                        userAgent: req.get('User-Agent'),
-                        requestMethod: req.method,
-                        requestUrl: req.originalUrl
+                        userAgent: req.get('User-Agent')
                     };
-                    
+
                     const { previousStatus } = body.data;
 
                     await ManualLabAuditService.logStatusChange(
@@ -203,14 +194,11 @@ export const auditTokenResolution = (req: AuthRequest, res: Response, next: Next
             try {
                 if (req.user) {
                     const auditContext = {
-                        userId: req.user._id,
-                        workplaceId: req.user.workplaceId!,
-                        userRole: req.user.role,
+                        userId: req.user._id.toString(),
+                        workspaceId: req.user.workplaceId!.toString(),
                         sessionId: (req as any).sessionID,
                         ipAddress: req.ip,
-                        userAgent: req.get('User-Agent'),
-                        requestMethod: req.method,
-                        requestUrl: req.originalUrl
+                        userAgent: req.get('User-Agent')
                     };
 
                     const success = res.statusCode === 200 && body.success;
@@ -268,14 +256,11 @@ export const auditManualLabOperation = (operationType: string) => {
         if (req.user) {
             try {
                 const auditContext = {
-                    userId: req.user._id,
-                    workplaceId: new Types.ObjectId(req.user.workplaceId!),
-                    userRole: req.user.role,
+                    userId: req.user._id.toString(),
+                    workspaceId: req.user.workplaceId!.toString(),
                     sessionId: (req as any).sessionID,
                     ipAddress: req.ip,
-                    userAgent: req.get('User-Agent'),
-                    requestMethod: req.method,
-                    requestUrl: req.originalUrl
+                    userAgent: req.get('User-Agent')
                 };
 
                 const threats = await ManualLabSecurityService.analyzeRequest(auditContext, {

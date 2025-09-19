@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getComplianceViolations = exports.getOrderAuditTrail = exports.generateComplianceReport = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const manualLabAuditService_1 = __importDefault(require("../services/manualLabAuditService"));
-const auditService_1 = __importDefault(require("../../../services/auditService"));
+const auditService_1 = require("../../../services/auditService");
 const responseHelpers_1 = require("../../../utils/responseHelpers");
 const logger_1 = __importDefault(require("../../../utils/logger"));
 exports.generateComplianceReport = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -27,11 +27,12 @@ exports.generateComplianceReport = (0, responseHelpers_1.asyncHandler)(async (re
                 end: now
             };
         }
-        const auditStats = await auditService_1.default.getAuditLogs(new mongoose_1.default.Types.ObjectId(context.workplaceId), {
-            startDate: dateRange.start,
-            endDate: dateRange.end,
-            action: 'MANUAL_LAB_'
-        }, { limit: 10000 });
+        const auditStats = await auditService_1.AuditService.getAuditLogs({
+            startDate: dateRange.start.toISOString(),
+            endDate: dateRange.end.toISOString(),
+            action: 'MANUAL_LAB_',
+            limit: 10000
+        });
         const operationCounts = {
             totalOrders: 0,
             totalResults: 0,
@@ -99,9 +100,10 @@ exports.getOrderAuditTrail = (0, responseHelpers_1.asyncHandler)(async (req, res
     const { orderId } = req.params;
     const context = (0, responseHelpers_1.getRequestContext)(req);
     try {
-        const { logs } = await auditService_1.default.getAuditLogs(new mongoose_1.default.Types.ObjectId(context.workplaceId), {
-            action: 'MANUAL_LAB_'
-        }, { limit: 1000, sort: 'timestamp' });
+        const { logs } = await auditService_1.AuditService.getAuditLogs({
+            action: 'MANUAL_LAB_',
+            limit: 1000
+        });
         const orderLogs = logs.filter(log => log.details?.orderId === orderId.toUpperCase());
         const auditTrail = {
             orderId: orderId.toUpperCase(),
@@ -110,7 +112,6 @@ exports.getOrderAuditTrail = (0, responseHelpers_1.asyncHandler)(async (req, res
                 timestamp: log.timestamp,
                 action: log.action,
                 userId: log.userId,
-                userRole: log.userRole,
                 riskLevel: log.riskLevel,
                 complianceCategory: log.complianceCategory,
                 details: log.details,
@@ -157,10 +158,10 @@ exports.getComplianceViolations = (0, responseHelpers_1.asyncHandler)(async (req
             filters.startDate = new Date(startDate);
             filters.endDate = new Date(endDate);
         }
-        const { logs, total } = await auditService_1.default.getAuditLogs(new mongoose_1.default.Types.ObjectId(context.workplaceId), filters, {
+        const { logs, total } = await auditService_1.AuditService.getAuditLogs({
+            ...filters,
             page: parseInt(page),
-            limit: parseInt(limit),
-            sort: '-timestamp'
+            limit: parseInt(limit)
         });
         const violations = logs.map(log => ({
             id: log._id,
@@ -169,9 +170,7 @@ exports.getComplianceViolations = (0, responseHelpers_1.asyncHandler)(async (req
             riskLevel: log.riskLevel,
             complianceCategory: log.complianceCategory,
             userId: log.userId,
-            userRole: log.userRole,
             details: log.details,
-            errorMessage: log.errorMessage,
             ipAddress: log.ipAddress,
             severity: log.riskLevel === 'critical' ? 'critical' :
                 log.riskLevel === 'high' ? 'high' : 'medium'

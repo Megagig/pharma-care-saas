@@ -419,7 +419,6 @@ export const addLabResult = asyncHandler(
                 referenceRange,
                 source: 'manual',
                 performedAt: performedAt ? new Date(performedAt) : new Date(),
-                recordedAt: new Date(),
                 recordedBy: context.userId.toString(),
                 externalResultId,
                 loincCode,

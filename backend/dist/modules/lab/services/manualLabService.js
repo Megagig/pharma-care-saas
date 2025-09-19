@@ -23,7 +23,7 @@ const Allergy_1 = __importDefault(require("../../../models/Allergy"));
 const Medication_1 = __importDefault(require("../../../models/Medication"));
 const tokenService_1 = __importDefault(require("./tokenService"));
 const pdfGenerationService_1 = require("./pdfGenerationService");
-const auditService_1 = __importDefault(require("../../../services/auditService"));
+const auditService_1 = require("../../../services/auditService");
 const manualLabAuditService_1 = __importDefault(require("./manualLabAuditService"));
 const mtrNotificationService_1 = require("../../../services/mtrNotificationService");
 const manualLabCacheService_1 = __importDefault(require("./manualLabCacheService"));
@@ -118,7 +118,7 @@ class ManualLabService {
             const cachedOrder = await manualLabCacheService_1.default.getCachedOrder(workplaceId, orderId.toUpperCase());
             if (cachedOrder) {
                 if (auditContext) {
-                    await auditService_1.default.logActivity(auditContext, {
+                    await auditService_1.AuditService.logActivity(auditContext, {
                         action: 'MANUAL_LAB_ORDER_ACCESSED',
                         resourceType: 'Patient',
                         resourceId: cachedOrder._id,
@@ -148,7 +148,7 @@ class ManualLabService {
                 await manualLabCacheService_1.default.cacheOrder(order);
             }
             if (order && auditContext) {
-                await auditService_1.default.logActivity(auditContext, {
+                await auditService_1.AuditService.logActivity(auditContext, {
                     action: 'MANUAL_LAB_ORDER_ACCESSED',
                     resourceType: 'Patient',
                     resourceId: order._id,
@@ -252,7 +252,7 @@ class ManualLabService {
         try {
             const order = await ManualLabOrder_1.default.findOne({
                 orderId: orderId.toUpperCase(),
-                workplaceId: auditContext.workplaceId,
+                workplaceId: auditContext.workspaceId,
                 isDeleted: { $ne: true }
             }).session(session);
             if (!order) {
@@ -268,7 +268,7 @@ class ManualLabService {
                 order.notes = statusUpdate.notes;
                 await order.save({ session });
             }
-            await auditService_1.default.logActivity(auditContext, {
+            await auditService_1.AuditService.logActivity(auditContext, {
                 action: 'MANUAL_LAB_ORDER_STATUS_UPDATED',
                 resourceType: 'Patient',
                 resourceId: order._id,
@@ -315,7 +315,7 @@ class ManualLabService {
         try {
             const order = await ManualLabOrder_1.default.findOne({
                 orderId: orderId.toUpperCase(),
-                workplaceId: auditContext.workplaceId,
+                workplaceId: auditContext.workspaceId,
                 isDeleted: { $ne: true }
             }).session(session);
             if (!order) {
@@ -353,7 +353,7 @@ class ManualLabService {
             this.generateAutoInterpretations(result, order);
             await result.save({ session });
             await order.updateStatus('completed', resultData.enteredBy);
-            await auditService_1.default.logActivity(auditContext, {
+            await auditService_1.AuditService.logActivity(auditContext, {
                 action: 'MANUAL_LAB_RESULTS_ENTERED',
                 resourceType: 'Patient',
                 resourceId: result._id,
@@ -419,7 +419,7 @@ class ManualLabService {
                     throw (0, responseHelpers_1.createNotFoundError)('Lab order not found');
                 }
                 if (auditContext) {
-                    await auditService_1.default.logActivity(auditContext, {
+                    await auditService_1.AuditService.logActivity(auditContext, {
                         action: 'MANUAL_LAB_RESULTS_ACCESSED',
                         resourceType: 'Patient',
                         resourceId: cachedResult._id,
@@ -456,7 +456,7 @@ class ManualLabService {
                 await manualLabCacheService_1.default.cacheResult(result);
             }
             if (result && auditContext) {
-                await auditService_1.default.logActivity(auditContext, {
+                await auditService_1.AuditService.logActivity(auditContext, {
                     action: 'MANUAL_LAB_RESULTS_ACCESSED',
                     resourceType: 'Patient',
                     resourceId: result._id,
@@ -509,7 +509,7 @@ class ManualLabService {
                 });
             }
             if (auditContext) {
-                await auditService_1.default.logActivity(auditContext, {
+                await auditService_1.AuditService.logActivity(auditContext, {
                     action: 'MANUAL_LAB_ORDER_TOKEN_RESOLVED',
                     resourceType: 'Patient',
                     resourceId: order._id,
@@ -580,7 +580,7 @@ class ManualLabService {
                 .limit(limit);
             const pages = Math.ceil(total / limit);
             if (auditContext && orders.length > 0) {
-                await auditService_1.default.logActivity(auditContext, {
+                await auditService_1.AuditService.logActivity(auditContext, {
                     action: 'MANUAL_LAB_ORDERS_BULK_ACCESSED',
                     resourceType: 'Patient',
                     resourceId: new mongoose_1.default.Types.ObjectId(),
@@ -809,11 +809,10 @@ class ManualLabService {
                 });
             }
             const auditContext = {
-                userId: request.requestedBy,
-                workplaceId: request.workplaceId,
-                userRole: 'pharmacist'
+                userId: request.requestedBy.toString(),
+                workspaceId: request.workplaceId.toString()
             };
-            await auditService_1.default.logActivity(auditContext, {
+            await auditService_1.AuditService.logActivity(auditContext, {
                 action: 'MANUAL_LAB_CRITICAL_ALERTS_TRIGGERED',
                 resourceType: 'Patient',
                 resourceId: new mongoose_1.default.Types.ObjectId(),
@@ -933,11 +932,10 @@ class ManualLabService {
     static async logOrderEvent(orderId, event, userId, workplaceId, details = {}) {
         try {
             const auditContext = {
-                userId,
-                workplaceId,
-                userRole: 'pharmacist'
+                userId: userId.toString(),
+                workspaceId: workplaceId.toString()
             };
-            await auditService_1.default.logActivity(auditContext, {
+            await auditService_1.AuditService.logActivity(auditContext, {
                 action: event,
                 resourceType: 'Patient',
                 resourceId: new mongoose_1.default.Types.ObjectId(),

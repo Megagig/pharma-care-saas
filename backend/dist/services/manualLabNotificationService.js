@@ -24,7 +24,7 @@ class ManualLabNotificationService {
                 workplaceId: patient.workplaceId,
                 role: { $in: ['pharmacist', 'owner'] },
                 status: 'active',
-                'notificationPreferences.criticalAlerts': { $ne: false }
+                'notificationPreferences.email': { $ne: false }
             });
             const alertData = {
                 alertType: alert.type,
@@ -138,7 +138,7 @@ class ManualLabNotificationService {
                 email: patient.notificationPreferences?.email ?? true,
                 sms: patient.notificationPreferences?.sms ?? true,
                 push: patient.notificationPreferences?.push ?? true,
-                criticalAlerts: patient.notificationPreferences?.criticalAlerts ?? true,
+                criticalAlerts: patient.notificationPreferences?.email ?? true,
                 resultNotifications: patient.notificationPreferences?.resultNotifications ?? true,
                 orderReminders: patient.notificationPreferences?.orderReminders ?? true,
             };

@@ -39,11 +39,11 @@ export interface IClinicalNote extends Document {
   customId?: string; // Custom ID for external integrations
   legacyId?: string; // Legacy ID for backward compatibility
   type:
-    | 'consultation'
-    | 'medication_review'
-    | 'follow_up'
-    | 'adverse_event'
-    | 'other';
+  | 'consultation'
+  | 'medication_review'
+  | 'follow_up'
+  | 'adverse_event'
+  | 'other';
   title: string;
   content: {
     subjective?: string;
@@ -74,8 +74,8 @@ export interface IClinicalNote extends Document {
 }
 
 export interface IClinicalNoteModel extends mongoose.Model<IClinicalNote> {
-    findActive(filter?: any): Promise<IClinicalNote[]>;
-    findDeleted(filter?: any): Promise<IClinicalNote[]>;
+  findActive(filter?: any): mongoose.Query<IClinicalNote[], IClinicalNote>;
+  findDeleted(filter?: any): mongoose.Query<IClinicalNote[], IClinicalNote>;
 }
 
 const attachmentSchema = new Schema({

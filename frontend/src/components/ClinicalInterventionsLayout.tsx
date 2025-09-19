@@ -181,6 +181,7 @@ const ClinicalInterventionsLayout: React.FC = () => {
           path="/compliance"
           element={<ClinicalInterventionComplianceReport />}
         />
+
         <Route
           path="*"
           element={

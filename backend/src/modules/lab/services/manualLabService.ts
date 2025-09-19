@@ -13,7 +13,24 @@ import Medication from '../../../models/Medication';
 // Import services
 import TokenService, { SecureTokenData } from './tokenService';
 import { pdfGenerationService } from './pdfGenerationService';
-import AuditService, { AuditContext, AuditLogData } from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
+export interface AuditContext {
+    userId: string;
+    workspaceId: string;
+    sessionId?: string;
+}
+export interface AuditLogData {
+    action: string;
+    userId: string;
+    interventionId?: string;
+    details: Record<string, any>;
+    riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+    complianceCategory: string;
+    changedFields?: string[];
+    oldValues?: Record<string, any>;
+    newValues?: Record<string, any>;
+    workspaceId?: string;
+}
 import ManualLabAuditService from './manualLabAuditService';
 import { mtrNotificationService, CriticalAlert } from '../../../services/mtrNotificationService';
 import ManualLabCacheService from './manualLabCacheService';
@@ -445,7 +462,7 @@ class ManualLabService {
         try {
             const order = await ManualLabOrder.findOne({
                 orderId: orderId.toUpperCase(),
-                workplaceId: auditContext.workplaceId,
+                workplaceId: auditContext.workspaceId,
                 isDeleted: { $ne: true }
             }).session(session);
 
@@ -533,7 +550,7 @@ class ManualLabService {
             // Find the order
             const order = await ManualLabOrder.findOne({
                 orderId: orderId.toUpperCase(),
-                workplaceId: auditContext.workplaceId,
+                workplaceId: auditContext.workspaceId,
                 isDeleted: { $ne: true }
             }).session(session);
 
@@ -1188,9 +1205,8 @@ class ManualLabService {
 
             // Log audit event for critical alerts
             const auditContext: AuditContext = {
-                userId: request.requestedBy,
-                workplaceId: request.workplaceId,
-                userRole: 'pharmacist'
+                userId: request.requestedBy.toString(),
+                workspaceId: request.workplaceId.toString()
             };
 
             await AuditService.logActivity(auditContext, {
@@ -1354,9 +1370,8 @@ class ManualLabService {
     ): Promise<void> {
         try {
             const auditContext: AuditContext = {
-                userId,
-                workplaceId,
-                userRole: 'pharmacist' // Simplified - in production would get from user
+                userId: userId.toString(),
+                workspaceId: workplaceId.toString()
             };
 
             await AuditService.logActivity(auditContext, {

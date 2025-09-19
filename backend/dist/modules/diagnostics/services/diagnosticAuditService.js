@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
 const logger_1 = __importDefault(require("../../../utils/logger"));
-const auditService_1 = __importDefault(require("../../../services/auditService"));
+const auditService_1 = require("../../../services/auditService");
 class DiagnosticAuditService {
     async logAuditEvent(event) {
         try {
@@ -39,7 +39,7 @@ class DiagnosticAuditService {
                 complianceCategory: event.details?.complianceCategory,
                 riskLevel: event.severity,
             };
-            await auditService_1.default.logActivity(auditContext, auditLogData);
+            await auditService_1.AuditService.logActivity(auditContext, auditLogData);
             logger_1.default.info('Diagnostic audit event logged', {
                 eventType: event.eventType,
                 entityType: event.entityType,
@@ -227,14 +227,14 @@ class DiagnosticAuditService {
             const filters = {
                 startDate: searchCriteria.dateRange?.start,
                 endDate: searchCriteria.dateRange?.end,
-                userId: searchCriteria.userIds?.[0] ? new mongoose_1.Types.ObjectId(searchCriteria.userIds[0]) : undefined,
+                userId: searchCriteria.userIds?.[0],
                 action: searchCriteria.actions?.[0]
             };
             const options = {
                 page: Math.floor((searchCriteria.offset || 0) / (searchCriteria.limit || 50)) + 1,
                 limit: searchCriteria.limit || 50
             };
-            const results = await auditService_1.default.getAuditLogs(new mongoose_1.Types.ObjectId(searchCriteria.workplaceId), filters, options);
+            const results = await auditService_1.AuditService.getAuditLogs(filters);
             const diagnosticEvents = results.logs.filter((log) => log.details?.entityType &&
                 ['diagnostic_request', 'diagnostic_result', 'lab_order', 'lab_result', 'follow_up', 'adherence'].includes(log.details.entityType));
             return {

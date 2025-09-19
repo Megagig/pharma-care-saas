@@ -3,13 +3,13 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { jest } from '@jest/globals';
 
 
-import * as openRouterService from '../services/openRouterService';
-import * as rxnormService from '../services/rxnormService';
-import * as openfdaService from '../services/openfdaService';
+import * as openRouterService from '../../../services/openRouterService';
+import * as rxnormService from '../../../services/rxnormService';
+import * as openfdaService from '../../../services/openfdaService';
 
-jest.mock('../services/openRouterService');
-jest.mock('../services/rxnormService');
-jest.mock('../services/openfdaService');
+jest.mock('../../../services/openRouterService');
+jest.mock('../../../services/rxnormService');
+jest.mock('../../../services/openfdaService');
 
 // Extend Jest timeout for integration tests
 jest.setTimeout(30000);
@@ -96,15 +96,15 @@ declare global {
     mockExternalAPI: (service: string, mockFn: jest.Mock) => {
         switch (service) {
             case 'openrouter':
-                openRouterService.generateDiagnosticAnalysis = mockFn;
+                (openRouterService as any).generateDiagnosticAnalysis = mockFn;
                 break;
             case 'rxnorm':
-                rxnormService.searchDrug = mockFn;
-                rxnormService.getDrugInteractions = mockFn;
+                (rxnormService as any).searchDrug = mockFn;
+                (rxnormService as any).getDrugInteractions = mockFn;
                 break;
             case 'openfda':
-                openfdaService.getAdverseEvents = mockFn;
-                openfdaService.getDrugLabeling = mockFn;
+                (openfdaService as any).getAdverseEvents = mockFn;
+                (openfdaService as any).getDrugLabeling = mockFn;
                 break;
         }
     },
