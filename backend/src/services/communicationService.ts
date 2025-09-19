@@ -1,30 +1,21 @@
 import mongoose from 'mongoose';
-import Conversation, { IConversation, IConversationParticipant } from '../models/Conversation';
+import Conversation, { IConversation } from '../models/Conversation';
 import Message, { IMessage } from '../models/Message';
-import CommunicationAuditLog from '../models/CommunicationAuditLog';
-import { encryptionService } from './encryptionService';
+import User from '../models/User';
+import Patient from '../models/Patient';
 import logger from '../utils/logger';
+import { notificationService } from './notificationService';
 
 export interface CreateConversationData {
     title?: string;
     type: 'direct' | 'group' | 'patient_query' | 'clinical_consultation';
-    participants: {
-        userId: string;
-        role: 'pharmacist' | 'doctor' | 'patient' | 'pharmacy_team' | 'intern_pharmacist';
-        permissions?: string[];
-    }[];
+    participants: string[];
     patientId?: string;
     caseId?: string;
     priority?: 'low' | 'normal' | 'high' | 'urgent';
     tags?: string[];
-    workplaceId: string;
     createdBy: string;
-    clinicalContext?: {
-        diagnosis?: string;
-        medications?: string[];
-        conditions?: string[];
-        interventionIds?: string[];
-    };
+    workplaceId: string;
 }
 
 export interface SendMessageData {
@@ -33,27 +24,8 @@ export interface SendMessageData {
     content: {
         text?: string;
         type: 'text' | 'file' | 'image' | 'clinical_note' | 'system' | 'voice_note';
-        attachments?: {
-            fileId: string;
-            fileName: string;
-            fileSize: number;
-            mimeType: string;
-            secureUrl: string;
-            thumbnailUrl?: string;
-        }[];
-        metadata?: {
-            originalText?: string;
-            clinicalData?: {
-                patientId?: string;
-                interventionId?: string;
-                medicationId?: string;
-            };
-            systemAction?: {
-                action: string;
-                performedBy: string;
-                timestamp: Date;
-            };
-        };
+        attachments?: any[];
+        metadata?: any;
     };
     threadId?: string;
     parentMessageId?: string;
@@ -63,324 +35,336 @@ export interface SendMessageData {
 }
 
 export interface ConversationFilters {
-    type?: string;
-    status?: string;
-    priority?: string;
+    status?: 'active' | 'archived' | 'resolved' | 'closed';
+    type?: 'direct' | 'group' | 'patient_query' | 'clinical_consultation';
+    priority?: 'low' | 'normal' | 'high' | 'urgent';
     patientId?: string;
     tags?: string[];
+    search?: string;
     limit?: number;
     offset?: number;
 }
 
-export interface PaginationOptions {
+export interface MessageFilters {
+    type?: 'text' | 'file' | 'image' | 'clinical_note' | 'system' | 'voice_note';
+    senderId?: string;
+    mentions?: string;
+    priority?: 'normal' | 'high' | 'urgent';
+    before?: Date;
+    after?: Date;
     limit?: number;
-    before?: string;
-    after?: string;
-    threadId?: string;
+    offset?: number;
 }
 
 export interface SearchFilters {
     conversationId?: string;
     senderId?: string;
     type?: string;
-    workplaceId: string;
+    priority?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
     limit?: number;
 }
 
 /**
- * CommunicationService handles secure messaging and conversation management
- * for healthcare providers with HIPAA compliance and role-based access control
+ * Service for managing conversations and messages
  */
 export class CommunicationService {
     /**
-     * Create a new conversation with participants and security settings
+     * Create a new conversation
      */
     async createConversation(data: CreateConversationData): Promise<IConversation> {
         try {
-            // Validate participants
-            if (!data.participants || data.participants.length === 0) {
-                throw new Error('Conversation must have at least one participant');
+            // Validate participants exist and belong to the same workplace
+            const participants = await User.find({
+                _id: { $in: data.participants },
+                workplaceId: data.workplaceId,
+            }).select('_id role firstName lastName');
+
+            if (participants.length !== data.participants.length) {
+                throw new Error('Some participants not found or not in the same workplace');
             }
 
-            if (data.participants.length > 50) {
-                throw new Error('Conversation cannot have more than 50 participants');
+            // Validate patient if provided
+            if (data.patientId) {
+                const patient = await Patient.findOne({
+                    _id: data.patientId,
+                    workplaceId: data.workplaceId,
+                });
+
+                if (!patient) {
+                    throw new Error('Patient not found or not in the same workplace');
+                }
             }
 
-            // Validate patient-related conversation types
-            if (['patient_query', 'clinical_consultation'].includes(data.type) && !data.patientId) {
-                throw new Error('Patient ID is required for patient queries and clinical consultations');
-            }
-
-            // Generate encryption key for the conversation
-            const encryptionKeyId = await encryptionService.generateEncryptionKey();
-
-            // Create conversation document
-            const conversationData = {
+            // Create conversation
+            const conversation = new Conversation({
                 title: data.title,
                 type: data.type,
-                participants: data.participants.map(p => ({
-                    userId: new mongoose.Types.ObjectId(p.userId),
+                participants: participants.map(p => ({
+                    userId: p._id,
                     role: p.role,
                     joinedAt: new Date(),
-                    permissions: p.permissions || this.getDefaultPermissions(p.role),
+                    permissions: this.getDefaultPermissions(p.role),
                 })),
-                patientId: data.patientId ? new mongoose.Types.ObjectId(data.patientId) : undefined,
+                patientId: data.patientId,
                 caseId: data.caseId,
-                status: 'active' as const,
                 priority: data.priority || 'normal',
                 tags: data.tags || [],
-                lastMessageAt: new Date(),
-                workplaceId: new mongoose.Types.ObjectId(data.workplaceId),
-                createdBy: new mongoose.Types.ObjectId(data.createdBy),
+                createdBy: data.createdBy,
+                workplaceId: data.workplaceId,
                 metadata: {
                     isEncrypted: true,
-                    encryptionKeyId,
-                    clinicalContext: data.clinicalContext ? {
-                        diagnosis: data.clinicalContext.diagnosis,
-                        medications: data.clinicalContext.medications?.map(id => new mongoose.Types.ObjectId(id)),
-                        conditions: data.clinicalContext.conditions,
-                        interventionIds: data.clinicalContext.interventionIds?.map(id => new mongoose.Types.ObjectId(id)),
-                    } : undefined,
+                    priority: data.priority || 'normal',
+                    tags: data.tags || [],
                 },
-            };
+            });
 
-            const conversation = new Conversation(conversationData);
             await conversation.save();
 
-            // Log audit trail
-            await this.logAuditEvent({
-                action: 'conversation_created',
-                userId: data.createdBy,
-                targetId: conversation._id.toString(),
-                targetType: 'conversation',
-                details: {
-                    conversationId: conversation._id,
-                    type: data.type,
-                    participantCount: data.participants.length,
-                    patientId: data.patientId,
-                },
-                workplaceId: data.workplaceId,
-            });
+            // Create system message for conversation creation
+            await this.createSystemMessage(
+                conversation._id.toString(),
+                data.createdBy,
+                'conversation_created',
+                `Conversation "${conversation.title}" was created`,
+                data.workplaceId
+            );
 
-            logger.info('Conversation created successfully', {
-                conversationId: conversation._id,
-                type: data.type,
-                participantCount: data.participants.length,
-                createdBy: data.createdBy,
-            });
+            // Send notifications to participants (except creator)
+            const otherParticipants = participants.filter(p => p._id.toString() !== data.createdBy);
+            for (const participant of otherParticipants) {
+                await notificationService.createNotification({
+                    userId: participant._id.toString(),
+                    type: 'conversation_invite',
+                    title: 'New Conversation',
+                    content: `You've been added to a new conversation: ${conversation.title}`,
+                    data: {
+                        conversationId: conversation._id,
+                        senderId: data.createdBy,
+                    },
+                    priority: 'normal',
+                    deliveryChannels: {
+                        inApp: true,
+                        email: false,
+                        sms: false,
+                    },
+                    workplaceId: data.workplaceId,
+                });
+            }
 
+            logger.info(`Conversation ${conversation._id} created by user ${data.createdBy}`);
             return conversation;
         } catch (error) {
-            logger.error('Failed to create conversation', {
-                error: error instanceof Error ? error.message : error,
-                data,
-            });
-            throw new Error(`Failed to create conversation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            logger.error('Error creating conversation:', error);
+            throw error;
         }
     }
 
     /**
-     * Add a participant to an existing conversation
+     * Add participant to conversation
      */
     async addParticipant(
         conversationId: string,
         userId: string,
-        role: 'pharmacist' | 'doctor' | 'patient' | 'pharmacy_team' | 'intern_pharmacist',
+        role: string,
         addedBy: string,
-        permissions?: string[]
+        workplaceId: string
     ): Promise<void> {
         try {
-            const conversation = await Conversation.findById(conversationId);
+            const conversation = await Conversation.findOne({
+                _id: conversationId,
+                workplaceId,
+            });
+
             if (!conversation) {
                 throw new Error('Conversation not found');
             }
 
-            // Check if user is already a participant
-            const existingParticipant = conversation.participants.find(
-                p => p.userId.toString() === userId && !p.leftAt
-            );
-
-            if (existingParticipant) {
-                throw new Error('User is already a participant in this conversation');
+            // Check if user adding participant has permission
+            const adderRole = conversation.getParticipantRole(addedBy as any);
+            if (!adderRole || !['pharmacist', 'doctor'].includes(adderRole)) {
+                throw new Error('Insufficient permissions to add participants');
             }
 
-            // Add participant using the model method
-            conversation.addParticipant(
-                new mongoose.Types.ObjectId(userId),
-                role,
-                permissions || this.getDefaultPermissions(role)
-            );
+            // Validate user exists and belongs to workplace
+            const user = await User.findOne({
+                _id: userId,
+                workplaceId,
+            }).select('_id role firstName lastName');
 
+            if (!user) {
+                throw new Error('User not found or not in the same workplace');
+            }
+
+            // Add participant
+            conversation.addParticipant(user._id, role);
             await conversation.save();
 
-            // Log audit trail
-            await this.logAuditEvent({
-                action: 'participant_added',
-                userId: addedBy,
-                targetId: conversationId,
-                targetType: 'conversation',
-                details: {
+            // Create system message
+            await this.createSystemMessage(
+                conversationId,
+                addedBy,
+                'participant_added',
+                `${user.firstName} ${user.lastName} was added to the conversation`,
+                workplaceId
+            );
+
+            // Send notification to new participant
+            await notificationService.createNotification({
+                userId: userId,
+                type: 'conversation_invite',
+                title: 'Added to Conversation',
+                content: `You've been added to the conversation: ${conversation.title}`,
+                data: {
                     conversationId: conversation._id,
-                    addedUserId: userId,
-                    role,
+                    senderId: addedBy,
                 },
-                workplaceId: conversation.workplaceId.toString(),
+                priority: 'normal',
+                deliveryChannels: {
+                    inApp: true,
+                    email: false,
+                    sms: false,
+                },
+                workplaceId,
             });
 
-            logger.info('Participant added to conversation', {
-                conversationId,
-                userId,
-                role,
-                addedBy,
-            });
+            logger.info(`User ${userId} added to conversation ${conversationId} by ${addedBy}`);
         } catch (error) {
-            logger.error('Failed to add participant', {
-                error: error instanceof Error ? error.message : error,
-                conversationId,
-                userId,
-                role,
-            });
-            throw new Error(`Failed to add participant: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            logger.error('Error adding participant:', error);
+            throw error;
         }
     }
 
     /**
-     * Remove a participant from a conversation
+     * Remove participant from conversation
      */
     async removeParticipant(
         conversationId: string,
         userId: string,
-        removedBy: string
+        removedBy: string,
+        workplaceId: string
     ): Promise<void> {
         try {
-            const conversation = await Conversation.findById(conversationId);
+            const conversation = await Conversation.findOne({
+                _id: conversationId,
+                workplaceId,
+            });
+
             if (!conversation) {
                 throw new Error('Conversation not found');
             }
 
-            // Remove participant using the model method
-            conversation.removeParticipant(new mongoose.Types.ObjectId(userId));
+            // Check permissions (can remove self or if pharmacist/doctor)
+            const removerRole = conversation.getParticipantRole(removedBy as any);
+            if (userId !== removedBy && (!removerRole || !['pharmacist', 'doctor'].includes(removerRole))) {
+                throw new Error('Insufficient permissions to remove participants');
+            }
+
+            const user = await User.findById(userId).select('firstName lastName');
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            // Remove participant
+            conversation.removeParticipant(userId as any);
             await conversation.save();
 
-            // Log audit trail
-            await this.logAuditEvent({
-                action: 'participant_removed',
-                userId: removedBy,
-                targetId: conversationId,
-                targetType: 'conversation',
-                details: {
-                    conversationId: conversation._id,
-                    removedUserId: userId,
-                },
-                workplaceId: conversation.workplaceId.toString(),
-            });
+            // Create system message
+            const action = userId === removedBy ? 'participant_left' : 'participant_removed';
+            const message = userId === removedBy
+                ? `${user.firstName} ${user.lastName} left the conversation`
+                : `${user.firstName} ${user.lastName} was removed from the conversation`;
 
-            logger.info('Participant removed from conversation', {
+            await this.createSystemMessage(
                 conversationId,
-                userId,
                 removedBy,
-            });
+                action,
+                message,
+                workplaceId
+            );
+
+            logger.info(`User ${userId} removed from conversation ${conversationId} by ${removedBy}`);
         } catch (error) {
-            logger.error('Failed to remove participant', {
-                error: error instanceof Error ? error.message : error,
-                conversationId,
-                userId,
-            });
-            throw new Error(`Failed to remove participant: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            logger.error('Error removing participant:', error);
+            throw error;
         }
     }
 
     /**
-     * Send a message in a conversation with encryption
+     * Send a message
      */
     async sendMessage(data: SendMessageData): Promise<IMessage> {
         try {
-            // Validate conversation exists and user has permission
-            const conversation = await Conversation.findById(data.conversationId);
+            // Validate conversation exists and user is participant
+            const conversation = await Conversation.findOne({
+                _id: data.conversationId,
+                workplaceId: data.workplaceId,
+            });
+
             if (!conversation) {
                 throw new Error('Conversation not found');
             }
 
-            // Check if sender is a participant
-            if (!conversation.hasParticipant(new mongoose.Types.ObjectId(data.senderId))) {
+            if (!conversation.hasParticipant(data.senderId as any)) {
                 throw new Error('User is not a participant in this conversation');
             }
 
-            // Encrypt message content if it's text
-            let encryptedContent = data.content;
-            if (data.content.text && conversation.metadata.isEncrypted) {
-                const encryptedText = await encryptionService.encryptMessage(
-                    data.content.text,
-                    conversation.metadata.encryptionKeyId
-                );
-                encryptedContent = {
-                    ...data.content,
-                    text: encryptedText,
-                };
+            // Validate parent message if replying
+            if (data.parentMessageId) {
+                const parentMessage = await Message.findOne({
+                    _id: data.parentMessageId,
+                    conversationId: data.conversationId,
+                });
+
+                if (!parentMessage) {
+                    throw new Error('Parent message not found');
+                }
             }
 
-            // Create message document
-            const messageData = {
-                conversationId: new mongoose.Types.ObjectId(data.conversationId),
-                senderId: new mongoose.Types.ObjectId(data.senderId),
-                content: encryptedContent,
-                threadId: data.threadId ? new mongoose.Types.ObjectId(data.threadId) : undefined,
-                parentMessageId: data.parentMessageId ? new mongoose.Types.ObjectId(data.parentMessageId) : undefined,
-                mentions: data.mentions?.map(id => new mongoose.Types.ObjectId(id)) || [],
-                status: 'sent' as const,
+            // Create message
+            const message = new Message({
+                conversationId: data.conversationId,
+                senderId: data.senderId,
+                content: data.content,
+                threadId: data.threadId,
+                parentMessageId: data.parentMessageId,
+                mentions: data.mentions || [],
                 priority: data.priority || 'normal',
-                readBy: [],
-                reactions: [],
-                editHistory: [],
-                isEncrypted: conversation.metadata.isEncrypted,
-                encryptionKeyId: conversation.metadata.encryptionKeyId,
-                workplaceId: new mongoose.Types.ObjectId(data.workplaceId),
-                createdBy: new mongoose.Types.ObjectId(data.senderId),
-            };
+                workplaceId: data.workplaceId,
+                createdBy: data.senderId,
+            });
 
-            const message = new Message(messageData);
             await message.save();
 
-            // Update conversation's last message info
+            // Update conversation
             conversation.updateLastMessage(message._id);
-            conversation.incrementUnreadCount(new mongoose.Types.ObjectId(data.senderId));
+            conversation.incrementUnreadCount(data.senderId as any);
             await conversation.save();
 
-            // Log audit trail
-            await this.logAuditEvent({
-                action: 'message_sent',
-                userId: data.senderId,
-                targetId: message._id.toString(),
-                targetType: 'message',
-                details: {
-                    conversationId: data.conversationId,
-                    messageId: message._id,
-                    messageType: data.content.type,
-                    hasAttachments: !!(data.content.attachments && data.content.attachments.length > 0),
-                },
-                workplaceId: data.workplaceId,
-            });
+            // Populate sender data
+            await message.populate('senderId', 'firstName lastName role');
 
-            logger.info('Message sent successfully', {
-                messageId: message._id,
-                conversationId: data.conversationId,
-                senderId: data.senderId,
-                type: data.content.type,
-            });
+            // Handle mentions
+            if (data.mentions && data.mentions.length > 0) {
+                await this.handleMentions(data.mentions, message, conversation);
+            }
 
+            // Send notifications for urgent messages
+            if (data.priority === 'urgent') {
+                await this.handleUrgentMessageNotifications(message, conversation);
+            }
+
+            logger.debug(`Message sent by user ${data.senderId} in conversation ${data.conversationId}`);
             return message;
         } catch (error) {
-            logger.error('Failed to send message', {
-                error: error instanceof Error ? error.message : error,
-                conversationId: data.conversationId,
-                senderId: data.senderId,
-            });
-            throw new Error(`Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            logger.error('Error sending message:', error);
+            throw error;
         }
     }
 
     /**
-     * Get conversations for a user with filtering and pagination
+     * Get conversations for a user
      */
     async getConversations(
         userId: string,
@@ -389,19 +373,19 @@ export class CommunicationService {
     ): Promise<IConversation[]> {
         try {
             const query: any = {
-                workplaceId: new mongoose.Types.ObjectId(workplaceId),
-                'participants.userId': new mongoose.Types.ObjectId(userId),
+                workplaceId,
+                'participants.userId': userId,
                 'participants.leftAt': { $exists: false },
-                status: { $ne: 'closed' },
             };
-
-            // Apply filters
-            if (filters.type) {
-                query.type = filters.type;
-            }
 
             if (filters.status) {
                 query.status = filters.status;
+            } else {
+                query.status = { $ne: 'closed' };
+            }
+
+            if (filters.type) {
+                query.type = filters.type;
             }
 
             if (filters.priority) {
@@ -409,72 +393,78 @@ export class CommunicationService {
             }
 
             if (filters.patientId) {
-                query.patientId = new mongoose.Types.ObjectId(filters.patientId);
+                query.patientId = filters.patientId;
             }
 
             if (filters.tags && filters.tags.length > 0) {
                 query.tags = { $in: filters.tags };
             }
 
+            if (filters.search) {
+                query.$text = { $search: filters.search };
+            }
+
             const conversations = await Conversation.find(query)
-                .populate('participants.userId', 'firstName lastName role email')
+                .populate('participants.userId', 'firstName lastName role')
                 .populate('patientId', 'firstName lastName mrn')
-                .populate('lastMessageId', 'content.text content.type senderId createdAt')
+                .populate('lastMessageId', 'content.text senderId createdAt')
                 .sort({ lastMessageAt: -1 })
                 .limit(filters.limit || 50)
                 .skip(filters.offset || 0);
 
-            logger.debug('Retrieved conversations for user', {
-                userId,
-                workplaceId,
-                count: conversations.length,
-                filters,
-            });
-
             return conversations;
         } catch (error) {
-            logger.error('Failed to get conversations', {
-                error: error instanceof Error ? error.message : error,
-                userId,
-                workplaceId,
-                filters,
-            });
-            throw new Error(`Failed to get conversations: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            logger.error('Error getting conversations:', error);
+            throw error;
         }
     }
 
     /**
-     * Get messages for a conversation with pagination and decryption
+     * Get messages for a conversation
      */
     async getMessages(
         conversationId: string,
         userId: string,
-        pagination: PaginationOptions = {}
+        workplaceId: string,
+        filters: MessageFilters = {}
     ): Promise<IMessage[]> {
         try {
-            // Verify user has access to conversation
-            const conversation = await Conversation.findById(conversationId);
+            // Validate user is participant
+            const conversation = await Conversation.findOne({
+                _id: conversationId,
+                workplaceId,
+                'participants.userId': userId,
+                'participants.leftAt': { $exists: false },
+            });
+
             if (!conversation) {
-                throw new Error('Conversation not found');
+                throw new Error('Conversation not found or access denied');
             }
 
-            if (!conversation.hasParticipant(new mongoose.Types.ObjectId(userId))) {
-                throw new Error('User does not have access to this conversation');
+            const query: any = { conversationId };
+
+            if (filters.type) {
+                query['content.type'] = filters.type;
             }
 
-            const query: any = { conversationId: new mongoose.Types.ObjectId(conversationId) };
-
-            // Apply pagination filters
-            if (pagination.threadId) {
-                query.threadId = new mongoose.Types.ObjectId(pagination.threadId);
+            if (filters.senderId) {
+                query.senderId = filters.senderId;
             }
 
-            if (pagination.before) {
-                query.createdAt = { $lt: new Date(pagination.before) };
+            if (filters.mentions) {
+                query.mentions = filters.mentions;
             }
 
-            if (pagination.after) {
-                query.createdAt = { $gt: new Date(pagination.after) };
+            if (filters.priority) {
+                query.priority = filters.priority;
+            }
+
+            if (filters.before) {
+                query.createdAt = { ...query.createdAt, $lt: filters.before };
+            }
+
+            if (filters.after) {
+                query.createdAt = { ...query.createdAt, $gt: filters.after };
             }
 
             const messages = await Message.find(query)
@@ -482,204 +472,226 @@ export class CommunicationService {
                 .populate('mentions', 'firstName lastName role')
                 .populate('readBy.userId', 'firstName lastName')
                 .sort({ createdAt: -1 })
-                .limit(pagination.limit || 50);
+                .limit(filters.limit || 50)
+                .skip(filters.offset || 0);
 
-            // Decrypt message content if encrypted
-            const decryptedMessages = await Promise.all(
-                messages.map(async (message) => {
-                    if (message.isEncrypted && message.content.text && message.encryptionKeyId) {
-                        try {
-                            const decryptedText = await encryptionService.decryptMessage(
-                                message.content.text,
-                                message.encryptionKeyId
-                            );
-                            return {
-                                ...message.toObject(),
-                                content: {
-                                    ...message.content,
-                                    text: decryptedText,
-                                },
-                            };
-                        } catch (decryptError) {
-                            logger.warn('Failed to decrypt message', {
-                                messageId: message._id,
-                                error: decryptError instanceof Error ? decryptError.message : decryptError,
-                            });
-                            // Return message with encrypted content if decryption fails
-                            return message.toObject();
-                        }
-                    }
-                    return message.toObject();
-                })
-            );
-
-            logger.debug('Retrieved messages for conversation', {
-                conversationId,
-                userId,
-                count: messages.length,
-                pagination,
-            });
-
-            return decryptedMessages as IMessage[];
+            return messages;
         } catch (error) {
-            logger.error('Failed to get messages', {
-                error: error instanceof Error ? error.message : error,
-                conversationId,
-                userId,
-                pagination,
-            });
-            throw new Error(`Failed to get messages: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            logger.error('Error getting messages:', error);
+            throw error;
         }
     }
 
     /**
-     * Mark a message as read by a user
+     * Mark message as read
      */
-    async markMessageAsRead(messageId: string, userId: string): Promise<void> {
+    async markMessageAsRead(messageId: string, userId: string, workplaceId: string): Promise<void> {
         try {
-            const message = await Message.findById(messageId);
+            const message = await Message.findOne({
+                _id: messageId,
+                workplaceId,
+            });
+
             if (!message) {
                 throw new Error('Message not found');
             }
 
-            // Verify user has access to the conversation
-            const conversation = await Conversation.findById(message.conversationId);
-            if (!conversation || !conversation.hasParticipant(new mongoose.Types.ObjectId(userId))) {
-                throw new Error('User does not have access to this message');
+            // Validate user is participant in conversation
+            const conversation = await Conversation.findOne({
+                _id: message.conversationId,
+                'participants.userId': userId,
+                'participants.leftAt': { $exists: false },
+            });
+
+            if (!conversation) {
+                throw new Error('Access denied');
             }
 
-            // Mark message as read using model method
-            message.markAsRead(new mongoose.Types.ObjectId(userId));
+            message.markAsRead(userId as any);
             await message.save();
 
             // Update conversation unread count
-            conversation.markAsRead(new mongoose.Types.ObjectId(userId));
+            conversation.markAsRead(userId as any);
             await conversation.save();
 
-            // Log audit trail
-            await this.logAuditEvent({
-                action: 'message_read',
-                userId,
-                targetId: messageId,
-                targetType: 'message',
-                details: {
-                    conversationId: message.conversationId,
-                    messageId: message._id,
-                },
-                workplaceId: conversation.workplaceId.toString(),
-            });
-
-            logger.debug('Message marked as read', {
-                messageId,
-                userId,
-                conversationId: message.conversationId,
-            });
+            logger.debug(`Message ${messageId} marked as read by user ${userId}`);
         } catch (error) {
-            logger.error('Failed to mark message as read', {
-                error: error instanceof Error ? error.message : error,
-                messageId,
-                userId,
-            });
-            throw new Error(`Failed to mark message as read: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            logger.error('Error marking message as read:', error);
+            throw error;
         }
     }
 
     /**
-     * Search messages across conversations with filters
+     * Search messages
      */
     async searchMessages(
-        searchQuery: string,
+        workplaceId: string,
+        query: string,
         userId: string,
-        filters: SearchFilters
+        filters: SearchFilters = {}
     ): Promise<IMessage[]> {
         try {
-            if (!searchQuery || searchQuery.trim().length === 0) {
-                throw new Error('Search query cannot be empty');
-            }
-
-            // Build search query
-            const query: any = {
-                workplaceId: new mongoose.Types.ObjectId(filters.workplaceId),
-                $text: { $search: searchQuery },
+            const searchQuery: any = {
+                workplaceId,
+                $text: { $search: query },
             };
 
-            // Apply filters
+            // Only search in conversations where user is a participant
+            const userConversations = await Conversation.find({
+                workplaceId,
+                'participants.userId': userId,
+                'participants.leftAt': { $exists: false },
+            }).select('_id');
+
+            searchQuery.conversationId = { $in: userConversations.map(c => c._id) };
+
             if (filters.conversationId) {
-                query.conversationId = new mongoose.Types.ObjectId(filters.conversationId);
+                searchQuery.conversationId = filters.conversationId;
             }
 
             if (filters.senderId) {
-                query.senderId = new mongoose.Types.ObjectId(filters.senderId);
+                searchQuery.senderId = filters.senderId;
             }
 
             if (filters.type) {
-                query['content.type'] = filters.type;
+                searchQuery['content.type'] = filters.type;
             }
 
-            // Find messages and verify user access
-            const messages = await Message.find(query, { score: { $meta: 'textScore' } })
+            if (filters.priority) {
+                searchQuery.priority = filters.priority;
+            }
+
+            if (filters.dateFrom || filters.dateTo) {
+                searchQuery.createdAt = {};
+                if (filters.dateFrom) {
+                    searchQuery.createdAt.$gte = filters.dateFrom;
+                }
+                if (filters.dateTo) {
+                    searchQuery.createdAt.$lte = filters.dateTo;
+                }
+            }
+
+            const messages = await Message.find(searchQuery, { score: { $meta: 'textScore' } })
                 .populate('senderId', 'firstName lastName role')
-                .populate('conversationId', 'title type participants')
+                .populate('conversationId', 'title type')
                 .sort({ score: { $meta: 'textScore' }, createdAt: -1 })
                 .limit(filters.limit || 50);
 
-            // Filter messages based on user's conversation access
-            const accessibleMessages = messages.filter((message: any) => {
-                return message.conversationId.participants.some(
-                    (p: any) => p.userId.toString() === userId && !p.leftAt
-                );
-            });
-
-            // Decrypt message content if encrypted
-            const decryptedMessages = await Promise.all(
-                accessibleMessages.map(async (message) => {
-                    if (message.isEncrypted && message.content.text && message.encryptionKeyId) {
-                        try {
-                            const decryptedText = await encryptionService.decryptMessage(
-                                message.content.text,
-                                message.encryptionKeyId
-                            );
-                            return {
-                                ...message.toObject(),
-                                content: {
-                                    ...message.content,
-                                    text: decryptedText,
-                                },
-                            };
-                        } catch (decryptError) {
-                            logger.warn('Failed to decrypt message in search', {
-                                messageId: message._id,
-                                error: decryptError instanceof Error ? decryptError.message : decryptError,
-                            });
-                            return message.toObject();
-                        }
-                    }
-                    return message.toObject();
-                })
-            );
-
-            logger.info('Message search completed', {
-                searchQuery,
-                userId,
-                totalFound: messages.length,
-                accessibleCount: accessibleMessages.length,
-                filters,
-            });
-
-            return decryptedMessages as IMessage[];
+            return messages;
         } catch (error) {
-            logger.error('Failed to search messages', {
-                error: error instanceof Error ? error.message : error,
-                searchQuery,
-                userId,
-                filters,
-            });
-            throw new Error(`Failed to search messages: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            logger.error('Error searching messages:', error);
+            throw error;
         }
     }
 
     /**
-     * Get default permissions based on user role
+     * Create system message
+     */
+    private async createSystemMessage(
+        conversationId: string,
+        performedBy: string,
+        action: string,
+        text: string,
+        workplaceId: string
+    ): Promise<IMessage> {
+        const message = new Message({
+            conversationId,
+            senderId: performedBy,
+            content: {
+                text,
+                type: 'system',
+                metadata: {
+                    systemAction: {
+                        action,
+                        performedBy,
+                        timestamp: new Date(),
+                    },
+                },
+            },
+            workplaceId,
+            createdBy: performedBy,
+        });
+
+        await message.save();
+        return message;
+    }
+
+    /**
+     * Handle mention notifications
+     */
+    private async handleMentions(
+        mentions: string[],
+        message: IMessage,
+        conversation: IConversation
+    ): Promise<void> {
+        try {
+            for (const mentionedUserId of mentions) {
+                // Verify mentioned user is a participant
+                if (conversation.hasParticipant(mentionedUserId as any)) {
+                    await notificationService.createNotification({
+                        userId: mentionedUserId,
+                        type: 'mention',
+                        title: 'You were mentioned',
+                        content: `You were mentioned in ${conversation.title}`,
+                        data: {
+                            conversationId: conversation._id,
+                            messageId: message._id,
+                            senderId: message.senderId,
+                        },
+                        priority: 'normal',
+                        deliveryChannels: {
+                            inApp: true,
+                            email: false,
+                            sms: false,
+                        },
+                        workplaceId: conversation.workplaceId,
+                    });
+                }
+            }
+        } catch (error) {
+            logger.error('Error handling mentions:', error);
+        }
+    }
+
+    /**
+     * Handle urgent message notifications
+     */
+    private async handleUrgentMessageNotifications(
+        message: IMessage,
+        conversation: IConversation
+    ): Promise<void> {
+        try {
+            const participants = conversation.participants.filter(
+                p => !p.leftAt && p.userId.toString() !== message.senderId.toString()
+            );
+
+            for (const participant of participants) {
+                await notificationService.createNotification({
+                    userId: participant.userId.toString(),
+                    type: 'urgent_message',
+                    title: 'Urgent Message',
+                    content: `Urgent message in ${conversation.title}`,
+                    data: {
+                        conversationId: conversation._id,
+                        messageId: message._id,
+                        senderId: message.senderId,
+                    },
+                    priority: 'urgent',
+                    deliveryChannels: {
+                        inApp: true,
+                        email: true,
+                        sms: false,
+                    },
+                    workplaceId: conversation.workplaceId,
+                });
+            }
+        } catch (error) {
+            logger.error('Error handling urgent message notifications:', error);
+        }
+    }
+
+    /**
+     * Get default permissions based on role
      */
     private getDefaultPermissions(role: string): string[] {
         switch (role) {
@@ -688,186 +700,14 @@ export class CommunicationService {
             case 'pharmacist':
             case 'doctor':
                 return [
-                    'read_messages',
-                    'send_messages',
-                    'upload_files',
-                    'add_participants',
-                    'edit_conversation',
-                    'view_patient_data',
-                    'manage_clinical_context',
+                    'read_messages', 'send_messages', 'upload_files',
+                    'view_patient_data', 'manage_clinical_context'
                 ];
-            case 'intern_pharmacist':
-                return [
-                    'read_messages',
-                    'send_messages',
-                    'upload_files',
-                    'view_patient_data',
-                ];
-            case 'pharmacy_team':
-                return ['read_messages', 'send_messages', 'upload_files'];
             default:
                 return ['read_messages', 'send_messages'];
         }
     }
-
-    /**
-     * Log audit events for compliance tracking
-     */
-    private async logAuditEvent(data: {
-        action: string;
-        userId: string;
-        targetId: string;
-        targetType: string;
-        details: any;
-        workplaceId: string;
-        ipAddress?: string;
-        userAgent?: string;
-    }): Promise<void> {
-        try {
-            const auditLog = new CommunicationAuditLog({
-                action: data.action,
-                userId: new mongoose.Types.ObjectId(data.userId),
-                targetId: new mongoose.Types.ObjectId(data.targetId),
-                targetType: data.targetType,
-                details: data.details,
-                ipAddress: data.ipAddress || 'unknown',
-                userAgent: data.userAgent || 'unknown',
-                workplaceId: new mongoose.Types.ObjectId(data.workplaceId),
-                timestamp: new Date(),
-            });
-
-            await auditLog.save();
-        } catch (error) {
-            logger.error('Failed to log audit event', {
-                error: error instanceof Error ? error.message : error,
-                auditData: data,
-            });
-            // Don't throw error for audit logging failures to avoid breaking main functionality
-        }
-    }
-
-    /**
-     * Update conversation status (archive, resolve, close)
-     */
-    async updateConversationStatus(
-        conversationId: string,
-        status: 'active' | 'archived' | 'resolved' | 'closed',
-        userId: string
-    ): Promise<IConversation> {
-        try {
-            const conversation = await Conversation.findById(conversationId);
-            if (!conversation) {
-                throw new Error('Conversation not found');
-            }
-
-            // Verify user has permission to update conversation
-            const participant = conversation.participants.find(
-                p => p.userId.toString() === userId && !p.leftAt
-            );
-
-            if (!participant || !participant.permissions.includes('edit_conversation')) {
-                throw new Error('User does not have permission to update conversation status');
-            }
-
-            conversation.status = status;
-            await conversation.save();
-
-            // Log audit trail
-            await this.logAuditEvent({
-                action: 'conversation_status_updated',
-                userId,
-                targetId: conversationId,
-                targetType: 'conversation',
-                details: {
-                    conversationId: conversation._id,
-                    oldStatus: conversation.status,
-                    newStatus: status,
-                },
-                workplaceId: conversation.workplaceId.toString(),
-            });
-
-            logger.info('Conversation status updated', {
-                conversationId,
-                status,
-                userId,
-            });
-
-            return conversation;
-        } catch (error) {
-            logger.error('Failed to update conversation status', {
-                error: error instanceof Error ? error.message : error,
-                conversationId,
-                status,
-                userId,
-            });
-            throw new Error(`Failed to update conversation status: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-    }
-
-    /**
-     * Get conversation statistics for dashboard
-     */
-    async getConversationStats(userId: string, workplaceId: string): Promise<{
-        totalConversations: number;
-        unreadConversations: number;
-        activeQueries: number;
-        resolvedQueries: number;
-        urgentConversations: number;
-    }> {
-        try {
-            const baseQuery = {
-                workplaceId: new mongoose.Types.ObjectId(workplaceId),
-                'participants.userId': new mongoose.Types.ObjectId(userId),
-                'participants.leftAt': { $exists: false },
-            };
-
-            const [
-                totalConversations,
-                unreadConversations,
-                activeQueries,
-                resolvedQueries,
-                urgentConversations,
-            ] = await Promise.all([
-                Conversation.countDocuments({ ...baseQuery, status: { $ne: 'closed' } }),
-                Conversation.countDocuments({
-                    ...baseQuery,
-                    status: 'active',
-                    [`unreadCount.${userId}`]: { $gt: 0 },
-                }),
-                Conversation.countDocuments({
-                    ...baseQuery,
-                    type: 'patient_query',
-                    status: 'active',
-                }),
-                Conversation.countDocuments({
-                    ...baseQuery,
-                    type: 'patient_query',
-                    status: 'resolved',
-                }),
-                Conversation.countDocuments({
-                    ...baseQuery,
-                    priority: 'urgent',
-                    status: 'active',
-                }),
-            ]);
-
-            return {
-                totalConversations,
-                unreadConversations,
-                activeQueries,
-                resolvedQueries,
-                urgentConversations,
-            };
-        } catch (error) {
-            logger.error('Failed to get conversation statistics', {
-                error: error instanceof Error ? error.message : error,
-                userId,
-                workplaceId,
-            });
-            throw new Error(`Failed to get conversation statistics: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-    }
 }
 
-// Export singleton instance
 export const communicationService = new CommunicationService();
+export default communicationService;
