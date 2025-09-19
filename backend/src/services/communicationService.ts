@@ -5,6 +5,7 @@ import User from '../models/User';
 import Patient from '../models/Patient';
 import logger from '../utils/logger';
 import { notificationService } from './notificationService';
+import CommunicationAuditService from './communicationAuditService';
 
 export interface CreateConversationData {
     title?: string;

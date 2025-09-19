@@ -194,6 +194,10 @@ app.use('/api/diagnostics', diagnosticRoutes);
 // Communication Hub routes
 app.use('/api/communication', communicationRoutes);
 
+// Communication Audit routes
+import communicationAuditRoutes from './routes/communicationAuditRoutes';
+app.use('/api/communication/audit', communicationAuditRoutes);
+
 // Clinical Notes routes - added special debug log
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/notes')) {
