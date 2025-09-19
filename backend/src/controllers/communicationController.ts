@@ -6,6 +6,7 @@ import Message from '../models/Message';
 import User from '../models/User';
 import Patient from '../models/Patient';
 import logger from '../utils/logger';
+import FileUploadService from '../services/fileUploadService';
 
 interface AuthenticatedRequest extends Request {
     user?: {
@@ -891,6 +892,325 @@ export class CommunicationController {
             res.status(500).json({
                 success: false,
                 message: 'Failed to get analytics summary',
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Upload files for communication
+     */
+    async uploadFiles(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const files = req.files as Express.Multer.File[];
+            const { conversationId, messageType = 'file' } = req.body;
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+
+            if (!files || files.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'No files uploaded',
+                });
+            }
+
+            // Validate conversation if provided
+            if (conversationId) {
+                const conversation = await Conversation.findOne({
+                    _id: conversationId,
+                    workplaceId,
+                    'participants.userId': userId,
+                    'participants.leftAt': { $exists: false },
+                });
+
+                if (!conversation) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Conversation not found or access denied',
+                    });
+                }
+            }
+
+            // Process uploaded files
+            const processedFiles = [];
+            const errors = [];
+
+            for (const file of files) {
+                try {
+                    const result = await FileUploadService.processUploadedFile(file);
+
+                    if (result.success) {
+                        processedFiles.push({
+                            fileId: result.fileData.fileName,
+                            fileName: result.fileData.originalName,
+                            fileSize: result.fileData.size,
+                            mimeType: result.fileData.mimeType,
+                            secureUrl: result.fileData.url,
+                            uploadedAt: result.fileData.uploadedAt,
+                        });
+                    } else {
+                        errors.push({
+                            fileName: file.originalname,
+                            error: result.error,
+                        });
+                    }
+                } catch (error) {
+                    errors.push({
+                        fileName: file.originalname,
+                        error: error.message,
+                    });
+                }
+            }
+
+            // If sending as message, create message with attachments
+            if (conversationId && processedFiles.length > 0) {
+                const messageData = {
+                    conversationId,
+                    senderId: userId,
+                    workplaceId,
+                    content: {
+                        text: `Shared ${processedFiles.length} file(s)`,
+                        type: messageType as any,
+                        attachments: processedFiles,
+                    },
+                };
+
+                const message = await communicationService.sendMessage(messageData);
+
+                // Notify via socket
+                const app = req.app;
+                const communicationSocket = app.get('communicationSocket');
+                if (communicationSocket) {
+                    communicationSocket.sendMessageNotification(conversationId, message, userId);
+                }
+            }
+
+            res.status(201).json({
+                success: true,
+                data: {
+                    uploadedFiles: processedFiles,
+                    errors: errors.length > 0 ? errors : undefined,
+                },
+                message: `Successfully uploaded ${processedFiles.length} file(s)`,
+            });
+        } catch (error) {
+            logger.error('Error uploading files:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to upload files',
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Get file details and secure download URL
+     */
+    async getFile(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const { fileId } = req.params;
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+
+            // Check if file exists
+            if (!FileUploadService.fileExists(fileId)) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'File not found',
+                });
+            }
+
+            // Find message containing this file to verify access
+            const message = await Message.findOne({
+                workplaceId,
+                'content.attachments.fileId': fileId,
+            }).populate('conversationId');
+
+            if (!message) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'File not found in any accessible conversation',
+                });
+            }
+
+            // Verify user has access to the conversation
+            const conversation = await Conversation.findOne({
+                _id: message.conversationId,
+                'participants.userId': userId,
+                'participants.leftAt': { $exists: false },
+            });
+
+            if (!conversation) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Access denied to this file',
+                });
+            }
+
+            // Get file attachment details
+            const attachment = message.content.attachments?.find(att => att.fileId === fileId);
+            if (!attachment) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'File attachment not found',
+                });
+            }
+
+            // Get file stats
+            const fileStats = FileUploadService.getFileStats(fileId);
+
+            res.json({
+                success: true,
+                data: {
+                    fileId: attachment.fileId,
+                    fileName: attachment.fileName,
+                    fileSize: attachment.fileSize,
+                    mimeType: attachment.mimeType,
+                    secureUrl: attachment.secureUrl,
+                    uploadedAt: attachment.uploadedAt,
+                    conversationId: message.conversationId,
+                    messageId: message._id,
+                    stats: fileStats ? {
+                        size: fileStats.size,
+                        created: fileStats.birthtime,
+                        modified: fileStats.mtime,
+                    } : null,
+                },
+            });
+        } catch (error) {
+            logger.error('Error getting file:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get file',
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Delete uploaded file
+     */
+    async deleteFile(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const { fileId } = req.params;
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+
+            // Find message containing this file
+            const message = await Message.findOne({
+                workplaceId,
+                'content.attachments.fileId': fileId,
+            });
+
+            if (!message) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'File not found',
+                });
+            }
+
+            // Verify user is the sender or has admin role
+            const user = await User.findById(userId);
+            if (message.senderId.toString() !== userId && !['admin', 'super_admin'].includes(user?.role || '')) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Only the file uploader or admin can delete files',
+                });
+            }
+
+            // Delete file from filesystem
+            const filePath = FileUploadService.getFilePath(fileId);
+            await FileUploadService.deleteFile(filePath);
+
+            // Remove attachment from message
+            message.content.attachments = message.content.attachments?.filter(att => att.fileId !== fileId) || [];
+            await message.save();
+
+            res.json({
+                success: true,
+                message: 'File deleted successfully',
+            });
+        } catch (error) {
+            logger.error('Error deleting file:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to delete file',
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Get all files shared in a conversation
+     */
+    async getConversationFiles(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const conversationId = req.params.id;
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+            const { type, limit = 50, offset = 0 } = req.query;
+
+            // Verify user has access to conversation
+            const conversation = await Conversation.findOne({
+                _id: conversationId,
+                workplaceId,
+                'participants.userId': userId,
+                'participants.leftAt': { $exists: false },
+            });
+
+            if (!conversation) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Conversation not found or access denied',
+                });
+            }
+
+            // Build query for messages with attachments
+            const query: any = {
+                conversationId,
+                'content.attachments': { $exists: true, $ne: [] },
+            };
+
+            if (type) {
+                query['content.type'] = type;
+            }
+
+            // Get messages with files
+            const messages = await Message.find(query)
+                .populate('senderId', 'firstName lastName role')
+                .sort({ createdAt: -1 })
+                .limit(parseInt(limit as string))
+                .skip(parseInt(offset as string));
+
+            // Extract file information
+            const files = [];
+            for (const message of messages) {
+                if (message.content.attachments) {
+                    for (const attachment of message.content.attachments) {
+                        files.push({
+                            ...attachment,
+                            messageId: message._id,
+                            senderId: message.senderId,
+                            sentAt: message.createdAt,
+                        });
+                    }
+                }
+            }
+
+            res.json({
+                success: true,
+                data: files,
+                pagination: {
+                    limit: parseInt(limit as string),
+                    offset: parseInt(offset as string),
+                    total: files.length,
+                },
+            });
+        } catch (error) {
+            logger.error('Error getting conversation files:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get conversation files',
                 error: error.message,
             });
         }

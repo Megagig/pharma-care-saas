@@ -1,19 +1,21 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
-import auth from '../middlewares/auth';
-import { communicationController } from '../controllers/communicationController';
+import { auth } from '../middlewares/auth';
+import communicationController from '../controllers/communicationController';
+import { uploadMiddleware } from '../services/fileUploadService';
 
 const router = express.Router();
 
 // Validation middleware
-const handleValidationErrors = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+const handleValidationErrors = (req: express.Request, res: express.Response, next: express.NextFunction): void => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({
+        res.status(400).json({
             success: false,
             message: 'Validation errors',
             errors: errors.array(),
         });
+        return;
     }
     next();
 };
@@ -344,6 +346,69 @@ router.get(
     ],
     handleValidationErrors,
     communicationController.getAnalyticsSummary
+);
+
+// File upload routes
+
+/**
+ * @route   POST /api/communication/upload
+ * @desc    Upload files for communication
+ * @access  Private
+ */
+router.post(
+    '/upload',
+    auth,
+    uploadMiddleware.array('files', 10), // Allow up to 10 files
+    [
+        body('conversationId').optional().isMongoId(),
+        body('messageType').optional().isIn(['file', 'image', 'voice_note']),
+    ],
+    handleValidationErrors,
+    communicationController.uploadFiles
+);
+
+/**
+ * @route   GET /api/communication/files/:fileId
+ * @desc    Get file details and secure download URL
+ * @access  Private
+ */
+router.get(
+    '/files/:fileId',
+    auth,
+    [param('fileId').isString().trim()],
+    handleValidationErrors,
+    communicationController.getFile
+);
+
+/**
+ * @route   DELETE /api/communication/files/:fileId
+ * @desc    Delete uploaded file
+ * @access  Private
+ */
+router.delete(
+    '/files/:fileId',
+    auth,
+    [param('fileId').isString().trim()],
+    handleValidationErrors,
+    communicationController.deleteFile
+);
+
+/**
+ * @route   GET /api/communication/conversations/:id/files
+ * @desc    Get all files shared in a conversation
+ * @access  Private
+ */
+router.get(
+    '/conversations/:id/files',
+    auth,
+    [
+        param('id').isMongoId(),
+        query('type').optional().isIn(['file', 'image', 'voice_note']),
+        query('limit').optional().isInt({ min: 1, max: 100 }),
+        query('offset').optional().isInt({ min: 0 }),
+    ],
+    handleValidationErrors,
+    communicationController.getConversationFiles
 );
 
 /**

@@ -1,6 +1,6 @@
 import express from 'express';
 import { auth } from '../middlewares/auth';
-import { rbac } from '../middlewares/rbac';
+import { requireRole } from '../middlewares/rbac';
 import { notificationValidation } from '../middlewares/communicationValidation';
 import {
     createNotification,
@@ -52,8 +52,8 @@ router.post('/patient-query', createPatientQueryNotification);
 router.post('/test', sendTestNotification);
 
 // Admin-only routes
-router.post('/process-scheduled', rbac(['admin', 'super_admin']), processScheduledNotifications);
-router.post('/retry-failed', rbac(['admin', 'super_admin']), retryFailedNotifications);
-router.delete('/expired', rbac(['admin', 'super_admin']), deleteExpiredNotifications);
+router.post('/process-scheduled', requireRole('admin', 'super_admin'), processScheduledNotifications);
+router.post('/retry-failed', requireRole('admin', 'super_admin'), retryFailedNotifications);
+router.delete('/expired', requireRole('admin', 'super_admin'), deleteExpiredNotifications);
 
 export default router;
