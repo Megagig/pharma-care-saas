@@ -1,0 +1,30 @@
+import { Response, NextFunction } from 'express';
+import { AuthRequest } from '../types/auth';
+export declare const requireInterventionCreate: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const requireInterventionRead: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const requireInterventionUpdate: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const requireInterventionDelete: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const requireInterventionAssign: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const requireInterventionReports: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const requireInterventionExport: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const checkInterventionAccess: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const checkInterventionModifyAccess: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const checkInterventionAssignAccess: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const checkInterventionReportAccess: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const checkInterventionPlanLimits: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+declare const _default: {
+    requireInterventionCreate: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+    requireInterventionRead: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+    requireInterventionUpdate: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+    requireInterventionDelete: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+    requireInterventionAssign: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+    requireInterventionReports: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+    requireInterventionExport: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+    checkInterventionAccess: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+    checkInterventionModifyAccess: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+    checkInterventionAssignAccess: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+    checkInterventionReportAccess: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+    checkInterventionPlanLimits: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+};
+export default _default;
+//# sourceMappingURL=clinicalInterventionRBAC.d.ts.map

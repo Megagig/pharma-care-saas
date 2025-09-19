@@ -100,28 +100,32 @@ export const getNotes = async (
     console.log('Total documents matching query:', total);
     console.log('=== END GET NOTES DEBUG ===');
 
-    // Log audit trail for data access
-    await AuditService.createAuditLog({
-      action: 'LIST_CLINICAL_NOTES',
-      userId: req.user?.id || 'unknown',
-      details: {
-        filters: {
-          type,
-          priority,
-          patientId,
-          clinicianId,
-          dateFrom,
-          dateTo,
-          isConfidential,
+    // Log audit trail for data access (non-blocking)
+    try {
+      await AuditService.createAuditLog({
+        action: 'LIST_CLINICAL_NOTES',
+        userId: req.user?.id || 'unknown',
+        details: {
+          filters: {
+            type,
+            priority,
+            patientId,
+            clinicianId,
+            dateFrom,
+            dateTo,
+            isConfidential,
+          },
+          resultCount: notes.length,
+          page: Number(page),
+          limit: Number(limit),
+          confidentialNotesIncluded: query.isConfidential === true,
         },
-        resultCount: notes.length,
-        page: Number(page),
-        limit: Number(limit),
-        confidentialNotesIncluded: query.isConfidential === true,
-      },
-      complianceCategory: 'data_access',
-      riskLevel: query.isConfidential === true ? 'high' : 'low',
-    });
+        complianceCategory: 'data_access',
+        riskLevel: query.isConfidential === true ? 'high' : 'low',
+      });
+    } catch (auditError) {
+      console.error('Failed to create audit log for list notes:', auditError);
+    }
 
     res.json({
       success: true,
@@ -783,22 +787,27 @@ export const searchNotes = async (
     console.log('Total documents matching query:', total);
     console.log('=== END SEARCH NOTES DEBUG ===');
 
-    // Log audit trail for search
-    await AuditService.createAuditLog({
-      action: 'SEARCH_CLINICAL_NOTES',
-      userId: req.user?.id || 'unknown',
-      resourceType: 'ClinicalNote',
-      resourceId: new mongoose.Types.ObjectId(),
-      details: {
-        searchQuery,
-        filters: { type, priority, patientId, dateFrom, dateTo },
-        resultCount: notes.length,
-        page: Number(page),
-        limit: Number(limit),
-      },
-      complianceCategory: 'data_access',
-      riskLevel: 'medium',
-    });
+    // Log audit trail for search (non-blocking)
+    try {
+      await AuditService.createAuditLog({
+        action: 'SEARCH_CLINICAL_NOTES',
+        userId: req.user?.id || 'unknown',
+        resourceType: 'ClinicalNote',
+        resourceId: new mongoose.Types.ObjectId(),
+        details: {
+          searchQuery,
+          filters: { type, priority, patientId, dateFrom, dateTo },
+          resultCount: notes.length,
+          page: Number(page),
+          limit: Number(limit),
+        },
+        complianceCategory: 'data_access',
+        riskLevel: 'medium',
+      });
+    } catch (auditError) {
+      console.error('Failed to create audit log for search:', auditError);
+      // Continue with the response even if audit logging fails
+    }
 
     res.json({
       notes,

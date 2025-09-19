@@ -1738,7 +1738,7 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
 
       {/* Delete Confirmation Dialog */}
       <Dialog
-        open={ui.isDeleteConfirmOpen}
+        open={ui?.isDeleteConfirmOpen || false}
         onClose={() => setDeleteConfirmOpen(false)}
       >
         <DialogTitle>Delete Note</DialogTitle>
@@ -1764,7 +1764,7 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
 
       {/* Bulk Delete Confirmation Dialog */}
       <Dialog
-        open={ui.isBulkDeleteConfirmOpen}
+        open={ui?.isBulkDeleteConfirmOpen || false}
         onClose={() => setBulkDeleteConfirmOpen(false)}
       >
         <DialogTitle>Delete Multiple Notes</DialogTitle>
