@@ -359,7 +359,7 @@ export const adminService = {
   // System Health
   async getSystemHealth() {
     try {
-      const response = await apiClient.get('/admin/system/health');
+      const response = await apiClient.get('/admin/dashboard/system-health');
       return response.data;
     } catch (error) {
       console.error('Error fetching system health:', error);

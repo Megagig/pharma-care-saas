@@ -21,14 +21,12 @@ export const testApiEndpoints = async () => {
 
     try {
         // Test medications endpoint
-        console.log('Testing /api/medications...');
-        const medicationsResponse = await api.get('/medications', { params: { limit: 5 } });
+        console.log('Testing /api/medication-management/dashboard/stats...');
+        const medicationsResponse = await api.get('/medication-management/dashboard/stats');
         console.log('Medications Response:', JSON.stringify(medicationsResponse.data, null, 2));
 
-        if (medicationsResponse.data?.success && medicationsResponse.data?.data?.medications) {
-            const sampleMedication = medicationsResponse.data.data.medications[0];
-            console.log('Sample Medication:', JSON.stringify(sampleMedication, null, 2));
-            console.log('Medication fields:', Object.keys(sampleMedication || {}));
+        if (medicationsResponse.data?.success && medicationsResponse.data?.data) {
+            console.log('Medication stats:', JSON.stringify(medicationsResponse.data.data, null, 2));
         }
 
     } catch (error) {

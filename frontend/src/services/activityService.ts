@@ -85,18 +85,20 @@ class ActivityService {
             // Process medication updates
             if (medicationsResponse.status === 'fulfilled' && medicationsResponse.value?.data) {
                 const medicationsArray = this.extractArrayFromResponse(medicationsResponse.value.data, 'medications');
-                medicationsArray.forEach((medication: any) => {
+                medicationsArray.forEach((medication: any, index: number) => {
+                    // Ensure we have a valid ID to prevent duplicate keys
+                    const medicationId = medication._id || medication.id || `temp-${Date.now()}-${index}`;
                     systemActivities.push({
-                        id: `medication-${medication._id}`,
+                        id: `medication-${medicationId}`,
                         type: 'medication_update',
                         title: 'Medication Update',
-                        description: `${medication.name} ${medication.status === 'active' ? 'prescribed' : medication.status}`,
+                        description: `${medication.name || 'Unknown Medication'} ${medication.status === 'active' ? 'prescribed' : medication.status || 'status unknown'}`,
                         patientId: medication.patientId?._id,
                         patientName: medication.patientId ? `${medication.patientId.firstName} ${medication.patientId.lastName}` : 'Unknown Patient',
                         userId: medication.prescribedBy?._id,
                         userName: medication.prescribedBy ? `${medication.prescribedBy.firstName} ${medication.prescribedBy.lastName}` : 'System',
-                        createdAt: medication.updatedAt || medication.createdAt,
-                        metadata: { medicationName: medication.name, dosage: medication.dosage, status: medication.status }
+                        createdAt: medication.updatedAt || medication.createdAt || new Date().toISOString(),
+                        metadata: { medicationName: medication.name || 'Unknown', dosage: medication.dosage, status: medication.status }
                     });
                 });
             }
@@ -104,7 +106,7 @@ class ActivityService {
             // Process MTR sessions
             if (mtrsResponse.status === 'fulfilled' && mtrsResponse.value?.data) {
                 const mtrsArray = this.extractArrayFromResponse(mtrsResponse.value.data);
-                mtrsArray.forEach((mtr: any) => {
+                mtrsArray.forEach((mtr: unknown) => {
                     systemActivities.push({
                         id: `mtr-${mtr._id}`,
                         type: 'mtr_session',

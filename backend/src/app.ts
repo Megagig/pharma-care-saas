@@ -24,6 +24,7 @@ import visitRoutes from './routes/visitRoutes';
 import noteRoutes from './routes/noteRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import adminRoutes from './routes/admin';
+import adminDashboardRoutes from './routes/adminDashboardRoutes';
 import licenseRoutes from './routes/license';
 import subscriptionManagementRoutes from './routes/subscription';
 import subAnalyticsRoutes from './routes/subscriptionManagement';
@@ -245,6 +246,7 @@ app.use('/api/email', emailWebhookRoutes);
 
 // RBAC and enhanced features
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/license', licenseRoutes);
 app.use('/api/subscription-management', subAnalyticsRoutes); // Using correct subscription Management routes
 app.use('/api/subscription', subscriptionManagementRoutes); // Old routes at /api/subscription
