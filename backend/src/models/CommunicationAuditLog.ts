@@ -330,7 +330,7 @@ communicationAuditLogSchema.pre('save', function (this: ICommunicationAuditLog) 
 
     // Set compliance category based on action if not provided
     if (!this.complianceCategory) {
-        const actionToCategoryMap: Record<string, string> = {
+        const actionToCategoryMap: Record<string, 'communication_security' | 'data_access' | 'patient_privacy' | 'message_integrity' | 'file_security' | 'audit_trail' | 'encryption_compliance' | 'notification_delivery'> = {
             'message_sent': 'communication_security',
             'message_read': 'data_access',
             'message_edited': 'message_integrity',

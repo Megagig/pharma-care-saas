@@ -64,6 +64,7 @@
   "dependencies": {
     "@types/moment": "^2.11.29",
     "@types/node-cron": "^3.0.11",
+    "@types/socket.io": "^3.0.1",
     "bcryptjs": "^2.4.3",
     "canvas": "^3.2.0",
     "cloudinary": "^1.40.0",
@@ -91,6 +92,7 @@
     "puppeteer": "^24.20.0",
     "qrcode": "^1.5.4",
     "resend": "^6.0.2",
+    "socket.io": "^4.8.1",
     "stripe": "^12.18.0",
     "twilio": "^4.15.0",
     "validator": "^13.11.0",
