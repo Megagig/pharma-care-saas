@@ -12,7 +12,24 @@ import Patient from '../models/Patient';
 import User from '../models/User';
 
 // Import audit service
-import AuditService, { AuditContext, AuditLogData } from './auditService';
+import { AuditService } from './auditService';
+export interface AuditContext {
+  userId: string;
+  workspaceId: string;
+  sessionId?: string;
+}
+export interface AuditLogData {
+  action: string;
+  userId: string;
+  interventionId?: string;
+  details: Record<string, any>;
+  riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+  complianceCategory: string;
+  changedFields?: string[];
+  oldValues?: Record<string, any>;
+  newValues?: Record<string, any>;
+  workspaceId?: string;
+}
 
 // Import performance optimization utilities
 import {
@@ -466,9 +483,9 @@ class ClinicalInterventionService {
           statusChange:
             oldValues.status !== intervention.status
               ? {
-                  from: oldValues.status,
-                  to: intervention.status,
-                }
+                from: oldValues.status,
+                to: intervention.status,
+              }
               : undefined,
         },
         undefined, // req object not available in service
@@ -939,9 +956,9 @@ class ClinicalInterventionService {
             displayName: `${patient.firstName} ${patient.lastName}`,
             age: patient.dob
               ? Math.floor(
-                  (Date.now() - patient.dob.getTime()) /
-                    (1000 * 60 * 60 * 24 * 365.25)
-                )
+                (Date.now() - patient.dob.getTime()) /
+                (1000 * 60 * 60 * 24 * 365.25)
+              )
               : undefined,
             interventionCount,
             activeInterventionCount,
@@ -1162,12 +1179,10 @@ class ClinicalInterventionService {
         priority: mtrData.priority,
         startedAt: mtrData.startedAt,
         completedAt: mtrData.completedAt,
-        patientName: `${mtrData.patientId?.firstName || ''} ${
-          mtrData.patientId?.lastName || ''
-        }`,
-        pharmacistName: `${mtrData.pharmacistId?.firstName || ''} ${
-          mtrData.pharmacistId?.lastName || ''
-        }`,
+        patientName: `${mtrData.patientId?.firstName || ''} ${mtrData.patientId?.lastName || ''
+          }`,
+        pharmacistName: `${mtrData.pharmacistId?.firstName || ''} ${mtrData.pharmacistId?.lastName || ''
+          }`,
         problemCount: mtrData.problems?.length || 0,
         interventionCount,
       };
@@ -1382,21 +1397,16 @@ class ClinicalInterventionService {
     try {
       // Create audit context
       const auditContext: AuditContext = {
-        userId,
-        workplaceId,
-        userRole: req?.user?.role || 'unknown',
+        userId: userId.toString(),
+        workspaceId: workplaceId.toString(),
         sessionId: req?.sessionID,
-        ipAddress: req?.ip || req?.connection?.remoteAddress,
-        userAgent: req?.get?.('User-Agent'),
-        requestMethod: req?.method,
-        requestUrl: req?.originalUrl,
       };
 
       // Create audit log data
       const auditData: AuditLogData = {
         action: `INTERVENTION_${action.toUpperCase()}`,
-        resourceType: 'ClinicalIntervention',
-        resourceId: new mongoose.Types.ObjectId(interventionId),
+        userId: userId.toString(),
+        interventionId: interventionId,
         oldValues,
         newValues,
         changedFields:
@@ -1444,20 +1454,15 @@ class ClinicalInterventionService {
   ): Promise<void> {
     try {
       const auditContext: AuditContext = {
-        userId,
-        workplaceId,
-        userRole: req?.user?.role || 'unknown',
+        userId: userId.toString(),
+        workspaceId: workplaceId.toString(),
         sessionId: req?.sessionID,
-        ipAddress: req?.ip,
-        userAgent: req?.get?.('User-Agent'),
-        requestMethod: req?.method,
-        requestUrl: req?.originalUrl,
       };
 
       const auditData: AuditLogData = {
         action: `ACCESS_INTERVENTION_${accessType.toUpperCase()}`,
-        resourceType: 'ClinicalIntervention',
-        resourceId: new mongoose.Types.ObjectId(interventionId),
+        userId: userId.toString(),
+        interventionId: interventionId,
         details: {
           accessType,
           ...details,
@@ -1501,15 +1506,13 @@ class ClinicalInterventionService {
         endDate: options.endDate,
       };
 
-      const { logs, total } = await AuditService.getAuditLogs(
-        workplaceId,
-        filters,
-        {
-          page: options.page || 1,
-          limit: options.limit || 50,
-          sort: '-timestamp',
-        }
-      );
+      const { logs, total } = await AuditService.getAuditLogs({
+        ...filters,
+        startDate: filters.startDate?.toISOString(),
+        endDate: filters.endDate?.toISOString(),
+        page: options.page || 1,
+        limit: options.limit || 50,
+      });
 
       // Calculate summary statistics
       const uniqueUsers = new Set(
@@ -1590,28 +1593,29 @@ class ClinicalInterventionService {
         endDate: dateRange.end,
       };
 
-      const { logs: auditLogs } = await AuditService.getAuditLogs(
-        workplaceId,
-        auditFilters,
-        { limit: 10000 }
-      );
+      const { logs: auditLogs } = await AuditService.getAuditLogs({
+        ...auditFilters,
+        startDate: auditFilters.startDate?.toISOString(),
+        endDate: auditFilters.endDate?.toISOString(),
+        limit: 10000
+      });
 
       // Calculate compliance metrics
       const interventionCompliance = interventions.map((intervention) => {
         const interventionAudits = auditLogs.filter(
-          (log) => log.resourceId?.toString() === intervention._id.toString()
+          (log) => log.interventionId?.toString() === intervention._id.toString()
         );
 
         const auditCount = interventionAudits.length;
         const lastAudit =
           interventionAudits.length > 0
             ? interventionAudits.reduce(
-                (latest, log) =>
-                  log.timestamp > (latest || new Date(0))
-                    ? log.timestamp
-                    : latest || new Date(0),
-                interventionAudits[0]?.timestamp || null
-              )
+              (latest, log) =>
+                log.timestamp > (latest || new Date(0))
+                  ? log.timestamp
+                  : latest || new Date(0),
+              interventionAudits[0]?.timestamp || null
+            )
             : null;
 
         const riskActivities = interventionAudits.filter(
@@ -2723,9 +2727,8 @@ class TeamCollaborationService {
           if (!userStats[userId]) {
             userStats[userId] = {
               userId: assignment.userId,
-              userName: `${(assignment.userId as any).firstName} ${
-                (assignment.userId as any).lastName
-              }`,
+              userName: `${(assignment.userId as any).firstName} ${(assignment.userId as any).lastName
+                }`,
               activeAssignments: 0,
               completedAssignments: 0,
               completionTimes: [],
@@ -2757,7 +2760,7 @@ class TeamCollaborationService {
         averageCompletionTime:
           stats.completionTimes.length > 0
             ? stats.completionTimes.reduce((a: number, b: number) => a + b, 0) /
-              stats.completionTimes.length
+            stats.completionTimes.length
             : 0,
       }));
 
@@ -3574,18 +3577,16 @@ class TeamCollaborationService {
       const exportData = interventions.map((intervention) => ({
         interventionNumber: intervention.interventionNumber,
         patientName: intervention.patientId
-          ? `${(intervention.patientId as any).firstName} ${
-              (intervention.patientId as any).lastName
-            }`
+          ? `${(intervention.patientId as any).firstName} ${(intervention.patientId as any).lastName
+          }`
           : 'N/A',
         category: intervention.category,
         priority: intervention.priority,
         status: intervention.status,
         issueDescription: intervention.issueDescription,
         identifiedBy: intervention.identifiedBy
-          ? `${(intervention.identifiedBy as any).firstName} ${
-              (intervention.identifiedBy as any).lastName
-            }`
+          ? `${(intervention.identifiedBy as any).firstName} ${(intervention.identifiedBy as any).lastName
+          }`
           : 'N/A',
         identifiedDate: intervention.identifiedDate,
         completedDate: intervention.completedAt,
@@ -4318,9 +4319,8 @@ ClinicalInterventionService.generateOutcomeReport = async (
       interventionId: intervention._id.toString(),
       interventionNumber: intervention.interventionNumber,
       patientName: intervention.patientId
-        ? `${(intervention.patientId as any).firstName} ${
-            (intervention.patientId as any).lastName
-          }`
+        ? `${(intervention.patientId as any).firstName} ${(intervention.patientId as any).lastName
+        }`
         : 'Unknown Patient',
       category: intervention.category,
       priority: intervention.priority,
@@ -4329,10 +4329,10 @@ ClinicalInterventionService.generateOutcomeReport = async (
       resolutionTime:
         intervention.completedAt && intervention.startedAt
           ? Math.ceil(
-              (intervention.completedAt.getTime() -
-                intervention.startedAt.getTime()) /
-                (1000 * 60 * 60 * 24)
-            )
+            (intervention.completedAt.getTime() -
+              intervention.startedAt.getTime()) /
+            (1000 * 60 * 60 * 24)
+          )
           : 0,
       patientResponse: intervention.outcomes?.patientResponse || 'unknown',
       completedDate: intervention.completedAt?.toISOString() || '',
@@ -4402,14 +4402,14 @@ ClinicalInterventionService.generateOutcomeReport = async (
         interventions:
           previousPeriodTotal > 0
             ? ((totalInterventions - previousPeriodTotal) /
-                previousPeriodTotal) *
-              100
+              previousPeriodTotal) *
+            100
             : 0,
         successRate:
           previousPeriodSuccessRate > 0
             ? ((successRate - previousPeriodSuccessRate) /
-                previousPeriodSuccessRate) *
-              100
+              previousPeriodSuccessRate) *
+            100
             : 0,
         costSavings:
           prevCostSavings > 0
@@ -4742,7 +4742,102 @@ function formatPriorityName(priority: string): string {
   return priorityMap[priority] || priority;
 }
 
-// Assign the standalone function to the service
+// ===============================
+// MISSING UTILITY METHODS
+// ===============================
+
+/**
+ * Check for duplicate interventions
+ */
+async function checkDuplicates(
+  patientId: mongoose.Types.ObjectId,
+  category: string,
+  workplaceId: mongoose.Types.ObjectId
+): Promise<IClinicalIntervention[]> {
+  try {
+    const duplicates = await ClinicalIntervention.find({
+      patientId,
+      category,
+      workplaceId,
+      status: { $nin: ['completed', 'cancelled'] },
+      isDeleted: false,
+    })
+      .populate('identifiedByUser', 'firstName lastName email')
+      .sort({ identifiedDate: -1 })
+      .lean();
+
+    return duplicates;
+  } catch (error) {
+    logger.error('Error checking for duplicates:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get category counts
+ */
+async function getCategoryCounts(workplaceId: mongoose.Types.ObjectId): Promise<Record<string, number>> {
+  try {
+    const categoryCounts = await ClinicalIntervention.aggregate([
+      {
+        $match: {
+          workplaceId,
+          isDeleted: false,
+        },
+      },
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const result: Record<string, number> = {};
+    categoryCounts.forEach((item) => {
+      result[item._id] = item.count;
+    });
+
+    return result;
+  } catch (error) {
+    logger.error('Error getting category counts:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get priority distribution
+ */
+async function getPriorityDistribution(workplaceId: mongoose.Types.ObjectId): Promise<Record<string, number>> {
+  try {
+    const priorityDistribution = await ClinicalIntervention.aggregate([
+      {
+        $match: {
+          workplaceId,
+          isDeleted: false,
+        },
+      },
+      {
+        $group: {
+          _id: '$priority',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const result: Record<string, number> = {};
+    priorityDistribution.forEach((item) => {
+      result[item._id] = item.count;
+    });
+
+    return result;
+  } catch (error) {
+    logger.error('Error getting priority distribution:', error);
+    throw error;
+  }
+}
+
+// Assign the standalone functions to the service
 ClinicalInterventionService.getDashboardMetrics = getDashboardMetrics;
 
 export default ClinicalInterventionService;

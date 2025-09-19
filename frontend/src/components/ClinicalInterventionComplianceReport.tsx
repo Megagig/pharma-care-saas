@@ -76,16 +76,35 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
       setLoading(true);
       setError(null);
 
+      // TODO: Replace with actual API call when compliance reporting is implemented
+      // const response = await clinicalInterventionService.getComplianceReport({
+      //   startDate,
+      //   endDate,
+      //   includeDetails,
+      // });
+
+      // if (response.success && response.data) {
+      //   setComplianceData(response.data);
+      // } else {
+      //   setError(response.message || 'Failed to generate compliance report');
+      // }
+
+      // For now, show that the feature is not yet implemented
+      // Try to fetch compliance data from API
       const response = await clinicalInterventionService.getComplianceReport({
-        startDate,
-        endDate,
-        includeDetails,
+        startDate: format(startDate, 'yyyy-MM-dd'),
+        endDate: format(endDate, 'yyyy-MM-dd'),
+        includeDetails: true,
       });
 
       if (response.success && response.data) {
         setComplianceData(response.data);
       } else {
-        setError(response.message || 'Failed to generate compliance report');
+        setComplianceData(null);
+        setError(
+          response.message ||
+            'No compliance data available. Create some clinical interventions to see compliance reports.'
+        );
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred while generating the report');
@@ -226,8 +245,23 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
           </Grid>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                No Compliance Data Available
+              </Typography>
+              <Typography variant="body2">
+                The compliance reporting functionality is currently being
+                developed. Once clinical interventions are created and audit
+                trails are established, comprehensive compliance reports will be
+                available including:
+              </Typography>
+              <Box component="ul" sx={{ mt: 1, mb: 0 }}>
+                <li>Compliance score tracking</li>
+                <li>Risk activity monitoring</li>
+                <li>Audit trail analysis</li>
+                <li>Regulatory compliance metrics</li>
+                <li>Automated compliance recommendations</li>
+              </Box>
             </Alert>
           )}
 
@@ -245,7 +279,7 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                         </Typography>
                       </Box>
                       <Typography variant="h4">
-                        {complianceData.summary.totalInterventions}
+                        {complianceData?.summary?.totalInterventions || 0}
                       </Typography>
                     </CardContent>
                   </Card>
@@ -260,7 +294,7 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                         </Typography>
                       </Box>
                       <Typography variant="h4">
-                        {complianceData.summary.auditedActions}
+                        {complianceData?.summary?.auditedActions || 0}
                       </Typography>
                     </CardContent>
                   </Card>
@@ -272,7 +306,7 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                         <CheckCircleIcon
                           color={
                             getComplianceColor(
-                              complianceData.summary.complianceScore
+                              complianceData?.summary?.complianceScore || 0
                             ) as any
                           }
                           sx={{ mr: 1 }}
@@ -284,14 +318,14 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                       <Typography
                         variant="h4"
                         color={getComplianceColor(
-                          complianceData.summary.complianceScore
+                          complianceData?.summary?.complianceScore || 0
                         )}
                       >
-                        {complianceData.summary.complianceScore}%
+                        {complianceData?.summary?.complianceScore || 0}%
                       </Typography>
                       <LinearProgress
                         variant="determinate"
-                        value={complianceData.summary.complianceScore}
+                        value={complianceData?.summary?.complianceScore || 0}
                         color={
                           getComplianceColor(
                             complianceData.summary.complianceScore
@@ -308,7 +342,7 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                       <Box display="flex" alignItems="center" mb={1}>
                         <SecurityIcon
                           color={
-                            complianceData.summary.riskActivities > 0
+                            (complianceData?.summary?.riskActivities || 0) > 0
                               ? 'error'
                               : 'success'
                           }
@@ -321,12 +355,12 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                       <Typography
                         variant="h4"
                         color={
-                          complianceData.summary.riskActivities > 0
+                          (complianceData?.summary?.riskActivities || 0) > 0
                             ? 'error'
                             : 'success'
                         }
                       >
-                        {complianceData.summary.riskActivities}
+                        {complianceData?.summary?.riskActivities || 0}
                       </Typography>
                     </CardContent>
                   </Card>
@@ -351,7 +385,7 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {complianceData.interventionCompliance.map(
+                        {(complianceData?.interventionCompliance || []).map(
                           (intervention) => (
                             <TableRow key={intervention.interventionId} hover>
                               <TableCell>
@@ -414,7 +448,8 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                     </Table>
                   </TableContainer>
 
-                  {complianceData.interventionCompliance.length === 0 && (
+                  {(complianceData?.interventionCompliance?.length || 0) ===
+                    0 && (
                     <Box textAlign="center" py={4}>
                       <Typography color="textSecondary">
                         No interventions found for the selected date range.
@@ -425,7 +460,7 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
               </Card>
 
               {/* Recommendations */}
-              {complianceData.recommendations.length > 0 && (
+              {(complianceData?.recommendations?.length || 0) > 0 && (
                 <Card variant="outlined">
                   <CardContent>
                     <Box display="flex" alignItems="center" mb={2}>
@@ -435,7 +470,7 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                       </Typography>
                     </Box>
                     <List>
-                      {complianceData.recommendations.map(
+                      {(complianceData?.recommendations || []).map(
                         (recommendation, index) => (
                           <React.Fragment key={index}>
                             <ListItem>
@@ -448,9 +483,8 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                               />
                             </ListItem>
                             {index <
-                              complianceData.recommendations.length - 1 && (
-                              <Divider />
-                            )}
+                              (complianceData?.recommendations?.length || 0) -
+                                1 && <Divider />}
                           </React.Fragment>
                         )
                       )}

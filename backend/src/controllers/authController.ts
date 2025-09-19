@@ -440,7 +440,7 @@ export const refreshToken = async (
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 60 * 60 * 1000, // 60 minutes
     });
 
     res.json({
@@ -543,10 +543,10 @@ export const checkCookies = async (
       debug:
         process.env.NODE_ENV === 'development'
           ? {
-              cookies: Object.keys(req.cookies),
-              userAgent: req.get('User-Agent'),
-              origin: req.get('Origin'),
-            }
+            cookies: Object.keys(req.cookies),
+            userAgent: req.get('User-Agent'),
+            origin: req.get('Origin'),
+          }
           : undefined,
     });
   } catch (error: any) {
@@ -984,12 +984,10 @@ export const registerWithWorkplace = async (
         emailContent += `
           <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
             <h3 style="color: #059669; margin-bottom: 10px;">🤝 You've joined a workplace!</h3>
-            <p style="color: #374151; margin-bottom: 10px;"><strong>Workplace:</strong> ${
-              workplaceData?.name
-            }</p>
-            <p style="color: #374151; margin-bottom: 10px;"><strong>Your Role:</strong> ${
-              workplaceRole || 'Staff'
-            }</p>
+            <p style="color: #374151; margin-bottom: 10px;"><strong>Workplace:</strong> ${workplaceData?.name
+          }</p>
+            <p style="color: #374151; margin-bottom: 10px;"><strong>Your Role:</strong> ${workplaceRole || 'Staff'
+          }</p>
             <p style="color: #6b7280; font-size: 14px;">You now have access to your workplace's features and subscription plan.</p>
           </div>`;
       } else {
@@ -1052,19 +1050,19 @@ export const registerWithWorkplace = async (
           },
           workplace: workplaceData
             ? {
-                id: workplaceData._id,
-                name: workplaceData.name,
-                type: workplaceData.type,
-                inviteCode: workplaceData.inviteCode,
-              }
+              id: workplaceData._id,
+              name: workplaceData.name,
+              type: workplaceData.type,
+              inviteCode: workplaceData.inviteCode,
+            }
             : null,
           subscription: subscription
             ? {
-                id: subscription._id,
-                tier: subscription.tier,
-                status: subscription.status,
-                endDate: subscription.endDate,
-              }
+              id: subscription._id,
+              tier: subscription.tier,
+              status: subscription.status,
+              endDate: subscription.endDate,
+            }
             : null,
           workplaceFlow,
         },

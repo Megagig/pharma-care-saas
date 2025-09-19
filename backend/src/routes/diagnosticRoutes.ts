@@ -65,12 +65,7 @@ router.post(
   auth,
   requireLicense,
   requireFeature('clinical_decision_support'),
-  auditLogger({
-    action: 'AI_DIAGNOSTIC_REQUEST',
-    resourceType: 'DiagnosticCase',
-    complianceCategory: 'clinical_documentation',
-    riskLevel: 'medium'
-  }),
+  auditLogger('AI_DIAGNOSTIC_REQUEST', 'clinical_documentation'),
   validateDiagnosticAnalysis,
   generateDiagnosticAnalysis
 );
@@ -85,12 +80,7 @@ router.post(
   diagnosticRateLimit,
   auth,
   requireLicense,
-  auditLogger({
-    action: 'DIAGNOSTIC_DECISION',
-    resourceType: 'DiagnosticCase',
-    complianceCategory: 'clinical_documentation',
-    riskLevel: 'high'
-  }),
+  auditLogger('DIAGNOSTIC_DECISION', 'clinical_documentation'),
   validateDiagnosticDecision,
   saveDiagnosticDecision
 );
@@ -105,12 +95,7 @@ router.get(
   diagnosticRateLimit,
   auth,
   requireFeature('clinical_decision_support'),
-  auditLogger({
-    action: 'VIEW_DIAGNOSTIC_HISTORY',
-    resourceType: 'DiagnosticCase',
-    complianceCategory: 'data_access',
-    riskLevel: 'low'
-  }),
+  auditLogger('VIEW_DIAGNOSTIC_HISTORY', 'data_access'),
   validateDiagnosticHistory,
   getDiagnosticHistory
 );
@@ -125,12 +110,7 @@ router.get(
   diagnosticRateLimit,
   auth,
   requireFeature('clinical_decision_support'),
-  auditLogger({
-    action: 'VIEW_DIAGNOSTIC_CASE',
-    resourceType: 'DiagnosticCase',
-    complianceCategory: 'data_access',
-    riskLevel: 'low'
-  }),
+  auditLogger('VIEW_DIAGNOSTIC_CASE', 'data_access'),
   validateGetDiagnosticCase,
   getDiagnosticCase
 );
@@ -145,12 +125,7 @@ router.post(
   diagnosticRateLimit,
   auth,
   requireFeature('drug_information'),
-  auditLogger({
-    action: 'DRUG_INTERACTION_CHECK',
-    resourceType: 'DrugInteraction',
-    complianceCategory: 'clinical_documentation',
-    riskLevel: 'medium'
-  }),
+  auditLogger('DRUG_INTERACTION_CHECK', 'clinical_documentation'),
   validateDrugInteractions,
   checkDrugInteractions
 );
@@ -163,12 +138,7 @@ router.post(
 router.get(
   '/ai/test',
   auth,
-  auditLogger({
-    action: 'AI_CONNECTION_TEST',
-    resourceType: 'System',
-    complianceCategory: 'system_security',
-    riskLevel: 'low'
-  }),
+  auditLogger('AI_CONNECTION_TEST', 'system_security'),
   testAIConnection
 );
 

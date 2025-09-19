@@ -481,18 +481,10 @@ export const useMTRStore = create<MTRStore>()(
             );
           }
 
-          // First attempt to log the full structure to understand what we're dealing with
-          const responseData = response.data as Record<string, unknown>;
-          console.log('Response structure analysis:', {
+          console.log('MTR creation response received:', {
             hasReview: !!response.review,
-            hasData: !!response.data,
-            dataKeys: responseData ? Object.keys(responseData) : [],
+            reviewId: response.review?._id,
             responseKeys: Object.keys(response),
-            // Log deep data using safe access pattern
-            sessionInfo:
-              responseData && 'session' in responseData
-                ? 'exists'
-                : 'not found',
           });
 
           // Helper function to create default workflow steps
@@ -529,71 +521,21 @@ export const useMTRStore = create<MTRStore>()(
             },
           });
 
-          // SUPER COMPREHENSIVE ID EXTRACTION - check all possible locations for the ID
-          // Use a safe approach to extract ID from various possible locations
-          let reviewId: string | undefined;
-
-          console.log('Checking all possible locations for MTR review ID...');
-
-          // 1. Check direct review._id (original standard format)
-          if (response.review && response.review._id) {
-            reviewId = response.review._id;
-            console.log('Found ID in response.review._id:', reviewId);
+          // Extract review data and ID from response
+          if (!response.review) {
+            console.error('No review data in response:', response);
+            throw new Error('Failed to create MTR review - invalid response format');
           }
 
-          // 2. Check for nested session in review (structure from error message)
-          if (
-            !reviewId &&
-            response.review &&
-            typeof response.review === 'object'
-          ) {
-            // First convert to unknown to avoid type errors, then use a more specific type
-            const reviewWithSession = response.review as unknown as {
-              session?: {
-                _id?: string;
-                id?: string;
-                [key: string]: unknown;
-              };
-              [key: string]: unknown;
-            };
+          const reviewData = response.review;
+          let reviewId = reviewData._id;
 
-            // Check if session exists
-            if (
-              'session' in reviewWithSession &&
-              reviewWithSession.session &&
-              typeof reviewWithSession.session === 'object'
-            ) {
-              const session = reviewWithSession.session;
-              if (session._id || session.id) {
-                reviewId = (session._id as string) || (session.id as string);
-                console.log('Found ID in response.review.session:', reviewId);
-              }
-            }
+          if (!reviewId) {
+            console.error('No review ID in response:', reviewData);
+            throw new Error('Failed to create MTR review - missing ID');
           }
 
-          // 3. Check in response.data (alternative format)
-          if (!reviewId && response.data && typeof response.data === 'object') {
-            const data = response.data as Record<string, unknown>;
-
-            // 3a. Check for nested session in data
-            if (
-              'session' in data &&
-              data.session &&
-              typeof data.session === 'object'
-            ) {
-              const session = data.session as Record<string, unknown>;
-              if (session._id || session.id) {
-                reviewId = (session._id as string) || (session.id as string);
-                console.log('Found ID in response.data.session:', reviewId);
-              }
-            }
-
-            // 3b. Check directly in data
-            if (!reviewId && (data._id || data.id)) {
-              reviewId = (data._id as string) || (data.id as string);
-              console.log('Found ID directly in response.data:', reviewId);
-            }
-          }
+          console.log('Successfully extracted review ID:', reviewId);
 
           // Extract the review data from whatever structure we received
           let reviewObj:
@@ -661,8 +603,8 @@ export const useMTRStore = create<MTRStore>()(
                       | 'high_risk') || 'routine',
                   steps: typedReview.steps
                     ? (typedReview.steps as unknown as ReturnType<
-                        typeof createDefaultSteps
-                      >)
+                      typeof createDefaultSteps
+                    >)
                     : createDefaultSteps(),
                   medications: Array.isArray(sessionData.medications)
                     ? sessionData.medications
@@ -678,14 +620,14 @@ export const useMTRStore = create<MTRStore>()(
                     : [],
                   clinicalOutcomes:
                     sessionData.clinicalOutcomes &&
-                    typeof sessionData.clinicalOutcomes === 'object'
+                      typeof sessionData.clinicalOutcomes === 'object'
                       ? (sessionData.clinicalOutcomes as ClinicalOutcomes)
                       : {
-                          problemsResolved: 0,
-                          medicationsOptimized: 0,
-                          adherenceImproved: false,
-                          adverseEventsReduced: false,
-                        },
+                        problemsResolved: 0,
+                        medicationsOptimized: 0,
+                        adherenceImproved: false,
+                        adverseEventsReduced: false,
+                      },
                   patientConsent: !!sessionData.patientConsent,
                   confidentialityAgreed: !!sessionData.confidentialityAgreed,
                   startedAt:
@@ -969,63 +911,34 @@ export const useMTRStore = create<MTRStore>()(
             );
           }
 
-          // We don't need to validate steps here since we're already setting default steps during review construction
-
-          console.log('Setting current review with verified ID:', reviewId);
-
-          // Ensure we have a proper MedicationTherapyReview object with ID explicitly set
+          // Create final review object with guaranteed ID
           const validReview: MedicationTherapyReview = {
-            ...reviewObj,
-            _id: reviewId, // Always ensure ID is explicitly set
+            ...reviewData,
+            _id: reviewId,
+            // Ensure steps are properly initialized
+            steps: reviewData.steps || createDefaultSteps(),
+            // Ensure arrays are properly initialized
+            medications: reviewData.medications || [],
+            problems: reviewData.problems || [],
+            interventions: reviewData.interventions || [],
+            followUps: reviewData.followUps || [],
+            // Ensure clinical outcomes are properly initialized
+            clinicalOutcomes: reviewData.clinicalOutcomes || {
+              problemsResolved: 0,
+              medicationsOptimized: 0,
+              adherenceImproved: false,
+              adverseEventsReduced: false,
+            },
           };
 
-          // Double-check ID is set properly and log if not
-          if (!validReview._id) {
-            console.error(
-              'CRITICAL ERROR: validReview._id is still undefined despite setting it',
-              {
-                reviewId,
-                originalReviewId: reviewObj?._id,
-                hasReviewObj: !!reviewObj,
-              }
-            );
-          } else {
-            console.log('Confirmed valid review has ID:', validReview._id);
-          }
+          console.log('Setting current review with ID:', validReview._id);
 
           // Safely convert medications to MTR medications
-          const medications = (reviewObj.medications || [])
+          const medications = (validReview.medications || [])
             .filter((med) => typeof med === 'object' && med !== null)
             .map((med) => {
               try {
-                // Create a properly typed object for conversion
-                const typedMed = med as {
-                  _id?: string;
-                  id?: string;
-                  drugName: string;
-                  genericName?: string;
-                  strength: { value: number; unit: string };
-                  dosageForm: string;
-                  instructions: {
-                    dose: string;
-                    frequency: string;
-                    route: string;
-                    duration?: string;
-                  };
-                  category: 'prescribed' | 'otc' | 'herbal' | 'supplement';
-                  prescriber?: {
-                    name: string;
-                    license?: string;
-                    contact?: string;
-                  };
-                  startDate: string | Date;
-                  endDate?: string | Date;
-                  indication: string;
-                  adherenceScore?: number;
-                  notes?: string;
-                  isManual?: boolean;
-                };
-                return convertMedicationEntryToMTRMedication(typedMed);
+                return convertMedicationEntryToMTRMedication(med as unknown);
               } catch (err) {
                 console.warn('Failed to convert medication:', med, err);
                 return null;
@@ -1033,34 +946,13 @@ export const useMTRStore = create<MTRStore>()(
             })
             .filter(Boolean) as MTRMedication[];
 
-          // Double-check that validReview has an ID before setting it in the store
-          if (!validReview._id) {
-            console.error(
-              'CRITICAL: About to set currentReview but validReview._id is missing!',
-              validReview
-            );
-
-            // Force the ID to be set from our previously extracted reviewId
-            validReview._id = reviewId;
-            console.log('Force-set reviewId on validReview:', reviewId);
-          }
-
-          // Final verification check
-          console.log(
-            'Final review ID verification before setting in store:',
-            validReview._id
-          );
-
           set({
-            currentReview: {
-              ...validReview,
-              _id: reviewId, // Ensure ID is explicitly set one more time for redundancy
-            },
+            currentReview: validReview,
             currentStep: 0,
             stepData: {},
             medications: medications,
             identifiedProblems: [], // Will be populated from actual DrugTherapyProblem objects
-            therapyPlan: (reviewObj.plan as TherapyPlan) || null,
+            therapyPlan: (validReview.plan as TherapyPlan) || null,
             interventions: [], // Will be populated from actual MTRIntervention objects
             followUps: [], // Will be populated from actual MTRFollowUp objects
           });
@@ -1300,7 +1192,7 @@ export const useMTRStore = create<MTRStore>()(
             problems: identifiedProblems,
             plan: therapyPlan || undefined,
             interventions,
-            followUps,
+            followUps, // Send follow-ups so backend can handle them properly
             updatedAt: new Date().toISOString(),
           };
 
@@ -1312,6 +1204,32 @@ export const useMTRStore = create<MTRStore>()(
           if (currentReview.status) {
             updateData.status = currentReview.status;
           }
+
+          // Auto-complete follow-up step if follow-ups are present
+          if (updateData.followUps.length > 0 && currentReview.steps?.followUp && !currentReview.steps.followUp.completed) {
+            console.log('🔄 Auto-completing follow-up step since follow-ups are present');
+            currentReview.steps.followUp.completed = true;
+            currentReview.steps.followUp.completedAt = new Date();
+            currentReview.steps.followUp.data = {
+              completedAt: new Date().toISOString(),
+              stepName: 'Follow-Up',
+              followUpsCount: updateData.followUps.length
+            };
+            updateData.steps = currentReview.steps;
+          }
+
+          // Debug logging
+          console.log('🔍 Saving MTR with data:', {
+            reviewId: currentReview._id,
+            medicationsCount: updateData.medications.length,
+            problemsCount: updateData.problems.length,
+            interventionsCount: updateData.interventions.length,
+            followUpsCount: updateData.followUps.length,
+            hasPlan: !!updateData.plan,
+            status: updateData.status,
+            stepsCompleted: currentReview.steps ? Object.entries(currentReview.steps).filter(([_, step]) => step.completed).length : 0,
+            followUpStepCompleted: currentReview.steps?.followUp?.completed
+          });
 
           // Call the API to save the review
           const response = await mtrService.updateMTRSession(
@@ -2096,10 +2014,9 @@ export const useMTRStore = create<MTRStore>()(
             (step) => step && step.completed
           );
 
-          // Check if at least one follow-up is scheduled
-          const hasFollowUp = followUps.length > 0;
-
-          return allStepsCompleted && hasFollowUp;
+          // For completion, we only require all steps to be completed
+          // Follow-ups are optional - they can be scheduled later if needed
+          return allStepsCompleted;
         } catch (error) {
           console.error('Error checking if review can be completed:', error);
           return false;

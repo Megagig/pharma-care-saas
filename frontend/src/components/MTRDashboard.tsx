@@ -212,8 +212,13 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       return;
     }
 
-    if (!currentReview._id) {
-      console.error('Auto-save skipped: Review ID is missing', currentReview);
+    // Enhanced validation for review ID
+    if (!currentReview._id || currentReview._id.trim() === '') {
+      console.error('Auto-save skipped: Review ID is missing or invalid', {
+        hasReview: !!currentReview,
+        reviewId: currentReview._id,
+        reviewKeys: Object.keys(currentReview || {}),
+      });
       return;
     }
 
@@ -401,8 +406,13 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
           return;
         }
 
-        if (!currentReview._id) {
-          console.error('Auto-save skipped: Review ID is missing');
+        // Enhanced validation for review ID
+        if (!currentReview._id || currentReview._id.trim() === '') {
+          console.error('Auto-save skipped: Review ID is missing or invalid', {
+            hasReview: !!currentReview,
+            reviewId: currentReview._id,
+            reviewKeys: Object.keys(currentReview || {}),
+          });
           return;
         }
 
@@ -543,6 +553,20 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         console.error('Cannot save review - ID is missing', currentReview);
         return;
       }
+
+      // Debug logging to understand the current state
+      console.log('🔍 Manual save triggered - Current review state:', {
+        id: currentReview._id,
+        status: currentReview.status,
+        stepsCompleted: currentReview.steps
+          ? Object.entries(currentReview.steps).map(([key, step]) => ({
+              step: key,
+              completed: step.completed,
+            }))
+          : 'No steps',
+        canComplete: canCompleteReview(),
+        loadingSave: loading.saveReview,
+      });
 
       await saveReview();
       setLastSaved(new Date());

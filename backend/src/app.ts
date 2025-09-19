@@ -204,6 +204,27 @@ app.use('/api/notes', noteRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/mtr', mtrRoutes);
 app.use('/api/mtr/notifications', mtrNotificationRoutes);
+// Clinical interventions health check (no auth required)
+app.get('/api/clinical-interventions/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    module: 'clinical-interventions',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    endpoints: {
+      total: 30,
+      crud: 5,
+      workflow: 8,
+      analytics: 4,
+      reporting: 3,
+      utility: 2,
+      mtr: 5,
+      notifications: 1,
+      audit: 3
+    }
+  });
+});
+
 app.use('/api/clinical-interventions', clinicalInterventionRoutes);
 app.use('/api/medication-management', medicationManagementRoutes);
 app.use('/api/medication-analytics', medicationAnalyticsRoutes);

@@ -1,5 +1,12 @@
 import express from 'express';
-import { auditController } from '../controllers/auditController';
+import {
+    getAllAuditTrail,
+    getInterventionAuditTrail,
+    exportAuditData,
+    getComplianceReport,
+    getAuditStatistics,
+    cleanupAuditLogs
+} from '../controllers/auditController';
 import { authWithWorkspace } from '../middlewares/authWithWorkspace';
 import { requirePermission } from '../middlewares/rbac';
 import { generalRateLimiters } from '../middlewares/rateLimiting';
@@ -23,7 +30,7 @@ router.get(
         severity: 'medium',
         resourceType: 'AuditLog',
     }),
-    auditController.getAuditLogs.bind(auditController)
+    getAllAuditTrail
 );
 
 /**
@@ -42,7 +49,7 @@ router.get(
         severity: 'low',
         resourceType: 'AuditSummary',
     }),
-    auditController.getAuditSummary.bind(auditController)
+    getAuditStatistics
 );
 
 /**
@@ -61,7 +68,7 @@ router.get(
         severity: 'medium',
         resourceType: 'SecurityAlert',
     }),
-    auditController.getSecurityAlerts.bind(auditController)
+    getAllAuditTrail
 );
 
 /**
@@ -82,7 +89,7 @@ router.get(
         includeRequestBody: false,
         includeResponseBody: false, // Don't log the actual export data
     }),
-    auditController.exportAuditLogs.bind(auditController)
+    exportAuditData
 );
 
 export default router;

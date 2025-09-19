@@ -39,6 +39,14 @@ export function extractData<T>(
 }
 
 /**
+ * Get authentication headers
+ */
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('authToken');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+/**
  * API helpers object with HTTP methods for making requests
  */
 export const apiHelpers = {
@@ -50,8 +58,10 @@ export const apiHelpers = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...getAuthHeaders(),
         ...options?.headers,
       },
+      credentials: 'include',
       ...options,
     });
 
@@ -70,9 +80,11 @@ export const apiHelpers = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...getAuthHeaders(),
         ...options?.headers,
       },
       body: data ? JSON.stringify(data) : undefined,
+      credentials: 'include',
       ...options,
     });
 
@@ -91,9 +103,11 @@ export const apiHelpers = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...getAuthHeaders(),
         ...options?.headers,
       },
       body: data ? JSON.stringify(data) : undefined,
+      credentials: 'include',
       ...options,
     });
 
@@ -112,8 +126,10 @@ export const apiHelpers = {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        ...getAuthHeaders(),
         ...options?.headers,
       },
+      credentials: 'include',
       ...options,
     });
 

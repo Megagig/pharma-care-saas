@@ -77,23 +77,65 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
   const syncMedicationsMutation = useSyncMedicationsWithMTR();
   const syncDTPsMutation = useSyncDTPsWithMTR();
 
-  const handleStartMTR = async () => {
+  const handleStartMTR = async (event?: React.MouseEvent) => {
+    // Prevent default behavior and event propagation
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    // Prevent multiple clicks
+    if (createMTRMutation.isPending) {
+      console.log('MTR creation already in progress, ignoring click');
+      return;
+    }
+
     try {
+      console.log('Starting MTR for patient:', patientId);
+
       const result = await createMTRMutation.mutateAsync({
         patientId,
         reviewType: 'initial',
         priority: 'routine',
+        patientConsent: true,
+        confidentialityAgreed: true,
       });
 
-      const newMTRId = result.review._id;
+      console.log('MTR creation result:', result);
+
+      // Check different possible response structures
+      let newMTRId =
+        result?.review?._id || result?.data?.review?._id || result?._id;
+
+      if (!newMTRId) {
+        console.error('No MTR ID returned from creation:', result);
+        console.error(
+          'Full result structure:',
+          JSON.stringify(result, null, 2)
+        );
+        throw new Error('Failed to create MTR session - no ID returned');
+      }
+
+      console.log('Navigating to MTR:', newMTRId);
 
       if (onStartMTR) {
         onStartMTR(newMTRId);
       } else {
-        navigate(`/mtr/${newMTRId}`);
+        // Navigate to the correct MTR route
+        console.log(
+          'Navigating to:',
+          `/pharmacy/medication-therapy/${newMTRId}`
+        );
+        // Use setTimeout to ensure the navigation happens after the current event loop
+        setTimeout(() => {
+          navigate(`/pharmacy/medication-therapy/${newMTRId}`, {
+            replace: false,
+          });
+        }, 100);
       }
     } catch (error) {
       console.error('Failed to start MTR:', error);
+      // The error notification is already handled by the mutation's onError
     }
   };
 
@@ -101,7 +143,7 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
     if (onViewMTR) {
       onViewMTR(mtrId);
     } else {
-      navigate(`/mtr/${mtrId}`);
+      navigate(`/pharmacy/medication-therapy/${mtrId}`);
     }
   };
 
@@ -273,8 +315,9 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
                 size="small"
                 variant="contained"
                 startIcon={<AddIcon />}
-                onClick={handleStartMTR}
+                onClick={(e) => handleStartMTR(e)}
                 disabled={createMTRMutation.isPending}
+                type="button"
               >
                 Start MTR
               </Button>
@@ -580,8 +623,9 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
-                  onClick={handleStartMTR}
+                  onClick={(e) => handleStartMTR(e)}
                   disabled={createMTRMutation.isPending}
+                  type="button"
                 >
                   Start First MTR
                 </Button>

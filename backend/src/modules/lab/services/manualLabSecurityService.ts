@@ -1,6 +1,13 @@
 import mongoose from 'mongoose';
 import logger from '../../../utils/logger';
-import AuditService, { AuditContext } from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
+export interface AuditContext {
+    userId: string;
+    workspaceId: string;
+    sessionId?: string;
+    ipAddress?: string;
+    userAgent?: string;
+}
 
 /**
  * Manual Lab Security Service
@@ -151,7 +158,7 @@ class ManualLabSecurityService {
             return {
                 type: 'suspicious_pattern',
                 severity: 'medium',
-                userId: context.userId,
+                userId: new mongoose.Types.ObjectId(context.userId),
                 ipAddress: context.ipAddress,
                 userAgent: context.userAgent,
                 details: {
@@ -176,7 +183,7 @@ class ManualLabSecurityService {
                 return {
                     type: 'data_exfiltration',
                     severity: 'high',
-                    userId: context.userId,
+                    userId: new mongoose.Types.ObjectId(context.userId),
                     ipAddress: context.ipAddress,
                     details: {
                         pattern: 'excessive_pdf_access',
@@ -206,7 +213,7 @@ class ManualLabSecurityService {
             return {
                 type: 'data_exfiltration',
                 severity: 'medium',
-                userId: context.userId,
+                userId: new mongoose.Types.ObjectId(context.userId),
                 ipAddress: context.ipAddress,
                 details: {
                     pattern: 'bulk_data_request',
@@ -226,7 +233,7 @@ class ManualLabSecurityService {
             return {
                 type: 'unauthorized_access',
                 severity: 'high',
-                userId: context.userId,
+                userId: new mongoose.Types.ObjectId(context.userId),
                 ipAddress: context.ipAddress,
                 userAgent: context.userAgent,
                 details: {

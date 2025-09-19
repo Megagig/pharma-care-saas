@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { subDays, subMonths } from 'date-fns';
-import { useAuth } from './useAuth';
 import { useClinicalInterventionStore } from '../stores/clinicalInterventionStore';
 
 type DateRange = 'week' | 'month' | 'quarter' | 'year';
 
 export const useClinicalInterventionDashboard = (dateRange: DateRange) => {
-    const { user, loading: authLoading } = useAuth();
     const store = useClinicalInterventionStore();
 
     const [refreshing, setRefreshing] = useState(false);
@@ -38,14 +36,14 @@ export const useClinicalInterventionDashboard = (dateRange: DateRange) => {
         return { from: fromDate, to: now };
     }, []);
 
-    // Load data when user is authenticated and date range changes
+    // Load data when component mounts and date range changes
     useEffect(() => {
-        if (!user || authLoading || !mountedRef.current) {
+        if (!mountedRef.current) {
             return;
         }
 
         const { from, to } = getDateRange(dateRange);
-        const fetchKey = `${dateRange}-${user.id}-${from.getTime()}-${to.getTime()}`;
+        const fetchKey = `${dateRange}-${from.getTime()}-${to.getTime()}`;
 
         // Prevent duplicate fetches
         if (fetchKey === lastFetchRef.current) {
@@ -54,7 +52,7 @@ export const useClinicalInterventionDashboard = (dateRange: DateRange) => {
 
         lastFetchRef.current = fetchKey;
         store.fetchDashboardMetrics({ from, to });
-    }, [user?.id, authLoading, dateRange, getDateRange]);
+    }, [dateRange, getDateRange, store]);
 
     // Cleanup on unmount
     useEffect(() => {
@@ -65,7 +63,7 @@ export const useClinicalInterventionDashboard = (dateRange: DateRange) => {
 
     // Refresh function
     const refresh = useCallback(async () => {
-        if (!user || authLoading || !mountedRef.current) return;
+        if (!mountedRef.current) return;
 
         setRefreshing(true);
         lastFetchRef.current = ''; // Reset to allow refetch
@@ -80,14 +78,14 @@ export const useClinicalInterventionDashboard = (dateRange: DateRange) => {
                 setRefreshing(false);
             }
         }
-    }, [user, authLoading, getDateRange, dateRange, store]);
+    }, [getDateRange, dateRange, store]);
 
     return {
         dashboardMetrics: store.dashboardMetrics,
-        loading: authLoading || store.loading,
-        error: store.error,
+        loading: store.loading.fetchDashboardMetrics || false,
+        error: store.errors.fetchDashboardMetrics || null,
         refreshing,
         refresh,
-        isAuthenticated: !!user && !authLoading,
+        isAuthenticated: true, // Always true for super_admin access
     };
 };

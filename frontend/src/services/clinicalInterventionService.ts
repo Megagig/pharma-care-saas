@@ -48,19 +48,37 @@ class ClinicalInterventionService {
         options: RequestOptions = {}
     ): Promise<ApiResponse<T>> {
         try {
+            // Add super_admin test header for development testing
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json',
+                ...options.headers,
+            };
+
+            // Check if we're in super_admin test mode (development only)
+            if (import.meta.env.DEV) {
+                headers['X-Super-Admin-Test'] = 'true';
+            }
+
             const config = {
                 ...options,
                 credentials: 'include' as RequestCredentials, // Include httpOnly cookies
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...options.headers,
-                },
+                headers,
             };
 
             const response = await fetch(`${API_BASE_URL}${url}`, config);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+
+                // Handle authentication errors
+                if (response.status === 401) {
+                    console.warn('Authentication failed - redirecting to login');
+                    // Don't redirect in super_admin mode for testing
+                    if (!window.location.pathname.includes('super_admin')) {
+                        window.location.href = '/login';
+                    }
+                }
+
                 throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
             }
 
@@ -529,6 +547,34 @@ class ClinicalInterventionService {
 
         const queryString = params.toString();
         const url = `/clinical-interventions/${interventionId}/audit-trail${queryString ? `?${queryString}` : ''}`;
+
+        return this.makeRequest(url);
+    }
+
+    /**
+     * Get all audit trail (for general audit view)
+     */
+    async getAllAuditTrail(options: {
+        page?: number;
+        limit?: number;
+        startDate?: string;
+        endDate?: string;
+        riskLevel?: string;
+        userId?: string;
+        action?: string;
+    } = {}): Promise<ApiResponse> {
+        const params = new URLSearchParams();
+
+        if (options.page) params.append('page', options.page.toString());
+        if (options.limit) params.append('limit', options.limit.toString());
+        if (options.startDate) params.append('startDate', options.startDate);
+        if (options.endDate) params.append('endDate', options.endDate);
+        if (options.riskLevel) params.append('riskLevel', options.riskLevel);
+        if (options.userId) params.append('userId', options.userId);
+        if (options.action) params.append('action', options.action);
+
+        const queryString = params.toString();
+        const url = `/clinical-interventions/audit-trail${queryString ? `?${queryString}` : ''}`;
 
         return this.makeRequest(url);
     }

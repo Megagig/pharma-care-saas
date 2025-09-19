@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiHelpers } from '../utils/apiHelpers';
+import api from '../lib/api';
 import {
     ManualLabOrder,
     CreateOrderRequest,
@@ -17,12 +17,19 @@ export const usePatientLabOrders = (patientId: string, options?: {
     return useQuery({
         queryKey: ['manualLabOrders', 'patient', patientId],
         queryFn: async (): Promise<ManualLabOrder[]> => {
-            const response = await apiHelpers.get(`/manual-lab-orders/patient/${patientId}`);
-            return response.data.orders || [];
+            const response = await api.get(`/manual-lab/patient/${patientId}`);
+            return response.data?.data?.orders || response.data?.orders || response.data || [];
         },
         enabled: options?.enabled !== false && !!patientId,
         refetchInterval: options?.refetchInterval,
         staleTime: 5 * 60 * 1000, // 5 minutes
+        retry: (failureCount, error: any) => {
+            // Don't retry on 404 (not found) or 403 (forbidden) errors
+            if (error?.response?.status === 404 || error?.response?.status === 403) {
+                return false;
+            }
+            return failureCount < 2;
+        },
     });
 };
 
@@ -35,8 +42,8 @@ export const useManualLabOrder = (orderId: string, options?: {
     return useQuery({
         queryKey: ['manualLabOrders', orderId],
         queryFn: async (): Promise<ManualLabOrder> => {
-            const response = await apiHelpers.get(`/manual-lab-orders/${orderId}`);
-            return response.data.order;
+            const response = await api.get(`/manual-lab/${orderId}`);
+            return response.data?.data?.order || response.data?.order || response.data;
         },
         enabled: options?.enabled !== false && !!orderId,
         staleTime: 2 * 60 * 1000, // 2 minutes
@@ -51,7 +58,7 @@ export const useCreateManualLabOrder = () => {
 
     return useMutation({
         mutationFn: async (orderData: CreateOrderRequest): Promise<CreateOrderResponse> => {
-            const response = await apiHelpers.post('/manual-lab-orders', orderData);
+            const response = await api.post('/manual-lab', orderData);
             return response.data;
         },
         onSuccess: (data, variables) => {
@@ -77,7 +84,7 @@ export const useUpdateOrderStatus = () => {
 
     return useMutation({
         mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
-            const response = await apiHelpers.put(`/manual-lab-orders/${orderId}/status`, { status });
+            const response = await api.put(`/manual-lab/${orderId}/status`, { status });
             return response.data;
         },
         onSuccess: (data, variables) => {
@@ -106,7 +113,7 @@ export const useUpdateOrderStatus = () => {
 export const useResolveOrderToken = () => {
     return useMutation({
         mutationFn: async (token: string): Promise<OrderTokenResponse> => {
-            const response = await apiHelpers.get(`/manual-lab-orders/scan?token=${encodeURIComponent(token)}`);
+            const response = await api.get(`/manual-lab/scan?token=${encodeURIComponent(token)}`);
             return response.data;
         },
     });

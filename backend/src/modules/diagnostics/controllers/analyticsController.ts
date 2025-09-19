@@ -34,7 +34,7 @@ export const getDiagnosticMetrics = async (req: AuthRequest, res: Response) => {
             end
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: metrics
         });
@@ -77,7 +77,7 @@ export const getAIPerformanceMetrics = async (req: AuthRequest, res: Response) =
             end
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: metrics
         });
@@ -120,7 +120,7 @@ export const getPatientOutcomeMetrics = async (req: AuthRequest, res: Response) 
             end
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: metrics
         });
@@ -163,7 +163,7 @@ export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
             end
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: analytics
         });
@@ -206,7 +206,7 @@ export const getTrendAnalysis = async (req: AuthRequest, res: Response) => {
             end
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: trends
         });
@@ -249,7 +249,7 @@ export const getComparisonAnalysis = async (req: AuthRequest, res: Response) => 
             end
         );
 
-        res.json({
+        return res.json({
             success: true,
             data: comparison
         });
@@ -305,7 +305,7 @@ export const generateAnalyticsReport = async (req: AuthRequest, res: Response) =
             return;
         }
 
-        res.json({
+        return res.json({
             success: true,
             data: report
         });
@@ -419,7 +419,7 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response) => {
             });
         }
 
-        res.json({
+        return res.json({
             success: true,
             data: summary
         });

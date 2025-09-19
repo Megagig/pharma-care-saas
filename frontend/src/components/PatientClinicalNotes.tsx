@@ -363,8 +363,20 @@ const PatientClinicalNotes: React.FC<PatientClinicalNotesProps> = ({
             <CircularProgress />
           </Box>
         ) : error ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            Failed to load clinical notes: {error.message}
+          <Alert
+            severity="error"
+            sx={{ mb: 2 }}
+            action={
+              <Button color="inherit" size="small" onClick={() => refetch()}>
+                Retry
+              </Button>
+            }
+          >
+            {error.response?.status === 404
+              ? 'Patient not found or access denied'
+              : error.response?.status === 401
+              ? 'Authentication required. Please log in again.'
+              : `Failed to load clinical notes: ${error.message}`}
           </Alert>
         ) : notes.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 4 }}>

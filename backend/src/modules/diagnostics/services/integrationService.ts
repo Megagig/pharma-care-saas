@@ -250,19 +250,19 @@ export class DiagnosticIntegrationService {
             const clinicalNotesQuery = ClinicalNote.findActive({
                 ...baseFilter,
                 patient: patientId,
-            }).sort({ createdAt: -1 }).limit(limit).exec();
+            }).sort({ createdAt: -1 }).limit(limit);
 
             // Get MTRs
             const mtrsQuery = MedicationTherapyReview.find({
                 ...baseFilter,
                 patientId,
                 isDeleted: false,
-            }).sort({ createdAt: -1 }).limit(limit).exec();
+            }).sort({ createdAt: -1 }).limit(limit);
 
             const [diagnosticRequests, clinicalNotes, mtrs] = await Promise.all([
                 diagnosticRequestsQuery,
-                clinicalNotesQuery,
-                mtrsQuery,
+                clinicalNotesQuery.exec(),
+                mtrsQuery.exec(),
             ]);
 
             // Combine and format timeline events
@@ -351,7 +351,7 @@ export class DiagnosticIntegrationService {
                 workplaceId,
                 isDeleted: false,
                 createdAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) }, // Last 90 days
-            }).sort({ createdAt: -1 }).limit(5);
+            }).sort({ createdAt: -1 }).limit(5).exec();
 
             // Find correlations
             const correlations = this.findCorrelations(

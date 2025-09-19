@@ -1,289 +1,349 @@
 import { Request, Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
-import AuditService from '../services/auditService';
-import { AuthRequest } from './auth';
+import { AuditService } from '../services/auditService';
+import { AuthRequest } from '../types/auth';
 
-/**
- * Audit Middleware
- * Automatically logs MTR activities for compliance tracking
- */
-
-interface AuditableRequest extends AuthRequest {
-    auditData?: {
-        action?: string;
-        resourceType?: string;
-        resourceId?: string;
-        patientId?: string;
-        reviewId?: string;
-        oldValues?: any;
-        newValues?: any;
-        details?: any;
-        complianceCategory?: string;
-        riskLevel?: string;
-    };
-    startTime?: number;
+// Extend Request interface to include audit data
+declare global {
+    namespace Express {
+        interface Request {
+            auditData?: {
+                action: string;
+                details: Record<string, any>;
+                complianceCategory: string;
+                riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+                interventionId?: string;
+                oldValues?: Record<string, any>;
+                newValues?: Record<string, any>;
+                changedFields?: string[];
+            };
+            originalBody?: any;
+        }
+    }
 }
 
 /**
- * Middleware to capture request start time for duration tracking
+ * Middleware to capture request data for auditing
  */
-export const auditTimer = (req: AuditableRequest, res: Response, next: NextFunction) => {
-    req.startTime = Date.now();
+export const captureAuditData = (
+    action: string,
+    complianceCategory: string,
+    riskLevel?: 'low' | 'medium' | 'high' | 'critical'
+) => {
+    return (req: AuthRequest, res: Response, next: NextFunction) => {
+        // Store original body for comparison
+        req.originalBody = { ...req.body };
+
+        // Initialize audit data
+        req.auditData = {
+            action,
+            complianceCategory,
+            riskLevel,
+            details: {
+                method: req.method,
+                url: req.originalUrl,
+                params: req.params,
+                query: req.query,
+                body: req.body
+            }
+        };
+
+        next();
+    };
+};
+
+/**
+ * Middleware to log audit trail after request completion
+ */
+export const logAuditTrail = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+) => {
+    // Store original res.json to intercept response
+    const originalJson = res.json;
+
+    res.json = function (body: any) {
+        // Store response data for audit
+        if (req.auditData) {
+            req.auditData.details.responseStatus = res.statusCode;
+            req.auditData.details.responseData = body;
+
+            // Extract intervention ID from response or params
+            if (body?.data?._id) {
+                req.auditData.interventionId = body.data._id;
+            } else if (req.params.id) {
+                req.auditData.interventionId = req.params.id;
+            }
+
+            // Determine changed fields for updates
+            if (req.method === 'PUT' || req.method === 'PATCH') {
+                req.auditData.changedFields = Object.keys(req.body || {});
+                req.auditData.oldValues = req.originalBody;
+                req.auditData.newValues = req.body;
+            }
+
+            // Log the audit trail asynchronously
+            if (req.user?.id) {
+                AuditService.createAuditLog({
+                    action: req.auditData.action,
+                    userId: req.user.id,
+                    interventionId: req.auditData.interventionId,
+                    details: req.auditData.details,
+                    riskLevel: req.auditData.riskLevel,
+                    complianceCategory: req.auditData.complianceCategory,
+                    changedFields: req.auditData.changedFields,
+                    oldValues: req.auditData.oldValues,
+                    newValues: req.auditData.newValues,
+                    workspaceId: req.user?.workplaceId?.toString()
+                }, req).catch(error => {
+                    console.error('Failed to create audit log:', error);
+                });
+            }
+        }
+
+        // Call original json method
+        return originalJson.call(this, body);
+    };
+
     next();
 };
 
 /**
- * Middleware to automatically log MTR activities
+ * Middleware specifically for intervention operations
  */
-export const auditLogger = (options: {
-    action?: string;
-    resourceType?: string;
-    complianceCategory?: string;
-    riskLevel?: string;
-    skipSuccessLog?: boolean;
-} = {}) => {
-    return async (req: AuditableRequest, res: Response, next: NextFunction) => {
-        // Store original res.json to intercept response
-        const originalJson = res.json;
-        let responseData: any;
-        let statusCode: number;
+export const auditIntervention = (action: string) => {
+    const complianceCategory = getComplianceCategoryForAction(action);
+    const riskLevel = getRiskLevelForAction(action);
 
-        // Override res.json to capture response data
-        res.json = function (data: any) {
-            responseData = data;
-            statusCode = res.statusCode;
-            return originalJson.call(this, data);
-        };
+    return [
+        captureAuditData(action, complianceCategory, riskLevel),
+        logAuditTrail
+    ];
+};
 
-        // Store original res.status to capture status code
-        const originalStatus = res.status;
-        res.status = function (code: number) {
-            statusCode = code;
-            return originalStatus.call(this, code);
-        };
+/**
+ * Get compliance category based on action
+ */
+function getComplianceCategoryForAction(action: string): string {
+    const categoryMap: Record<string, string> = {
+        'INTERVENTION_CREATED': 'clinical_documentation',
+        'INTERVENTION_UPDATED': 'clinical_documentation',
+        'INTERVENTION_DELETED': 'data_integrity',
+        'INTERVENTION_REVIEWED': 'quality_assurance',
+        'INTERVENTION_APPROVED': 'quality_assurance',
+        'INTERVENTION_REJECTED': 'quality_assurance',
+        'INTERVENTION_COMPLETED': 'patient_care',
+        'INTERVENTION_CANCELLED': 'workflow_management',
+        'INTERVENTION_ASSIGNED': 'workflow_management',
+        'INTERVENTION_ESCALATED': 'risk_management',
+        'MEDICATION_CHANGED': 'medication_safety',
+        'DOSAGE_MODIFIED': 'medication_safety',
+        'ALLERGY_UPDATED': 'patient_privacy',
+        'CONTRAINDICATION_FLAGGED': 'medication_safety',
+        'RISK_ASSESSMENT_UPDATED': 'risk_management',
+        'PATIENT_DATA_ACCESSED': 'patient_privacy',
+        'EXPORT_PERFORMED': 'data_integrity',
+        'REPORT_GENERATED': 'regulatory_compliance'
+    };
 
-        // Continue with the request
-        next();
+    return categoryMap[action] || 'workflow_management';
+}
 
-        // Log after response is sent
-        res.on('finish', async () => {
-            try {
-                // Skip logging if user is not authenticated
-                if (!req.user) return;
+/**
+ * Get risk level based on action
+ */
+function getRiskLevelForAction(action: string): 'low' | 'medium' | 'high' | 'critical' {
+    const riskMap: Record<string, 'low' | 'medium' | 'high' | 'critical'> = {
+        'INTERVENTION_DELETED': 'critical',
+        'PATIENT_DATA_ACCESSED': 'critical',
+        'MEDICATION_CHANGED': 'high',
+        'DOSAGE_MODIFIED': 'high',
+        'CONTRAINDICATION_FLAGGED': 'high',
+        'INTERVENTION_ESCALATED': 'high',
+        'INTERVENTION_UPDATED': 'medium',
+        'INTERVENTION_REJECTED': 'medium',
+        'ALLERGY_UPDATED': 'medium',
+        'RISK_ASSESSMENT_UPDATED': 'medium',
+        'INTERVENTION_CREATED': 'low',
+        'INTERVENTION_REVIEWED': 'low',
+        'INTERVENTION_APPROVED': 'low',
+        'INTERVENTION_COMPLETED': 'low'
+    };
 
-                const context = AuditService.createAuditContext(req);
-                const duration = req.startTime ? Date.now() - req.startTime : undefined;
+    return riskMap[action] || 'low';
+}
 
-                // Determine action from request or options
-                const action = req.auditData?.action ||
-                    options.action ||
-                    generateActionFromRequest(req);
+/**
+ * Manual audit logging function for custom scenarios
+ */
+export const createManualAuditLog = async (
+    req: AuthRequest,
+    action: string,
+    details: Record<string, any>,
+    options?: {
+        interventionId?: string;
+        riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+        complianceCategory?: string;
+    }
+) => {
+    if (!req.user?.id) {
+        console.warn('Cannot create audit log: No user in request');
+        return;
+    }
 
-                // Determine resource type
-                const resourceType = req.auditData?.resourceType ||
-                    options.resourceType ||
-                    determineResourceType(req.path);
+    try {
+        await AuditService.createAuditLog({
+            action,
+            userId: req.user.id,
+            interventionId: options?.interventionId,
+            details,
+            riskLevel: options?.riskLevel,
+            complianceCategory: options?.complianceCategory || getComplianceCategoryForAction(action),
+            workspaceId: req.user?.workplaceId?.toString()
+        }, req);
+    } catch (error) {
+        console.error('Failed to create manual audit log:', error);
+    }
+};
 
-                // Skip logging for certain actions if specified
-                if (options.skipSuccessLog && statusCode >= 200 && statusCode < 300) {
-                    return;
-                }
+/**
+ * Audit timer middleware for MTR operations
+ */
+export const auditTimer = (action: string) => {
+    return (req: AuthRequest, res: Response, next: NextFunction) => {
+        const startTime = Date.now();
 
-                // Prepare audit data
-                const resourceIdStr = req.auditData?.resourceId ||
-                    req.params.id ||
-                    req.params.patientId ||
-                    req.params.reviewId ||
-                    context.userId.toString();
+        // Store start time in request
+        req.auditStartTime = startTime;
 
-                const complianceCategory = req.auditData?.complianceCategory || options.complianceCategory;
-                const riskLevel = req.auditData?.riskLevel || options.riskLevel;
+        // Override res.end to capture completion time
+        const originalEnd = res.end;
+        res.end = function (...args: any[]) {
+            const endTime = Date.now();
+            const duration = endTime - startTime;
 
-                const auditData = {
-                    action,
-                    resourceType: resourceType as any,
-                    resourceId: new mongoose.Types.ObjectId(resourceIdStr),
-                    patientId: req.auditData?.patientId ? new mongoose.Types.ObjectId(req.auditData.patientId) :
-                        req.params.patientId ? new mongoose.Types.ObjectId(req.params.patientId) : undefined,
-                    reviewId: req.auditData?.reviewId ? new mongoose.Types.ObjectId(req.auditData.reviewId) :
-                        req.params.id ? new mongoose.Types.ObjectId(req.params.id) : undefined,
-                    oldValues: req.auditData?.oldValues,
-                    newValues: req.auditData?.newValues,
+            // Log timing audit
+            if (req.user?.id) {
+                AuditService.createAuditLog({
+                    action: `${action}_TIMING`,
+                    userId: req.user.id,
                     details: {
-                        ...req.auditData?.details,
-                        requestBody: sanitizeRequestBody(req.body),
-                        queryParams: req.query,
-                        statusCode,
-                        success: statusCode >= 200 && statusCode < 300,
+                        duration,
+                        startTime: new Date(startTime),
+                        endTime: new Date(endTime),
+                        method: req.method,
+                        url: req.originalUrl,
+                        statusCode: res.statusCode
                     },
-                    errorMessage: statusCode >= 400 ? getErrorMessage(responseData) : undefined,
-                    duration,
-                    complianceCategory: complianceCategory as 'clinical_documentation' | 'patient_safety' | 'data_access' | 'system_security' | 'workflow_compliance' | undefined,
-                    riskLevel: riskLevel as 'low' | 'medium' | 'high' | 'critical' | undefined,
-                };
-
-                // Log the activity
-                await AuditService.logActivity(context, auditData);
-            } catch (error) {
-                console.error('Failed to log audit activity:', error);
-                // Don't throw error to avoid breaking the main request flow
+                    complianceCategory: 'system_performance',
+                    riskLevel: duration > 5000 ? 'medium' : 'low'
+                }, req).catch(error => {
+                    console.error('Failed to create timing audit log:', error);
+                });
             }
-        });
+
+            return (originalEnd as any).apply(this, args);
+        };
+
+        next();
     };
 };
 
 /**
- * Middleware specifically for MTR session activities
+ * Audit MTR activity middleware
  */
-export const auditMTRActivity = (action: string) => {
-    return auditLogger({
-        action,
-        resourceType: 'MedicationTherapyReview',
-        complianceCategory: 'clinical_documentation',
-    });
+export const auditMTRActivity = (activityType: string) => {
+    return async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (req.user?.id) {
+                await AuditService.createAuditLog({
+                    action: `MTR_${activityType.toUpperCase()}`,
+                    userId: req.user.id,
+                    details: {
+                        activityType,
+                        sessionId: req.params.sessionId || req.body.sessionId,
+                        stepId: req.params.stepId || req.body.stepId,
+                        method: req.method,
+                        url: req.originalUrl,
+                        params: req.params,
+                        query: req.query
+                    },
+                    complianceCategory: 'clinical_documentation',
+                    riskLevel: 'medium'
+                }, req);
+            }
+        } catch (error) {
+            console.error('Failed to create MTR activity audit log:', error);
+        }
+
+        next();
+    };
 };
 
 /**
- * Middleware for patient data access
+ * Audit patient access middleware
  */
-export const auditPatientAccess = (action: string) => {
-    return auditLogger({
-        action,
-        resourceType: 'Patient',
-        complianceCategory: 'data_access',
-        riskLevel: 'medium',
-    });
+export const auditPatientAccess = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const patientId = req.params.patientId || req.body.patientId || req.query.patientId;
+
+        if (req.user?.id && patientId) {
+            await AuditService.createAuditLog({
+                action: 'PATIENT_DATA_ACCESSED',
+                userId: req.user.id,
+                details: {
+                    patientId,
+                    accessType: 'mtr_review',
+                    method: req.method,
+                    url: req.originalUrl,
+                    timestamp: new Date()
+                },
+                complianceCategory: 'patient_privacy',
+                riskLevel: 'high'
+            }, req);
+        }
+    } catch (error) {
+        console.error('Failed to create patient access audit log:', error);
+    }
+
+    next();
 };
 
 /**
- * Middleware for high-risk activities
+ * General audit logger middleware
  */
-export const auditHighRiskActivity = (action: string, resourceType: string) => {
-    return auditLogger({
-        action,
-        resourceType,
-        riskLevel: 'high',
-        complianceCategory: 'system_security',
-    });
+export const auditLogger = (action: string, complianceCategory?: string) => {
+    return async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if (req.user?.id) {
+                await AuditService.createAuditLog({
+                    action,
+                    userId: req.user.id,
+                    details: {
+                        method: req.method,
+                        url: req.originalUrl,
+                        params: req.params,
+                        query: req.query,
+                        body: req.method !== 'GET' ? req.body : undefined,
+                        timestamp: new Date()
+                    },
+                    complianceCategory: complianceCategory || getComplianceCategoryForAction(action),
+                    riskLevel: getRiskLevelForAction(action)
+                }, req);
+            }
+        } catch (error) {
+            console.error('Failed to create audit log:', error);
+        }
+
+        next();
+    };
 };
 
-/**
- * Helper function to set audit data on request
- */
-export const setAuditData = (
-    req: AuditableRequest,
-    data: Partial<AuditableRequest['auditData']>
-) => {
-    req.auditData = { ...req.auditData, ...data };
-};
-
-/**
- * Helper functions
- */
-function generateActionFromRequest(req: Request): string {
-    const method = req.method;
-    const path = req.path;
-
-    // MTR-specific actions
-    if (path.includes('/mtr')) {
-        if (method === 'POST' && path.endsWith('/mtr')) return 'CREATE_MTR_SESSION';
-        if (method === 'PUT' && path.includes('/mtr/')) return 'UPDATE_MTR_SESSION';
-        if (method === 'DELETE' && path.includes('/mtr/')) return 'DELETE_MTR_SESSION';
-        if (method === 'GET' && path.includes('/mtr/')) return 'VIEW_MTR_SESSION';
-        if (path.includes('/problems')) {
-            if (method === 'POST') return 'CREATE_MTR_PROBLEM';
-            if (method === 'PUT') return 'UPDATE_MTR_PROBLEM';
-            if (method === 'DELETE') return 'DELETE_MTR_PROBLEM';
-            return 'VIEW_MTR_PROBLEMS';
-        }
-        if (path.includes('/interventions')) {
-            if (method === 'POST') return 'CREATE_MTR_INTERVENTION';
-            if (method === 'PUT') return 'UPDATE_MTR_INTERVENTION';
-            if (method === 'DELETE') return 'DELETE_MTR_INTERVENTION';
-            return 'VIEW_MTR_INTERVENTIONS';
-        }
-        if (path.includes('/followups')) {
-            if (method === 'POST') return 'CREATE_MTR_FOLLOWUP';
-            if (method === 'PUT') return 'UPDATE_MTR_FOLLOWUP';
-            if (method === 'DELETE') return 'DELETE_MTR_FOLLOWUP';
-            return 'VIEW_MTR_FOLLOWUPS';
+// Extend Request interface for audit timing
+declare global {
+    namespace Express {
+        interface Request {
+            auditStartTime?: number;
         }
     }
-
-    // Patient-specific actions
-    if (path.includes('/patients')) {
-        if (method === 'POST') return 'CREATE_PATIENT';
-        if (method === 'PUT') return 'UPDATE_PATIENT';
-        if (method === 'DELETE') return 'DELETE_PATIENT';
-        return 'VIEW_PATIENT';
-    }
-
-    // Auth actions
-    if (path.includes('/auth')) {
-        if (path.includes('/login')) return 'LOGIN';
-        if (path.includes('/logout')) return 'LOGOUT';
-        if (path.includes('/register')) return 'REGISTER';
-    }
-
-    // Audit actions
-    if (path.includes('/audit')) {
-        if (path.includes('/export')) return 'EXPORT_AUDIT_DATA';
-        if (path.includes('/compliance-report')) return 'ACCESS_COMPLIANCE_REPORT';
-        return 'VIEW_AUDIT_LOGS';
-    }
-
-    // Generic actions
-    return `${method}_${path.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase()}`;
 }
-
-function determineResourceType(path: string): string {
-    if (path.includes('/mtr')) return 'MedicationTherapyReview';
-    if (path.includes('/patients')) return 'Patient';
-    if (path.includes('/users')) return 'User';
-    if (path.includes('/audit')) return 'User'; // Audit actions are user-related
-    return 'User'; // Default fallback
-}
-
-function sanitizeRequestBody(body: any): any {
-    if (!body || typeof body !== 'object') return body;
-
-    // Remove sensitive fields
-    const sensitiveFields = ['password', 'token', 'secret', 'key', 'ssn', 'creditCard'];
-    const sanitized = { ...body };
-
-    for (const field of sensitiveFields) {
-        if (sanitized[field]) {
-            sanitized[field] = '[REDACTED]';
-        }
-    }
-
-    // Limit size to prevent large payloads in audit logs
-    const jsonString = JSON.stringify(sanitized);
-    if (jsonString.length > 5000) {
-        return { _truncated: true, _originalSize: jsonString.length };
-    }
-
-    return sanitized;
-}
-
-function getErrorMessage(responseData: any): string | undefined {
-    if (!responseData) return undefined;
-
-    if (typeof responseData === 'string') return responseData;
-    if (responseData.message) return responseData.message;
-    if (responseData.error) return responseData.error;
-    if (responseData.errors && Array.isArray(responseData.errors)) {
-        return responseData.errors.join(', ');
-    }
-
-    return 'Unknown error';
-}
-
-export default {
-    auditTimer,
-    auditLogger,
-    auditMTRActivity,
-    auditPatientAccess,
-    auditHighRiskActivity,
-    setAuditData,
-};

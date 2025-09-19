@@ -1,5 +1,24 @@
 import mongoose from 'mongoose';
-import AuditService, { AuditContext, AuditLogData } from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
+export interface AuditContext {
+    userId: string;
+    workspaceId: string;
+    sessionId?: string;
+    ipAddress?: string;
+    userAgent?: string;
+}
+export interface AuditLogData {
+    action: string;
+    userId: string;
+    interventionId?: string;
+    details: Record<string, any>;
+    riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+    complianceCategory: string;
+    changedFields?: string[];
+    oldValues?: Record<string, any>;
+    newValues?: Record<string, any>;
+    workspaceId?: string;
+}
 import logger from '../../../utils/logger';
 import { IManualLabOrder } from '../models/ManualLabOrder';
 import { IManualLabResult } from '../models/ManualLabResult';
@@ -87,7 +106,7 @@ class ManualLabAuditService {
             logger.info('Manual lab order creation audited', {
                 orderId: order.orderId,
                 patientId: order.patientId,
-                workplaceId: context.workplaceId,
+                workplaceId: context.workspaceId,
                 userId: context.userId,
                 testCount: order.tests.length,
                 service: 'manual-lab-audit'
@@ -123,7 +142,6 @@ class ManualLabAuditService {
                     userAgent: auditData.userAgent,
                     referrer: auditData.referrer,
                     timestamp: new Date(),
-                    ipAddress: context.ipAddress,
                     sessionId: context.sessionId
                 },
                 complianceCategory: 'data_access',
@@ -331,13 +349,10 @@ class ManualLabAuditService {
                     errorReason,
                     resolvedBy: context.userId,
                     resolvedAt: new Date(),
-                    ipAddress: context.ipAddress,
-                    userAgent: context.userAgent,
                     sessionId: context.sessionId
                 },
                 complianceCategory: 'data_access',
-                riskLevel: success ? 'low' : 'medium',
-                errorMessage: errorReason
+                riskLevel: success ? 'low' : 'medium'
             });
 
             logger.info('Token resolution audited', {
@@ -364,15 +379,11 @@ class ManualLabAuditService {
     ): Promise<any> {
         try {
             // Get audit logs for the specified period
-            const { logs, total } = await AuditService.getAuditLogs(
-                reportData.workplaceId,
-                {
-                    startDate: reportData.dateRange.start,
-                    endDate: reportData.dateRange.end,
-                    action: 'MANUAL_LAB_'
-                },
-                { limit: 10000 }
-            );
+            const { logs, total } = await AuditService.getAuditLogs({
+                startDate: reportData.dateRange.start.toISOString(),
+                endDate: reportData.dateRange.end.toISOString(),
+                action: 'MANUAL_LAB_'
+            });
 
             // Analyze compliance metrics
             const complianceMetrics = this.analyzeComplianceMetrics(logs);
@@ -436,15 +447,11 @@ class ManualLabAuditService {
     ): Promise<void> {
         try {
             // Check for suspicious PDF access patterns
-            const recentAccesses = await AuditService.getAuditLogs(
-                context.workplaceId,
-                {
-                    userId: context.userId,
-                    action: 'MANUAL_LAB_PDF_ACCESSED',
-                    startDate: new Date(Date.now() - 60 * 60 * 1000) // Last hour
-                },
-                { limit: 100 }
-            );
+            const recentAccesses = await AuditService.getAuditLogs({
+                userId: context.userId,
+                action: 'MANUAL_LAB_PDF_ACCESSED',
+                startDate: new Date(Date.now() - 60 * 60 * 1000).toISOString() // Last hour
+            });
 
             const accessCount = recentAccesses.total;
             const uniqueOrders = new Set(

@@ -234,8 +234,7 @@ export const patientManagementErrorHandler = (
     sendError(
       res,
       'DUPLICATE_RESOURCE',
-      `Resource already exists${
-        duplicateField ? ` with this ${duplicateField}` : ''
+      `Resource already exists${duplicateField ? ` with this ${duplicateField}` : ''
       }`,
       409
     );
@@ -396,15 +395,18 @@ export const isSuperAdmin = (req: AuthRequest): boolean => {
 };
 
 // Request context helpers
-export const getRequestContext = (req: AuthRequest) => ({
-  userId: req.user?._id,
-  userRole: req.user?.role,
-  workplaceId: req.user?.workplaceId?.toString() || '',
-  isAdmin: (req as any).isAdmin || false,
-  isSuperAdmin: isSuperAdmin(req),
-  canManage: (req as any).canManage || false,
-  timestamp: new Date().toISOString(),
-});
+export const getRequestContext = (req: AuthRequest) => {
+  const userIsSuperAdmin = isSuperAdmin(req);
+  return {
+    userId: req.user?._id,
+    userRole: req.user?.role,
+    workplaceId: req.user?.workplaceId?.toString() || '',
+    isAdmin: (req as any).isAdmin || userIsSuperAdmin, // Super admin should be treated as admin
+    isSuperAdmin: userIsSuperAdmin,
+    canManage: (req as any).canManage || userIsSuperAdmin, // Super admin can manage everything
+    timestamp: new Date().toISOString(),
+  };
+};
 
 // Audit log helper
 export const createAuditLog = (
