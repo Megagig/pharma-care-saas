@@ -106,6 +106,38 @@ export const requireRole = (...roles: string[]) => {
 };
 
 /**
+ * RBAC middleware that checks if user has any of the specified roles
+ */
+export const requireRole = (...roles: string[]) => {
+    return (req: AuthRequest, res: Response, next: NextFunction): void => {
+        if (!req.user) {
+            res.status(401).json({
+                success: false,
+                message: 'Authentication required',
+            });
+            return;
+        }
+
+        // Super admin bypasses role checks
+        if (req.user.role === 'super_admin') {
+            return next();
+        }
+
+        if (!req.user.role || !roles.includes(req.user.role)) {
+            res.status(403).json({
+                success: false,
+                message: 'Insufficient role permissions',
+                requiredRoles: roles,
+                userRole: req.user.role,
+            });
+            return;
+        }
+
+        next();
+    };
+};
+
+/**
  * RBAC middleware that checks if user has any of the specified workplace roles
  */
 export const requireWorkplaceRole = (...roles: string[]) => {
