@@ -488,3 +488,4 @@
 {"level":"info","message":"Stale stats recalculation completed: 16 workspaces updated","service":"pharma-care-api","timestamp":"2025-09-19 18:00:30"}
 {"action":"USER_LOGOUT","auditId":"68cd8c8c9461f341032c0612","category":"authentication","ipAddress":"::1","level":"info","message":"System Audit Log","riskScore":3,"service":"system-audit","severity":"low","suspicious":false,"timestamp":"2025-09-19 18:02:04"}
 {"algorithm":"aes-256-cbc","keyId":"default-key-1758303561173","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-19 18:39:21"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-19 20:38:14"}

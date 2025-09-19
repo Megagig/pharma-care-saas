@@ -52,6 +52,7 @@ import manualLabRoutes from './modules/lab/routes/manualLabRoutes';
 import publicApiRoutes from './routes/publicApiRoutes';
 import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
 import diagnosticRoutes from './routes/diagnosticRoutes';
+import communicationRoutes from './routes/communicationRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -189,6 +190,9 @@ app.use('/api/manual-lab', manualLabRoutes);
 
 // AI Diagnostic routes
 app.use('/api/diagnostics', diagnosticRoutes);
+
+// Communication Hub routes
+app.use('/api/communication', communicationRoutes);
 
 // Clinical Notes routes - added special debug log
 app.use((req, res, next) => {
