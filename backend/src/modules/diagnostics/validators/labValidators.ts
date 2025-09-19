@@ -590,6 +590,8 @@ export const validateLOINCCode = (loincCode: string): { valid: boolean; error?: 
     const [, code, checkDigit] = match;
 
     // Validate check digit using LOINC algorithm
+    if (!code) return { valid: false, error: 'LOINC code is required' };
+
     let sum = 0;
     for (let i = 0; i < code.length; i++) {
         const char = code[i];

@@ -273,6 +273,8 @@ export interface CreateMTRData {
     referralSource?: string;
     reviewReason?: string;
     estimatedDuration?: number;
+    patientConsent?: boolean;
+    confidentialityAgreed?: boolean;
 }
 
 export interface UpdateMTRData {

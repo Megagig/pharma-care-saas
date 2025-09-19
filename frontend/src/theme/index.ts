@@ -143,9 +143,10 @@ export const createAppTheme = (mode: 'light' | 'dark'): Theme => {
         styleOverrides: {
           root: {
             borderRadius: 16,
-            boxShadow:
-              '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-            border: '1px solid #e5e7eb',
+            boxShadow: isDark
+              ? '0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2)'
+              : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+            border: isDark ? '1px solid #334155' : '1px solid #e5e7eb',
           },
         },
       },
@@ -168,10 +169,11 @@ export const createAppTheme = (mode: 'light' | 'dark'): Theme => {
       MuiAppBar: {
         styleOverrides: {
           root: {
-            backgroundColor: '#ffffff',
-            color: '#1f2937',
-            boxShadow:
-              '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+            backgroundColor: isDark ? '#1e293b' : '#ffffff',
+            color: isDark ? '#f1f5f9' : '#1f2937',
+            boxShadow: isDark
+              ? '0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2)'
+              : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
           },
         },
       },

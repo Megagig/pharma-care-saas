@@ -18,7 +18,12 @@ import ManualLabService, {
 
 // Import utilities
 import TokenService from '../services/tokenService';
-import AuditService, { AuditContext } from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
+export interface AuditContext {
+    userId: string;
+    workspaceId: string;
+    sessionId?: string;
+}
 
 // Mock external services
 jest.mock('../services/pdfGenerationService');

@@ -570,7 +570,7 @@ const Settings: React.FC = () => {
                     }
                   >
                     <MenuItem value="NGN">Nigerian Naira (₦)</MenuItem>
-                    <MenuItem value="USD">US Dollar ($)</MenuItem>
+                    <MenuItem value="NGN">Nigerian Naira (₦)</MenuItem>
                     <MenuItem value="EUR">Euro (€)</MenuItem>
                     <MenuItem value="GBP">British Pound (£)</MenuItem>
                   </Select>

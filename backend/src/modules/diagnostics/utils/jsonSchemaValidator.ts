@@ -154,7 +154,7 @@ interface FHIRBundleSchema {
     }>;
 }
 
-const fhirBundleSchema: JSONSchemaType<FHIRBundleSchema> = {
+const fhirBundleSchema: any = {
     type: 'object',
     properties: {
         resourceType: { type: 'string', const: 'Bundle' },

@@ -6,5 +6,8 @@
     "ajv-formats": "^3.0.1",
     "joi": "^18.0.1",
     "xss": "^1.0.15"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.22.0"
   }
 }

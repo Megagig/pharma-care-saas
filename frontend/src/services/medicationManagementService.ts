@@ -10,8 +10,8 @@ export interface MedicationCreateData {
   endDate?: string | Date;
   indication?: string;
   prescriber?: string;
-  cost?: number; // Cost price in Naira
-  sellingPrice?: number; // Selling price in Naira
+  cost?: number; // Cost price in Naira (₦)
+  sellingPrice?: number; // Selling price in Naira (₦)
   allergyCheck?: {
     status: boolean;
     details?: string;
@@ -28,8 +28,8 @@ export interface MedicationUpdateData {
   endDate?: string | Date;
   indication?: string;
   prescriber?: string;
-  cost?: number; // Cost price in Naira
-  sellingPrice?: number; // Selling price in Naira
+  cost?: number; // Cost price in Naira (₦)
+  sellingPrice?: number; // Selling price in Naira (₦)
   allergyCheck?: {
     status: boolean;
     details?: string;
@@ -47,8 +47,8 @@ export interface MedicationHistoryItem {
   endDate?: string | Date;
   indication?: string;
   prescriber?: string;
-  cost?: number; // Cost price in Naira
-  sellingPrice?: number; // Selling price in Naira
+  cost?: number; // Cost price in Naira (₦)
+  sellingPrice?: number; // Selling price in Naira (₦)
   status?: 'active' | 'archived' | 'cancelled';
   updatedAt: string | Date;
   updatedBy?: string;

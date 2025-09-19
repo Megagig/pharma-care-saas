@@ -22,7 +22,7 @@ import {
   createAuditLog,
   isSuperAdmin,
 } from '../utils/responseHelpers';
-import AuditService from '../services/auditService';
+import { AuditService } from '../services/auditService';
 
 /**
  * Medication Therapy Review Controller
@@ -125,7 +125,7 @@ export const getMTRSession = asyncHandler(
 
     // Create response with computed properties
     const responseData = {
-      session: {
+      review: {
         ...session!.toObject(),
         completionPercentage: session!.getCompletionPercentage(),
         nextStep: session!.getNextStep(),
@@ -229,7 +229,7 @@ export const createMTRSession = asyncHandler(
     sendSuccess(
       res,
       {
-        session: {
+        review: {
           ...session.toObject(),
           completionPercentage: session.getCompletionPercentage(),
           nextStep: session.getNextStep(),
@@ -260,8 +260,8 @@ export const updateMTRSession = asyncHandler(
       context.isAdmin
     );
 
-    // Prevent updating completed sessions unless admin
-    if (session!.status === 'completed' && !context.isAdmin) {
+    // Prevent updating completed sessions unless admin or super_admin
+    if (session!.status === 'completed' && !context.isAdmin && !context.isSuperAdmin) {
       return sendError(
         res,
         'FORBIDDEN',
@@ -270,7 +270,205 @@ export const updateMTRSession = asyncHandler(
       );
     }
 
-    // Update session
+    // Handle follow-ups separately if they exist in updates
+    if (updates.followUps && Array.isArray(updates.followUps)) {
+      console.log('🔍 Processing follow-ups:', updates.followUps.length);
+      // If followUps are provided as full objects, we need to create/update them separately
+      const followUpIds: mongoose.Types.ObjectId[] = [];
+
+      for (const followUpData of updates.followUps) {
+        if (followUpData._id && followUpData._id !== 'temp' && !followUpData._id.toString().startsWith('temp')) {
+          // This is an existing follow-up, try to update it
+          try {
+            const existingFollowUp = await MTRFollowUp.findById(followUpData._id);
+            if (existingFollowUp) {
+              // Handle assignedTo field for updates
+              let assignedToId = existingFollowUp.assignedTo;
+              if (followUpData.assignedTo) {
+                if (mongoose.Types.ObjectId.isValid(followUpData.assignedTo)) {
+                  assignedToId = followUpData.assignedTo;
+                } else {
+                  console.log(`⚠️ Invalid assignedTo value "${followUpData.assignedTo}", keeping existing value`);
+                }
+              }
+
+              Object.assign(existingFollowUp, followUpData, {
+                assignedTo: assignedToId,
+                updatedBy: context.userId,
+              });
+              await existingFollowUp.save();
+              followUpIds.push(existingFollowUp._id);
+              console.log('✅ Updated existing follow-up:', existingFollowUp._id);
+            }
+          } catch (error) {
+            console.warn('Failed to update existing follow-up:', error);
+            // Create new follow-up if update fails
+            let assignedToId = context.userId;
+            if (followUpData.assignedTo && mongoose.Types.ObjectId.isValid(followUpData.assignedTo)) {
+              assignedToId = followUpData.assignedTo;
+            }
+
+            const newFollowUp = new MTRFollowUp({
+              ...followUpData,
+              _id: undefined, // Remove the temp ID
+              workplaceId: context.workplaceId,
+              reviewId: id,
+              patientId: session!.patientId,
+              assignedTo: assignedToId,
+              createdBy: context.userId,
+            });
+            await newFollowUp.save();
+            followUpIds.push(newFollowUp._id);
+            console.log('✅ Created new follow-up after update failure:', newFollowUp._id);
+          }
+        } else {
+          // This is a new follow-up, create it
+          // Handle assignedTo field - if it's a string, use current user ID
+          let assignedToId = context.userId;
+          if (followUpData.assignedTo) {
+            if (mongoose.Types.ObjectId.isValid(followUpData.assignedTo)) {
+              assignedToId = followUpData.assignedTo;
+            } else {
+              // If it's a string (like "cosmas"), use current user ID as fallback
+              console.log(`⚠️ Invalid assignedTo value "${followUpData.assignedTo}", using current user ID`);
+              assignedToId = context.userId;
+            }
+          }
+
+          const newFollowUp = new MTRFollowUp({
+            ...followUpData,
+            _id: undefined, // Remove any temp ID
+            workplaceId: context.workplaceId,
+            reviewId: id,
+            patientId: session!.patientId,
+            assignedTo: assignedToId,
+            createdBy: context.userId,
+          });
+          await newFollowUp.save();
+          followUpIds.push(newFollowUp._id);
+          console.log('✅ Created new follow-up:', newFollowUp._id);
+        }
+      }
+
+      // Update the session with the follow-up IDs
+      session!.followUps = followUpIds;
+      console.log('✅ Updated session with follow-up IDs:', followUpIds);
+
+      // Remove followUps from updates to avoid the casting error
+      delete updates.followUps;
+    }
+
+    // Handle interventions separately if they exist in updates
+    if (updates.interventions && Array.isArray(updates.interventions)) {
+      // If interventions are provided as full objects, we need to create/update them separately
+      const interventionIds: mongoose.Types.ObjectId[] = [];
+
+      for (const interventionData of updates.interventions) {
+        if (interventionData._id && interventionData._id !== 'temp' && !interventionData._id.toString().startsWith('temp')) {
+          // This is an existing intervention, try to update it
+          try {
+            const existingIntervention = await MTRIntervention.findById(interventionData._id);
+            if (existingIntervention) {
+              Object.assign(existingIntervention, interventionData, {
+                updatedBy: context.userId,
+              });
+              await existingIntervention.save();
+              interventionIds.push(existingIntervention._id);
+            }
+          } catch (error) {
+            console.warn('Failed to update existing intervention:', error);
+            // Create new intervention if update fails
+            const newIntervention = new MTRIntervention({
+              ...interventionData,
+              _id: undefined, // Remove the temp ID
+              workplaceId: context.workplaceId,
+              reviewId: id,
+              patientId: session!.patientId,
+              pharmacistId: context.userId,
+              createdBy: context.userId,
+            });
+            await newIntervention.save();
+            interventionIds.push(newIntervention._id);
+          }
+        } else {
+          // This is a new intervention, create it
+          const newIntervention = new MTRIntervention({
+            ...interventionData,
+            _id: undefined, // Remove any temp ID
+            workplaceId: context.workplaceId,
+            reviewId: id,
+            patientId: session!.patientId,
+            pharmacistId: context.userId,
+            createdBy: context.userId,
+          });
+          await newIntervention.save();
+          interventionIds.push(newIntervention._id);
+        }
+      }
+
+      // Update the session with the intervention IDs
+      session!.interventions = interventionIds;
+
+      // Remove interventions from updates to avoid the casting error
+      delete updates.interventions;
+    }
+
+    // Handle problems separately if they exist in updates
+    if (updates.problems && Array.isArray(updates.problems)) {
+      // If problems are provided as full objects, we need to create/update them separately
+      const problemIds: mongoose.Types.ObjectId[] = [];
+
+      for (const problemData of updates.problems) {
+        if (problemData._id && problemData._id !== 'temp' && !problemData._id.toString().startsWith('temp')) {
+          // This is an existing problem, try to update it
+          try {
+            const existingProblem = await DrugTherapyProblem.findById(problemData._id);
+            if (existingProblem) {
+              Object.assign(existingProblem, problemData, {
+                updatedBy: context.userId,
+              });
+              await existingProblem.save();
+              problemIds.push(existingProblem._id);
+            }
+          } catch (error) {
+            console.warn('Failed to update existing problem:', error);
+            // Create new problem if update fails
+            const newProblem = new DrugTherapyProblem({
+              ...problemData,
+              _id: undefined, // Remove the temp ID
+              workplaceId: context.workplaceId,
+              patientId: session!.patientId,
+              reviewId: id,
+              identifiedBy: context.userId,
+              createdBy: context.userId,
+            });
+            await newProblem.save();
+            problemIds.push(newProblem._id);
+          }
+        } else {
+          // This is a new problem, create it
+          const newProblem = new DrugTherapyProblem({
+            ...problemData,
+            _id: undefined, // Remove any temp ID
+            workplaceId: context.workplaceId,
+            patientId: session!.patientId,
+            reviewId: id,
+            identifiedBy: context.userId,
+            createdBy: context.userId,
+          });
+          await newProblem.save();
+          problemIds.push(newProblem._id);
+        }
+      }
+
+      // Update the session with the problem IDs
+      session!.problems = problemIds;
+
+      // Remove problems from updates to avoid the casting error
+      delete updates.problems;
+    }
+
+    // Update session with remaining updates
     Object.assign(session!, updates, {
       updatedBy: context.userId,
       updatedAt: new Date(),
@@ -290,7 +488,7 @@ export const updateMTRSession = asyncHandler(
     sendSuccess(
       res,
       {
-        session: {
+        review: {
           ...session!.toObject(),
           completionPercentage: session!.getCompletionPercentage(),
           nextStep: session!.getNextStep(),
@@ -319,8 +517,8 @@ export const deleteMTRSession = asyncHandler(
       context.isAdmin
     );
 
-    // Prevent deleting completed sessions unless admin
-    if (session!.status === 'completed' && !context.isAdmin) {
+    // Prevent deleting completed sessions unless admin or super_admin
+    if (session!.status === 'completed' && !context.isAdmin && !context.isSuperAdmin) {
       return sendError(
         res,
         'FORBIDDEN',
@@ -403,7 +601,7 @@ export const updateMTRStep = asyncHandler(
     sendSuccess(
       res,
       {
-        session: {
+        review: {
           ...session!.toObject(),
           completionPercentage: session!.getCompletionPercentage(),
           nextStep: session!.getNextStep(),
@@ -586,7 +784,7 @@ export const createPatientMTRSession = asyncHandler(
     sendSuccess(
       res,
       {
-        session: {
+        review: {
           ...session.toObject(),
           completionPercentage: session.getCompletionPercentage(),
           nextStep: session.getNextStep(),
@@ -1061,9 +1259,9 @@ export const getMTRReports = asyncHandler(
     const dateRange =
       startDate && endDate
         ? {
-            start: new Date(startDate),
-            end: new Date(endDate),
-          }
+          start: new Date(startDate),
+          end: new Date(endDate),
+        }
         : undefined;
 
     // Build match criteria
@@ -1146,9 +1344,9 @@ export const getMTROutcomes = asyncHandler(
     const dateRange =
       startDate && endDate
         ? {
-            start: new Date(startDate),
-            end: new Date(endDate),
-          }
+          start: new Date(startDate),
+          end: new Date(endDate),
+        }
         : undefined;
 
     // Build match criteria

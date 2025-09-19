@@ -7,7 +7,7 @@ import User from '../../../models/User';
 import openRouterService, { DiagnosticInput, DiagnosticResponse } from '../../../services/openRouterService';
 import clinicalApiService from './clinicalApiService';
 import labService from './labService';
-import auditService from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
 
 export interface CreateDiagnosticRequestData {
     patientId: string;
@@ -115,7 +115,7 @@ export class DiagnosticService {
             const savedRequest = await diagnosticRequest.save();
 
             // Log audit event
-            await auditService.logEvent(
+            await AuditService.logActivity(
                 {
                     userId: new Types.ObjectId(data.pharmacistId),
                     workplaceId: new Types.ObjectId(data.workplaceId),
@@ -258,11 +258,10 @@ export class DiagnosticService {
             const pharmacist = await User.findById(request.pharmacistId);
             const userRole = pharmacist?.role || 'unknown';
 
-            await auditService.logEvent(
+            await AuditService.logActivity(
                 {
-                    userId: request.pharmacistId,
-                    workplaceId: request.workplaceId,
-                    userRole: userRole,
+                    userId: request.pharmacistId.toString(),
+                    workspaceId: request.workplaceId.toString(),
                 },
                 {
                     action: 'diagnostic_analysis_completed',
@@ -307,7 +306,7 @@ export class DiagnosticService {
                 const pharmacist = await User.findById(request.pharmacistId);
                 const userRole = pharmacist?.role || 'unknown';
 
-                await auditService.logEvent(
+                await AuditService.logActivity(
                     {
                         userId: request.pharmacistId,
                         workplaceId: request.workplaceId,
@@ -833,11 +832,10 @@ export class DiagnosticService {
             const cancelledByUser = await User.findById(cancelledBy);
             const userRole = cancelledByUser?.role || 'unknown';
 
-            await auditService.logEvent(
+            await AuditService.logActivity(
                 {
-                    userId: new Types.ObjectId(cancelledBy),
-                    workplaceId: new Types.ObjectId(workplaceId),
-                    userRole: userRole,
+                    userId: cancelledBy,
+                    workspaceId: workplaceId,
                 },
                 {
                     action: 'diagnostic_request_cancelled',

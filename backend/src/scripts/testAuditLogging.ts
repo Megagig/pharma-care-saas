@@ -7,7 +7,7 @@
 
 import mongoose from 'mongoose';
 import { config } from 'dotenv';
-import AuditService from '../services/auditService';
+import { AuditService } from '../services/auditService';
 import MTRAuditLog from '../models/MTRAuditLog';
 
 // Load environment variables
@@ -52,7 +52,6 @@ async function testAuditLogging() {
             resourceType: 'MedicationTherapyReview',
             resourceId: testReviewId,
             patientId: testPatientId,
-            reviewId: testReviewId,
             details: {
                 reviewNumber: 'MTR-2024-001',
                 status: 'in_progress',
@@ -71,7 +70,6 @@ async function testAuditLogging() {
             resourceType: 'MedicationTherapyReview',
             resourceId: testReviewId,
             patientId: testPatientId,
-            reviewId: testReviewId,
             details: {
                 reason: 'Test deletion',
                 deletedBy: 'test-user',
@@ -83,28 +81,34 @@ async function testAuditLogging() {
 
         // Test 3: Create patient access log
         console.log('\n3️⃣ Testing patient access audit log...');
-        const accessLog = await AuditService.logPatientAccess(
-            testContext,
-            testPatientId,
-            'view',
-            {
+        const accessLog = await AuditService.logActivity(testContext, {
+            action: 'PATIENT_DATA_ACCESSED',
+            resourceType: 'Patient',
+            resourceId: testPatientId,
+            patientId: testPatientId,
+            details: {
                 accessReason: 'MTR review',
                 dataAccessed: ['demographics', 'medications', 'allergies'],
-            }
-        );
+            },
+            complianceCategory: 'data_access',
+            riskLevel: 'medium',
+        });
         console.log('✅ Patient access audit log created:', accessLog._id);
 
         // Test 4: Create authentication log
         console.log('\n4️⃣ Testing authentication audit log...');
-        const authLog = await AuditService.logAuthEvent(
-            testContext,
-            'LOGIN',
-            {
+        const authLog = await AuditService.logActivity(testContext, {
+            action: 'USER_LOGIN',
+            resourceType: 'User',
+            resourceId: testContext.userId,
+            details: {
                 loginMethod: 'email',
                 deviceInfo: 'Test Device',
                 location: 'Test Location',
-            }
-        );
+            },
+            complianceCategory: 'authentication',
+            riskLevel: 'low',
+        });
         console.log('✅ Authentication audit log created:', authLog?._id);
 
         // Test 5: Get audit logs with simple query (no population)

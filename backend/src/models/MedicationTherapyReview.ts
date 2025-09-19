@@ -32,11 +32,11 @@ export interface ITherapyPlan {
   problems: mongoose.Types.ObjectId[]; // DrugTherapyProblem refs
   recommendations: {
     type:
-      | 'discontinue'
-      | 'adjust_dose'
-      | 'switch_therapy'
-      | 'add_therapy'
-      | 'monitor';
+    | 'discontinue'
+    | 'adjust_dose'
+    | 'switch_therapy'
+    | 'add_therapy'
+    | 'monitor';
     medication?: string;
     rationale: string;
     priority: 'high' | 'medium' | 'low';
@@ -679,9 +679,9 @@ medicationTherapyReviewSchema.pre(
       this.reviewNumber = this.generateReviewNumber();
     }
 
-    // Auto-complete review if all steps are done
-    if (this.canComplete() && this.status === 'in_progress') {
-      this.status = 'completed';
+    // Auto-complete review if all steps are done AND status is explicitly being set to completed
+    // Don't auto-complete just because steps are done - let the controller handle completion
+    if (this.canComplete() && this.status === 'completed' && !this.completedAt) {
       this.completedAt = new Date();
     }
 

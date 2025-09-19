@@ -5,7 +5,7 @@
 
 import { Types } from 'mongoose';
 import logger from '../../../utils/logger';
-import auditService from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
 
 export interface DiagnosticAuditEvent {
     eventType:
@@ -189,7 +189,7 @@ class DiagnosticAuditService {
                 riskLevel: event.severity,
             };
 
-            await auditService.logActivity(auditContext, auditLogData);
+            await AuditService.logActivity(auditContext, auditLogData);
 
             // Log to application logger for immediate monitoring
             logger.info('Diagnostic audit event logged', {
@@ -449,23 +449,19 @@ class DiagnosticAuditService {
             }
 
             // Use existing audit service to search
-            const filters: Parameters<typeof auditService.getAuditLogs>[1] = {
+            const filters = {
                 startDate: searchCriteria.dateRange?.start,
                 endDate: searchCriteria.dateRange?.end,
-                userId: searchCriteria.userIds?.[0] ? new Types.ObjectId(searchCriteria.userIds[0]) : undefined,
+                userId: searchCriteria.userIds?.[0],
                 action: searchCriteria.actions?.[0]
             };
 
-            const options: Parameters<typeof auditService.getAuditLogs>[2] = {
+            const options = {
                 page: Math.floor((searchCriteria.offset || 0) / (searchCriteria.limit || 50)) + 1,
                 limit: searchCriteria.limit || 50
             };
 
-            const results = await auditService.getAuditLogs(
-                new Types.ObjectId(searchCriteria.workplaceId),
-                filters,
-                options
-            );
+            const results = await AuditService.getAuditLogs(filters);
 
             // Filter for diagnostic-related events
             const diagnosticEvents = results.logs.filter((log: any) =>

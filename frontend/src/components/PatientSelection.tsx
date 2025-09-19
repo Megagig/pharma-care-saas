@@ -320,9 +320,25 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
 
       // Create MTR session if none exists
       if (!currentReview) {
+        console.log('Creating MTR review for patient:', patient._id);
         await createReview(patient._id);
+
+        // Add a small delay to ensure the review is properly set in the store
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Verify the review was created successfully
+        const { currentReview: newReview } = useMTRStore.getState();
+        if (!newReview?._id) {
+          console.error(
+            'MTR review creation failed - no ID found after creation'
+          );
+          throw new Error('Failed to create MTR review - please try again');
+        }
+
+        console.log('MTR review created successfully with ID:', newReview._id);
       }
     } catch (error) {
+      console.error('Error in handlePatientSelect:', error);
       setError(
         'selectPatient',
         error instanceof Error ? error.message : 'Failed to select patient'

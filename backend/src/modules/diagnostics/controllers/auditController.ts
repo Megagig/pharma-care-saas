@@ -15,7 +15,7 @@ import { AuthRequest } from '../../../types/auth';
  */
 export const searchAuditEvents = async (req: AuthRequest, res: Response) => {
     try {
-                if (!req.user || !req.user.workplaceId) {
+        if (!req.user || !req.user.workplaceId) {
             return res.status(400).json({
                 success: false,
                 error: {
@@ -25,7 +25,7 @@ export const searchAuditEvents = async (req: AuthRequest, res: Response) => {
             });
         }
         const { workplaceId } = req.user!;
-        const workplaceIdString = workplaceId as string;
+        const workplaceIdString = workplaceId?.toString() || '';
         const {
             startDate,
             endDate,
@@ -88,7 +88,7 @@ export const searchAuditEvents = async (req: AuthRequest, res: Response) => {
  */
 export const getEntityAuditTrail = async (req: AuthRequest, res: Response) => {
     try {
-                if (!req.user || !req.user.workplaceId) {
+        if (!req.user || !req.user.workplaceId) {
             return res.status(400).json({
                 success: false,
                 error: {
@@ -98,7 +98,7 @@ export const getEntityAuditTrail = async (req: AuthRequest, res: Response) => {
             });
         }
         const { workplaceId } = req.user!;
-        const workplaceIdString = workplaceId as string;
+        const workplaceIdString = workplaceId?.toString() || '';
         const { entityType, entityId } = req.params;
 
         if (!entityType || !entityId) {
@@ -177,11 +177,11 @@ export const generateComplianceReport = async (req: AuthRequest, res: Response) 
         }
 
         const report = await diagnosticAuditService.generateComplianceReport(
-            workplaceId.toString(),
+            workplaceId?.toString() || '',
             reportType as ComplianceReport['reportType'],
             new Date(startDate as string),
             new Date(endDate as string),
-            userId.toString()
+            userId?.toString() || ''
         );
 
         return res.json({
@@ -221,7 +221,7 @@ export const logSecurityViolation = async (req: AuthRequest, res: Response) => {
 
         await diagnosticAuditService.logSecurityViolation(
             userId.toString(),
-            workplaceId.toString(),
+            workplaceId?.toString() || '',
             violationType,
             details || {},
             {
@@ -253,7 +253,7 @@ export const logSecurityViolation = async (req: AuthRequest, res: Response) => {
  */
 export const getAuditStatistics = async (req: AuthRequest, res: Response) => {
     try {
-                if (!req.user || !req.user.workplaceId) {
+        if (!req.user || !req.user.workplaceId) {
             return res.status(400).json({
                 success: false,
                 error: {
@@ -367,7 +367,7 @@ export const getAuditStatistics = async (req: AuthRequest, res: Response) => {
  */
 export const archiveAuditRecords = async (req: AuthRequest, res: Response) => {
     try {
-                if (!req.user || !req.user.workplaceId) {
+        if (!req.user || !req.user.workplaceId) {
             return res.status(400).json({
                 success: false,
                 error: {
@@ -390,7 +390,7 @@ export const archiveAuditRecords = async (req: AuthRequest, res: Response) => {
         }
 
         const result = await diagnosticAuditService.archiveOldRecords(
-            workplaceId.toString(),
+            workplaceId?.toString() || '',
             parseInt(retentionDays)
         );
 
@@ -418,23 +418,24 @@ export const archiveAuditRecords = async (req: AuthRequest, res: Response) => {
 /**
  * Export audit data
  */
-export const exportAuditData = async (req: AuthRequest, res: Response) => {
+export const exportAuditData = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { workplaceId, _id: userId } = req.user!;
         const { startDate, endDate, format = 'json' } = req.query;
 
         if (!startDate || !endDate) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: {
                     code: 'MISSING_DATE_RANGE',
                     message: 'Start date and end date are required'
                 }
             });
+            return;
         }
 
         const results = await diagnosticAuditService.searchAuditEvents({
-            workplaceId: workplaceId.toString(),
+            workplaceId: workplaceId?.toString() || '',
             startDate: new Date(startDate as string),
             endDate: new Date(endDate as string),
             limit: 10000 // Export all events in range
@@ -446,7 +447,7 @@ export const exportAuditData = async (req: AuthRequest, res: Response) => {
             entityType: 'diagnostic_request',
             entityId: 'audit_export',
             userId,
-            workplaceId: workplaceId!.toString(),
+            workplaceId: workplaceId?.toString() || '',
             details: {
                 exportFormat: format,
                 recordCount: results.events.length,
@@ -492,18 +493,18 @@ export const exportAuditData = async (req: AuthRequest, res: Response) => {
             res.setHeader('Content-Disposition', `attachment; filename="audit_export_${Date.now()}.json"`);
             res.json({
                 exportInfo: {
-                workplaceId: workplaceId!.toString(),
-                dateRange: { startDate, endDate },
-                exportedAt: new Date(),
-                exportedBy: userId,
-                recordCount: results.events.length
-            },
+                    workplaceId: workplaceId?.toString() || '',
+                    dateRange: { startDate, endDate },
+                    exportedAt: new Date(),
+                    exportedBy: userId,
+                    recordCount: results.events.length
+                },
                 auditEvents: results.events
             });
         }
     } catch (error) {
         logger.error('Error exporting audit data:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: {
                 code: 'EXPORT_ERROR',
@@ -544,7 +545,7 @@ export const generateRegulatoryReport = async (req: AuthRequest, res: Response) 
         }
 
         const report = await complianceReportingService.generateRegulatoryReport(
-            workplaceId.toString(),
+            workplaceId?.toString() || '',
             reportType as any,
             new Date(startDate as string),
             new Date(endDate as string),
@@ -573,7 +574,7 @@ export const generateRegulatoryReport = async (req: AuthRequest, res: Response) 
  */
 export const detectAuditAnomalies = async (req: AuthRequest, res: Response) => {
     try {
-                if (!req.user || !req.user.workplaceId) {
+        if (!req.user || !req.user.workplaceId) {
             return res.status(400).json({
                 success: false,
                 error: {
@@ -586,7 +587,7 @@ export const detectAuditAnomalies = async (req: AuthRequest, res: Response) => {
         const { lookbackDays = 30 } = req.query;
 
         const anomalies = await complianceReportingService.detectAnomalies(
-            workplaceId.toString(),
+            workplaceId?.toString() || '',
             parseInt(lookbackDays as string)
         );
 
@@ -621,7 +622,7 @@ export const detectAuditAnomalies = async (req: AuthRequest, res: Response) => {
  */
 export const getAuditVisualization = async (req: AuthRequest, res: Response) => {
     try {
-                if (!req.user || !req.user.workplaceId) {
+        if (!req.user || !req.user.workplaceId) {
             return res.status(400).json({
                 success: false,
                 error: {
@@ -644,7 +645,7 @@ export const getAuditVisualization = async (req: AuthRequest, res: Response) => 
         }
 
         const visualizationData = await auditVisualizationService.generateVisualizationData(
-            workplaceId,
+            workplaceId?.toString() || '',
             new Date(startDate as string),
             new Date(endDate as string)
         );
@@ -671,7 +672,7 @@ export const getAuditVisualization = async (req: AuthRequest, res: Response) => 
  */
 export const advancedAuditSearch = async (req: AuthRequest, res: Response) => {
     try {
-                if (!req.user || !req.user.workplaceId) {
+        if (!req.user || !req.user.workplaceId) {
             return res.status(400).json({
                 success: false,
                 error: {
@@ -699,7 +700,7 @@ export const advancedAuditSearch = async (req: AuthRequest, res: Response) => {
         } = req.query;
 
         const filters = {
-            workplaceId: workplaceId.toString(),
+            workplaceId: workplaceId?.toString() || '',
             startDate: startDate ? new Date(startDate as string) : undefined,
             endDate: endDate ? new Date(endDate as string) : undefined,
             userIds: userIds ? (userIds as string).split(',') : undefined,
@@ -740,23 +741,24 @@ export const advancedAuditSearch = async (req: AuthRequest, res: Response) => {
 /**
  * Export audit visualization data
  */
-export const exportAuditVisualization = async (req: AuthRequest, res: Response) => {
+export const exportAuditVisualization = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { workplaceId, _id: userId } = req.user!;
         const { startDate, endDate, format = 'json' } = req.query;
 
         if (!startDate || !endDate) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: {
                     code: 'MISSING_DATE_RANGE',
                     message: 'Start date and end date are required'
                 }
             });
+            return;
         }
 
         const exportData = await auditVisualizationService.exportVisualizationData(
-            workplaceId!.toString(),
+            workplaceId?.toString() || '',
             new Date(startDate as string),
             new Date(endDate as string),
             format as 'json' | 'csv' | 'pdf'
@@ -768,7 +770,7 @@ export const exportAuditVisualization = async (req: AuthRequest, res: Response) 
             entityType: 'diagnostic_request',
             entityId: 'audit_visualization_export',
             userId,
-            workplaceId: workplaceId!.toString(),
+            workplaceId: workplaceId?.toString() || '',
             details: {
                 exportFormat: format,
                 dateRange: { startDate, endDate },
@@ -788,7 +790,7 @@ export const exportAuditVisualization = async (req: AuthRequest, res: Response) 
         }
     } catch (error) {
         logger.error('Error exporting audit visualization:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: {
                 code: 'EXPORT_VISUALIZATION_ERROR',

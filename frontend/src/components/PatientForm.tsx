@@ -114,22 +114,22 @@ interface PatientFormData {
   firstName: string;
   lastName: string;
   otherNames?: string;
-  dob?: Date;
-  age?: number;
-  gender?: Gender;
-  maritalStatus?: MaritalStatus;
+  dob?: Date | null;
+  age?: number | string;
+  gender?: Gender | string;
+  maritalStatus?: MaritalStatus | string;
 
   // Contact
   phone?: string;
   email?: string;
   address?: string;
-  state?: NigerianState;
+  state?: NigerianState | string;
   lga?: string;
 
   // Medical
-  bloodGroup?: BloodGroup;
-  genotype?: Genotype;
-  weightKg?: number;
+  bloodGroup?: BloodGroup | string;
+  genotype?: Genotype | string;
+  weightKg?: number | string;
 }
 
 const steps = [
@@ -173,16 +173,18 @@ const PatientForm = () => {
       firstName: '',
       lastName: '',
       otherNames: '',
-      gender: undefined,
-      maritalStatus: undefined,
+      dob: null,
+      age: '',
+      gender: '',
+      maritalStatus: '',
       phone: '',
       email: '',
       address: '',
-      state: undefined,
+      state: '',
       lga: '',
-      bloodGroup: undefined,
-      genotype: undefined,
-      weightKg: undefined,
+      bloodGroup: '',
+      genotype: '',
+      weightKg: '',
     },
   });
 
@@ -194,28 +196,28 @@ const PatientForm = () => {
   useEffect(() => {
     if (isEditMode && patient) {
       reset({
-        firstName: patient.firstName,
-        lastName: patient.lastName,
+        firstName: patient.firstName || '',
+        lastName: patient.lastName || '',
         otherNames: patient.otherNames || '',
-        dob: patient.dob ? new Date(patient.dob) : undefined,
-        age: patient.age,
-        gender: patient.gender,
-        maritalStatus: patient.maritalStatus,
+        dob: patient.dob ? new Date(patient.dob) : null,
+        age: patient.age || '',
+        gender: patient.gender || '',
+        maritalStatus: patient.maritalStatus || '',
         phone: patient.phone || '',
         email: patient.email || '',
         address: patient.address || '',
-        state: patient.state,
+        state: patient.state || '',
         lga: patient.lga || '',
-        bloodGroup: patient.bloodGroup,
-        genotype: patient.genotype,
-        weightKg: patient.weightKg,
+        bloodGroup: patient.bloodGroup || '',
+        genotype: patient.genotype || '',
+        weightKg: patient.weightKg || '',
       });
     }
   }, [patient, isEditMode, reset]);
 
   // Auto-calculate age when DOB changes
   useEffect(() => {
-    if (watchedDob && !watchedAge) {
+    if (watchedDob && (!watchedAge || watchedAge === '')) {
       const today = new Date();
       const birthDate = new Date(watchedDob);
       let age = today.getFullYear() - birthDate.getFullYear();
@@ -250,23 +252,78 @@ const PatientForm = () => {
     try {
       setSubmissionError(null);
 
-      // Prepare patient data
+      // Validate required fields
+      if (!data.firstName || !data.firstName.trim()) {
+        setSubmissionError('First name is required');
+        return;
+      }
+      if (!data.lastName || !data.lastName.trim()) {
+        setSubmissionError('Last name is required');
+        return;
+      }
+
+      // Validate phone if provided
+      if (
+        data.phone &&
+        data.phone.trim() &&
+        !validateNigerianPhone(data.phone)
+      ) {
+        setSubmissionError(
+          'Please enter a valid Nigerian phone number (+234XXXXXXXXX)'
+        );
+        return;
+      }
+
+      // Validate email if provided
+      if (data.email && data.email.trim() && !validateEmail(data.email)) {
+        setSubmissionError('Please enter a valid email address');
+        return;
+      }
+
+      // Prepare patient data - convert empty strings to undefined
       const patientData: CreatePatientData | UpdatePatientData = {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        otherNames: data.otherNames || undefined,
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+        otherNames:
+          data.otherNames && data.otherNames.trim()
+            ? data.otherNames.trim()
+            : undefined,
         dob: data.dob?.toISOString(),
-        age: data.age,
-        gender: data.gender,
-        maritalStatus: data.maritalStatus,
-        phone: data.phone || undefined,
-        email: data.email || undefined,
-        address: data.address || undefined,
-        state: data.state,
-        lga: data.lga || undefined,
-        bloodGroup: data.bloodGroup,
-        genotype: data.genotype,
-        weightKg: data.weightKg,
+        age: typeof data.age === 'number' ? data.age : undefined,
+        gender:
+          data.gender && data.gender !== ''
+            ? (data.gender as Gender)
+            : undefined,
+        maritalStatus:
+          data.maritalStatus && data.maritalStatus !== ''
+            ? (data.maritalStatus as MaritalStatus)
+            : undefined,
+        phone:
+          data.phone && data.phone.trim() !== ''
+            ? data.phone.trim()
+            : undefined,
+        email:
+          data.email && data.email.trim() !== ''
+            ? data.email.trim()
+            : undefined,
+        address:
+          data.address && data.address.trim() !== ''
+            ? data.address.trim()
+            : undefined,
+        state:
+          data.state && data.state !== ''
+            ? (data.state as NigerianState)
+            : undefined,
+        lga: data.lga && data.lga.trim() !== '' ? data.lga.trim() : undefined,
+        bloodGroup:
+          data.bloodGroup && data.bloodGroup !== ''
+            ? (data.bloodGroup as BloodGroup)
+            : undefined,
+        genotype:
+          data.genotype && data.genotype !== ''
+            ? (data.genotype as Genotype)
+            : undefined,
+        weightKg: typeof data.weightKg === 'number' ? data.weightKg : undefined,
       };
 
       if (isEditMode && patientId) {
@@ -304,14 +361,18 @@ const PatientForm = () => {
   const canProceedToNext = (): boolean => {
     switch (activeStep) {
       case 0: // Demographics
-        return !!(watch('firstName') && watch('lastName'));
+        const firstName = watch('firstName');
+        const lastName = watch('lastName');
+        return !!(firstName && firstName.trim() && lastName && lastName.trim());
       case 1: {
         // Contact
         const phone = watch('phone');
         const email = watch('email');
         return (
           !phone ||
-          (validateNigerianPhone(phone) && (!email || validateEmail(email)))
+          phone === '' ||
+          (validateNigerianPhone(phone) &&
+            (!email || email === '' || validateEmail(email)))
         );
       }
       case 2: // Medical
@@ -373,7 +434,22 @@ const PatientForm = () => {
         <Card>
           <CardContent sx={{ p: 4 }}>
             <form
-              onSubmit={handleSubmit(onSubmit)}
+              onSubmit={(e) => {
+                e.preventDefault();
+                // Only submit if we're on the last step
+                if (activeStep === steps.length - 1) {
+                  handleSubmit(onSubmit)(e);
+                }
+              }}
+              onKeyDown={(e) => {
+                // Prevent Enter key from submitting form unless on last step
+                if (e.key === 'Enter' && activeStep !== steps.length - 1) {
+                  e.preventDefault();
+                  if (canProceedToNext()) {
+                    handleNext();
+                  }
+                }
+              }}
             >
               {/* Step 0: Demographics */}
               {activeStep === 0 && (
@@ -444,8 +520,9 @@ const PatientForm = () => {
                       control={control}
                       render={({ field }) => (
                         <DatePicker
-                          {...field}
                           label="Date of Birth"
+                          value={field.value}
+                          onChange={(newValue) => field.onChange(newValue)}
                           maxDate={new Date()}
                           slotProps={{
                             textField: {
@@ -469,6 +546,11 @@ const PatientForm = () => {
                           {...field}
                           type="number"
                           label="Age (years)"
+                          value={field.value || ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            field.onChange(value ? Number(value) : '');
+                          }}
                           error={!!errors.age}
                           helperText={
                             errors.age?.message || 'Auto-calculated from DOB'
@@ -491,7 +573,17 @@ const PatientForm = () => {
                       render={({ field }) => (
                         <FormControl error={!!errors.gender}>
                           <InputLabel>Gender</InputLabel>
-                          <Select {...field} label="Gender">
+                          <Select
+                            {...field}
+                            label="Gender"
+                            value={field.value || ''}
+                            onChange={(e) =>
+                              field.onChange(e.target.value || '')
+                            }
+                          >
+                            <MenuItem value="">
+                              <em>Select Gender</em>
+                            </MenuItem>
                             {GENDERS.map((gender) => (
                               <MenuItem key={gender} value={gender}>
                                 {gender.charAt(0).toUpperCase() +
@@ -514,7 +606,17 @@ const PatientForm = () => {
                       render={({ field }) => (
                         <FormControl error={!!errors.maritalStatus}>
                           <InputLabel>Marital Status</InputLabel>
-                          <Select {...field} label="Marital Status">
+                          <Select
+                            {...field}
+                            label="Marital Status"
+                            value={field.value || ''}
+                            onChange={(e) =>
+                              field.onChange(e.target.value || '')
+                            }
+                          >
+                            <MenuItem value="">
+                              <em>Select Marital Status</em>
+                            </MenuItem>
                             {MARITAL_STATUSES.map((status) => (
                               <MenuItem key={status} value={status}>
                                 {status.charAt(0).toUpperCase() +
@@ -618,10 +720,9 @@ const PatientForm = () => {
                       control={control}
                       render={({ field }) => (
                         <Autocomplete
-                          {...field}
                           options={NIGERIAN_STATES}
                           value={field.value || null}
-                          onChange={(_, value) => field.onChange(value)}
+                          onChange={(_, value) => field.onChange(value || '')}
                           renderInput={(params) => (
                             <TextField
                               {...params}
@@ -670,7 +771,17 @@ const PatientForm = () => {
                       render={({ field }) => (
                         <FormControl error={!!errors.bloodGroup}>
                           <InputLabel>Blood Group</InputLabel>
-                          <Select {...field} label="Blood Group">
+                          <Select
+                            {...field}
+                            label="Blood Group"
+                            value={field.value || ''}
+                            onChange={(e) =>
+                              field.onChange(e.target.value || '')
+                            }
+                          >
+                            <MenuItem value="">
+                              <em>Select Blood Group</em>
+                            </MenuItem>
                             {BLOOD_GROUPS.map((group) => (
                               <MenuItem key={group} value={group}>
                                 {group}
@@ -692,7 +803,17 @@ const PatientForm = () => {
                       render={({ field }) => (
                         <FormControl error={!!errors.genotype}>
                           <InputLabel>Genotype</InputLabel>
-                          <Select {...field} label="Genotype">
+                          <Select
+                            {...field}
+                            label="Genotype"
+                            value={field.value || ''}
+                            onChange={(e) =>
+                              field.onChange(e.target.value || '')
+                            }
+                          >
+                            <MenuItem value="">
+                              <em>Select Genotype</em>
+                            </MenuItem>
                             {GENOTYPES.map((genotype) => (
                               <MenuItem key={genotype} value={genotype}>
                                 <Box
@@ -735,6 +856,11 @@ const PatientForm = () => {
                           {...field}
                           type="number"
                           label="Weight (kg)"
+                          value={field.value || ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            field.onChange(value ? Number(value) : '');
+                          }}
                           error={!!errors.weightKg}
                           helperText={errors.weightKg?.message}
                           inputProps={{ step: 0.1, min: 0.5, max: 500 }}
@@ -750,14 +876,20 @@ const PatientForm = () => {
                       genotype are important for emergency situations and
                       medication compatibility. Weight is used for dosage
                       calculations.
-                      {watch('genotype')?.includes('S') && (
-                        <Box
-                          sx={{ mt: 1, fontWeight: 600, color: 'warning.main' }}
-                        >
-                          ⚠️ Sickle cell genotype detected - requires special
-                          medical attention
-                        </Box>
-                      )}
+                      {watch('genotype') &&
+                        typeof watch('genotype') === 'string' &&
+                        watch('genotype').includes('S') && (
+                          <Box
+                            sx={{
+                              mt: 1,
+                              fontWeight: 600,
+                              color: 'warning.main',
+                            }}
+                          >
+                            ⚠️ Sickle cell genotype detected - requires special
+                            medical attention
+                          </Box>
+                        )}
                     </Typography>
                   </Alert>
                 </Stack>
@@ -793,11 +925,11 @@ const PatientForm = () => {
                     </Button>
                   ) : (
                     <Button
-                      type="submit"
                       variant="contained"
                       startIcon={<SaveIcon />}
                       disabled={isSubmitting}
                       sx={{ minWidth: 120 }}
+                      onClick={handleSubmit(onSubmit)}
                     >
                       {isSubmitting
                         ? 'Saving...'
