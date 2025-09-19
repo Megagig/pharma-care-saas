@@ -50,7 +50,23 @@ const auditLogSchema = new Schema<IAuditLog>({
             'USER_LOGOUT',
             'PERMISSION_CHANGED',
             'SYSTEM_BACKUP',
-            'DATA_MIGRATION'
+            'DATA_MIGRATION',
+            // Clinical Notes Actions
+            'CLINICAL_NOTE_ROUTE_ACCESS',
+            'LIST_CLINICAL_NOTES',
+            'CREATE_CLINICAL_NOTE',
+            'VIEW_CLINICAL_NOTE',
+            'UPDATE_CLINICAL_NOTE',
+            'DELETE_CLINICAL_NOTE',
+            'SEARCH_CLINICAL_NOTES',
+            'FILTER_CLINICAL_NOTES',
+            'VIEW_NOTE_STATISTICS',
+            'BULK_UPDATE_NOTES',
+            'BULK_DELETE_NOTES',
+            'VIEW_PATIENT_NOTES',
+            'UPLOAD_NOTE_ATTACHMENT',
+            'DELETE_NOTE_ATTACHMENT',
+            'DOWNLOAD_NOTE_ATTACHMENT'
         ]
     },
     timestamp: {
@@ -91,7 +107,8 @@ const auditLogSchema = new Schema<IAuditLog>({
             'patient_care',
             'system_security',
             'workflow_management',
-            'risk_management'
+            'risk_management',
+            'data_access'
         ]
     },
     changedFields: [{
