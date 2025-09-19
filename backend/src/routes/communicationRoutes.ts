@@ -3,6 +3,15 @@ import { body, param, query, validationResult } from 'express-validator';
 import { auth } from '../middlewares/auth';
 import communicationController from '../controllers/communicationController';
 import { uploadMiddleware } from '../services/fileUploadService';
+import {
+    auditMessage,
+    auditConversation,
+    auditFile,
+    auditSearch,
+    auditPatientCommunicationAccess,
+    auditBulkOperation,
+    auditHighRiskOperation,
+} from '../middlewares/communicationAuditMiddleware';
 
 const router = express.Router();
 
@@ -63,6 +72,7 @@ router.post(
         body('tags.*').isString().trim().isLength({ max: 50 }),
     ],
     handleValidationErrors,
+    ...auditConversation('conversation_created'),
     communicationController.createConversation
 );
 
@@ -113,6 +123,7 @@ router.post(
         body('role').isIn(['pharmacist', 'doctor', 'patient', 'pharmacy_team', 'intern_pharmacist']),
     ],
     handleValidationErrors,
+    ...auditConversation('participant_added'),
     communicationController.addParticipant
 );
 
@@ -129,6 +140,7 @@ router.delete(
         param('userId').isMongoId(),
     ],
     handleValidationErrors,
+    ...auditConversation('participant_removed'),
     communicationController.removeParticipant
 );
 
@@ -177,6 +189,7 @@ router.post(
         body('priority').optional().isIn(['normal', 'high', 'urgent']),
     ],
     handleValidationErrors,
+    ...auditMessage('message_sent'),
     communicationController.sendMessage
 );
 
@@ -190,6 +203,7 @@ router.put(
     auth,
     [param('id').isMongoId()],
     handleValidationErrors,
+    ...auditMessage('message_read'),
     communicationController.markMessageAsRead
 );
 
@@ -266,6 +280,7 @@ router.get(
         query('limit').optional().isInt({ min: 1, max: 100 }),
     ],
     handleValidationErrors,
+    ...auditSearch('message_search'),
     communicationController.searchMessages
 );
 
@@ -306,6 +321,7 @@ router.get(
         query('limit').optional().isInt({ min: 1, max: 100 }),
     ],
     handleValidationErrors,
+    auditPatientCommunicationAccess,
     communicationController.getPatientConversations
 );
 
@@ -326,6 +342,8 @@ router.post(
         body('tags.*').isString().trim().isLength({ max: 50 }),
     ],
     handleValidationErrors,
+    auditPatientCommunicationAccess,
+    ...auditConversation('conversation_created'),
     communicationController.createPatientQuery
 );
 
@@ -364,6 +382,7 @@ router.post(
         body('messageType').optional().isIn(['file', 'image', 'voice_note']),
     ],
     handleValidationErrors,
+    ...auditFile('file_uploaded'),
     communicationController.uploadFiles
 );
 
