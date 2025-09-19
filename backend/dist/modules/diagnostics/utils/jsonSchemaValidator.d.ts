@@ -70,7 +70,7 @@ interface DrugInteractionSchema {
     }>;
 }
 export declare const validateAIResponse: import("ajv").ValidateFunction<AIResponseSchema>;
-export declare const validateFHIRBundle: import("ajv").ValidateFunction<FHIRBundleSchema>;
+export declare const validateFHIRBundle: import("ajv").ValidateFunction<unknown>;
 export declare const validateDrugInteraction: import("ajv").ValidateFunction<DrugInteractionSchema>;
 export declare const isValidAIResponse: (data: unknown) => data is AIResponseSchema;
 export declare const isValidFHIRBundle: (data: unknown) => data is FHIRBundleSchema;

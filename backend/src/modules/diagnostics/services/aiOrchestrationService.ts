@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import logger from '../../../utils/logger';
 import openRouterService, { DiagnosticInput, DiagnosticResponse } from '../../../services/openRouterService';
-import auditService from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
 import mongoose from 'mongoose';
 
 export interface AIProcessingOptions {
@@ -541,14 +541,13 @@ export class AIOrchestrationService {
         options: Required<AIProcessingOptions>
     ): Promise<void> {
         try {
-            await auditService.logEvent({
-                userId: new Types.ObjectId(consent.pharmacistId),
-                workplaceId: new Types.ObjectId(input.workplaceId!),
+            await AuditService.logActivity({
+                userId: consent.pharmacistId,
+                workplaceId: input.workplaceId!,
                 userRole: consent.pharmacistRole, // Assuming consent has pharmacistRole
             }, {
                 action: 'ai_diagnostic_request',
                 resourceType: 'AIAnalysis',
-
                 details: {
                     patientId: consent.patientId,
                     symptomsCount: input.symptoms.subjective.length,
@@ -559,6 +558,7 @@ export class AIOrchestrationService {
                     temperature: options.temperature,
                     maxTokens: options.maxTokens,
                 },
+                complianceCategory: 'ai_diagnostics'
             });
         } catch (error) {
             logger.warn('Failed to log AI request audit event', { error });
@@ -574,14 +574,14 @@ export class AIOrchestrationService {
         workplaceId: mongoose.Types.ObjectId
     ): Promise<void> {
         try {
-            await auditService.logEvent({
-                userId: new Types.ObjectId(consent.pharmacistId),
-                workplaceId: workplaceId,
+            await AuditService.logActivity({
+                userId: consent.pharmacistId,
+                workplaceId: workplaceId.toString(),
                 userRole: consent.pharmacistRole,
             }, {
                 action: 'ai_diagnostic_response',
                 resourceType: 'AIAnalysis',
-                resourceId: new Types.ObjectId(),
+                resourceId: new Types.ObjectId().toString(),
                 details: {
                     requestId: response.metadata.requestId,
                     patientId: consent.patientId,
@@ -593,6 +593,7 @@ export class AIOrchestrationService {
                     tokenUsage: response.metadata.tokenUsage,
                     validationFlags: response.validationFlags,
                 },
+                complianceCategory: 'ai_diagnostics'
             });
         } catch (error) {
             logger.warn('Failed to log AI response audit event', { error });
@@ -609,14 +610,15 @@ export class AIOrchestrationService {
         workplaceId: mongoose.Types.ObjectId
     ): Promise<void> {
         try {
-            await auditService.logEvent({
-                userId: new Types.ObjectId(consent.pharmacistId),
-                workplaceId: workplaceId,
+            await AuditService.logActivity({
+                userId: consent.pharmacistId,
+                workplaceId: workplaceId.toString(),
                 userRole: consent.pharmacistRole,
             }, {
                 action: 'ai_diagnostic_error',
                 resourceType: 'AIAnalysis',
-                resourceId: new Types.ObjectId(),
+                resourceId: new Types.ObjectId().toString(),
+                complianceCategory: 'ai_diagnostics',
                 details: {
                     patientId: consent.patientId,
                     error: error instanceof Error ? error.message : 'Unknown error',

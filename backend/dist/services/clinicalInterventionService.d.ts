@@ -1,5 +1,22 @@
 import mongoose from 'mongoose';
 import { IClinicalIntervention, IInterventionStrategy, ITeamAssignment, IInterventionOutcome } from '../models/ClinicalIntervention';
+export interface AuditContext {
+    userId: string;
+    workspaceId: string;
+    sessionId?: string;
+}
+export interface AuditLogData {
+    action: string;
+    userId: string;
+    interventionId?: string;
+    details: Record<string, any>;
+    riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+    complianceCategory: string;
+    changedFields?: string[];
+    oldValues?: Record<string, any>;
+    newValues?: Record<string, any>;
+    workspaceId?: string;
+}
 export interface CreateInterventionDTO {
     patientId: mongoose.Types.ObjectId;
     category: string;

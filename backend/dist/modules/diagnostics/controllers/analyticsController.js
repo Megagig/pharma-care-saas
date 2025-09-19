@@ -22,7 +22,7 @@ const getDiagnosticMetrics = async (req, res) => {
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
         const metrics = await diagnosticAnalyticsService_1.default.getDiagnosticMetrics(workplaceId.toString(), start, end);
-        res.json({
+        return res.json({
             success: true,
             data: metrics
         });
@@ -56,7 +56,7 @@ const getAIPerformanceMetrics = async (req, res) => {
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
         const metrics = await diagnosticAnalyticsService_1.default.getAIPerformanceMetrics(workplaceId.toString(), start, end);
-        res.json({
+        return res.json({
             success: true,
             data: metrics
         });
@@ -90,7 +90,7 @@ const getPatientOutcomeMetrics = async (req, res) => {
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
         const metrics = await diagnosticAnalyticsService_1.default.getPatientOutcomeMetrics(workplaceId.toString(), start, end);
-        res.json({
+        return res.json({
             success: true,
             data: metrics
         });
@@ -124,7 +124,7 @@ const getUsageAnalytics = async (req, res) => {
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
         const analytics = await diagnosticAnalyticsService_1.default.getUsageAnalytics(workplaceId.toString(), start, end);
-        res.json({
+        return res.json({
             success: true,
             data: analytics
         });
@@ -158,7 +158,7 @@ const getTrendAnalysis = async (req, res) => {
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
         const trends = await diagnosticAnalyticsService_1.default.getTrendAnalysis(workplaceId.toString(), start, end);
-        res.json({
+        return res.json({
             success: true,
             data: trends
         });
@@ -192,7 +192,7 @@ const getComparisonAnalysis = async (req, res) => {
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
         const comparison = await diagnosticAnalyticsService_1.default.getComparisonAnalysis(workplaceId.toString(), start, end);
-        res.json({
+        return res.json({
             success: true,
             data: comparison
         });
@@ -236,7 +236,7 @@ const generateAnalyticsReport = async (req, res) => {
             });
             return;
         }
-        res.json({
+        return res.json({
             success: true,
             data: report
         });
@@ -333,7 +333,7 @@ const getDashboardSummary = async (req, res) => {
                 value: patientOutcomes.followUpCompliance
             });
         }
-        res.json({
+        return res.json({
             success: true,
             data: summary
         });

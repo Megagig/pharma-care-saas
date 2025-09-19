@@ -1,16 +1,12 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SystemIntegrationService = void 0;
 const featureFlags_1 = require("../config/featureFlags");
-const auditService_1 = __importDefault(require("./auditService"));
+const auditService_1 = require("./auditService");
 class SystemIntegrationService {
     constructor() {
         this.healthChecks = new Map();
         this.featureFlagService = featureFlags_1.FeatureFlagService.getInstance();
-        this.auditService = auditService_1.default.getInstance();
         this.initializeHealthChecks();
     }
     static getInstance() {
@@ -100,7 +96,6 @@ class SystemIntegrationService {
             }
             this.monitorRequestHealth(req);
             next();
-            return;
         };
     }
     gradualRolloutMiddleware() {
@@ -115,11 +110,12 @@ class SystemIntegrationService {
             };
             const isEnabled = this.featureFlagService.isEnabled('manual_lab_orders', context);
             if (!isEnabled && req.path.startsWith('/api/manual-lab')) {
-                return res.status(404).json({
+                res.status(404).json({
                     success: false,
                     message: 'Feature not available for your account',
                     code: 'FEATURE_NOT_AVAILABLE'
                 });
+                return;
             }
             next();
         };
@@ -179,15 +175,19 @@ class SystemIntegrationService {
                     errors.push(`Failed to disable ${flag}: ${error}`);
                 }
             }
-            await this.auditService.logEvent({
+            await auditService_1.AuditService.logActivity({
+                userId: 'system',
+                workspaceId: 'system'
+            }, {
                 action: 'EMERGENCY_ROLLBACK',
-                resource: 'manual_lab_integration',
+                resourceType: 'manual_lab_integration',
                 details: {
                     reason,
                     rollbackActions,
-                    timestamp: new Date()
+                    timestamp: new Date(),
+                    severity: 'critical'
                 },
-                severity: 'critical'
+                riskLevel: 'high'
             });
             rollbackActions.push('Logged emergency rollback event');
             return {

@@ -13,7 +13,12 @@ import ManualLabResult, { IManualLabResult } from '../models/ManualLabResult';
 import Patient from '../../../models/Patient';
 import User from '../../../models/User';
 import Workplace from '../../../models/Workplace';
-import AuditService, { AuditContext } from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
+export interface AuditContext {
+    userId: string;
+    workspaceId: string;
+    sessionId?: string;
+}
 
 // Mock external services
 jest.mock('../services/pdfGenerationService');

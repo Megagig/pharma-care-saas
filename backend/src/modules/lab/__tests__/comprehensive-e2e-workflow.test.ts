@@ -18,7 +18,7 @@ import Workplace from '../../../models/Workplace';
 import ManualLabService from '../services/manualLabService';
 import TokenService from '../services/tokenService';
 import { PDFGenerationService } from '../services/pdfGenerationService';
-import AuditService from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
 
 // Mock external services
 jest.mock('../services/pdfGenerationService');

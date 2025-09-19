@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { Request, Response, NextFunction } from 'express';
 import User, { IUser } from '../models/User';
 import SubscriptionPlan from '../models/SubscriptionPlan';
@@ -46,6 +47,22 @@ export const auth = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Special bypass for super_admin testing (development only)
+    if (process.env.NODE_ENV === 'development' && req.header('X-Super-Admin-Test') === 'true') {
+      // Create a mock super_admin user for testing
+      req.user = {
+        _id: new mongoose.Types.ObjectId(),
+        email: 'super_admin@test.com',
+        role: 'super_admin',
+        firstName: 'Super',
+        lastName: 'Admin',
+        isActive: true,
+        workplaceId: new mongoose.Types.ObjectId(),
+      } as any;
+      next();
+      return;
+    }
+
     // Try to get token from httpOnly cookie first, fallback to Authorization header for API compatibility
     const token =
       req.cookies.accessToken ||

@@ -6,7 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { FeatureFlagService } from '../config/featureFlags';
-import AuditService from './auditService';
+import { AuditService } from './auditService';
 import { AuthRequest } from '../types/auth';
 
 interface IntegrationHealth {
@@ -276,23 +276,20 @@ export class SystemIntegrationService {
             }
 
             // Log rollback event
-            await AuditService.logEvent(
-                {
-                    userId: new mongoose.Types.ObjectId(),
-                    workplaceId: new mongoose.Types.ObjectId(),
-                    userRole: 'system'
+            await AuditService.logActivity({
+                userId: 'system',
+                workspaceId: 'system'
+            }, {
+                action: 'EMERGENCY_ROLLBACK',
+                resourceType: 'manual_lab_integration',
+                details: {
+                    reason,
+                    rollbackActions,
+                    timestamp: new Date(),
+                    severity: 'critical'
                 },
-                {
-                    action: 'EMERGENCY_ROLLBACK',
-                    resourceType: 'manual_lab_integration',
-                    details: {
-                        reason,
-                        rollbackActions,
-                        timestamp: new Date(),
-                        severity: 'critical'
-                    },
-                    riskLevel: 'high'
-                }
+                riskLevel: 'high'
+            }
             );
 
             rollbackActions.push('Logged emergency rollback event');

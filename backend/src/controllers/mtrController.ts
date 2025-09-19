@@ -22,7 +22,7 @@ import {
   createAuditLog,
   isSuperAdmin,
 } from '../utils/responseHelpers';
-import AuditService from '../services/auditService';
+import { AuditService } from '../services/auditService';
 
 /**
  * Medication Therapy Review Controller

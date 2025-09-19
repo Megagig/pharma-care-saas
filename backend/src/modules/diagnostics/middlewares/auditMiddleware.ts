@@ -11,12 +11,20 @@ import crypto from 'crypto';
 
 export interface AuditableRequest extends AuthRequest {
     auditData?: {
+        action: string;
+        details: Record<string, any>;
+        complianceCategory: string;
+        riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+        interventionId?: string;
+        oldValues?: Record<string, any>;
+        newValues?: Record<string, any>;
+        changedFields?: string[];
+        // Legacy diagnostic fields for backward compatibility
         eventType?: string;
         entityType?: string;
         entityId?: string;
         patientId?: string;
         severity?: 'low' | 'medium' | 'high' | 'critical';
-        details?: any;
         aiMetadata?: any;
         regulatoryContext?: any;
     };
@@ -91,38 +99,41 @@ export const diagnosticAuditLogger = (options: {
                 // Skip success logs if configured
                 if (options.skipSuccessLog && isSuccess) return;
 
+                // Extract audit data first
+                const data = req.auditData;
+
                 // Determine event type
-                const eventType = req.auditData?.eventType ||
+                const eventType = data?.eventType ||
                     options.eventType ||
                     generateEventTypeFromRequest(req);
 
                 // Determine entity type
-                const entityType = req.auditData?.entityType ||
+                const entityType = data?.entityType ||
                     options.entityType ||
                     determineEntityType(req.path);
 
                 // Determine entity ID
-                const entityId = req.auditData?.entityId ||
+                const entityId = data?.entityId ||
                     req.params.id ||
                     req.params.requestId ||
                     req.params.resultId ||
                     extractEntityIdFromResponse(responseBody);
 
                 // Determine patient ID
-                const patientId = req.auditData?.patientId ||
+                const patientId = data?.patientId ||
                     req.params.patientId ||
                     req.body?.patientId ||
                     extractPatientIdFromResponse(responseBody);
 
                 // Determine severity
-                const severity = req.auditData?.severity ||
+                const severity = data?.severity ||
                     options.severity ||
                     determineSeverity(req, res, isError);
 
                 // Check consent requirements
                 if (options.requireConsent) {
                     const consentObtained = req.body?.consentObtained ||
-                        req.auditData?.details?.consentObtained;
+                        data?.details?.consentObtained;
 
                     if (!consentObtained) {
                         await diagnosticAuditService.logSecurityViolation(
@@ -148,8 +159,8 @@ export const diagnosticAuditLogger = (options: {
                 }
 
                 // Prepare audit event details
-                const auditDetails = {
-                    ...req.auditData?.details,
+                const auditDetails: any = {
+                    ...data?.details,
                     requestMethod: req.method,
                     requestPath: req.path,
                     requestQuery: sanitizeQuery(req.query),
@@ -170,8 +181,8 @@ export const diagnosticAuditLogger = (options: {
                 }
 
                 // Add AI-specific metadata
-                if (options.aiProcessing && req.auditData?.aiMetadata) {
-                    auditDetails.aiMetadata = req.auditData.aiMetadata;
+                if (options.aiProcessing && data?.aiMetadata) {
+                    auditDetails.aiMetadata = data.aiMetadata;
                 }
 
                 // Prepare regulatory context
@@ -181,7 +192,7 @@ export const diagnosticAuditLogger = (options: {
                     dataRetentionPeriod: getRetentionPeriod(entityType),
                     consentRequired: options.requireConsent || false,
                     consentObtained: req.body?.consentObtained || false,
-                    ...req.auditData?.regulatoryContext
+                    ...data?.regulatoryContext
                 };
 
                 // Log the audit event
@@ -203,7 +214,7 @@ export const diagnosticAuditLogger = (options: {
                     timestamp: new Date(),
                     severity,
                     regulatoryContext,
-                    aiMetadata: req.auditData?.aiMetadata
+                    aiMetadata: data?.aiMetadata
                 });
 
                 // Log high-risk activities with additional monitoring
@@ -298,7 +309,15 @@ export const setAuditData = (
     req: AuditableRequest,
     data: Partial<AuditableRequest['auditData']>
 ) => {
-    req.auditData = { ...req.auditData, ...data };
+    if (!req.auditData) {
+        req.auditData = {
+            action: data?.action || 'UNKNOWN_ACTION',
+            details: data?.details || {},
+            complianceCategory: data?.complianceCategory || 'general'
+        };
+    } else {
+        req.auditData = { ...req.auditData, ...data };
+    }
 };
 
 /**
@@ -308,7 +327,13 @@ export const setAIMetadata = (
     req: AuditableRequest,
     aiMetadata: any
 ) => {
-    if (!req.auditData) req.auditData = {};
+    if (!req.auditData) {
+        req.auditData = {
+            action: 'AI_PROCESSING',
+            details: {},
+            complianceCategory: 'ai_processing'
+        };
+    }
     req.auditData.aiMetadata = aiMetadata;
 };
 
@@ -319,13 +344,19 @@ export const setRegulatoryContext = (
     req: AuditableRequest,
     regulatoryContext: any
 ) => {
-    if (!req.auditData) req.auditData = {};
+    if (!req.auditData) {
+        req.auditData = {
+            action: 'REGULATORY_CONTEXT',
+            details: {},
+            complianceCategory: 'regulatory'
+        };
+    }
     req.auditData.regulatoryContext = regulatoryContext;
 };
 
 // Helper functions
 
-function generateEventTypeFromRequest(req: Request): string {
+function generateEventTypeFromRequest(req: AuditableRequest): string {
     const method = req.method;
     const path = req.path;
 
@@ -368,7 +399,7 @@ function determineEntityType(path: string): string {
 }
 
 function determineSeverity(
-    req: Request,
+    req: AuditableRequest,
     res: Response,
     isError: boolean
 ): 'low' | 'medium' | 'high' | 'critical' {

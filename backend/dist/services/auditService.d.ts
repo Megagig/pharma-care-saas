@@ -1,102 +1,105 @@
+import { IAuditLog } from '../models/AuditLog';
+import { Request } from 'express';
 import mongoose from 'mongoose';
-import { IMTRAuditLog } from '../models/MTRAuditLog';
-export interface AuditContext {
-    userId: mongoose.Types.ObjectId;
-    workplaceId: mongoose.Types.ObjectId;
-    userRole: string;
-    sessionId?: string;
-    ipAddress?: string;
-    userAgent?: string;
-    requestMethod?: string;
-    requestUrl?: string;
-}
 export interface AuditLogData {
     action: string;
-    resourceType: 'MedicationTherapyReview' | 'DrugTherapyProblem' | 'MTRIntervention' | 'MTRFollowUp' | 'Patient' | 'User' | 'ClinicalIntervention' | 'ClinicalNote' | 'System' | 'diagnostic_request' | 'diagnostic_result' | 'lab_order' | 'lab_result' | 'follow_up' | 'adherence';
-    resourceId: mongoose.Types.ObjectId;
-    patientId?: mongoose.Types.ObjectId;
-    reviewId?: mongoose.Types.ObjectId;
-    oldValues?: any;
-    newValues?: any;
-    changedFields?: string[];
-    details: any;
-    errorMessage?: string;
-    duration?: number;
-    complianceCategory?: 'clinical_documentation' | 'patient_safety' | 'data_access' | 'system_security' | 'workflow_compliance';
+    userId: string;
+    interventionId?: string;
+    resourceType?: string;
+    resourceId?: mongoose.Types.ObjectId | string;
+    patientId?: mongoose.Types.ObjectId | string;
+    details: Record<string, any>;
     riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+    complianceCategory: string;
+    changedFields?: string[];
+    oldValues?: Record<string, any>;
+    newValues?: Record<string, any>;
+    workspaceId?: string;
 }
-export interface ExportOptions {
-    format: 'json' | 'csv' | 'pdf';
-    dateRange?: {
-        start: Date;
-        end: Date;
-    };
-    filters?: {
-        userId?: mongoose.Types.ObjectId;
-        action?: string;
-        resourceType?: string;
-        complianceCategory?: string;
-        riskLevel?: string;
-        patientId?: mongoose.Types.ObjectId;
-        reviewId?: mongoose.Types.ObjectId;
-    };
-    includeDetails?: boolean;
-    includeSensitiveData?: boolean;
+export interface AuditQueryOptions {
+    page?: number;
+    limit?: number;
+    startDate?: string;
+    endDate?: string;
+    riskLevel?: string;
+    userId?: string;
+    action?: string;
+    interventionId?: string;
+    complianceCategory?: string;
 }
 declare class AuditService {
-    static logActivity(context: AuditContext, auditData: AuditLogData): Promise<IMTRAuditLog>;
-    static logMTRActivity(context: AuditContext, action: string, session: any, oldValues?: any, newValues?: any): Promise<IMTRAuditLog>;
-    static logPatientAccess(context: AuditContext, patientId: mongoose.Types.ObjectId, accessType: 'view' | 'edit' | 'create' | 'delete', details?: any): Promise<IMTRAuditLog>;
-    static logEvent(context: AuditContext, eventData: {
-        action: string;
-        resourceType?: any;
-        resourceId?: mongoose.Types.ObjectId;
-        patientId?: mongoose.Types.ObjectId;
-        details?: any;
-        complianceCategory?: string;
-        riskLevel?: string;
-    }): Promise<IMTRAuditLog>;
-    static logAuthEvent(context: Partial<AuditContext>, action: 'LOGIN' | 'LOGOUT' | 'FAILED_LOGIN', details?: any): Promise<IMTRAuditLog | null>;
-    static getAuditLogs(workplaceId: mongoose.Types.ObjectId, filters?: {
-        userId?: mongoose.Types.ObjectId;
-        action?: string;
-        resourceType?: string;
-        complianceCategory?: string;
-        riskLevel?: string;
-        patientId?: mongoose.Types.ObjectId;
-        reviewId?: mongoose.Types.ObjectId;
-        startDate?: Date;
-        endDate?: Date;
-        ipAddress?: string;
-    }, options?: {
-        page?: number;
-        limit?: number;
-        sort?: string;
-    }): Promise<{
-        logs: IMTRAuditLog[];
+    static createAuditLog(data: AuditLogData, req?: Request): Promise<IAuditLog>;
+    static getAuditLogs(options?: AuditQueryOptions): Promise<{
+        logs: (mongoose.FlattenMaps<IAuditLog> & {
+            _id: mongoose.Types.ObjectId;
+        })[];
         total: number;
+        page: number;
+        limit: number;
+        pages: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+        summary: {
+            totalActions: number;
+            uniqueUsers: number;
+            riskActivities: number;
+            lastActivity: Date | null;
+        };
     }>;
-    static exportAuditData(workplaceId: mongoose.Types.ObjectId, options: ExportOptions): Promise<{
-        data: any;
-        filename: string;
-        contentType: string;
+    static getInterventionAuditLogs(interventionId: string, options?: AuditQueryOptions): Promise<{
+        logs: (mongoose.FlattenMaps<IAuditLog> & {
+            _id: mongoose.Types.ObjectId;
+        })[];
+        total: number;
+        page: number;
+        limit: number;
+        pages: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+        summary: {
+            totalActions: number;
+            uniqueUsers: number;
+            riskActivities: number;
+            lastActivity: Date | null;
+        };
     }>;
-    static getAuditSummary(workplaceId: mongoose.Types.ObjectId, dateRange?: {
-        start: Date;
-        end: Date;
-    }): Promise<any>;
-    static getComplianceReport(workplaceId: mongoose.Types.ObjectId, dateRange: {
-        start: Date;
-        end: Date;
-    }): Promise<any>;
-    private static determineComplianceCategory;
-    private static determineRiskLevel;
-    private static getChangedFields;
+    static calculateSummary(query?: any): Promise<{
+        totalActions: number;
+        uniqueUsers: number;
+        riskActivities: number;
+        lastActivity: Date | null;
+    }>;
+    static exportAuditLogs(options: AuditQueryOptions & {
+        format: 'csv' | 'json';
+    }): Promise<string>;
     private static convertToCSV;
-    private static calculateComplianceScore;
-    private static generateComplianceRecommendations;
-    private static triggerSecurityAlert;
-    static createAuditContext(req: any): AuditContext;
+    private static calculateRiskLevel;
+    private static getClientIP;
+    static cleanupOldLogs(daysToKeep?: number): Promise<number>;
+    static getComplianceReport(options: {
+        startDate: string;
+        endDate: string;
+        includeDetails?: boolean;
+        interventionIds?: string[];
+    }): Promise<{
+        summary: {
+            totalInterventions: number;
+            auditedActions: number;
+            complianceScore: number;
+            riskActivities: number;
+        };
+        complianceByCategory: any;
+    }>;
+    static createAuditContext(req: Request): {
+        userId: any;
+        ipAddress: string;
+        userAgent: string | undefined;
+        sessionId: any;
+        workspaceId: any;
+    };
+    static logActivity(context: any, data: Partial<AuditLogData>): Promise<IAuditLog>;
+    static logMTRActivity(context: any, action: string, session: any, oldValues?: any, newValues?: any): Promise<IAuditLog>;
 }
+export { AuditService };
 export default AuditService;
 //# sourceMappingURL=auditService.d.ts.map

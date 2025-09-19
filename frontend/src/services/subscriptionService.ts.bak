@@ -19,7 +19,7 @@ export interface SubscriptionPlan {
   name: string;
   tier: 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
   priceNGN: number;
-  priceUSD: number;
+  priceNGN: number;
   billingInterval: 'monthly' | 'yearly';
   isContactSales?: boolean;
   whatsappNumber?: string;

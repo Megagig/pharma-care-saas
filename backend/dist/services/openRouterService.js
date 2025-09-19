@@ -11,7 +11,7 @@ class OpenRouterService {
             process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
         this.apiKey = process.env.OPENROUTER_API_KEY || '';
         this.defaultModel = 'deepseek/deepseek-chat-v3.1:free';
-        this.timeout = 60000;
+        this.timeout = 180000;
         this.retryConfig = {
             maxRetries: 3,
             baseDelay: 1000,
@@ -427,7 +427,7 @@ Your response must be valid JSON in this exact format:
                     'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
                     'X-Title': 'PharmaCare SaaS - AI Diagnostic Module',
                 },
-                timeout: 10000,
+                timeout: 30000,
             });
             logger_1.default.info('OpenRouter connection test successful', {
                 status: response.status,

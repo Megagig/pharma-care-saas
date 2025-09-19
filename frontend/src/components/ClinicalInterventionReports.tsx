@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -170,37 +170,113 @@ const ClinicalInterventionReports: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Load report data
-  const loadReportData = async () => {
+  const loadReportData = useCallback(async () => {
     setLoadingReport(true);
     setReportError(null);
 
     try {
-      // TODO: Replace with actual API call to get reports data
-      // const response = await clinicalInterventionService.getOutcomeReports(filters);
-      // if (response.success && response.data) {
-      //   setReportData(response.data);
-      // } else {
-      //   setReportError(response.message || 'Failed to load report data');
-      // }
-
-      // For now, show empty state since no real data is available
-      setReportData(null);
-      setReportError(
-        'Reports functionality is not yet connected to the API. Please implement the backend endpoint for outcome reports.'
+      // Import the service dynamically to avoid circular dependencies
+      const { clinicalInterventionService } = await import(
+        '../services/clinicalInterventionService'
       );
+
+      // Convert filters to the format expected by the API
+      const apiFilters = {
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
+        category: filters.category !== 'all' ? filters.category : undefined,
+        priority: filters.priority !== 'all' ? filters.priority : undefined,
+        outcome: filters.outcome !== 'all' ? filters.outcome : undefined,
+        pharmacist:
+          filters.pharmacist !== 'all' ? filters.pharmacist : undefined,
+      };
+
+      const response = await clinicalInterventionService.generateOutcomeReport(
+        apiFilters
+      );
+
+      if (response.success && response.data) {
+        setReportData(response.data);
+      } else {
+        // If no data is available, create a mock structure to show the UI
+        const mockReportData: OutcomeReport = {
+          summary: {
+            totalInterventions: 0,
+            completedInterventions: 0,
+            successfulInterventions: 0,
+            successRate: 0,
+            totalCostSavings: 0,
+            averageResolutionTime: 0,
+            patientSatisfactionScore: 0,
+          },
+          categoryAnalysis: [],
+          trendAnalysis: [],
+          comparativeAnalysis: {
+            currentPeriod: {
+              interventions: 0,
+              successRate: 0,
+              costSavings: 0,
+            },
+            previousPeriod: {
+              interventions: 0,
+              successRate: 0,
+              costSavings: 0,
+            },
+            percentageChange: {
+              interventions: 0,
+              successRate: 0,
+              costSavings: 0,
+            },
+          },
+          detailedOutcomes: [],
+        };
+
+        setReportData(mockReportData);
+        setReportError(
+          response.message ||
+            'No report data available. Create some clinical interventions to see reports.'
+        );
+      }
     } catch (error) {
+      console.error('Error loading report data:', error);
       setReportError(
         error instanceof Error ? error.message : 'Failed to load report data'
       );
+
+      // Provide empty structure even on error so UI doesn't break
+      const emptyReportData: OutcomeReport = {
+        summary: {
+          totalInterventions: 0,
+          completedInterventions: 0,
+          successfulInterventions: 0,
+          successRate: 0,
+          totalCostSavings: 0,
+          averageResolutionTime: 0,
+          patientSatisfactionScore: 0,
+        },
+        categoryAnalysis: [],
+        trendAnalysis: [],
+        comparativeAnalysis: {
+          currentPeriod: { interventions: 0, successRate: 0, costSavings: 0 },
+          previousPeriod: { interventions: 0, successRate: 0, costSavings: 0 },
+          percentageChange: {
+            interventions: 0,
+            successRate: 0,
+            costSavings: 0,
+          },
+        },
+        detailedOutcomes: [],
+      };
+      setReportData(emptyReportData);
     } finally {
       setLoadingReport(false);
     }
-  };
+  }, [filters]);
 
   // Load data on component mount and filter changes
   useEffect(() => {
     loadReportData();
-  }, [filters]);
+  }, [loadReportData]);
 
   // Handle filter changes
   const handleFilterChange = (field: keyof ReportFilters, value: any) => {
@@ -283,12 +359,12 @@ const ClinicalInterventionReports: React.FC = () => {
         </Typography>
         <Alert severity="info" sx={{ mt: 2 }}>
           <Typography variant="h6" gutterBottom>
-            Reports Feature Coming Soon
+            No Report Data Available
           </Typography>
           <Typography variant="body2">
-            The reports and analytics functionality is currently being
-            developed. Once clinical interventions are created and processed,
-            comprehensive reports will be available including:
+            No clinical interventions have been completed yet. Once clinical
+            interventions are created and processed, comprehensive reports will
+            be available including:
           </Typography>
           <Box component="ul" sx={{ mt: 1, mb: 0 }}>
             <li>Success rates by category</li>
@@ -459,7 +535,7 @@ const ClinicalInterventionReports: React.FC = () => {
                       component="div"
                       sx={{ fontWeight: 'bold' }}
                     >
-                      {reportData.summary.totalInterventions}
+                      {reportData?.summary?.totalInterventions || 0}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Total Interventions
@@ -478,7 +554,7 @@ const ClinicalInterventionReports: React.FC = () => {
                       component="div"
                       sx={{ fontWeight: 'bold' }}
                     >
-                      {reportData.summary.successRate.toFixed(1)}%
+                      {(reportData?.summary?.successRate || 0).toFixed(1)}%
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Success Rate
@@ -497,7 +573,10 @@ const ClinicalInterventionReports: React.FC = () => {
                       component="div"
                       sx={{ fontWeight: 'bold' }}
                     >
-                      ${reportData.summary.totalCostSavings.toLocaleString()}
+                      ₦
+                      {(
+                        reportData?.summary?.totalCostSavings || 0
+                      ).toLocaleString()}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Total Cost Savings
@@ -516,7 +595,9 @@ const ClinicalInterventionReports: React.FC = () => {
                       component="div"
                       sx={{ fontWeight: 'bold' }}
                     >
-                      {reportData.summary.averageResolutionTime.toFixed(1)}
+                      {(
+                        reportData?.summary?.averageResolutionTime || 0
+                      ).toFixed(1)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Avg Resolution Time (days)
@@ -535,7 +616,7 @@ const ClinicalInterventionReports: React.FC = () => {
                       component="div"
                       sx={{ fontWeight: 'bold' }}
                     >
-                      {reportData.summary.completedInterventions}
+                      {reportData?.summary?.completedInterventions || 0}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Completed Interventions
@@ -554,7 +635,9 @@ const ClinicalInterventionReports: React.FC = () => {
                       component="div"
                       sx={{ fontWeight: 'bold' }}
                     >
-                      {reportData.summary.patientSatisfactionScore.toFixed(1)}
+                      {(
+                        reportData?.summary?.patientSatisfactionScore || 0
+                      ).toFixed(1)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Patient Satisfaction (5.0)
@@ -573,7 +656,7 @@ const ClinicalInterventionReports: React.FC = () => {
                       Success Rate by Category
                     </Typography>
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={reportData.categoryAnalysis}>
+                      <BarChart data={reportData?.categoryAnalysis || []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                           dataKey="category"
@@ -601,7 +684,7 @@ const ClinicalInterventionReports: React.FC = () => {
                       Cost Savings by Category
                     </Typography>
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={reportData.categoryAnalysis}>
+                      <BarChart data={reportData?.categoryAnalysis || []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                           dataKey="category"
@@ -612,7 +695,7 @@ const ClinicalInterventionReports: React.FC = () => {
                         <YAxis />
                         <RechartsTooltip
                           formatter={(value) => [
-                            `$${value}`,
+                            `₦${value}`,
                             'Avg Cost Savings',
                           ]}
                         />
@@ -650,7 +733,7 @@ const ClinicalInterventionReports: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {reportData.categoryAnalysis.map((category) => (
+                      {(reportData?.categoryAnalysis || []).map((category) => (
                         <TableRow key={category.category}>
                           <TableCell component="th" scope="row">
                             {category.category}
@@ -673,7 +756,7 @@ const ClinicalInterventionReports: React.FC = () => {
                             />
                           </TableCell>
                           <TableCell align="right">
-                            ${category.avgCostSavings}
+                            ₦{category.avgCostSavings}
                           </TableCell>
                           <TableCell align="right">
                             {category.avgResolutionTime.toFixed(1)} days
@@ -699,7 +782,7 @@ const ClinicalInterventionReports: React.FC = () => {
                       Monthly Trends
                     </Typography>
                     <ResponsiveContainer width="100%" height={400}>
-                      <ComposedChart data={reportData.trendAnalysis}>
+                      <ComposedChart data={reportData?.trendAnalysis || []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="period" />
                         <YAxis yAxisId="left" />
@@ -747,10 +830,8 @@ const ClinicalInterventionReports: React.FC = () => {
                       Interventions
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      {
-                        reportData.comparativeAnalysis.currentPeriod
-                          .interventions
-                      }
+                      {reportData?.comparativeAnalysis?.currentPeriod
+                        ?.interventions || 0}
                     </Typography>
                     <Box
                       sx={{
@@ -762,8 +843,8 @@ const ClinicalInterventionReports: React.FC = () => {
                       <TrendingUpIcon
                         sx={{
                           color:
-                            reportData.comparativeAnalysis.percentageChange
-                              .interventions >= 0
+                            (reportData?.comparativeAnalysis?.percentageChange
+                              ?.interventions || 0) >= 0
                               ? 'success.main'
                               : 'error.main',
                           mr: 0.5,
@@ -773,16 +854,16 @@ const ClinicalInterventionReports: React.FC = () => {
                         variant="body2"
                         sx={{
                           color:
-                            reportData.comparativeAnalysis.percentageChange
-                              .interventions >= 0
+                            (reportData?.comparativeAnalysis?.percentageChange
+                              ?.interventions || 0) >= 0
                               ? 'success.main'
                               : 'error.main',
                           fontWeight: 'medium',
                         }}
                       >
                         {Math.abs(
-                          reportData.comparativeAnalysis.percentageChange
-                            .interventions
+                          reportData?.comparativeAnalysis?.percentageChange
+                            ?.interventions || 0
                         ).toFixed(1)}
                         % vs previous period
                       </Typography>
@@ -797,9 +878,10 @@ const ClinicalInterventionReports: React.FC = () => {
                       Success Rate
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      {reportData.comparativeAnalysis.currentPeriod.successRate.toFixed(
-                        1
-                      )}
+                      {(
+                        reportData?.comparativeAnalysis?.currentPeriod
+                          ?.successRate || 0
+                      ).toFixed(1)}
                       %
                     </Typography>
                     <Box
@@ -812,8 +894,8 @@ const ClinicalInterventionReports: React.FC = () => {
                       <TrendingUpIcon
                         sx={{
                           color:
-                            reportData.comparativeAnalysis.percentageChange
-                              .successRate >= 0
+                            (reportData?.comparativeAnalysis?.percentageChange
+                              ?.successRate || 0) >= 0
                               ? 'success.main'
                               : 'error.main',
                           mr: 0.5,
@@ -823,16 +905,16 @@ const ClinicalInterventionReports: React.FC = () => {
                         variant="body2"
                         sx={{
                           color:
-                            reportData.comparativeAnalysis.percentageChange
-                              .successRate >= 0
+                            (reportData?.comparativeAnalysis?.percentageChange
+                              ?.successRate || 0) >= 0
                               ? 'success.main'
                               : 'error.main',
                           fontWeight: 'medium',
                         }}
                       >
                         {Math.abs(
-                          reportData.comparativeAnalysis.percentageChange
-                            .successRate
+                          reportData?.comparativeAnalysis?.percentageChange
+                            ?.successRate || 0
                         ).toFixed(1)}
                         % vs previous period
                       </Typography>
@@ -848,7 +930,10 @@ const ClinicalInterventionReports: React.FC = () => {
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
                       $
-                      {reportData.comparativeAnalysis.currentPeriod.costSavings.toLocaleString()}
+                      {(
+                        reportData?.comparativeAnalysis?.currentPeriod
+                          ?.costSavings || 0
+                      ).toLocaleString()}
                     </Typography>
                     <Box
                       sx={{
@@ -860,8 +945,8 @@ const ClinicalInterventionReports: React.FC = () => {
                       <TrendingUpIcon
                         sx={{
                           color:
-                            reportData.comparativeAnalysis.percentageChange
-                              .costSavings >= 0
+                            (reportData?.comparativeAnalysis?.percentageChange
+                              ?.costSavings || 0) >= 0
                               ? 'success.main'
                               : 'error.main',
                           mr: 0.5,
@@ -871,16 +956,16 @@ const ClinicalInterventionReports: React.FC = () => {
                         variant="body2"
                         sx={{
                           color:
-                            reportData.comparativeAnalysis.percentageChange
-                              .costSavings >= 0
+                            (reportData?.comparativeAnalysis?.percentageChange
+                              ?.costSavings || 0) >= 0
                               ? 'success.main'
                               : 'error.main',
                           fontWeight: 'medium',
                         }}
                       >
                         {Math.abs(
-                          reportData.comparativeAnalysis.percentageChange
-                            .costSavings
+                          reportData?.comparativeAnalysis?.percentageChange
+                            ?.costSavings || 0
                         ).toFixed(1)}
                         % vs previous period
                       </Typography>
@@ -915,7 +1000,7 @@ const ClinicalInterventionReports: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {reportData.detailedOutcomes
+                      {(reportData?.detailedOutcomes || [])
                         .slice(
                           page * rowsPerPage,
                           page * rowsPerPage + rowsPerPage
@@ -952,7 +1037,7 @@ const ClinicalInterventionReports: React.FC = () => {
                               />
                             </TableCell>
                             <TableCell align="right">
-                              ${outcome.costSavings}
+                              ₦{outcome.costSavings}
                             </TableCell>
                             <TableCell align="right">
                               {outcome.resolutionTime} days
@@ -971,7 +1056,7 @@ const ClinicalInterventionReports: React.FC = () => {
                 <TablePagination
                   rowsPerPageOptions={[5, 10, 25, 50]}
                   component="div"
-                  count={reportData.detailedOutcomes.length}
+                  count={reportData?.detailedOutcomes?.length || 0}
                   rowsPerPage={rowsPerPage}
                   page={page}
                   onPageChange={(_, newPage) => setPage(newPage)}

@@ -5,7 +5,7 @@
 
 import { Types } from 'mongoose';
 import diagnosticAuditService from '../services/diagnosticAuditService';
-import auditService from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
 import { it } from 'node:test';
 import { describe } from 'node:test';
 import { it } from 'node:test';

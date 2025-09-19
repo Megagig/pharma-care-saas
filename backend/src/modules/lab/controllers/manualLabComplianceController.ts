@@ -2,7 +2,7 @@ import { Response } from 'express';
 import mongoose from 'mongoose';
 import { AuthRequest } from '../../../middlewares/auth';
 import ManualLabAuditService from '../services/manualLabAuditService';
-import AuditService from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
 import {
     sendSuccess,
     sendError,
@@ -49,15 +49,12 @@ export const generateComplianceReport = asyncHandler(
             }
 
             // Get audit statistics for the period
-            const auditStats = await AuditService.getAuditLogs(
-                new mongoose.Types.ObjectId(context.workplaceId),
-                {
-                    startDate: dateRange.start,
-                    endDate: dateRange.end,
-                    action: 'MANUAL_LAB_'
-                },
-                { limit: 10000 }
-            );
+            const auditStats = await AuditService.getAuditLogs({
+                startDate: dateRange.start.toISOString(),
+                endDate: dateRange.end.toISOString(),
+                action: 'MANUAL_LAB_',
+                limit: 10000
+            });
 
             // Count different types of operations
             const operationCounts = {
@@ -146,13 +143,10 @@ export const getOrderAuditTrail = asyncHandler(
 
         try {
             // Get all audit logs for this order
-            const { logs } = await AuditService.getAuditLogs(
-                new mongoose.Types.ObjectId(context.workplaceId),
-                {
-                    action: 'MANUAL_LAB_'
-                },
-                { limit: 1000, sort: 'timestamp' }
-            );
+            const { logs } = await AuditService.getAuditLogs({
+                action: 'MANUAL_LAB_',
+                limit: 1000
+            });
 
             // Filter logs related to this specific order
             const orderLogs = logs.filter(log =>
@@ -167,7 +161,7 @@ export const getOrderAuditTrail = asyncHandler(
                     timestamp: log.timestamp,
                     action: log.action,
                     userId: log.userId,
-                    userRole: log.userRole,
+
                     riskLevel: log.riskLevel,
                     complianceCategory: log.complianceCategory,
                     details: log.details,
@@ -240,15 +234,11 @@ export const getComplianceViolations = asyncHandler(
             }
 
             // Get violation logs
-            const { logs, total } = await AuditService.getAuditLogs(
-                new mongoose.Types.ObjectId(context.workplaceId),
-                filters,
-                {
-                    page: parseInt(page),
-                    limit: parseInt(limit),
-                    sort: '-timestamp'
-                }
-            );
+            const { logs, total } = await AuditService.getAuditLogs({
+                ...filters,
+                page: parseInt(page),
+                limit: parseInt(limit)
+            });
 
             // Categorize violations
             const violations = logs.map(log => ({
@@ -258,9 +248,9 @@ export const getComplianceViolations = asyncHandler(
                 riskLevel: log.riskLevel,
                 complianceCategory: log.complianceCategory,
                 userId: log.userId,
-                userRole: log.userRole,
+
                 details: log.details,
-                errorMessage: log.errorMessage,
+
                 ipAddress: log.ipAddress,
                 severity: log.riskLevel === 'critical' ? 'critical' :
                     log.riskLevel === 'high' ? 'high' : 'medium'

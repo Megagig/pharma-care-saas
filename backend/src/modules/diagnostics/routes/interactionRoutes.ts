@@ -45,12 +45,7 @@ router.post(
     interactionRateLimit,
     auth,
     requireFeature('drug_information'),
-    auditLogger({
-        action: 'CHECK_DRUG_INTERACTIONS',
-        resourceType: 'DrugInteraction',
-        complianceCategory: 'clinical_documentation',
-        riskLevel: 'medium'
-    }),
+    auditLogger('CHECK_DRUG_INTERACTIONS', 'clinical_documentation'),
     validateRequest(validateInteractionCheck),
     drugInteractionController.checkDrugInteractions
 );
@@ -65,12 +60,7 @@ router.get(
     interactionRateLimit,
     auth,
     requireFeature('drug_information'),
-    auditLogger({
-        action: 'GET_DRUG_INFO',
-        resourceType: 'DrugInfo',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
+    auditLogger('GET_DRUG_INFO', 'data_access'),
     drugInteractionController.getDrugInformation
 );
 
@@ -84,12 +74,7 @@ router.get(
     interactionRateLimit,
     auth,
     requireFeature('drug_information'),
-    auditLogger({
-        action: 'SEARCH_DRUGS',
-        resourceType: 'DrugSearch',
-        complianceCategory: 'data_access',
-        riskLevel: 'low'
-    }),
+    auditLogger('SEARCH_DRUGS', 'data_access'),
     drugInteractionController.searchDrugs
 );
 
@@ -103,12 +88,7 @@ router.post(
     interactionRateLimit,
     auth,
     requireFeature('drug_information'),
-    auditLogger({
-        action: 'CHECK_ALLERGY_CONTRAINDICATIONS',
-        resourceType: 'AllergyCheck',
-        complianceCategory: 'clinical_documentation',
-        riskLevel: 'medium'
-    }),
+    auditLogger('CHECK_ALLERGY_CONTRAINDICATIONS', 'clinical_documentation'),
     drugInteractionController.checkAllergyInteractions
 );
 

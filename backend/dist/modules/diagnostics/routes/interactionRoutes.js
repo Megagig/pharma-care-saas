@@ -31,29 +31,9 @@ const validateRequest = (schema) => (req, res, next) => {
     }
     next();
 };
-router.post('/check', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
-    action: 'CHECK_DRUG_INTERACTIONS',
-    resourceType: 'DrugInteraction',
-    complianceCategory: 'clinical_documentation',
-    riskLevel: 'medium'
-}), validateRequest(validators_1.validateInteractionCheck), drugInteractionController_1.default.checkDrugInteractions);
-router.get('/drug-info', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
-    action: 'GET_DRUG_INFO',
-    resourceType: 'DrugInfo',
-    complianceCategory: 'data_access',
-    riskLevel: 'low'
-}), drugInteractionController_1.default.getDrugInformation);
-router.get('/search', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
-    action: 'SEARCH_DRUGS',
-    resourceType: 'DrugSearch',
-    complianceCategory: 'data_access',
-    riskLevel: 'low'
-}), drugInteractionController_1.default.searchDrugs);
-router.post('/check-allergies', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
-    action: 'CHECK_ALLERGY_CONTRAINDICATIONS',
-    resourceType: 'AllergyCheck',
-    complianceCategory: 'clinical_documentation',
-    riskLevel: 'medium'
-}), drugInteractionController_1.default.checkAllergyInteractions);
+router.post('/check', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)('CHECK_DRUG_INTERACTIONS', 'clinical_documentation'), validateRequest(validators_1.validateInteractionCheck), drugInteractionController_1.default.checkDrugInteractions);
+router.get('/drug-info', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)('GET_DRUG_INFO', 'data_access'), drugInteractionController_1.default.getDrugInformation);
+router.get('/search', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)('SEARCH_DRUGS', 'data_access'), drugInteractionController_1.default.searchDrugs);
+router.post('/check-allergies', interactionRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)('CHECK_ALLERGY_CONTRAINDICATIONS', 'clinical_documentation'), drugInteractionController_1.default.checkAllergyInteractions);
 exports.default = router;
 //# sourceMappingURL=interactionRoutes.js.map

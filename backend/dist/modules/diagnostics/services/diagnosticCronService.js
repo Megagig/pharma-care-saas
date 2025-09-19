@@ -42,7 +42,6 @@ class DiagnosticCronService {
                     logger_1.default.error(`Error in cron job ${name}:`, error);
                 }
             }, {
-                scheduled: false,
                 timezone: 'UTC'
             });
             this.jobs.set(name, job);

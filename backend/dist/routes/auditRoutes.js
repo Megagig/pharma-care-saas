@@ -15,19 +15,19 @@ router.get('/logs', rateLimiting_1.generalRateLimiters.api, authWithWorkspace_1.
     category: 'security',
     severity: 'medium',
     resourceType: 'AuditLog',
-}), auditController_1.auditController.getAuditLogs.bind(auditController_1.auditController));
+}), auditController_1.getAllAuditTrail);
 router.get('/summary', rateLimiting_1.generalRateLimiters.api, authWithWorkspace_1.authWithWorkspace, (0, rbac_1.requirePermission)('audit.view'), (0, auditLogging_1.auditMiddleware)({
     action: 'AUDIT_SUMMARY_VIEWED',
     category: 'security',
     severity: 'low',
     resourceType: 'AuditSummary',
-}), auditController_1.auditController.getAuditSummary.bind(auditController_1.auditController));
+}), auditController_1.getAuditStatistics);
 router.get('/security-alerts', rateLimiting_1.generalRateLimiters.api, authWithWorkspace_1.authWithWorkspace, (0, rbac_1.requirePermission)('audit.security'), (0, auditLogging_1.auditMiddleware)({
     action: 'SECURITY_ALERTS_VIEWED',
     category: 'security',
     severity: 'medium',
     resourceType: 'SecurityAlert',
-}), auditController_1.auditController.getSecurityAlerts.bind(auditController_1.auditController));
+}), auditController_1.getAllAuditTrail);
 router.get('/export', rateLimiting_1.generalRateLimiters.sensitive, authWithWorkspace_1.authWithWorkspace, (0, rbac_1.requirePermission)('audit.export'), (0, auditLogging_1.auditMiddleware)({
     action: 'AUDIT_LOGS_EXPORTED',
     category: 'security',
@@ -35,6 +35,6 @@ router.get('/export', rateLimiting_1.generalRateLimiters.sensitive, authWithWork
     resourceType: 'AuditExport',
     includeRequestBody: false,
     includeResponseBody: false,
-}), auditController_1.auditController.exportAuditLogs.bind(auditController_1.auditController));
+}), auditController_1.exportAuditData);
 exports.default = router;
 //# sourceMappingURL=auditRoutes.js.map

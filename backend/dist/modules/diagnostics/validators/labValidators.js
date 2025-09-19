@@ -460,6 +460,8 @@ const validateLOINCCode = (loincCode) => {
         return { valid: false, error: 'LOINC code must be in format NNNNN-N (e.g., 12345-6)' };
     }
     const [, code, checkDigit] = match;
+    if (!code)
+        return { valid: false, error: 'LOINC code is required' };
     let sum = 0;
     for (let i = 0; i < code.length; i++) {
         const char = code[i];

@@ -88,25 +88,12 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
       setLoading(true);
       setError(null);
 
-      // Check if we have an intervention ID to fetch audit trail for
-      if (!interventionId) {
-        setAuditLogs([]);
-        setTotalPages(1);
-        setSummary({
-          totalActions: 0,
-          uniqueUsers: 0,
-          lastActivity: null,
-          riskActivities: 0,
-        });
-        setError('No intervention selected for audit trail');
-        return;
-      }
-
       const options: {
         page: number;
         limit: number;
         startDate?: string;
         endDate?: string;
+        riskLevel?: string;
       } = {
         page,
         limit,
@@ -114,32 +101,34 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
 
       if (startDate) options.startDate = startDate;
       if (endDate) options.endDate = endDate;
+      if (riskLevelFilter) options.riskLevel = riskLevelFilter;
 
-      const response =
-        await clinicalInterventionService.getInterventionAuditTrail(
+      let response;
+
+      if (interventionId) {
+        // Fetch audit trail for specific intervention
+        response = await clinicalInterventionService.getInterventionAuditTrail(
           interventionId,
           options
         );
+      } else {
+        // Fetch general audit trail for all interventions
+        response = await clinicalInterventionService.getAllAuditTrail(options);
+      }
 
       if (response.success && response.data) {
         setAuditLogs(response.data.logs as AuditLog[]);
-        setTotalPages(Math.ceil(response.data.total / limit));
-        setSummary(response.data.summary);
+        setTotalPages(Math.ceil((response.data.total || 0) / limit));
+        setSummary(
+          response.data.summary || {
+            totalActions: 0,
+            uniqueUsers: 0,
+            lastActivity: null,
+            riskActivities: 0,
+          }
+        );
       } else {
-        // Handle specific error messages
-        const errorMessage = response.message || 'Failed to fetch audit trail';
-        if (
-          errorMessage.includes('workspace') ||
-          errorMessage.includes('Workspace')
-        ) {
-          setError(
-            'Audit trail functionality requires proper workspace configuration. Please contact your administrator.'
-          );
-        } else {
-          setError(errorMessage);
-        }
-
-        // Set empty state
+        // Set empty state when no data is available
         setAuditLogs([]);
         setTotalPages(1);
         setSummary({
@@ -148,26 +137,16 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
           lastActivity: null,
           riskActivities: 0,
         });
+        setError(response.message || 'No audit data available');
       }
     } catch (error: unknown) {
-      const err = error as Error;
+      console.error('Error fetching audit trail:', error);
+
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'An error occurred while fetching audit trail';
+        error instanceof Error ? error.message : 'Failed to fetch audit trail';
+      setError(errorMessage);
 
-      if (
-        errorMessage.includes('workspace') ||
-        errorMessage.includes('Workspace')
-      ) {
-        setError(
-          'Audit trail functionality requires proper workspace configuration. Please contact your administrator.'
-        );
-      } else {
-        setError(errorMessage);
-      }
-
-      // Set empty state
+      // Set empty state on error
       setAuditLogs([]);
       setTotalPages(1);
       setSummary({
@@ -179,7 +158,7 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [interventionId, page, startDate, endDate, limit]);
+  }, [interventionId, page, startDate, endDate, riskLevelFilter, limit]);
 
   useEffect(() => {
     fetchAuditTrail();
@@ -203,17 +182,19 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `intervention_${
-        interventionNumber || interventionId
-      }_audit_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      link.download = `${
+        interventionId
+          ? `intervention_${interventionNumber || interventionId}_audit`
+          : 'clinical_interventions_audit'
+      }_${format(new Date(), 'yyyy-MM-dd')}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error: unknown) {
-      const err = error as Error;
+      console.error('Export error:', error);
       setError(
-        err instanceof Error ? err.message : 'Failed to export audit data'
+        error instanceof Error ? error.message : 'Failed to export audit data'
       );
     }
   };
@@ -288,7 +269,9 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
             mb={2}
           >
             <Typography variant="h6">
-              Audit Trail {interventionNumber && `- ${interventionNumber}`}
+              {interventionId
+                ? `Audit Trail - ${interventionNumber || interventionId}`
+                : 'Clinical Interventions Audit Trail'}
             </Typography>
             <Button
               variant="outlined"
@@ -609,32 +592,17 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
             </Box>
           )}
 
-          {auditLogs.length === 0 && !loading && !error && (
-            <Box textAlign="center" py={4}>
-              <Typography color="textSecondary">
-                No audit logs found for the selected criteria.
-              </Typography>
-            </Box>
-          )}
-
-          {auditLogs.length === 0 && !loading && error && (
+          {auditLogs.length === 0 && !loading && (
             <Box textAlign="center" py={4}>
               <Alert severity="info">
                 <Typography variant="h6" gutterBottom>
-                  Audit Trail Coming Soon
+                  No Audit Data Available
                 </Typography>
                 <Typography variant="body2">
-                  The audit trail functionality is currently being developed.
-                  Once clinical interventions are created and user actions are
-                  tracked, detailed audit logs will be available including:
+                  {interventionId
+                    ? 'No audit logs found for this specific intervention.'
+                    : 'No audit logs match the selected criteria. Try adjusting your filters or check back later as audit data is generated through system usage.'}
                 </Typography>
-                <Box component="ul" sx={{ mt: 1, mb: 0, textAlign: 'left' }}>
-                  <li>User action tracking</li>
-                  <li>Data change history</li>
-                  <li>Risk level assessment</li>
-                  <li>Compliance monitoring</li>
-                  <li>Detailed activity logs</li>
-                </Box>
               </Alert>
             </Box>
           )}

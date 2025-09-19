@@ -7,8 +7,7 @@ exports.monitorCompliance = exports.auditManualLabOperation = exports.auditToken
 const manualLabAuditService_1 = __importDefault(require("../services/manualLabAuditService"));
 const manualLabSecurityService_1 = __importDefault(require("../services/manualLabSecurityService"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
-const mongoose_1 = require("mongoose");
-const auditService_1 = __importDefault(require("../../../services/auditService"));
+const auditService_1 = require("../../../services/auditService");
 const auditPDFAccess = (req, res, next) => {
     const startTime = Date.now();
     const orderId = req.params.orderId;
@@ -28,14 +27,11 @@ const auditPDFAccess = (req, res, next) => {
             try {
                 if (res.statusCode === 200 && req.user) {
                     const auditContext = {
-                        userId: req.user._id,
-                        workplaceId: req.user.workplaceId,
-                        userRole: req.user.role,
+                        userId: req.user._id.toString(),
+                        workspaceId: req.user.workplaceId.toString(),
                         sessionId: req.sessionID,
                         ipAddress: req.ip,
-                        userAgent: req.get('User-Agent'),
-                        requestMethod: req.method,
-                        requestUrl: req.originalUrl
+                        userAgent: req.get('User-Agent')
                     };
                     let downloadMethod = 'direct_link';
                     const referrer = req.get('Referer') || '';
@@ -80,14 +76,11 @@ const auditResultEntry = (req, res, next) => {
                     const result = body.data?.result;
                     if (result) {
                         const auditContext = {
-                            userId: req.user._id,
-                            workplaceId: new mongoose_1.Types.ObjectId(req.user.workplaceId),
-                            userRole: req.user.role,
+                            userId: req.user._id.toString(),
+                            workspaceId: req.user.workplaceId.toString(),
                             sessionId: req.sessionID,
                             ipAddress: req.ip,
-                            userAgent: req.get('User-Agent'),
-                            requestMethod: req.method,
-                            requestUrl: req.originalUrl
+                            userAgent: req.get('User-Agent')
                         };
                         const abnormalCount = result.values?.filter((v) => v.abnormalFlag).length || 0;
                         const criticalCount = result.criticalResults?.length || 0;
@@ -126,14 +119,11 @@ const auditStatusChange = (req, res, next) => {
             try {
                 if (res.statusCode === 200 && req.user && body.success) {
                     const auditContext = {
-                        userId: req.user._id,
-                        workplaceId: req.user.workplaceId,
-                        userRole: req.user.role,
+                        userId: req.user._id.toString(),
+                        workspaceId: req.user.workplaceId.toString(),
                         sessionId: req.sessionID,
                         ipAddress: req.ip,
-                        userAgent: req.get('User-Agent'),
-                        requestMethod: req.method,
-                        requestUrl: req.originalUrl
+                        userAgent: req.get('User-Agent')
                     };
                     const { previousStatus } = body.data;
                     await manualLabAuditService_1.default.logStatusChange(auditContext, orderId, previousStatus, newStatus);
@@ -160,14 +150,11 @@ const auditTokenResolution = (req, res, next) => {
             try {
                 if (req.user) {
                     const auditContext = {
-                        userId: req.user._id,
-                        workplaceId: req.user.workplaceId,
-                        userRole: req.user.role,
+                        userId: req.user._id.toString(),
+                        workspaceId: req.user.workplaceId.toString(),
                         sessionId: req.sessionID,
                         ipAddress: req.ip,
-                        userAgent: req.get('User-Agent'),
-                        requestMethod: req.method,
-                        requestUrl: req.originalUrl
+                        userAgent: req.get('User-Agent')
                     };
                     const success = res.statusCode === 200 && body.success;
                     const orderId = body.data?.order?.orderId || 'unknown';
@@ -207,14 +194,11 @@ const auditManualLabOperation = (operationType) => {
         if (req.user) {
             try {
                 const auditContext = {
-                    userId: req.user._id,
-                    workplaceId: new mongoose_1.Types.ObjectId(req.user.workplaceId),
-                    userRole: req.user.role,
+                    userId: req.user._id.toString(),
+                    workspaceId: req.user.workplaceId.toString(),
                     sessionId: req.sessionID,
                     ipAddress: req.ip,
-                    userAgent: req.get('User-Agent'),
-                    requestMethod: req.method,
-                    requestUrl: req.originalUrl
+                    userAgent: req.get('User-Agent')
                 };
                 const threats = await manualLabSecurityService_1.default.analyzeRequest(auditContext, {
                     method: req.method,
@@ -301,7 +285,7 @@ const monitorCompliance = (req, res, next) => {
                         requestMethod: req.method,
                         requestUrl: req.originalUrl
                     };
-                    await auditService_1.default.logActivity(auditContext, {
+                    await auditService_1.AuditService.logActivity(auditContext, {
                         action: 'MANUAL_LAB_COMPLIANCE_VIOLATION',
                         resourceType: 'System',
                         resourceId: req.user._id,

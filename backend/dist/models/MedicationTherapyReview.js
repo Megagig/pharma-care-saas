@@ -493,8 +493,7 @@ medicationTherapyReviewSchema.pre('save', function () {
     if (this.isNew && !this.reviewNumber) {
         this.reviewNumber = this.generateReviewNumber();
     }
-    if (this.canComplete() && this.status === 'in_progress') {
-        this.status = 'completed';
+    if (this.canComplete() && this.status === 'completed' && !this.completedAt) {
         this.completedAt = new Date();
     }
     if (!this.patientConsent && this.createdByRole !== 'super_admin') {

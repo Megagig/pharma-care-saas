@@ -134,16 +134,16 @@ class DiagnosticIntegrationService {
             const clinicalNotesQuery = ClinicalNote_1.default.findActive({
                 ...baseFilter,
                 patient: patientId,
-            }).sort({ createdAt: -1 }).limit(limit).exec();
+            }).sort({ createdAt: -1 }).limit(limit);
             const mtrsQuery = MedicationTherapyReview_1.default.find({
                 ...baseFilter,
                 patientId,
                 isDeleted: false,
-            }).sort({ createdAt: -1 }).limit(limit).exec();
+            }).sort({ createdAt: -1 }).limit(limit);
             const [diagnosticRequests, clinicalNotes, mtrs] = await Promise.all([
                 diagnosticRequestsQuery,
-                clinicalNotesQuery,
-                mtrsQuery,
+                clinicalNotesQuery.exec(),
+                mtrsQuery.exec(),
             ]);
             const timelineEvents = [
                 ...diagnosticRequests.map((req) => ({
@@ -207,7 +207,7 @@ class DiagnosticIntegrationService {
                 workplaceId,
                 isDeleted: false,
                 createdAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
-            }).sort({ createdAt: -1 }).limit(5);
+            }).sort({ createdAt: -1 }).limit(5).exec();
             const correlations = this.findCorrelations(diagnosticRequest, recentClinicalNotes, recentMTRs);
             return {
                 relatedClinicalNotes: recentClinicalNotes,

@@ -206,7 +206,6 @@ exports.addLabResult = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
             referenceRange,
             source: 'manual',
             performedAt: performedAt ? new Date(performedAt) : new Date(),
-            recordedAt: new Date(),
             recordedBy: context.userId.toString(),
             externalResultId,
             loincCode,

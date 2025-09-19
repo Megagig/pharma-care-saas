@@ -39,12 +39,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const mongodb_memory_server_1 = require("mongodb-memory-server");
 const globals_1 = require("@jest/globals");
-const openRouterService = __importStar(require("../services/openRouterService"));
-const rxnormService = __importStar(require("../services/rxnormService"));
-const openfdaService = __importStar(require("../services/openfdaService"));
-globals_1.jest.mock('../services/openRouterService');
-globals_1.jest.mock('../services/rxnormService');
-globals_1.jest.mock('../services/openfdaService');
+const openRouterService = __importStar(require("../../../services/openRouterService"));
+const rxnormService = __importStar(require("../../../services/rxnormService"));
+const openfdaService = __importStar(require("../../../services/openfdaService"));
+globals_1.jest.mock('../../../services/openRouterService');
+globals_1.jest.mock('../../../services/rxnormService');
+globals_1.jest.mock('../../../services/openfdaService');
 globals_1.jest.setTimeout(30000);
 let mongoServer;
 beforeAll(async () => {

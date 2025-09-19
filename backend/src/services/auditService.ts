@@ -1,783 +1,497 @@
-import mongoose from 'mongoose';
+import { AuditLog, IAuditLog } from '../models/AuditLog';
 import { Request } from 'express';
-import MTRAuditLog, { IMTRAuditLog } from '../models/MTRAuditLog';
-import logger from '../utils/logger';
-
-/**
- * Enhanced Audit Service for MTR Compliance
- * Provides comprehensive audit logging and compliance tracking
- */
-
-export interface AuditContext {
-  userId: mongoose.Types.ObjectId;
-  workplaceId: mongoose.Types.ObjectId;
-  userRole: string;
-  sessionId?: string;
-  ipAddress?: string;
-  userAgent?: string;
-  requestMethod?: string;
-  requestUrl?: string;
-}
+import mongoose from 'mongoose';
 
 export interface AuditLogData {
   action: string;
-  resourceType:
-    | 'MedicationTherapyReview'
-    | 'DrugTherapyProblem'
-    | 'MTRIntervention'
-    | 'MTRFollowUp'
-    | 'Patient'
-    | 'User'
-    | 'ClinicalIntervention'
-    | 'ClinicalNote'
-    | 'System'
-    | 'diagnostic_request'
-    | 'diagnostic_result'
-    | 'lab_order'
-    | 'lab_result'
-    | 'follow_up'
-    | 'adherence';
-  resourceId: mongoose.Types.ObjectId;
-  patientId?: mongoose.Types.ObjectId;
-  reviewId?: mongoose.Types.ObjectId;
-  oldValues?: any;
-  newValues?: any;
-  changedFields?: string[];
-  details: any;
-  errorMessage?: string;
-  duration?: number;
-  complianceCategory?:
-    | 'clinical_documentation'
-    | 'patient_safety'
-    | 'data_access'
-    | 'system_security'
-    | 'workflow_compliance';
+  userId: string;
+  interventionId?: string;
+  resourceType?: string;
+  resourceId?: mongoose.Types.ObjectId | string;
+  patientId?: mongoose.Types.ObjectId | string;
+  details: Record<string, any>;
   riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+  complianceCategory: string;
+  changedFields?: string[];
+  oldValues?: Record<string, any>;
+  newValues?: Record<string, any>;
+  workspaceId?: string;
 }
 
-export interface ExportOptions {
-  format: 'json' | 'csv' | 'pdf';
-  dateRange?: { start: Date; end: Date };
-  filters?: {
-    userId?: mongoose.Types.ObjectId;
-    action?: string;
-    resourceType?: string;
-    complianceCategory?: string;
-    riskLevel?: string;
-    patientId?: mongoose.Types.ObjectId;
-    reviewId?: mongoose.Types.ObjectId;
-  };
-  includeDetails?: boolean;
-  includeSensitiveData?: boolean;
+export interface AuditQueryOptions {
+  page?: number;
+  limit?: number;
+  startDate?: string;
+  endDate?: string;
+  riskLevel?: string;
+  userId?: string;
+  action?: string;
+  interventionId?: string;
+  complianceCategory?: string;
 }
 
 class AuditService {
   /**
-   * Create audit log entry
+   * Create an audit log entry
    */
-  static async logActivity(
-    context: AuditContext,
-    auditData: AuditLogData
-  ): Promise<IMTRAuditLog> {
+  static async createAuditLog(
+    data: AuditLogData,
+    req?: Request
+  ): Promise<IAuditLog> {
     try {
-      // Determine compliance category if not provided
-      const complianceCategory =
-        auditData.complianceCategory ||
-        this.determineComplianceCategory(auditData.action);
+      const auditData: Partial<IAuditLog> = {
+        action: data.action,
+        userId: new mongoose.Types.ObjectId(data.userId),
+        details: data.details,
+        riskLevel: data.riskLevel || AuditService.calculateRiskLevel(data.action, data.details),
+        complianceCategory: data.complianceCategory,
+        changedFields: data.changedFields,
+        oldValues: data.oldValues,
+        newValues: data.newValues,
+        timestamp: new Date()
+      };
 
-      // Determine risk level if not provided
-      const riskLevel =
-        auditData.riskLevel ||
-        this.determineRiskLevel(auditData.action, auditData.resourceType);
-
-      const auditLog = new MTRAuditLog({
-        workplaceId: context.workplaceId,
-        action: auditData.action,
-        resourceType: auditData.resourceType,
-        resourceId: auditData.resourceId,
-        userId: context.userId,
-        userRole: context.userRole,
-        sessionId: context.sessionId,
-        ipAddress: context.ipAddress,
-        userAgent: context.userAgent,
-        requestMethod: context.requestMethod,
-        requestUrl: context.requestUrl,
-        oldValues: auditData.oldValues,
-        newValues: auditData.newValues,
-        changedFields: auditData.changedFields,
-        patientId: auditData.patientId,
-        reviewId: auditData.reviewId,
-        complianceCategory,
-        riskLevel,
-        details: auditData.details,
-        errorMessage: auditData.errorMessage,
-        duration: auditData.duration,
-        timestamp: new Date(),
-        createdBy: context.userId,
-      });
-
-      await auditLog.save();
-
-      // Log to winston for file storage
-      logger.info('MTR Audit Log Created', {
-        auditId: auditLog._id,
-        action: auditData.action,
-        resourceType: auditData.resourceType,
-        resourceId: auditData.resourceId,
-        userId: context.userId,
-        workplaceId: context.workplaceId,
-        riskLevel,
-        complianceCategory,
-        service: 'mtr-audit',
-      });
-
-      // Trigger alerts for high-risk activities
-      if (riskLevel === 'critical' || riskLevel === 'high') {
-        await this.triggerSecurityAlert(auditLog);
+      // Add intervention ID if provided
+      if (data.interventionId) {
+        auditData.interventionId = new mongoose.Types.ObjectId(data.interventionId);
       }
 
+      // Add workspace ID if provided
+      if (data.workspaceId) {
+        auditData.workspaceId = new mongoose.Types.ObjectId(data.workspaceId);
+      }
+
+      // Extract request information if available
+      if (req) {
+        auditData.ipAddress = AuditService.getClientIP(req);
+        auditData.userAgent = req.get('User-Agent');
+        auditData.sessionId = (req as any).sessionID || req.get('X-Session-ID');
+      }
+
+      const auditLog = new AuditLog(auditData);
+      await auditLog.save();
+
       return auditLog;
-    } catch (error: any) {
-      logger.error('Failed to create audit log', {
-        error: error?.message || 'Unknown error',
-        context,
-        auditData,
-        service: 'mtr-audit',
-      });
-      throw error;
+    } catch (error) {
+      console.error('Error creating audit log:', error);
+      throw new Error('Failed to create audit log');
     }
-  }
-
-  /**
-   * Log MTR session activities
-   */
-  static async logMTRActivity(
-    context: AuditContext,
-    action: string,
-    session: any,
-    oldValues?: any,
-    newValues?: any
-  ): Promise<IMTRAuditLog> {
-    const changedFields =
-      oldValues && newValues
-        ? this.getChangedFields(oldValues, newValues)
-        : undefined;
-
-    return this.logActivity(context, {
-      action,
-      resourceType: 'MedicationTherapyReview',
-      resourceId: session._id,
-      patientId: session.patientId,
-      reviewId: session._id,
-      oldValues,
-      newValues,
-      changedFields,
-      details: {
-        reviewNumber: session.reviewNumber,
-        status: session.status,
-        priority: session.priority,
-        reviewType: session.reviewType,
-        completionPercentage: session.getCompletionPercentage?.() || 0,
-      },
-      complianceCategory: 'clinical_documentation',
-    });
-  }
-
-  /**
-   * Log patient data access
-   */
-  static async logPatientAccess(
-    context: AuditContext,
-    patientId: mongoose.Types.ObjectId,
-    accessType: 'view' | 'edit' | 'create' | 'delete',
-    details: any = {}
-  ): Promise<IMTRAuditLog> {
-    return this.logActivity(context, {
-      action: `ACCESS_PATIENT_${accessType.toUpperCase()}`,
-      resourceType: 'Patient',
-      resourceId: patientId,
-      patientId,
-      details: {
-        accessType,
-        ...details,
-      },
-      complianceCategory: 'data_access',
-      riskLevel: accessType === 'delete' ? 'high' : 'medium',
-    });
-  }
-
-  /**
-   * Log general events - simplified interface for backward compatibility
-   */
-  static async logEvent(
-    context: AuditContext,
-    eventData: {
-      action: string;
-      resourceType?: any;
-      resourceId?: mongoose.Types.ObjectId;
-      patientId?: mongoose.Types.ObjectId;
-      details?: any;
-      complianceCategory?: string;
-      riskLevel?: string;
-    }
-  ): Promise<IMTRAuditLog> {
-    return this.logActivity(context, {
-      action: eventData.action,
-      resourceType: eventData.resourceType || 'System',
-      resourceId: eventData.resourceId || context.userId,
-      patientId: eventData.patientId,
-      details: eventData.details || {},
-      complianceCategory: eventData.complianceCategory as any || 'system_security',
-      riskLevel: eventData.riskLevel as any || 'low',
-    });
-  }
-
-  /**
-   * Log authentication events
-   */
-  static async logAuthEvent(
-    context: Partial<AuditContext>,
-    action: 'LOGIN' | 'LOGOUT' | 'FAILED_LOGIN',
-    details: any = {}
-  ): Promise<IMTRAuditLog | null> {
-    if (!context.userId || !context.workplaceId) {
-      // For failed logins, we might not have complete context
-      logger.warn('Incomplete context for auth event', { action, context });
-      return null;
-    }
-
-    return this.logActivity(context as AuditContext, {
-      action,
-      resourceType: 'User',
-      resourceId: context.userId,
-      details: {
-        ...details,
-        timestamp: new Date(),
-      },
-      complianceCategory: 'system_security',
-      riskLevel: action === 'FAILED_LOGIN' ? 'medium' : 'low',
-    });
   }
 
   /**
    * Get audit logs with filtering and pagination
    */
-  static async getAuditLogs(
-    workplaceId: mongoose.Types.ObjectId,
-    filters: {
-      userId?: mongoose.Types.ObjectId;
-      action?: string;
-      resourceType?: string;
-      complianceCategory?: string;
-      riskLevel?: string;
-      patientId?: mongoose.Types.ObjectId;
-      reviewId?: mongoose.Types.ObjectId;
-      startDate?: Date;
-      endDate?: Date;
-      ipAddress?: string;
-    } = {},
-    options: {
-      page?: number;
-      limit?: number;
-      sort?: string;
-    } = {}
-  ): Promise<{ logs: IMTRAuditLog[]; total: number }> {
-    const page = options.page || 1;
-    const limit = Math.min(options.limit || 50, 1000); // Max 1000 records per request
+  static async getAuditLogs(options: AuditQueryOptions = {}) {
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        startDate,
+        endDate,
+        riskLevel,
+        userId,
+        action,
+        interventionId,
+        complianceCategory
+      } = options;
 
-    // Build query
-    const query: any = { workplaceId };
+      // Build query
+      const query: any = {};
 
-    // Apply filters
-    if (filters.userId) query.userId = filters.userId;
-    if (filters.action) query.action = filters.action;
-    if (filters.resourceType) query.resourceType = filters.resourceType;
-    if (filters.complianceCategory)
-      query.complianceCategory = filters.complianceCategory;
-    if (filters.riskLevel) query.riskLevel = filters.riskLevel;
-    if (filters.patientId) query.patientId = filters.patientId;
-    if (filters.reviewId) query.reviewId = filters.reviewId;
-    if (filters.ipAddress) query.ipAddress = filters.ipAddress;
+      // Date range filter
+      if (startDate || endDate) {
+        query.timestamp = {};
+        if (startDate) {
+          query.timestamp.$gte = new Date(startDate);
+        }
+        if (endDate) {
+          query.timestamp.$lte = new Date(endDate);
+        }
+      }
 
-    // Date range filter
-    if (filters.startDate || filters.endDate) {
-      query.timestamp = {};
-      if (filters.startDate) query.timestamp.$gte = filters.startDate;
-      if (filters.endDate) query.timestamp.$lte = filters.endDate;
-    }
+      // Other filters
+      if (riskLevel) query.riskLevel = riskLevel;
+      if (userId) query.userId = new mongoose.Types.ObjectId(userId);
+      if (action) query.action = action;
+      if (interventionId) query.interventionId = new mongoose.Types.ObjectId(interventionId);
+      if (complianceCategory) query.complianceCategory = complianceCategory;
 
-    // Get total count
-    const total = await MTRAuditLog.countDocuments(query);
-
-    // Get paginated results
-    const baseQuery = MTRAuditLog.find(query)
-      .populate('userId', 'firstName lastName email role')
-      .populate('patientId', 'firstName lastName mrn')
-      .populate('reviewId', 'reviewNumber status');
-
-    // Apply sorting
-    const sortBy = options.sort || '-timestamp';
-    baseQuery.sort(sortBy);
-
-    // Apply pagination
-    if (page && limit) {
+      // Calculate pagination
       const skip = (page - 1) * limit;
-      baseQuery.skip(skip).limit(limit);
+
+      // Execute query with population
+      const [logs, total] = await Promise.all([
+        AuditLog.find(query)
+          .populate('userId', 'firstName lastName email')
+          .populate('interventionId', 'interventionNumber')
+          .sort({ timestamp: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        AuditLog.countDocuments(query)
+      ]);
+
+      // Calculate summary statistics
+      const summary = await AuditService.calculateSummary(query);
+
+      return {
+        logs,
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
+        summary
+      };
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+      throw new Error('Failed to fetch audit logs');
     }
-
-    const logs = await baseQuery;
-
-    return { logs, total };
   }
 
   /**
-   * Export audit data for compliance
+   * Get audit logs for a specific intervention
    */
-  static async exportAuditData(
-    workplaceId: mongoose.Types.ObjectId,
-    options: ExportOptions
-  ): Promise<{ data: any; filename: string; contentType: string }> {
-    // Get audit logs based on filters
-    const { logs } = await this.getAuditLogs(
-      workplaceId,
-      options.filters || {},
-      {
-        limit: 10000, // Large limit for export
-        sort: '-timestamp',
-      }
-    );
-
-    // Prepare data for export
-    const exportData = logs.map((log) => {
-      const baseData = {
-        timestamp: log.timestamp,
-        action: log.action,
-        resourceType: log.resourceType,
-        resourceId: log.resourceId,
-        userId: log.userId,
-        userRole: log.userRole,
-        complianceCategory: log.complianceCategory,
-        riskLevel: log.riskLevel,
-        ipAddress: log.ipAddress,
-        patientId: log.patientId,
-        reviewId: log.reviewId,
-      };
-
-      if (options.includeDetails) {
-        return {
-          ...baseData,
-          details: log.details,
-          changedFields: log.changedFields,
-          errorMessage: log.errorMessage,
-          duration: log.duration,
-        };
-      }
-
-      return baseData;
+  static async getInterventionAuditLogs(
+    interventionId: string,
+    options: AuditQueryOptions = {}
+  ) {
+    return AuditService.getAuditLogs({
+      ...options,
+      interventionId
     });
+  }
 
-    // Generate filename
-    const dateStr = new Date().toISOString().split('T')[0];
-    const filename = `mtr_audit_export_${dateStr}.${options.format}`;
+  /**
+   * Calculate summary statistics for audit logs
+   */
+  static async calculateSummary(query: any = {}) {
+    try {
+      const [
+        totalActions,
+        uniqueUsers,
+        riskActivities,
+        lastActivity
+      ] = await Promise.all([
+        AuditLog.countDocuments(query),
+        AuditLog.distinct('userId', query).then(users => users.length),
+        AuditLog.countDocuments({ ...query, riskLevel: { $in: ['high', 'critical'] } }),
+        AuditLog.findOne(query, 'timestamp').sort({ timestamp: -1 }).lean()
+      ]);
 
-    // Format data based on requested format
-    switch (options.format) {
-      case 'json':
-        return {
-          data: JSON.stringify(exportData, null, 2),
-          filename,
-          contentType: 'application/json',
-        };
-
-      case 'csv':
-        const csvData = this.convertToCSV(exportData);
-        return {
-          data: csvData,
-          filename,
-          contentType: 'text/csv',
-        };
-
-      case 'pdf':
-        // For PDF, return structured data that can be processed by a PDF generator
-        return {
-          data: {
-            title: 'MTR Audit Trail Report',
-            generatedAt: new Date(),
-            dateRange: options.dateRange,
-            filters: options.filters,
-            logs: exportData,
-            summary: await this.getAuditSummary(workplaceId, options.dateRange),
-          },
-          filename,
-          contentType: 'application/pdf',
-        };
-
-      default:
-        throw new Error(`Unsupported export format: ${options.format}`);
+      return {
+        totalActions,
+        uniqueUsers,
+        riskActivities,
+        lastActivity: lastActivity?.timestamp || null
+      };
+    } catch (error) {
+      console.error('Error calculating audit summary:', error);
+      return {
+        totalActions: 0,
+        uniqueUsers: 0,
+        riskActivities: 0,
+        lastActivity: null
+      };
     }
   }
 
   /**
-   * Get audit statistics and summary
+   * Export audit logs to CSV
    */
-  static async getAuditSummary(
-    workplaceId: mongoose.Types.ObjectId,
-    dateRange?: { start: Date; end: Date }
-  ): Promise<any> {
-    // Get basic statistics
-    const matchStage: any = { workplaceId };
-    if (dateRange) {
-      matchStage.timestamp = {
-        $gte: dateRange.start,
-        $lte: dateRange.end,
-      };
+  static async exportAuditLogs(options: AuditQueryOptions & { format: 'csv' | 'json' }) {
+    try {
+      const { format, ...queryOptions } = options;
+
+      // Get all logs without pagination for export
+      const result = await AuditService.getAuditLogs({
+        ...queryOptions,
+        limit: 10000 // Large limit for export
+      });
+
+      if (format === 'csv') {
+        return AuditService.convertToCSV(result.logs);
+      } else {
+        return JSON.stringify(result.logs, null, 2);
+      }
+    } catch (error) {
+      console.error('Error exporting audit logs:', error);
+      throw new Error('Failed to export audit logs');
+    }
+  }
+
+  /**
+   * Convert audit logs to CSV format
+   */
+  private static convertToCSV(logs: any[]): string {
+    if (logs.length === 0) {
+      return 'No data available';
     }
 
-    const stats = await MTRAuditLog.aggregate([
-      { $match: matchStage },
-      {
-        $group: {
-          _id: null,
-          totalLogs: { $sum: 1 },
-          uniqueUsers: { $addToSet: '$userId' },
-          errorCount: {
-            $sum: { $cond: [{ $ne: ['$errorMessage', null] }, 1, 0] },
-          },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          totalLogs: 1,
-          uniqueUserCount: { $size: '$uniqueUsers' },
-          errorCount: 1,
-          errorRate: {
-            $cond: [
-              { $gt: ['$totalLogs', 0] },
-              { $multiply: [{ $divide: ['$errorCount', '$totalLogs'] }, 100] },
-              0,
-            ],
-          },
-        },
-      },
+    const headers = [
+      'Timestamp',
+      'Action',
+      'User',
+      'User Email',
+      'Risk Level',
+      'Compliance Category',
+      'Intervention ID',
+      'Changed Fields',
+      'IP Address',
+      'Details'
+    ];
+
+    const rows = logs.map(log => [
+      log.timestamp,
+      log.action,
+      log.userId ? `${log.userId.firstName} ${log.userId.lastName}` : 'Unknown',
+      log.userId?.email || 'Unknown',
+      log.riskLevel,
+      log.complianceCategory,
+      log.interventionId?.interventionNumber || '',
+      log.changedFields?.join(', ') || '',
+      log.ipAddress || '',
+      JSON.stringify(log.details).replace(/"/g, '""') // Escape quotes for CSV
     ]);
 
-    const summary = stats[0] || {
-      totalLogs: 0,
-      uniqueUserCount: 0,
-      errorCount: 0,
-      errorRate: 0,
-    };
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(field => `"${field}"`).join(','))
+    ].join('\n');
 
-    // Get high-risk activities count
-    const highRiskCount = await MTRAuditLog.countDocuments({
-      workplaceId,
-      riskLevel: { $in: ['high', 'critical'] },
-      timestamp: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-    });
+    return csvContent;
+  }
 
-    // Get suspicious activities count (simplified)
-    const suspiciousCount = await MTRAuditLog.countDocuments({
-      workplaceId,
-      errorMessage: { $ne: null },
-      timestamp: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-    });
+  /**
+   * Calculate risk level based on action and details
+   */
+  private static calculateRiskLevel(
+    action: string,
+    details: Record<string, any>
+  ): 'low' | 'medium' | 'high' | 'critical' {
+    // Critical risk actions
+    const criticalActions = [
+      'INTERVENTION_DELETED',
+      'PATIENT_DATA_ACCESSED',
+      'PERMISSION_CHANGED',
+      'SYSTEM_BACKUP',
+      'DATA_MIGRATION'
+    ];
 
-    return {
-      ...summary,
-      highRiskActivitiesCount: highRiskCount,
-      suspiciousActivitiesCount: suspiciousCount,
-      complianceScore: this.calculateComplianceScore(summary),
-    };
+    // High risk actions
+    const highRiskActions = [
+      'MEDICATION_CHANGED',
+      'DOSAGE_MODIFIED',
+      'CONTRAINDICATION_FLAGGED',
+      'INTERVENTION_ESCALATED'
+    ];
+
+    // Medium risk actions
+    const mediumRiskActions = [
+      'INTERVENTION_UPDATED',
+      'INTERVENTION_REJECTED',
+      'ALLERGY_UPDATED',
+      'RISK_ASSESSMENT_UPDATED'
+    ];
+
+    if (criticalActions.includes(action)) {
+      return 'critical';
+    }
+
+    if (highRiskActions.includes(action)) {
+      return 'high';
+    }
+
+    if (mediumRiskActions.includes(action)) {
+      return 'medium';
+    }
+
+    // Check details for risk indicators
+    if (details.priority === 'critical' || details.riskLevel === 'high') {
+      return 'high';
+    }
+
+    if (details.priority === 'high' || details.riskLevel === 'medium') {
+      return 'medium';
+    }
+
+    return 'low';
+  }
+
+  /**
+   * Get client IP address from request
+   */
+  private static getClientIP(req: Request): string {
+    return (
+      req.ip ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      (req.connection as any)?.socket?.remoteAddress ||
+      req.get('X-Forwarded-For') ||
+      req.get('X-Real-IP') ||
+      'unknown'
+    );
+  }
+
+  /**
+   * Clean up old audit logs (for maintenance)
+   */
+  static async cleanupOldLogs(daysToKeep: number = 365) {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+
+      const result = await AuditLog.deleteMany({
+        timestamp: { $lt: cutoffDate }
+      });
+
+      console.log(`Cleaned up ${result.deletedCount} old audit logs`);
+      return result.deletedCount;
+    } catch (error) {
+      console.error('Error cleaning up old audit logs:', error);
+      throw new Error('Failed to cleanup old audit logs');
+    }
   }
 
   /**
    * Get compliance report
    */
-  static async getComplianceReport(
-    workplaceId: mongoose.Types.ObjectId,
-    dateRange: { start: Date; end: Date }
-  ): Promise<any> {
-    const summary = await this.getAuditSummary(workplaceId, dateRange);
+  static async getComplianceReport(options: {
+    startDate: string;
+    endDate: string;
+    includeDetails?: boolean;
+    interventionIds?: string[];
+  }) {
+    try {
+      const query: any = {
+        timestamp: {
+          $gte: new Date(options.startDate),
+          $lte: new Date(options.endDate)
+        }
+      };
 
-    // Get high-risk activities (last 7 days)
-    const highRiskActivities = await MTRAuditLog.find({
-      workplaceId,
-      riskLevel: { $in: ['high', 'critical'] },
-      timestamp: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-    })
-      .populate('userId', 'firstName lastName email')
-      .sort({ timestamp: -1 })
-      .limit(10);
-
-    // Get suspicious activities (simplified - high error rate users)
-    const suspiciousActivities = await MTRAuditLog.aggregate([
-      {
-        $match: {
-          workplaceId,
-          timestamp: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-        },
-      },
-      {
-        $group: {
-          _id: '$userId',
-          actionCount: { $sum: 1 },
-          errorCount: {
-            $sum: { $cond: [{ $ne: ['$errorMessage', null] }, 1, 0] },
-          },
-        },
-      },
-      {
-        $match: {
-          $or: [{ actionCount: { $gt: 50 } }, { errorCount: { $gt: 5 } }],
-        },
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'user',
-        },
-      },
-      {
-        $project: {
-          userId: '$_id',
-          actionCount: 1,
-          errorCount: 1,
-          errorRate: {
-            $multiply: [{ $divide: ['$errorCount', '$actionCount'] }, 100],
-          },
-          user: { $arrayElemAt: ['$user', 0] },
-        },
-      },
-      { $sort: { errorRate: -1 } },
-      { $limit: 10 },
-    ]);
-
-    // Get compliance metrics by category
-    const complianceMetrics = await MTRAuditLog.aggregate([
-      {
-        $match: {
-          workplaceId,
-          timestamp: { $gte: dateRange.start, $lte: dateRange.end },
-        },
-      },
-      {
-        $group: {
-          _id: '$complianceCategory',
-          count: { $sum: 1 },
-          riskDistribution: { $push: '$riskLevel' },
-          errorCount: {
-            $sum: { $cond: [{ $ne: ['$errorMessage', null] }, 1, 0] },
-          },
-        },
-      },
-    ]);
-
-    return {
-      summary,
-      complianceMetrics,
-      highRiskActivities: highRiskActivities.slice(0, 10), // Top 10
-      suspiciousActivities: suspiciousActivities.slice(0, 10), // Top 10
-      recommendations: this.generateComplianceRecommendations(
-        summary,
-        complianceMetrics
-      ),
-    };
-  }
-
-  /**
-   * Helper methods
-   */
-  private static determineComplianceCategory(
-    action: string
-  ):
-    | 'clinical_documentation'
-    | 'patient_safety'
-    | 'data_access'
-    | 'system_security'
-    | 'workflow_compliance' {
-    if (
-      action.includes('MTR') ||
-      action.includes('PROBLEM') ||
-      action.includes('INTERVENTION')
-    ) {
-      return 'clinical_documentation';
-    }
-    if (action.includes('PATIENT') || action.includes('ACCESS')) {
-      return 'data_access';
-    }
-    if (
-      action.includes('LOGIN') ||
-      action.includes('LOGOUT') ||
-      action.includes('FAILED')
-    ) {
-      return 'system_security';
-    }
-    if (action.includes('WORKFLOW') || action.includes('STEP')) {
-      return 'workflow_compliance';
-    }
-    return 'clinical_documentation';
-  }
-
-  private static determineRiskLevel(
-    action: string,
-    resourceType: string
-  ): 'low' | 'medium' | 'high' | 'critical' {
-    // Critical risk actions
-    if (action.includes('DELETE') || action.includes('FAILED_LOGIN')) {
-      return 'critical';
-    }
-
-    // High risk actions
-    if (
-      action.includes('EXPORT') ||
-      action.includes('BULK') ||
-      resourceType === 'Patient'
-    ) {
-      return 'high';
-    }
-
-    // Medium risk actions
-    if (action.includes('UPDATE') || action.includes('CREATE')) {
-      return 'medium';
-    }
-
-    // Low risk actions (READ operations)
-    return 'low';
-  }
-
-  private static getChangedFields(oldValues: any, newValues: any): string[] {
-    const changedFields: string[] = [];
-
-    if (!oldValues || !newValues) return changedFields;
-
-    const allKeys = new Set([
-      ...Object.keys(oldValues),
-      ...Object.keys(newValues),
-    ]);
-
-    for (const key of allKeys) {
-      if (JSON.stringify(oldValues[key]) !== JSON.stringify(newValues[key])) {
-        changedFields.push(key);
+      if (options.interventionIds && options.interventionIds.length > 0) {
+        query.interventionId = {
+          $in: options.interventionIds.map(id => new mongoose.Types.ObjectId(id))
+        };
       }
+
+      const [
+        totalInterventions,
+        auditedActions,
+        riskActivities,
+        complianceByCategory
+      ] = await Promise.all([
+        AuditLog.distinct('interventionId', query).then(ids => ids.length),
+        AuditLog.countDocuments(query),
+        AuditLog.countDocuments({ ...query, riskLevel: { $in: ['high', 'critical'] } }),
+        AuditLog.aggregate([
+          { $match: query },
+          { $group: { _id: '$complianceCategory', count: { $sum: 1 } } }
+        ])
+      ]);
+
+      const complianceScore = totalInterventions > 0
+        ? Math.max(0, 100 - (riskActivities / auditedActions) * 100)
+        : 100;
+
+      return {
+        summary: {
+          totalInterventions,
+          auditedActions,
+          complianceScore: Math.round(complianceScore),
+          riskActivities
+        },
+        complianceByCategory: complianceByCategory.reduce((acc, item) => {
+          acc[item._id] = item.count;
+          return acc;
+        }, {} as Record<string, number>)
+      };
+    } catch (error) {
+      console.error('Error generating compliance report:', error);
+      throw new Error('Failed to generate compliance report');
     }
-
-    return changedFields;
-  }
-
-  private static convertToCSV(data: any[]): string {
-    if (data.length === 0) return '';
-
-    const headers = Object.keys(data[0]);
-    const csvRows = [headers.join(',')];
-
-    for (const row of data) {
-      const values = headers.map((header) => {
-        const value = row[header];
-        if (value === null || value === undefined) return '';
-        if (typeof value === 'object') return JSON.stringify(value);
-        return `"${String(value).replace(/"/g, '""')}"`;
-      });
-      csvRows.push(values.join(','));
-    }
-
-    return csvRows.join('\n');
-  }
-
-  private static calculateComplianceScore(stats: any): number {
-    // Simple compliance score calculation
-    // In production, this would be more sophisticated
-    const baseScore = 100;
-    const errorPenalty = Math.min(stats.errorRate * 2, 50); // Max 50 point penalty
-    const riskPenalty =
-      stats.riskDistribution?.filter((r: string) => r === 'critical').length *
-      5;
-
-    return Math.max(0, baseScore - errorPenalty - riskPenalty);
-  }
-
-  private static generateComplianceRecommendations(
-    summary: any,
-    metrics: any[]
-  ): string[] {
-    const recommendations: string[] = [];
-
-    if (summary.errorRate > 5) {
-      recommendations.push(
-        'High error rate detected. Review system processes and user training.'
-      );
-    }
-
-    if (summary.highRiskActivitiesCount > 10) {
-      recommendations.push(
-        'Elevated high-risk activities. Consider implementing additional security measures.'
-      );
-    }
-
-    if (summary.suspiciousActivitiesCount > 0) {
-      recommendations.push(
-        'Suspicious activities detected. Investigate user access patterns.'
-      );
-    }
-
-    const clinicalMetric = metrics.find(
-      (m) => m._id === 'clinical_documentation'
-    );
-    if (
-      clinicalMetric &&
-      clinicalMetric.errorCount > clinicalMetric.count * 0.1
-    ) {
-      recommendations.push(
-        'High error rate in clinical documentation. Review MTR workflow training.'
-      );
-    }
-
-    if (recommendations.length === 0) {
-      recommendations.push(
-        'Compliance metrics are within acceptable ranges. Continue monitoring.'
-      );
-    }
-
-    return recommendations;
-  }
-
-  private static async triggerSecurityAlert(
-    auditLog: IMTRAuditLog
-  ): Promise<void> {
-    // Log security alert
-    logger.warn('High-risk activity detected', {
-      auditId: auditLog._id,
-      action: auditLog.action,
-      userId: auditLog.userId,
-      workplaceId: auditLog.workplaceId,
-      riskLevel: auditLog.riskLevel,
-      service: 'mtr-security',
-    });
-
-    // In production, you might:
-    // 1. Send email/SMS alerts to administrators
-    // 2. Create security incident tickets
-    // 3. Trigger automated security responses
-    // 4. Update user risk scores
   }
 
   /**
-   * Create audit context from Express request
+   * Create audit context from request
    */
-  static createAuditContext(req: any): AuditContext {
+  static createAuditContext(req: Request) {
     return {
-      userId: req.user?.id || req.user?._id,
-      workplaceId: req.user?.workplaceId || req.workplace?.id,
-      userRole: req.user?.role || 'unknown',
-      sessionId: req.sessionID,
-      ipAddress: req.ip || req.connection?.remoteAddress,
+      userId: (req as any).user?.id || 'unknown',
+      ipAddress: AuditService.getClientIP(req),
       userAgent: req.get('User-Agent'),
-      requestMethod: req.method,
-      requestUrl: req.originalUrl,
+      sessionId: (req as any).sessionID || req.get('X-Session-ID'),
+      workspaceId: (req as any).user?.workplaceId || (req as any).workspace?._id
     };
+  }
+
+  /**
+   * Log activity with context
+   */
+  static async logActivity(context: any, data: Partial<AuditLogData>) {
+    const auditData: AuditLogData = {
+      action: data.action || 'UNKNOWN_ACTION',
+      userId: context.userId,
+      details: data.details || {},
+      complianceCategory: data.complianceCategory || 'general',
+      riskLevel: data.riskLevel,
+      resourceType: data.resourceType,
+      resourceId: data.resourceId,
+      patientId: data.patientId,
+      changedFields: data.changedFields,
+      oldValues: data.oldValues,
+      newValues: data.newValues,
+      workspaceId: context.workspaceId
+    };
+
+    return AuditService.createAuditLog(auditData, {
+      ip: context.ipAddress,
+      get: (header: string) => header === 'User-Agent' ? context.userAgent : undefined,
+      sessionID: context.sessionId
+    } as any);
+  }
+
+  /**
+   * Log MTR activity with context
+   */
+  static async logMTRActivity(
+    context: any,
+    action: string,
+    session: any,
+    oldValues?: any,
+    newValues?: any
+  ) {
+    const auditData: AuditLogData = {
+      action,
+      userId: context.userId,
+      details: {
+        sessionId: session._id || session.id,
+        sessionType: session.sessionType,
+        patientId: session.patientId,
+        pharmacistId: session.pharmacistId,
+        status: session.status,
+        timestamp: new Date()
+      },
+      complianceCategory: 'clinical_documentation',
+      riskLevel: AuditService.calculateRiskLevel(action, { sessionType: session.sessionType }),
+      resourceType: 'MTRSession',
+      resourceId: session._id || session.id,
+      patientId: session.patientId,
+      oldValues,
+      newValues,
+      workspaceId: context.workspaceId
+    };
+
+    return AuditService.createAuditLog(auditData, {
+      ip: context.ipAddress,
+      get: (header: string) => header === 'User-Agent' ? context.userAgent : undefined,
+      sessionID: context.sessionId
+    } as any);
   }
 }
 
+// Export both named and default exports for compatibility
+export { AuditService };
 export default AuditService;

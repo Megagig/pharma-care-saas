@@ -10,7 +10,7 @@ const DiagnosticResult_1 = __importDefault(require("../models/DiagnosticResult")
 const DiagnosticRequest_1 = __importDefault(require("../models/DiagnosticRequest"));
 const ClinicalIntervention_1 = __importDefault(require("../../../models/ClinicalIntervention"));
 const User_1 = __importDefault(require("../../../models/User"));
-const auditService_1 = __importDefault(require("../../../services/auditService"));
+const auditService_1 = require("../../../services/auditService");
 class PharmacistReviewService {
     async submitReviewDecision(resultId, reviewData) {
         try {
@@ -52,14 +52,15 @@ class PharmacistReviewService {
                 }
             }
             const updatedResult = await result.save();
-            await auditService_1.default.logEvent({
-                userId: new mongoose_1.Types.ObjectId(reviewData.reviewedBy),
-                workplaceId: new mongoose_1.Types.ObjectId(reviewData.workplaceId),
+            await auditService_1.AuditService.logActivity({
+                userId: reviewData.reviewedBy,
+                workplaceId: reviewData.workplaceId,
                 userRole: reviewer.role,
             }, {
                 action: 'diagnostic_result_reviewed',
                 resourceType: 'DiagnosticResult',
-                resourceId: new mongoose_1.Types.ObjectId(resultId),
+                resourceId: resultId,
+                complianceCategory: 'clinical_review',
                 details: {
                     reviewStatus: reviewData.status,
                     hasModifications: !!reviewData.modifications,
@@ -123,14 +124,15 @@ class PharmacistReviewService {
             const savedIntervention = await intervention.save();
             result.updatedBy = new mongoose_1.Types.ObjectId(createdBy);
             await result.save();
-            await auditService_1.default.logEvent({
-                userId: new mongoose_1.Types.ObjectId(createdBy),
-                workplaceId: new mongoose_1.Types.ObjectId(workplaceId),
+            await auditService_1.AuditService.logActivity({
+                userId: createdBy,
+                workplaceId: workplaceId,
                 userRole: 'pharmacist',
             }, {
                 action: 'intervention_created_from_diagnostic',
                 resourceType: 'ClinicalIntervention',
-                resourceId: new mongoose_1.Types.ObjectId(savedIntervention._id.toString()),
+                resourceId: savedIntervention._id.toString(),
+                complianceCategory: 'clinical_intervention',
                 details: {
                     diagnosticResultId: resultId,
                     interventionType: interventionData.type,

@@ -31,41 +31,16 @@ const diagnosticRateLimit = (0, express_rate_limit_1.default)({
     standardHeaders: true,
     legacyHeaders: false,
 });
-router.post('/ai', aiRateLimit, auth_1.auth, auth_1.requireLicense, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)({
-    action: 'AI_DIAGNOSTIC_REQUEST',
-    resourceType: 'DiagnosticCase',
-    complianceCategory: 'clinical_documentation',
-    riskLevel: 'medium'
-}), diagnosticValidators_1.validateDiagnosticAnalysis, diagnosticController_1.generateDiagnosticAnalysis);
-router.post('/cases/:caseId/decision', diagnosticRateLimit, auth_1.auth, auth_1.requireLicense, (0, auditMiddleware_1.auditLogger)({
-    action: 'DIAGNOSTIC_DECISION',
-    resourceType: 'DiagnosticCase',
-    complianceCategory: 'clinical_documentation',
-    riskLevel: 'high'
-}), diagnosticValidators_1.validateDiagnosticDecision, diagnosticController_1.saveDiagnosticDecision);
-router.get('/patients/:patientId/history', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)({
-    action: 'VIEW_DIAGNOSTIC_HISTORY',
-    resourceType: 'DiagnosticCase',
-    complianceCategory: 'data_access',
-    riskLevel: 'low'
-}), diagnosticValidators_1.validateDiagnosticHistory, diagnosticController_1.getDiagnosticHistory);
-router.get('/cases/:caseId', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)({
-    action: 'VIEW_DIAGNOSTIC_CASE',
-    resourceType: 'DiagnosticCase',
-    complianceCategory: 'data_access',
-    riskLevel: 'low'
-}), diagnosticValidators_1.validateGetDiagnosticCase, diagnosticController_1.getDiagnosticCase);
-router.post('/interactions', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)({
-    action: 'DRUG_INTERACTION_CHECK',
-    resourceType: 'DrugInteraction',
-    complianceCategory: 'clinical_documentation',
-    riskLevel: 'medium'
-}), diagnosticValidators_1.validateDrugInteractions, diagnosticController_1.checkDrugInteractions);
-router.get('/ai/test', auth_1.auth, (0, auditMiddleware_1.auditLogger)({
-    action: 'AI_CONNECTION_TEST',
-    resourceType: 'System',
-    complianceCategory: 'system_security',
-    riskLevel: 'low'
-}), diagnosticController_1.testAIConnection);
+const extendTimeout = (req, res, next) => {
+    req.setTimeout(90000);
+    res.setTimeout(90000);
+    next();
+};
+router.post('/ai', extendTimeout, aiRateLimit, auth_1.auth, auth_1.requireLicense, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('AI_DIAGNOSTIC_REQUEST', 'clinical_documentation'), diagnosticValidators_1.validateDiagnosticAnalysis, diagnosticController_1.generateDiagnosticAnalysis);
+router.post('/cases/:caseId/decision', diagnosticRateLimit, auth_1.auth, auth_1.requireLicense, (0, auditMiddleware_1.auditLogger)('DIAGNOSTIC_DECISION', 'clinical_documentation'), diagnosticValidators_1.validateDiagnosticDecision, diagnosticController_1.saveDiagnosticDecision);
+router.get('/patients/:patientId/history', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('VIEW_DIAGNOSTIC_HISTORY', 'data_access'), diagnosticValidators_1.validateDiagnosticHistory, diagnosticController_1.getDiagnosticHistory);
+router.get('/cases/:caseId', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('VIEW_DIAGNOSTIC_CASE', 'data_access'), diagnosticValidators_1.validateGetDiagnosticCase, diagnosticController_1.getDiagnosticCase);
+router.post('/interactions', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)('DRUG_INTERACTION_CHECK', 'clinical_documentation'), diagnosticValidators_1.validateDrugInteractions, diagnosticController_1.checkDrugInteractions);
+router.get('/ai/test', auth_1.auth, (0, auditMiddleware_1.auditLogger)('AI_CONNECTION_TEST', 'system_security'), diagnosticController_1.testAIConnection);
 exports.default = router;
 //# sourceMappingURL=diagnosticRoutes.js.map

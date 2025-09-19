@@ -155,6 +155,25 @@ app.use('/api/notes', noteRoutes_1.default);
 app.use('/api/payments', paymentRoutes_1.default);
 app.use('/api/mtr', mtrRoutes_1.default);
 app.use('/api/mtr/notifications', mtrNotificationRoutes_1.default);
+app.get('/api/clinical-interventions/health', (req, res) => {
+    res.json({
+        status: 'OK',
+        module: 'clinical-interventions',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        endpoints: {
+            total: 30,
+            crud: 5,
+            workflow: 8,
+            analytics: 4,
+            reporting: 3,
+            utility: 2,
+            mtr: 5,
+            notifications: 1,
+            audit: 3
+        }
+    });
+});
 app.use('/api/clinical-interventions', clinicalInterventionRoutes_1.default);
 app.use('/api/medication-management', medicationManagementRoutes_1.default);
 app.use('/api/medication-analytics', medicationAnalyticsRoutes_1.default);

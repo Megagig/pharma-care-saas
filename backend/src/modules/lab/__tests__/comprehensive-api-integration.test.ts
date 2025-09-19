@@ -19,7 +19,7 @@ import Workplace from '../../../models/Workplace';
 // Import services
 import ManualLabService from '../services/manualLabService';
 import { PDFGenerationService } from '../services/pdfGenerationService';
-import AuditService from '../../../services/auditService';
+import { AuditService } from '../../../services/auditService';
 
 // Mock external services
 jest.mock('../services/pdfGenerationService');

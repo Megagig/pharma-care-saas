@@ -34,7 +34,7 @@ exports.createManualLabOrder = (0, responseHelpers_1.asyncHandler)(async (req, r
         };
         const auditContext = {
             userId: context.userId,
-            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
+            workspaceId: context.workplaceId,
             userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -89,7 +89,7 @@ exports.getManualLabOrder = (0, responseHelpers_1.asyncHandler)(async (req, res)
     try {
         const auditContext = {
             userId: context.userId,
-            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
+            workspaceId: context.workplaceId,
             userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -128,8 +128,17 @@ exports.getPatientLabOrders = (0, responseHelpers_1.asyncHandler)(async (req, re
     const { patientId } = req.params;
     const { page, limit, status, sort } = req.query;
     const context = (0, responseHelpers_1.getRequestContext)(req);
+    let workplaceId = context.workplaceId;
     try {
-        const result = await manualLabService_1.default.getOrdersByPatient(new mongoose_1.default.Types.ObjectId(patientId), new mongoose_1.default.Types.ObjectId(context.workplaceId), {
+        if (context.isSuperAdmin) {
+            const Patient = require('../../../models/Patient').default;
+            const patient = await Patient.findById(patientId);
+            if (!patient) {
+                return (0, responseHelpers_1.sendError)(res, 'NOT_FOUND', 'Patient not found', 404);
+            }
+            workplaceId = patient.workplaceId.toString();
+        }
+        const result = await manualLabService_1.default.getOrdersByPatient(new mongoose_1.default.Types.ObjectId(patientId), new mongoose_1.default.Types.ObjectId(workplaceId), {
             page: parseInt(page) || 1,
             limit: parseInt(limit) || 20,
             status,
@@ -152,10 +161,11 @@ exports.getPatientLabOrders = (0, responseHelpers_1.asyncHandler)(async (req, re
         });
         logger_1.default.info('Patient lab orders retrieved via API', {
             patientId,
-            workplaceId: context.workplaceId,
+            workplaceId: workplaceId,
             userId: context.userId,
             resultCount: result.data.length,
             totalCount: result.pagination.total,
+            isSuperAdmin: context.isSuperAdmin,
             service: 'manual-lab-api',
         });
     }
@@ -163,8 +173,9 @@ exports.getPatientLabOrders = (0, responseHelpers_1.asyncHandler)(async (req, re
         logger_1.default.error('Failed to retrieve patient lab orders via API', {
             patientId,
             error: error instanceof Error ? error.message : 'Unknown error',
-            workplaceId: context.workplaceId,
+            workplaceId: workplaceId,
             userId: context.userId,
+            isSuperAdmin: context.isSuperAdmin,
             service: 'manual-lab-api',
         });
         (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to retrieve patient lab orders', 500);
@@ -185,7 +196,7 @@ exports.updateOrderStatus = (0, responseHelpers_1.asyncHandler)(async (req, res)
         };
         const auditContext = {
             userId: context.userId,
-            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
+            workspaceId: context.workplaceId,
             userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -254,7 +265,7 @@ exports.getManualLabOrders = (0, responseHelpers_1.asyncHandler)(async (req, res
             filters.search = search;
         const auditContext = {
             userId: context.userId,
-            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
+            workspaceId: context.workplaceId,
             userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -309,7 +320,7 @@ exports.addLabResults = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
         };
         const auditContext = {
             userId: context.userId,
-            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
+            workspaceId: context.workplaceId,
             userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -366,7 +377,7 @@ exports.getLabResults = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
     try {
         const auditContext = {
             userId: context.userId,
-            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
+            workspaceId: context.workplaceId,
             userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -417,7 +428,7 @@ exports.resolveOrderToken = (0, responseHelpers_1.asyncHandler)(async (req, res)
     try {
         const auditContext = {
             userId: context.userId,
-            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
+            workspaceId: context.workplaceId,
             userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -492,7 +503,7 @@ exports.servePDFRequisition = (0, responseHelpers_1.asyncHandler)(async (req, re
         }
         const auditContext = {
             userId: context.userId,
-            workplaceId: new mongoose_1.default.Types.ObjectId(context.workplaceId),
+            workspaceId: context.workplaceId,
             userRole: context.userRole || 'unknown',
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),

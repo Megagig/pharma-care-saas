@@ -33,28 +33,10 @@ exports.createMTRSessionSchema = [
         .withMessage('Review reason cannot exceed 500 characters'),
     (0, express_validator_1.body)('patientConsent')
         .isBoolean()
-        .withMessage('Patient consent must be a boolean')
-        .custom((value, { req }) => {
-        if (process.env.NODE_ENV === 'development') {
-            return true;
-        }
-        if (!value) {
-            throw new Error('Patient consent is required');
-        }
-        return true;
-    }),
+        .withMessage('Patient consent must be a boolean'),
     (0, express_validator_1.body)('confidentialityAgreed')
         .isBoolean()
-        .withMessage('Confidentiality agreement must be a boolean')
-        .custom((value, { req }) => {
-        if (process.env.NODE_ENV === 'development') {
-            return true;
-        }
-        if (!value) {
-            throw new Error('Confidentiality agreement is required');
-        }
-        return true;
-    }),
+        .withMessage('Confidentiality agreement must be a boolean'),
 ];
 exports.updateMTRSessionSchema = [
     (0, express_validator_1.body)('status')

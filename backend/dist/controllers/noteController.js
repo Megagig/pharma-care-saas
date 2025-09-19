@@ -7,7 +7,7 @@ exports.getNoteStatistics = exports.downloadAttachment = exports.deleteAttachmen
 const mongoose_1 = __importDefault(require("mongoose"));
 const ClinicalNote_1 = __importDefault(require("../models/ClinicalNote"));
 const Patient_1 = __importDefault(require("../models/Patient"));
-const auditService_1 = __importDefault(require("../services/auditService"));
+const auditService_1 = require("../services/auditService");
 const confidentialNoteService_1 = __importDefault(require("../services/confidentialNoteService"));
 const uploadService_1 = require("../utils/uploadService");
 const auditLogging_1 = require("../middlewares/auditLogging");
@@ -72,11 +72,9 @@ const getNotes = async (req, res) => {
         console.log('GetNotes results count:', notes.length);
         console.log('Total documents matching query:', total);
         console.log('=== END GET NOTES DEBUG ===');
-        const auditContext = auditService_1.default.createAuditContext(req);
-        await auditService_1.default.logActivity(auditContext, {
+        await auditService_1.AuditService.createAuditLog({
             action: 'LIST_CLINICAL_NOTES',
-            resourceType: 'ClinicalNote',
-            resourceId: new mongoose_1.default.Types.ObjectId(),
+            userId: req.user?.id || 'unknown',
             details: {
                 filters: {
                     type,
@@ -170,9 +168,9 @@ const getNote = async (req, res) => {
             { path: 'medications', select: 'name dosage strength' },
         ]);
         if (note.isConfidential) {
-            const auditContext = auditService_1.default.createAuditContext(req);
-            await auditService_1.default.logActivity(auditContext, {
+            await auditService_1.AuditService.createAuditLog({
                 action: 'VIEW_CONFIDENTIAL_NOTE',
+                userId: req.user?.id || 'unknown',
                 resourceType: 'ClinicalNote',
                 resourceId: note._id,
                 patientId: note.patient._id || note.patient,
@@ -238,11 +236,11 @@ const createNote = async (req, res) => {
             .populate('patient', 'firstName lastName mrn')
             .populate('pharmacist', 'firstName lastName role')
             .populate('medications', 'name dosage');
-        const auditContext = auditService_1.default.createAuditContext(req);
-        await auditService_1.default.logActivity(auditContext, {
+        await auditService_1.AuditService.createAuditLog({
             action: req.body.isConfidential
                 ? 'CREATE_CONFIDENTIAL_NOTE'
                 : 'CREATE_CLINICAL_NOTE',
+            userId: req.user?.id || 'unknown',
             resourceType: 'ClinicalNote',
             resourceId: note._id,
             patientId: new mongoose_1.default.Types.ObjectId(patientId),
@@ -334,21 +332,22 @@ const updateNote = async (req, res) => {
                 .json({ message: 'Clinical note not found or access denied' });
             return;
         }
-        const auditContext = auditService_1.default.createAuditContext(req);
-        await auditService_1.default.logActivity(auditContext, {
+        await auditService_1.AuditService.createAuditLog({
             action: 'UPDATE_CLINICAL_NOTE',
+            userId: req.user?.id || 'unknown',
             resourceType: 'ClinicalNote',
             resourceId: note._id,
-            patientId: note.patient._id,
-            oldValues,
-            newValues: note.toObject(),
-            changedFields: Object.keys(req.body),
             details: {
+                noteId: note._id,
+                patientId: note.patient._id,
                 noteType: note.type,
                 title: note.title,
                 priority: note.priority,
                 isConfidential: note.isConfidential,
             },
+            oldValues,
+            newValues: note.toObject(),
+            changedFields: Object.keys(req.body),
             complianceCategory: 'clinical_documentation',
             riskLevel: note.isConfidential ? 'high' : 'medium',
         });
@@ -423,20 +422,21 @@ const deleteNote = async (req, res) => {
                 }
             }
         }
-        const auditContext = auditService_1.default.createAuditContext(req);
-        await auditService_1.default.logActivity(auditContext, {
+        await auditService_1.AuditService.createAuditLog({
             action: 'DELETE_CLINICAL_NOTE',
+            userId: req.user?.id || 'unknown',
             resourceType: 'ClinicalNote',
             resourceId: note._id,
-            patientId: note.patient,
-            oldValues: noteData,
             details: {
+                noteId: note._id,
+                patientId: note.patient,
                 noteType: note.type,
                 title: note.title,
                 priority: note.priority,
                 isConfidential: note.isConfidential,
                 attachmentCount: note.attachments?.length || 0,
             },
+            oldValues: noteData,
             complianceCategory: 'clinical_documentation',
             riskLevel: 'critical',
         });
@@ -449,18 +449,30 @@ const deleteNote = async (req, res) => {
 exports.deleteNote = deleteNote;
 const getPatientNotes = async (req, res) => {
     try {
+        if (process.env.NODE_ENV === 'development') {
+            console.log('GET PATIENT NOTES - User:', req.user?.role, 'Patient:', req.params.patientId);
+        }
         const { page = 1, limit = 10, type, priority } = req.query;
-        const patient = await Patient_1.default.findOne({
-            _id: req.params.patientId,
-            workplaceId: req.user?.workplaceId || req.workspace?._id,
-        });
+        let patient;
+        if (req.user?.role === 'super_admin') {
+            patient = await Patient_1.default.findById(req.params.patientId);
+        }
+        else {
+            patient = await Patient_1.default.findOne({
+                _id: req.params.patientId,
+                workplaceId: req.user?.workplaceId || req.workspace?._id,
+            });
+        }
         if (!patient) {
             res.status(404).json({ message: 'Patient not found or access denied' });
             return;
         }
+        const workplaceId = req.user?.role === 'super_admin'
+            ? patient.workplaceId
+            : (req.user?.workplaceId || req.workspace?._id);
         const query = {
             patient: req.params.patientId,
-            workplaceId: req.user?.workplaceId || req.workspace?._id,
+            workplaceId: workplaceId,
             deletedAt: { $exists: false },
         };
         if (type)
@@ -474,11 +486,18 @@ const getPatientNotes = async (req, res) => {
             .populate('medications', 'name dosage')
             .sort({ createdAt: -1 });
         const total = await ClinicalNote_1.default.countDocuments(query);
-        const auditContext = auditService_1.default.createAuditContext(req);
-        await auditService_1.default.logPatientAccess(auditContext, new mongoose_1.default.Types.ObjectId(req.params.patientId), 'view', {
-            accessType: 'clinical_notes',
-            noteCount: notes.length,
-            filters: { type, priority },
+        await auditService_1.AuditService.createAuditLog({
+            action: 'PATIENT_DATA_ACCESSED',
+            userId: req.user?.id || 'unknown',
+            details: {
+                patientId: req.params.patientId,
+                accessType: 'clinical_notes',
+                resultCount: notes.length,
+                noteCount: notes.length,
+                filters: { type, priority },
+            },
+            complianceCategory: 'patient_privacy',
+            riskLevel: 'medium',
         });
         res.json({
             notes,
@@ -564,9 +583,9 @@ const searchNotes = async (req, res) => {
         console.log('Search results count:', notes.length);
         console.log('Total documents matching query:', total);
         console.log('=== END SEARCH NOTES DEBUG ===');
-        const auditContext = auditService_1.default.createAuditContext(req);
-        await auditService_1.default.logActivity(auditContext, {
+        await auditService_1.AuditService.createAuditLog({
             action: 'SEARCH_CLINICAL_NOTES',
+            userId: req.user?.id || 'unknown',
             resourceType: 'ClinicalNote',
             resourceId: new mongoose_1.default.Types.ObjectId(),
             details: {
@@ -633,8 +652,8 @@ const getNotesWithFilters = async (req, res) => {
             .populate('medications', 'name dosage')
             .sort(sortObj);
         const total = await ClinicalNote_1.default.countDocuments(query);
-        const auditContext = auditService_1.default.createAuditContext(req);
-        await auditService_1.default.logActivity(auditContext, {
+        const auditContext = auditService_1.AuditService.createAuditContext(req);
+        await auditService_1.AuditService.logActivity(auditContext, {
             action: 'FILTER_CLINICAL_NOTES',
             resourceType: 'ClinicalNote',
             resourceId: new mongoose_1.default.Types.ObjectId(),
@@ -914,8 +933,8 @@ const uploadAttachment = async (req, res) => {
         }, { new: true, runValidators: true })
             .populate('patient', 'firstName lastName mrn')
             .populate('pharmacist', 'firstName lastName role');
-        const auditContext = auditService_1.default.createAuditContext(req);
-        await auditService_1.default.logActivity(auditContext, {
+        const auditContext = auditService_1.AuditService.createAuditContext(req);
+        await auditService_1.AuditService.logActivity(auditContext, {
             action: 'UPLOAD_NOTE_ATTACHMENT',
             resourceType: 'ClinicalNote',
             resourceId: note._id,
@@ -979,8 +998,8 @@ const deleteAttachment = async (req, res) => {
         }, { new: true })
             .populate('patient', 'firstName lastName mrn')
             .populate('pharmacist', 'firstName lastName role');
-        const auditContext = auditService_1.default.createAuditContext(req);
-        await auditService_1.default.logActivity(auditContext, {
+        const auditContext = auditService_1.AuditService.createAuditContext(req);
+        await auditService_1.AuditService.logActivity(auditContext, {
             action: 'DELETE_NOTE_ATTACHMENT',
             resourceType: 'ClinicalNote',
             resourceId: note._id,
@@ -1030,8 +1049,8 @@ const downloadAttachment = async (req, res) => {
             res.status(404).json({ message: 'File not found on server' });
             return;
         }
-        const auditContext = auditService_1.default.createAuditContext(req);
-        await auditService_1.default.logActivity(auditContext, {
+        const auditContext = auditService_1.AuditService.createAuditContext(req);
+        await auditService_1.AuditService.logActivity(auditContext, {
             action: 'DOWNLOAD_NOTE_ATTACHMENT',
             resourceType: 'ClinicalNote',
             resourceId: note._id,
