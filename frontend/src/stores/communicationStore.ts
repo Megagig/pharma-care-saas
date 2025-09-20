@@ -77,6 +77,13 @@ interface CommunicationState {
     addReaction: (messageId: string, emoji: string) => Promise<boolean>;
     removeReaction: (messageId: string, emoji: string) => Promise<boolean>;
 
+    // Actions - File Management
+    uploadFiles: (conversationId: string, files: File[]) => Promise<any[]>;
+    downloadFile: (fileId: string) => Promise<void>;
+    deleteFile: (fileId: string) => Promise<boolean>;
+    getFileMetadata: (fileId: string) => Promise<any>;
+    listConversationFiles: (conversationId: string, filters?: any) => Promise<any[]>;
+
     // Actions - Real-time Updates
     setTypingUsers: (conversationId: string, userIds: string[]) => void;
     addTypingUser: (conversationId: string, userId: string) => void;
@@ -1034,6 +1041,170 @@ export const useCommunicationStore = create<CommunicationState>()(
                     get().updateMessage(tempId, { status: 'failed' });
                     get().setError('sendMessage', error);
                 },
+
+                // File Management Actions
+                uploadFiles: async (conversationId, files) => {
+                    const { setLoading, setError } = get();
+                    setLoading('uploadFiles', true);
+                    setError('uploadFiles', null);
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('conversationId', conversationId);
+
+                        files.forEach((file) => {
+                            formData.append('files', file);
+                        });
+
+                        const response = await fetch('/api/communication/upload', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            },
+                            body: formData,
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Upload failed');
+                        }
+
+                        const result = await response.json();
+                        return result.data.uploadedFiles || [];
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'File upload failed';
+                        setError('uploadFiles', errorMessage);
+                        throw error;
+                    } finally {
+                        setLoading('uploadFiles', false);
+                    }
+                },
+
+                downloadFile: async (fileId) => {
+                    const { setLoading, setError } = get();
+                    setLoading('downloadFile', true);
+                    setError('downloadFile', null);
+
+                    try {
+                        const response = await fetch(`/api/communication/files/${fileId}/download`, {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            },
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Download failed');
+                        }
+
+                        const result = await response.json();
+
+                        // Create download link
+                        const link = document.createElement('a');
+                        link.href = result.downloadUrl;
+                        link.download = result.fileName;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'File download failed';
+                        setError('downloadFile', errorMessage);
+                        throw error;
+                    } finally {
+                        setLoading('downloadFile', false);
+                    }
+                },
+
+                deleteFile: async (fileId) => {
+                    const { setLoading, setError } = get();
+                    setLoading('deleteFile', true);
+                    setError('deleteFile', null);
+
+                    try {
+                        const response = await fetch(`/api/communication/files/${fileId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            },
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Delete failed');
+                        }
+
+                        return true;
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'File deletion failed';
+                        setError('deleteFile', errorMessage);
+                        return false;
+                    } finally {
+                        setLoading('deleteFile', false);
+                    }
+                },
+
+                getFileMetadata: async (fileId) => {
+                    const { setLoading, setError } = get();
+                    setLoading('getFileMetadata', true);
+                    setError('getFileMetadata', null);
+
+                    try {
+                        const response = await fetch(`/api/communication/files/${fileId}/metadata`, {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            },
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Failed to get file metadata');
+                        }
+
+                        const result = await response.json();
+                        return result.file;
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'Failed to get file metadata';
+                        setError('getFileMetadata', errorMessage);
+                        throw error;
+                    } finally {
+                        setLoading('getFileMetadata', false);
+                    }
+                },
+
+                listConversationFiles: async (conversationId, filters = {}) => {
+                    const { setLoading, setError } = get();
+                    setLoading('listConversationFiles', true);
+                    setError('listConversationFiles', null);
+
+                    try {
+                        const queryParams = new URLSearchParams();
+                        Object.entries(filters).forEach(([key, value]) => {
+                            if (value !== undefined && value !== null && value !== '') {
+                                queryParams.append(key, value.toString());
+                            }
+                        });
+
+                        const response = await fetch(`/api/communication/conversations/${conversationId}/files?${queryParams}`, {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            },
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Failed to list files');
+                        }
+
+                        const result = await response.json();
+                        return result.files || [];
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'Failed to list conversation files';
+                        setError('listConversationFiles', errorMessage);
+                        return [];
+                    } finally {
+                        setLoading('listConversationFiles', false);
+                    }
+                },
             }),
             {
                 name: 'communication-store',
@@ -1214,3 +1385,31 @@ export const useUnreadConversationsCount = () =>
 
 export const useTypingUsersForConversation = (conversationId: string) =>
     useCommunicationStore((state) => state.typingUsers[conversationId] || []);
+
+// File management hooks
+export const useFileUpload = () =>
+    useCommunicationStore((state) => ({
+        uploadFiles: state.uploadFiles,
+        loading: state.loading.uploadFiles || false,
+        error: state.errors.uploadFiles || null,
+    }));
+
+export const useFileActions = () =>
+    useCommunicationStore((state) => ({
+        downloadFile: state.downloadFile,
+        deleteFile: state.deleteFile,
+        getFileMetadata: state.getFileMetadata,
+        listConversationFiles: state.listConversationFiles,
+        loading: {
+            download: state.loading.downloadFile || false,
+            delete: state.loading.deleteFile || false,
+            metadata: state.loading.getFileMetadata || false,
+            list: state.loading.listConversationFiles || false,
+        },
+        errors: {
+            download: state.errors.downloadFile || null,
+            delete: state.errors.deleteFile || null,
+            metadata: state.errors.getFileMetadata || null,
+            list: state.errors.listConversationFiles || null,
+        },
+    }));
