@@ -1,679 +1,507 @@
 import { Request, Response, NextFunction } from 'express';
-import { body, param, query, validationResult } from 'express-validator';
 import mongoose from 'mongoose';
+import Joi from 'joi';
 import { AuthRequest } from '../types/auth';
-import logger from '../utils/logger';
 
-/**
- * Communication Hub Validation Middleware
- * Comprehensive validation for all communication-related operations
- */
+// Validation schemas for communication models
+export const conversationValidationSchema = Joi.object({
+    title: Joi.string().trim().max(200).optional(),
+    type: Joi.string().valid('direct', 'group', 'patient_query', 'clinical_consultation').required(),
+    participants: Joi.array().items(
+        Joi.object({
+            userId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required(),
+            role: Joi.string().valid('pharmacist', 'doctor', 'patient', 'pharmacy_team', 'intern_pharmacist').required(),
+            permissions: Joi.array().items(
+                Joi.string().valid(
+                    'read_messages', 'send_messages', 'add_participants', 'remove_participants',
+                    'edit_conversation', 'delete_conversation', 'upload_files', 'view_patient_data',
+                    'manage_clinical_context'
+                )
+            ).optional()
+        })
+    ).min(1).max(50).required(),
+    patientId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
+    caseId: Joi.string().trim().max(100).optional(),
+    status: Joi.string().valid('active', 'archived', 'resolved', 'closed').optional(),
+    priority: Joi.string().valid('low', 'normal', 'high', 'urgent').optional(),
+    tags: Joi.array().items(Joi.string().trim().max(50)).optional(),
+    metadata: Joi.object({
+        isEncrypted: Joi.boolean().default(true),
+        encryptionKeyId: Joi.string().optional(),
+        clinicalContext: Joi.object({
+            diagnosis: Joi.string().trim().max(500).optional(),
+            medications: Joi.array().items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/)).optional(),
+            conditions: Joi.array().items(Joi.string().trim().max(200)).optional(),
+            interventionIds: Joi.array().items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/)).optional()
+        }).optional()
+    }).optional()
+});
 
-export interface ValidationError {
-    field: string;
-    message: string;
-    value?: any;
-}
+export const messageValidationSchema = Joi.object({
+    conversationId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required(),
+    content: Joi.object({
+        text: Joi.string().trim().max(10000).when('type', {
+            is: 'text',
+            then: Joi.required(),
+            otherwise: Joi.optional()
+        }),
+        type: Joi.string().valid('text', 'file', 'image', 'clinical_note', 'system', 'voice_note').required(),
+        attachments: Joi.array().items(
+            Joi.object({
+                fileId: Joi.string().required(),
+                fileName: Joi.string().trim().max(255).required(),
+                fileSize: Joi.number().min(0).max(100 * 1024 * 1024).required(), // 100MB max
+                mimeType: Joi.string().valid(
+                    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+                    'application/pdf', 'application/msword',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'application/vnd.ms-excel',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'text/plain', 'text/csv',
+                    'audio/mpeg', 'audio/wav', 'audio/ogg',
+                    'video/mp4', 'video/webm'
+                ).required(),
+                secureUrl: Joi.string().uri().required(),
+                thumbnailUrl: Joi.string().uri().optional()
+            })
+        ).when('type', {
+            is: Joi.string().valid('file', 'image'),
+            then: Joi.required().min(1),
+            otherwise: Joi.optional()
+        }),
+        metadata: Joi.object({
+            originalText: Joi.string().optional(),
+            clinicalData: Joi.object({
+                patientId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
+                interventionId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
+                medicationId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional()
+            }).optional(),
+            systemAction: Joi.object({
+                action: Joi.string().valid(
+                    'participant_added', 'participant_removed', 'conversation_created',
+                    'conversation_archived', 'conversation_resolved', 'priority_changed',
+                    'clinical_context_updated', 'file_shared', 'intervention_linked'
+                ).required(),
+                performedBy: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required(),
+                timestamp: Joi.date().required()
+            }).when('..type', {
+                is: 'system',
+                then: Joi.required(),
+                otherwise: Joi.optional()
+            })
+        }).optional()
+    }).required(),
+    threadId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
+    parentMessageId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
+    mentions: Joi.array().items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/)).optional(),
+    priority: Joi.string().valid('normal', 'high', 'urgent').optional()
+});
 
-export class CommunicationValidationError extends Error {
-    public errors: ValidationError[];
-    public statusCode: number;
+export const notificationValidationSchema = Joi.object({
+    userId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required(),
+    type: Joi.string().valid(
+        'new_message', 'mention', 'therapy_update', 'clinical_alert',
+        'conversation_invite', 'file_shared', 'intervention_assigned',
+        'patient_query', 'urgent_message', 'system_notification'
+    ).required(),
+    title: Joi.string().trim().max(200).required(),
+    content: Joi.string().trim().max(1000).required(),
+    data: Joi.object({
+        conversationId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
+        messageId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
+        senderId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
+        patientId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
+        interventionId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
+        actionUrl: Joi.string().uri({ relativeOnly: true }).optional(),
+        metadata: Joi.object().optional()
+    }).required(),
+    priority: Joi.string().valid('low', 'normal', 'high', 'urgent', 'critical').optional(),
+    deliveryChannels: Joi.object({
+        inApp: Joi.boolean().default(true),
+        email: Joi.boolean().default(false),
+        sms: Joi.boolean().default(false),
+        push: Joi.boolean().default(true)
+    }).required(),
+    scheduledFor: Joi.date().min('now').optional(),
+    expiresAt: Joi.date().greater('now').optional(),
+    groupKey: Joi.string().max(100).optional(),
+    batchId: Joi.string().max(100).optional()
+});
 
-    constructor(errors: ValidationError[], message = 'Validation failed') {
-        super(message);
-        this.name = 'CommunicationValidationError';
-        this.errors = errors;
-        this.statusCode = 400;
-    }
-}
+export const auditLogValidationSchema = Joi.object({
+    action: Joi.string().valid(
+        'message_sent', 'message_read', 'message_edited', 'message_deleted',
+        'conversation_created', 'conversation_updated', 'conversation_archived',
+        'participant_added', 'participant_removed', 'participant_left',
+        'file_uploaded', 'file_downloaded', 'file_deleted',
+        'notification_sent', 'notification_read', 'encryption_key_rotated',
+        'conversation_exported', 'bulk_message_delete', 'conversation_search',
+        'message_search', 'clinical_context_updated', 'priority_changed'
+    ).required(),
+    targetId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required(),
+    targetType: Joi.string().valid('conversation', 'message', 'user', 'file', 'notification').required(),
+    details: Joi.object({
+        conversationId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
+        messageId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
+        patientId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
+        participantIds: Joi.array().items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/)).optional(),
+        fileId: Joi.string().optional(),
+        fileName: Joi.string().max(255).optional(),
+        oldValues: Joi.object().optional(),
+        newValues: Joi.object().optional(),
+        metadata: Joi.object().optional()
+    }).required(),
+    riskLevel: Joi.string().valid('low', 'medium', 'high', 'critical').optional(),
+    complianceCategory: Joi.string().valid(
+        'communication_security', 'data_access', 'patient_privacy',
+        'message_integrity', 'file_security', 'audit_trail',
+        'encryption_compliance', 'notification_delivery'
+    ).optional(),
+    success: Joi.boolean().default(true),
+    errorMessage: Joi.string().max(1000).optional(),
+    duration: Joi.number().min(0).max(300000).optional() // 5 minutes max
+});
 
-/**
- * Handle validation results and format errors
- */
-export const handleValidationErrors = (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): void => {
-    const errors = validationResult(req);
+// Middleware functions
+export const validateConversation = (req: Request, res: Response, next: NextFunction) => {
+    const { error } = conversationValidationSchema.validate(req.body, { abortEarly: false });
 
-    if (!errors.isEmpty()) {
-        const formattedErrors: ValidationError[] = errors.array().map(error => ({
-            field: error.type === 'field' ? (error as any).path : 'unknown',
-            message: error.msg,
-            value: error.type === 'field' ? (error as any).value : undefined,
-        }));
-
-        logger.warn('Communication validation failed', {
-            errors: formattedErrors,
-            path: req.path,
-            method: req.method,
-            userId: (req as AuthRequest).user?._id,
-        });
-
-        res.status(400).json({
+    if (error) {
+        return res.status(400).json({
             success: false,
-            message: 'Validation failed',
-            errors: formattedErrors,
+            message: 'Validation error',
+            errors: error.details.map(detail => ({
+                field: detail.path.join('.'),
+                message: detail.message
+            }))
         });
-        return;
+    }
+
+    // Additional business logic validation
+    const { type, patientId, participants } = req.body;
+
+    // Patient ID is required for patient_query and clinical_consultation
+    if (['patient_query', 'clinical_consultation'].includes(type) && !patientId) {
+        return res.status(400).json({
+            success: false,
+            message: 'Patient ID is required for patient queries and clinical consultations'
+        });
+    }
+
+    // Validate participant roles for patient conversations
+    if (type === 'patient_query') {
+        const hasPatient = participants.some((p: any) => p.role === 'patient');
+        const hasHealthcareProvider = participants.some((p: any) =>
+            ['pharmacist', 'doctor'].includes(p.role)
+        );
+
+        if (!hasPatient || !hasHealthcareProvider) {
+            return res.status(400).json({
+                success: false,
+                message: 'Patient queries must include both a patient and a healthcare provider'
+            });
+        }
     }
 
     next();
 };
 
-/**
- * Custom validators
- */
-export const customValidators = {
-    isObjectId: (value: string) => {
-        if (!mongoose.Types.ObjectId.isValid(value)) {
-            throw new Error('Invalid ObjectId format');
-        }
-        return true;
-    },
+export const validateMessage = (req: Request, res: Response, next: NextFunction) => {
+    const { error } = messageValidationSchema.validate(req.body, { abortEarly: false });
 
-    isObjectIdArray: (value: string[]) => {
-        if (!Array.isArray(value)) {
-            throw new Error('Must be an array');
-        }
+    if (error) {
+        return res.status(400).json({
+            success: false,
+            message: 'Validation error',
+            errors: error.details.map(detail => ({
+                field: detail.path.join('.'),
+                message: detail.message
+            }))
+        });
+    }
 
-        for (const id of value) {
-            if (!mongoose.Types.ObjectId.isValid(id)) {
-                throw new Error(`Invalid ObjectId format: ${id}`);
+    // Additional validation for mentions
+    const { mentions, content } = req.body;
+    if (mentions && mentions.length > 0) {
+        // Validate that mentioned users are referenced in the message text
+        if (content.type === 'text' && content.text) {
+            const mentionPattern = /@\w+/g;
+            const textMentions = content.text.match(mentionPattern) || [];
+
+            if (textMentions.length !== mentions.length) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Number of @mentions in text must match mentions array'
+                });
             }
         }
-        return true;
-    },
+    }
 
-    isValidMessageType: (value: string) => {
-        const validTypes = ['text', 'file', 'image', 'clinical_note', 'system', 'voice_note'];
-        if (!validTypes.includes(value)) {
-            throw new Error(`Invalid message type. Must be one of: ${validTypes.join(', ')}`);
-        }
-        return true;
-    },
-
-    isValidConversationType: (value: string) => {
-        const validTypes = ['direct', 'group', 'patient_query', 'clinical_consultation'];
-        if (!validTypes.includes(value)) {
-            throw new Error(`Invalid conversation type. Must be one of: ${validTypes.join(', ')}`);
-        }
-        return true;
-    },
-
-    isValidPriority: (value: string) => {
-        const validPriorities = ['low', 'normal', 'high', 'urgent', 'critical'];
-        if (!validPriorities.includes(value)) {
-            throw new Error(`Invalid priority. Must be one of: ${validPriorities.join(', ')}`);
-        }
-        return true;
-    },
-
-    isValidStatus: (value: string, validStatuses: string[]) => {
-        if (!validStatuses.includes(value)) {
-            throw new Error(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
-        }
-        return true;
-    },
-
-    isValidEmoji: (value: string) => {
-        const allowedEmojis = [
-            '👍', '👎', '❤️', '😊', '😢', '😮', '😡', '🤔',
-            '✅', '❌', '⚠️', '🚨', '📋', '💊', '🩺', '📊'
-        ];
-        if (!allowedEmojis.includes(value)) {
-            throw new Error(`Invalid emoji. Must be one of the allowed healthcare emojis`);
-        }
-        return true;
-    },
-
-    isValidFileType: (mimeType: string) => {
-        const allowedTypes = [
-            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-            'application/pdf', 'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'text/plain', 'text/csv',
-            'audio/mpeg', 'audio/wav', 'audio/ogg',
-            'video/mp4', 'video/webm'
-        ];
-
-        if (!allowedTypes.includes(mimeType)) {
-            throw new Error('File type not allowed for healthcare communication');
-        }
-        return true;
-    },
-
-    isValidUrl: (value: string) => {
-        try {
-            new URL(value);
-            return true;
-        } catch {
-            throw new Error('Invalid URL format');
-        }
-    },
-
-    isValidDateRange: (startDate: string, endDate: string) => {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-            throw new Error('Invalid date format');
-        }
-
-        if (start >= end) {
-            throw new Error('Start date must be before end date');
-        }
-
-        // Limit date range to prevent performance issues
-        const maxRangeMs = 365 * 24 * 60 * 60 * 1000; // 1 year
-        if (end.getTime() - start.getTime() > maxRangeMs) {
-            throw new Error('Date range cannot exceed 1 year');
-        }
-
-        return true;
-    },
+    next();
 };
 
-/**
- * Conversation validation rules
- */
-export const conversationValidation = {
-    create: [
-        body('type')
-            .notEmpty()
-            .withMessage('Conversation type is required')
-            .custom(customValidators.isValidConversationType),
+export const validateNotification = (req: Request, res: Response, next: NextFunction) => {
+    const { error } = notificationValidationSchema.validate(req.body, { abortEarly: false });
 
-        body('title')
-            .optional()
-            .isLength({ min: 1, max: 200 })
-            .withMessage('Title must be between 1 and 200 characters')
-            .trim(),
+    if (error) {
+        return res.status(400).json({
+            success: false,
+            message: 'Validation error',
+            errors: error.details.map(detail => ({
+                field: detail.path.join('.'),
+                message: detail.message
+            }))
+        });
+    }
 
-        body('participants')
-            .isArray({ min: 1, max: 50 })
-            .withMessage('Must have between 1 and 50 participants'),
+    // Validate delivery channels - at least one must be enabled
+    const { deliveryChannels } = req.body;
+    const hasEnabledChannel = Object.values(deliveryChannels).some(enabled => enabled);
 
-        body('participants.*.userId')
-            .custom(customValidators.isObjectId),
+    if (!hasEnabledChannel) {
+        return res.status(400).json({
+            success: false,
+            message: 'At least one delivery channel must be enabled'
+        });
+    }
 
-        body('participants.*.role')
-            .isIn(['pharmacist', 'doctor', 'patient', 'pharmacy_team', 'intern_pharmacist'])
-            .withMessage('Invalid participant role'),
-
-        body('patientId')
-            .optional()
-            .custom(customValidators.isObjectId),
-
-        body('priority')
-            .optional()
-            .custom(customValidators.isValidPriority),
-
-        body('tags')
-            .optional()
-            .isArray({ max: 10 })
-            .withMessage('Maximum 10 tags allowed'),
-
-        body('tags.*')
-            .optional()
-            .isLength({ min: 1, max: 50 })
-            .withMessage('Each tag must be between 1 and 50 characters')
-            .trim(),
-
-        body('metadata.clinicalContext.diagnosis')
-            .optional()
-            .isLength({ max: 500 })
-            .withMessage('Diagnosis cannot exceed 500 characters')
-            .trim(),
-
-        body('metadata.clinicalContext.medications')
-            .optional()
-            .custom(customValidators.isObjectIdArray),
-
-        body('metadata.clinicalContext.interventionIds')
-            .optional()
-            .custom(customValidators.isObjectIdArray),
-    ],
-
-    update: [
-        param('id').custom(customValidators.isObjectId),
-
-        body('title')
-            .optional()
-            .isLength({ min: 1, max: 200 })
-            .withMessage('Title must be between 1 and 200 characters')
-            .trim(),
-
-        body('status')
-            .optional()
-            .custom((value) => customValidators.isValidStatus(value, ['active', 'archived', 'resolved', 'closed'])),
-
-        body('priority')
-            .optional()
-            .custom(customValidators.isValidPriority),
-
-        body('tags')
-            .optional()
-            .isArray({ max: 10 })
-            .withMessage('Maximum 10 tags allowed'),
-    ],
-
-    addParticipant: [
-        param('id').custom(customValidators.isObjectId),
-
-        body('userId')
-            .notEmpty()
-            .custom(customValidators.isObjectId),
-
-        body('role')
-            .notEmpty()
-            .isIn(['pharmacist', 'doctor', 'patient', 'pharmacy_team', 'intern_pharmacist'])
-            .withMessage('Invalid participant role'),
-
-        body('permissions')
-            .optional()
-            .isArray()
-            .withMessage('Permissions must be an array'),
-    ],
-
-    removeParticipant: [
-        param('id').custom(customValidators.isObjectId),
-        param('userId').custom(customValidators.isObjectId),
-    ],
+    next();
 };
 
-/**
- * Message validation rules
- */
-export const messageValidation = {
-    send: [
-        body('conversationId')
-            .notEmpty()
-            .custom(customValidators.isObjectId),
+export const validateAuditLog = (req: Request, res: Response, next: NextFunction) => {
+    const { error } = auditLogValidationSchema.validate(req.body, { abortEarly: false });
 
-        body('content.type')
-            .notEmpty()
-            .custom(customValidators.isValidMessageType),
+    if (error) {
+        return res.status(400).json({
+            success: false,
+            message: 'Validation error',
+            errors: error.details.map(detail => ({
+                field: detail.path.join('.'),
+                message: detail.message
+            }))
+        });
+    }
 
-        body('content.text')
-            .if(body('content.type').equals('text'))
-            .notEmpty()
-            .withMessage('Text content is required for text messages')
-            .isLength({ min: 1, max: 10000 })
-            .withMessage('Message content must be between 1 and 10,000 characters')
-            .trim(),
-
-        body('content.attachments')
-            .optional()
-            .isArray({ max: 10 })
-            .withMessage('Maximum 10 attachments allowed'),
-
-        body('content.attachments.*.fileName')
-            .optional()
-            .isLength({ min: 1, max: 255 })
-            .withMessage('File name must be between 1 and 255 characters'),
-
-        body('content.attachments.*.fileSize')
-            .optional()
-            .isInt({ min: 1, max: 100 * 1024 * 1024 })
-            .withMessage('File size must be between 1 byte and 100MB'),
-
-        body('content.attachments.*.mimeType')
-            .optional()
-            .custom(customValidators.isValidFileType),
-
-        body('content.attachments.*.secureUrl')
-            .optional()
-            .custom(customValidators.isValidUrl),
-
-        body('threadId')
-            .optional()
-            .custom(customValidators.isObjectId),
-
-        body('parentMessageId')
-            .optional()
-            .custom(customValidators.isObjectId),
-
-        body('mentions')
-            .optional()
-            .custom(customValidators.isObjectIdArray),
-
-        body('priority')
-            .optional()
-            .isIn(['normal', 'high', 'urgent'])
-            .withMessage('Invalid message priority'),
-    ],
-
-    edit: [
-        param('id').custom(customValidators.isObjectId),
-
-        body('content')
-            .notEmpty()
-            .isLength({ min: 1, max: 10000 })
-            .withMessage('Message content must be between 1 and 10,000 characters')
-            .trim(),
-
-        body('reason')
-            .optional()
-            .isLength({ max: 200 })
-            .withMessage('Edit reason cannot exceed 200 characters')
-            .trim(),
-    ],
-
-    addReaction: [
-        param('id').custom(customValidators.isObjectId),
-
-        body('emoji')
-            .notEmpty()
-            .custom(customValidators.isValidEmoji),
-    ],
-
-    markAsRead: [
-        param('id').custom(customValidators.isObjectId),
-    ],
+    next();
 };
 
-/**
- * Notification validation rules
- */
-export const notificationValidation = {
-    create: [
-        body('userId')
-            .notEmpty()
-            .custom(customValidators.isObjectId),
+// Conversation access validation middleware
+export const validateConversationAccess = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const { conversationId } = req.params;
+        const userId = req.user?._id;
+        const workplaceId = req.workspaceContext?.workspace?._id;
 
-        body('type')
-            .notEmpty()
-            .isIn([
-                'new_message', 'mention', 'therapy_update', 'clinical_alert',
-                'conversation_invite', 'file_shared', 'intervention_assigned',
-                'patient_query', 'urgent_message', 'system_notification'
-            ])
-            .withMessage('Invalid notification type'),
+        if (!userId || !workplaceId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+        }
 
-        body('title')
-            .notEmpty()
-            .isLength({ min: 1, max: 200 })
-            .withMessage('Title must be between 1 and 200 characters')
-            .trim(),
+        if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid conversation ID'
+            });
+        }
 
-        body('content')
-            .notEmpty()
-            .isLength({ min: 1, max: 1000 })
-            .withMessage('Content must be between 1 and 1000 characters')
-            .trim(),
+        const Conversation = mongoose.model('Conversation');
+        const conversation = await Conversation.findOne({
+            _id: conversationId,
+            workplaceId,
+            'participants.userId': userId,
+            'participants.leftAt': { $exists: false }
+        });
 
-        body('priority')
-            .optional()
-            .custom(customValidators.isValidPriority),
+        if (!conversation) {
+            return res.status(404).json({
+                success: false,
+                message: 'Conversation not found or access denied'
+            });
+        }
 
-        body('data.conversationId')
-            .optional()
-            .custom(customValidators.isObjectId),
-
-        body('data.messageId')
-            .optional()
-            .custom(customValidators.isObjectId),
-
-        body('data.patientId')
-            .optional()
-            .custom(customValidators.isObjectId),
-
-        body('data.actionUrl')
-            .optional()
-            .matches(/^\/|^https?:\/\//)
-            .withMessage('Invalid action URL format'),
-
-        body('deliveryChannels.inApp')
-            .optional()
-            .isBoolean()
-            .withMessage('inApp delivery channel must be boolean'),
-
-        body('deliveryChannels.email')
-            .optional()
-            .isBoolean()
-            .withMessage('email delivery channel must be boolean'),
-
-        body('deliveryChannels.sms')
-            .optional()
-            .isBoolean()
-            .withMessage('sms delivery channel must be boolean'),
-
-        body('scheduledFor')
-            .optional()
-            .isISO8601()
-            .withMessage('Invalid scheduled date format')
-            .custom((value) => {
-                const scheduledDate = new Date(value);
-                if (scheduledDate <= new Date()) {
-                    throw new Error('Scheduled date must be in the future');
-                }
-                return true;
-            }),
-    ],
-
-    updateStatus: [
-        param('id').custom(customValidators.isObjectId),
-
-        body('status')
-            .notEmpty()
-            .isIn(['unread', 'read', 'dismissed', 'archived'])
-            .withMessage('Invalid notification status'),
-    ],
-
-    updateDeliveryStatus: [
-        param('id').custom(customValidators.isObjectId),
-
-        body('channel')
-            .notEmpty()
-            .isIn(['inApp', 'email', 'sms', 'push'])
-            .withMessage('Invalid delivery channel'),
-
-        body('status')
-            .notEmpty()
-            .isIn(['pending', 'sent', 'delivered', 'failed', 'bounced'])
-            .withMessage('Invalid delivery status'),
-
-        body('failureReason')
-            .optional()
-            .isLength({ max: 500 })
-            .withMessage('Failure reason cannot exceed 500 characters'),
-    ],
+        // Add conversation to request for use in controllers
+        req.conversation = conversation;
+        next();
+    } catch (error) {
+        console.error('Conversation access validation error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
 };
 
-/**
- * Search and query validation rules
- */
-export const searchValidation = {
-    messages: [
-        query('q')
-            .notEmpty()
-            .isLength({ min: 1, max: 200 })
-            .withMessage('Search query must be between 1 and 200 characters')
-            .trim(),
+// Message access validation middleware
+export const validateMessageAccess = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const { messageId } = req.params;
+        const userId = req.user?._id;
+        const workplaceId = req.workspaceContext?.workspace?._id;
 
-        query('conversationId')
-            .optional()
-            .custom(customValidators.isObjectId),
+        if (!userId || !workplaceId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+        }
 
-        query('senderId')
-            .optional()
-            .custom(customValidators.isObjectId),
+        if (!mongoose.Types.ObjectId.isValid(messageId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid message ID'
+            });
+        }
 
-        query('type')
-            .optional()
-            .custom(customValidators.isValidMessageType),
+        const Message = mongoose.model('Message');
+        const Conversation = mongoose.model('Conversation');
 
-        query('limit')
-            .optional()
-            .isInt({ min: 1, max: 100 })
-            .withMessage('Limit must be between 1 and 100'),
+        const message = await Message.findOne({
+            _id: messageId,
+            workplaceId
+        }).populate('conversationId');
 
-        query('startDate')
-            .optional()
-            .isISO8601()
-            .withMessage('Invalid start date format'),
+        if (!message) {
+            return res.status(404).json({
+                success: false,
+                message: 'Message not found'
+            });
+        }
 
-        query('endDate')
-            .optional()
-            .isISO8601()
-            .withMessage('Invalid end date format'),
-    ],
+        // Check if user has access to the conversation
+        const conversation = await Conversation.findOne({
+            _id: message.conversationId,
+            workplaceId,
+            'participants.userId': userId,
+            'participants.leftAt': { $exists: false }
+        });
 
-    conversations: [
-        query('status')
-            .optional()
-            .custom((value) => customValidators.isValidStatus(value, ['active', 'archived', 'resolved', 'closed'])),
+        if (!conversation) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied to this message'
+            });
+        }
 
-        query('type')
-            .optional()
-            .custom(customValidators.isValidConversationType),
-
-        query('patientId')
-            .optional()
-            .custom(customValidators.isObjectId),
-
-        query('priority')
-            .optional()
-            .custom(customValidators.isValidPriority),
-
-        query('limit')
-            .optional()
-            .isInt({ min: 1, max: 100 })
-            .withMessage('Limit must be between 1 and 100'),
-
-        query('offset')
-            .optional()
-            .isInt({ min: 0 })
-            .withMessage('Offset must be non-negative'),
-    ],
+        req.message = message;
+        req.conversation = conversation;
+        next();
+    } catch (error) {
+        console.error('Message access validation error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
 };
 
-/**
- * Audit log validation rules
- */
-export const auditValidation = {
-    query: [
-        query('startDate')
-            .optional()
-            .isISO8601()
-            .withMessage('Invalid start date format'),
+// File upload validation middleware
+export const validateFileUpload = (req: Request, res: Response, next: NextFunction) => {
+    const allowedMimeTypes = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'application/pdf', 'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain', 'text/csv',
+        'audio/mpeg', 'audio/wav', 'audio/ogg',
+        'video/mp4', 'video/webm'
+    ];
 
-        query('endDate')
-            .optional()
-            .isISO8601()
-            .withMessage('Invalid end date format'),
+    const maxFileSize = 100 * 1024 * 1024; // 100MB
 
-        query('action')
-            .optional()
-            .isIn([
-                'message_sent', 'message_read', 'message_edited', 'message_deleted',
-                'conversation_created', 'conversation_updated', 'conversation_archived',
-                'participant_added', 'participant_removed', 'participant_left',
-                'file_uploaded', 'file_downloaded', 'file_deleted',
-                'notification_sent', 'notification_read', 'encryption_key_rotated',
-                'conversation_exported', 'bulk_message_delete', 'conversation_search',
-                'message_search', 'clinical_context_updated', 'priority_changed'
-            ])
-            .withMessage('Invalid audit action'),
+    if (!req.file && !req.files) {
+        return res.status(400).json({
+            success: false,
+            message: 'No file uploaded'
+        });
+    }
 
-        query('userId')
-            .optional()
-            .custom(customValidators.isObjectId),
+    const files = req.files ? (Array.isArray(req.files) ? req.files : [req.file]) : [req.file];
 
-        query('riskLevel')
-            .optional()
-            .isIn(['low', 'medium', 'high', 'critical'])
-            .withMessage('Invalid risk level'),
+    for (const file of files) {
+        if (!file) continue;
 
-        query('limit')
-            .optional()
-            .isInt({ min: 1, max: 1000 })
-            .withMessage('Limit must be between 1 and 1000'),
-    ],
+        // Check file size
+        if (file.size > maxFileSize) {
+            return res.status(400).json({
+                success: false,
+                message: `File size exceeds maximum limit of ${maxFileSize / (1024 * 1024)}MB`
+            });
+        }
 
-    export: [
-        body('startDate')
-            .notEmpty()
-            .isISO8601()
-            .withMessage('Start date is required and must be valid ISO8601 format'),
+        // Check MIME type
+        if (!allowedMimeTypes.includes(file.mimetype)) {
+            return res.status(400).json({
+                success: false,
+                message: `File type ${file.mimetype} is not allowed`
+            });
+        }
 
-        body('endDate')
-            .notEmpty()
-            .isISO8601()
-            .withMessage('End date is required and must be valid ISO8601 format'),
+        // Check for potentially dangerous file extensions
+        const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif', '.com', '.jar'];
+        const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
 
-        body('format')
-            .optional()
-            .isIn(['json', 'csv', 'pdf'])
-            .withMessage('Invalid export format'),
+        if (dangerousExtensions.includes(fileExtension)) {
+            return res.status(400).json({
+                success: false,
+                message: `File extension ${fileExtension} is not allowed for security reasons`
+            });
+        }
+    }
 
-        body('includeDetails')
-            .optional()
-            .isBoolean()
-            .withMessage('includeDetails must be boolean'),
-    ],
+    next();
 };
 
-/**
- * Pagination validation middleware
- */
-export const paginationValidation = [
-    query('page')
-        .optional()
-        .isInt({ min: 1 })
-        .withMessage('Page must be a positive integer'),
+// Rate limiting validation for message sending
+export const validateMessageRateLimit = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user?._id;
+        const workplaceId = req.workspaceContext?.workspace?._id;
 
-    query('limit')
-        .optional()
-        .isInt({ min: 1, max: 100 })
-        .withMessage('Limit must be between 1 and 100'),
+        if (!userId || !workplaceId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+        }
 
-    query('sortBy')
-        .optional()
-        .isIn(['createdAt', 'updatedAt', 'lastMessageAt', 'priority', 'status'])
-        .withMessage('Invalid sort field'),
+        // Check message rate limit (e.g., max 100 messages per minute)
+        const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+        const Message = mongoose.model('Message');
 
-    query('sortOrder')
-        .optional()
-        .isIn(['asc', 'desc'])
-        .withMessage('Sort order must be asc or desc'),
-];
+        const recentMessageCount = await Message.countDocuments({
+            senderId: userId,
+            workplaceId,
+            createdAt: { $gte: oneMinuteAgo }
+        });
 
-/**
- * File upload validation middleware
- */
-export const fileUploadValidation = [
-    body('fileName')
-        .notEmpty()
-        .isLength({ min: 1, max: 255 })
-        .withMessage('File name must be between 1 and 255 characters'),
+        const maxMessagesPerMinute = 100;
+        if (recentMessageCount >= maxMessagesPerMinute) {
+            return res.status(429).json({
+                success: false,
+                message: 'Message rate limit exceeded. Please wait before sending more messages.'
+            });
+        }
 
-    body('fileSize')
-        .notEmpty()
-        .isInt({ min: 1, max: 100 * 1024 * 1024 })
-        .withMessage('File size must be between 1 byte and 100MB'),
-
-    body('mimeType')
-        .notEmpty()
-        .custom(customValidators.isValidFileType),
-
-    body('conversationId')
-        .notEmpty()
-        .custom(customValidators.isObjectId),
-];
+        next();
+    } catch (error) {
+        console.error('Message rate limit validation error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
 
 export default {
-    handleValidationErrors,
-    customValidators,
-    conversationValidation,
-    messageValidation,
-    notificationValidation,
-    searchValidation,
-    auditValidation,
-    paginationValidation,
-    fileUploadValidation,
+    validateConversation,
+    validateMessage,
+    validateNotification,
+    validateAuditLog,
+    validateConversationAccess,
+    validateMessageAccess,
+    validateFileUpload,
+    validateMessageRateLimit
 };
