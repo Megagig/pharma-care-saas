@@ -82,6 +82,31 @@ const requireRole = (...roles) => {
     };
 };
 exports.requireRole = requireRole;
+const requireRole = (...roles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            res.status(401).json({
+                success: false,
+                message: 'Authentication required',
+            });
+            return;
+        }
+        if (req.user.role === 'super_admin') {
+            return next();
+        }
+        if (!req.user.role || !roles.includes(req.user.role)) {
+            res.status(403).json({
+                success: false,
+                message: 'Insufficient role permissions',
+                requiredRoles: roles,
+                userRole: req.user.role,
+            });
+            return;
+        }
+        next();
+    };
+};
+exports.requireRole = requireRole;
 const requireWorkplaceRole = (...roles) => {
     return (req, res, next) => {
         if (!req.user) {

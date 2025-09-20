@@ -572,3 +572,19 @@
 {"level":"info","message":"✓ HIPAA encryption requirements verified","service":"pharma-care-api","timestamp":"2025-09-20 18:06:33"}
 {"level":"info","message":"✓ Test data cleaned up","service":"pharma-care-api","timestamp":"2025-09-20 18:06:33"}
 {"level":"info","message":"🎉 All Communication Hub models validation tests passed!","service":"pharma-care-api","timestamp":"2025-09-20 18:06:33"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758389326962","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-20 18:28:46"}
+{"error":"Encryption failed","level":"error","message":"Encryption middleware error","method":"POST","path":"/test/encrypt","service":"pharma-care-api","timestamp":"2025-09-20 18:28:47"}
+{"error":"Invalid encrypted data format","keyId":"default-key-1758389326962","level":"error","message":"Failed to decrypt message","service":"pharma-care-api","timestamp":"2025-09-20 18:28:47"}
+{"error":"Decryption failed: Invalid encrypted data format","level":"warn","message":"Failed to decrypt message content","service":"pharma-care-api","timestamp":"2025-09-20 18:28:47"}
+{"error":"Invalid encrypted data format","keyId":"default-key-1758389326962","level":"error","message":"Failed to decrypt message","service":"pharma-care-api","timestamp":"2025-09-20 18:28:47"}
+{"error":"Decryption failed: Invalid encrypted data format","level":"warn","message":"Failed to decrypt text content","service":"pharma-care-api","timestamp":"2025-09-20 18:28:47"}
+{"algorithm":"aes-256-cbc","keyId":"key-67908438-52ec-4e0f-9eb3-9b315d46a373","keyLength":32,"level":"info","message":"New encryption key generated","service":"pharma-care-api","timestamp":"2025-09-20 18:29:17"}
+{"conversationId":"test-conversation","level":"info","message":"Encryption key rotated","newKeyId":"key-67908438-52ec-4e0f-9eb3-9b315d46a373","rotatedAt":"2025-09-20T17:29:17.348Z","service":"pharma-care-api","timestamp":"2025-09-20 18:29:17"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758389523746","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-20 18:32:03"}
+{"error":"Encryption failed","level":"error","message":"Encryption middleware error","method":"POST","path":"/test/encrypt","service":"pharma-care-api","timestamp":"2025-09-20 18:32:04"}
+{"error":"Invalid encrypted data format","keyId":"default-key-1758389523746","level":"error","message":"Failed to decrypt message","service":"pharma-care-api","timestamp":"2025-09-20 18:32:04"}
+{"error":"Decryption failed: Invalid encrypted data format","level":"warn","message":"Failed to decrypt message content","service":"pharma-care-api","timestamp":"2025-09-20 18:32:04"}
+{"error":"Invalid encrypted data format","keyId":"default-key-1758389523746","level":"error","message":"Failed to decrypt message","service":"pharma-care-api","timestamp":"2025-09-20 18:32:04"}
+{"error":"Decryption failed: Invalid encrypted data format","level":"warn","message":"Failed to decrypt text content","service":"pharma-care-api","timestamp":"2025-09-20 18:32:04"}
+{"algorithm":"aes-256-cbc","keyId":"key-6174481d-d2e9-4f3c-8a58-39ba086d35dc","keyLength":32,"level":"info","message":"New encryption key generated","service":"pharma-care-api","timestamp":"2025-09-20 18:32:04"}
+{"conversationId":"test-conversation","level":"info","message":"Encryption key rotated","newKeyId":"key-6174481d-d2e9-4f3c-8a58-39ba086d35dc","rotatedAt":"2025-09-20T17:32:04.057Z","service":"pharma-care-api","timestamp":"2025-09-20 18:32:04"}

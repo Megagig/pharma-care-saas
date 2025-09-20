@@ -12,6 +12,11 @@ import {
     auditBulkOperation,
     auditHighRiskOperation,
 } from '../middlewares/communicationAuditMiddleware';
+import {
+    encryptMessageContent,
+    decryptMessageContent,
+    validateEncryptionCompliance,
+} from '../middlewares/encryptionMiddleware';
 
 const router = express.Router();
 
@@ -166,6 +171,7 @@ router.get(
         query('offset').optional().isInt({ min: 0 }),
     ],
     handleValidationErrors,
+    decryptMessageContent,
     communicationController.getMessages
 );
 
@@ -189,6 +195,8 @@ router.post(
         body('priority').optional().isIn(['normal', 'high', 'urgent']),
     ],
     handleValidationErrors,
+    encryptMessageContent,
+    validateEncryptionCompliance,
     ...auditMessage('message_sent'),
     communicationController.sendMessage
 );
@@ -280,6 +288,7 @@ router.get(
         query('limit').optional().isInt({ min: 1, max: 100 }),
     ],
     handleValidationErrors,
+    decryptMessageContent,
     ...auditSearch('message_search'),
     communicationController.searchMessages
 );
@@ -321,6 +330,7 @@ router.get(
         query('limit').optional().isInt({ min: 1, max: 100 }),
     ],
     handleValidationErrors,
+    decryptMessageContent,
     auditPatientCommunicationAccess,
     communicationController.getPatientConversations
 );
@@ -342,6 +352,8 @@ router.post(
         body('tags.*').isString().trim().isLength({ max: 50 }),
     ],
     handleValidationErrors,
+    encryptMessageContent,
+    validateEncryptionCompliance,
     auditPatientCommunicationAccess,
     ...auditConversation('conversation_created'),
     communicationController.createPatientQuery

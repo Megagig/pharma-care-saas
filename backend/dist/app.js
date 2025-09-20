@@ -54,6 +54,7 @@ const manualLabRoutes_1 = __importDefault(require("./modules/lab/routes/manualLa
 const publicApiRoutes_1 = __importDefault(require("./routes/publicApiRoutes"));
 const publicDrugDetailsRoutes_1 = __importDefault(require("./routes/publicDrugDetailsRoutes"));
 const diagnosticRoutes_1 = __importDefault(require("./routes/diagnosticRoutes"));
+const communicationRoutes_1 = __importDefault(require("./routes/communicationRoutes"));
 const systemIntegrationService_1 = __importDefault(require("./services/systemIntegrationService"));
 const app = (0, express_1.default)();
 const systemIntegration = systemIntegrationService_1.default.getInstance();
@@ -146,6 +147,9 @@ app.use('/api', visitRoutes_1.default);
 app.use('/api/drugs', drugRoutes_1.default);
 app.use('/api/manual-lab', manualLabRoutes_1.default);
 app.use('/api/diagnostics', diagnosticRoutes_1.default);
+app.use('/api/communication', communicationRoutes_1.default);
+const communicationAuditRoutes_1 = __importDefault(require("./routes/communicationAuditRoutes"));
+app.use('/api/communication/audit', communicationAuditRoutes_1.default);
 app.use((req, res, next) => {
     if (req.path.startsWith('/api/notes')) {
         console.log(`[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`);
