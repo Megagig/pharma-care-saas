@@ -4,6 +4,12 @@ export { default as MessageThread } from './MessageThread';
 export { default as MessageItem } from './MessageItem';
 export { default as ParticipantList } from './ParticipantList';
 
+// Conversation management components
+export { default as ConversationList } from './ConversationList';
+export { default as ConversationItem } from './ConversationItem';
+export { default as NewConversationModal } from './NewConversationModal';
+export { default as ConversationSettings } from './ConversationSettings';
+
 // Utility components
 export { default as ConnectionStatus } from './ConnectionStatus';
 export { default as TypingIndicator } from './TypingIndicator';

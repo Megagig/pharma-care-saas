@@ -93,7 +93,7 @@ export {
   useMessages,
   useMessageActions,
   useRealTimeUpdates,
-  useNotifications,
+  useNotifications as useCommunicationNotifications,
   useCommunicationUI,
   useConversationById,
   useMessageById,
