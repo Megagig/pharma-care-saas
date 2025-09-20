@@ -7,6 +7,7 @@ export * from './medicationStore';
 export * from './clinicalNoteStore';
 export * from './mtrStore';
 export * from './clinicalInterventionStore';
+export * from './communicationStore';
 export * from './sidebarHooks';
 
 // UI Store hooks now come from dedicated files
@@ -81,6 +82,24 @@ export {
   useInterventionUI,
   useInterventionAnalytics,
 } from './clinicalInterventionStore';
+
+export {
+  // Communication Store hooks
+  useCommunicationStore,
+  useCommunicationUtils,
+  useConversations,
+  useActiveConversation,
+  useConversationActions,
+  useMessages,
+  useMessageActions,
+  useRealTimeUpdates,
+  useNotifications,
+  useCommunicationUI,
+  useConversationById,
+  useMessageById,
+  useUnreadConversationsCount,
+  useTypingUsersForConversation,
+} from './communicationStore';
 
 // Store reset function for clearing all stores (useful for logout)
 export const resetAllStores = () => {
