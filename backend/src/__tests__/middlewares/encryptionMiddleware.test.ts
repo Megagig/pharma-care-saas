@@ -248,10 +248,18 @@ describe('Encryption Middleware', () => {
             // Call the overridden json method
             (mockResponse.json as any)(responseData);
 
-            // Wait for async decryption
-            await new Promise(resolve => setTimeout(resolve, 10));
+            // Wait for async decryption to complete
+            await new Promise(resolve => setTimeout(resolve, 100));
 
-            expect(logger.error).toHaveBeenCalledWith('Response decryption error', expect.any(Object));
+            // Should log warning about failed decryption but continue with encrypted content
+            expect(logger.warn).toHaveBeenCalledWith('Failed to decrypt message content', expect.any(Object));
+            expect(originalJson).toHaveBeenCalledWith({
+                content: {
+                    text: 'encrypted-content',
+                    _encrypted: true,
+                    _encryptionKeyId: 'test-key-123'
+                }
+            });
         });
 
         it('should handle non-object response data', async () => {
