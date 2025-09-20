@@ -14,6 +14,10 @@ export { default as ConversationSettings } from './ConversationSettings';
 export { default as ConnectionStatus } from './ConnectionStatus';
 export { default as TypingIndicator } from './TypingIndicator';
 
+// File management components
+export { default as FileUpload } from './FileUpload';
+export { default as FilePreview } from './FilePreview';
+
 // Export types for external use
 export type { default as ChatInterfaceProps } from './ChatInterface';
 export type { default as MessageThreadProps } from './MessageThread';
