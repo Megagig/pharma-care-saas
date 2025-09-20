@@ -1,0 +1,403 @@
+import React, { useRef, useEffect, useState } from 'react';
+import {
+  Box,
+  TextField,
+  IconButton,
+  Paper,
+  Typography,
+  CircularProgress,
+  Alert,
+  Divider,
+} from '@mui/material';
+import { Send, AttachFile, EmojiEmotions, Reply } from '@mui/icons-material';
+import { Message } from '../../stores/types';
+import MessageItem from './MessageItem';
+import { useSocketConnection } from '../../hooks/useSocket';
+import { socketService } from '../../services/socketService';
+
+interface MessageThreadProps {
+  conversationId: string;
+  messages: Message[];
+  onSendMessage: (
+    content: string,
+    attachments?: File[],
+    threadId?: string,
+    parentMessageId?: string
+  ) => Promise<void>;
+  loading?: boolean;
+  error?: string | null;
+  threadId?: string;
+  parentMessage?: Message;
+  maxHeight?: string | number;
+}
+
+const MessageThread: React.FC<MessageThreadProps> = ({
+  conversationId,
+  messages,
+  onSendMessage,
+  loading = false,
+  error = null,
+  threadId,
+  parentMessage,
+  maxHeight = '100%',
+}) => {
+  const [messageText, setMessageText] = useState('');
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [sending, setSending] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messageInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const { isConnected } = useSocketConnection();
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Handle typing indicators
+  const handleTypingStart = () => {
+    if (!isTyping && isConnected) {
+      setIsTyping(true);
+      socketService.startTyping(conversationId);
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set new timeout to stop typing after 3 seconds
+    typingTimeoutRef.current = setTimeout(() => {
+      handleTypingStop();
+    }, 3000);
+  };
+
+  const handleTypingStop = () => {
+    if (isTyping) {
+      setIsTyping(false);
+      socketService.stopTyping(conversationId);
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+  };
+
+  // Handle message input changes
+  const handleMessageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setMessageText(value);
+
+    if (value.trim()) {
+      handleTypingStart();
+    } else {
+      handleTypingStop();
+    }
+  };
+
+  // Handle sending message
+  const handleSend = async () => {
+    if ((!messageText.trim() && attachments.length === 0) || sending) {
+      return;
+    }
+
+    setSending(true);
+    handleTypingStop();
+
+    try {
+      await onSendMessage(
+        messageText,
+        attachments.length > 0 ? attachments : undefined,
+        threadId,
+        parentMessage?._id
+      );
+
+      // Clear input after successful send
+      setMessageText('');
+      setAttachments([]);
+      messageInputRef.current?.focus();
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Handle key press in message input
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSend();
+    }
+  };
+
+  // Handle file attachment
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setAttachments((prev) => [...prev, ...files]);
+
+    // Clear the input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Remove attachment
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Handle reply to message
+  const handleReplyToMessage = (message: Message) => {
+    // Focus input and add reply context
+    messageInputRef.current?.focus();
+    // TODO: Implement reply functionality with parent message reference
+  };
+
+  // Filter messages for this thread
+  const threadMessages = threadId
+    ? messages.filter((msg) => msg.threadId === threadId)
+    : messages.filter((msg) => !msg.threadId);
+
+  return (
+    <Box
+      sx={{
+        height: maxHeight,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Thread Header (if this is a thread) */}
+      {threadId && parentMessage && (
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <Typography variant="subtitle2" color="primary" gutterBottom>
+            Thread
+          </Typography>
+          <Box sx={{ pl: 2, borderLeft: 2, borderColor: 'primary.main' }}>
+            <Typography variant="body2" color="text.secondary">
+              Replying to: {parentMessage.content.text?.substring(0, 100)}
+              {(parentMessage.content.text?.length || 0) > 100 ? '...' : ''}
+            </Typography>
+          </Box>
+        </Box>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <Alert severity="error" sx={{ m: 1 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Messages Container */}
+      <Box
+        ref={messagesContainerRef}
+        sx={{
+          flex: 1,
+          overflow: 'auto',
+          p: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
+        }}
+      >
+        {loading && threadMessages.length === 0 ? (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100%',
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        ) : threadMessages.length === 0 ? (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100%',
+              textAlign: 'center',
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {threadId
+                ? 'No replies yet'
+                : 'No messages yet. Start the conversation!'}
+            </Typography>
+          </Box>
+        ) : (
+          threadMessages.map((message, index) => {
+            const prevMessage = index > 0 ? threadMessages[index - 1] : null;
+            const showDateDivider =
+              prevMessage &&
+              new Date(message.createdAt).toDateString() !==
+                new Date(prevMessage.createdAt).toDateString();
+
+            return (
+              <React.Fragment key={message._id}>
+                {showDateDivider && (
+                  <Box sx={{ my: 2 }}>
+                    <Divider>
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(message.createdAt).toLocaleDateString()}
+                      </Typography>
+                    </Divider>
+                  </Box>
+                )}
+                <MessageItem
+                  message={message}
+                  showAvatar={
+                    !prevMessage || prevMessage.senderId !== message.senderId
+                  }
+                  showTimestamp={true}
+                  onReply={() => handleReplyToMessage(message)}
+                  onEdit={(messageId, newContent) => {
+                    // TODO: Implement message editing
+                    console.log('Edit message:', messageId, newContent);
+                  }}
+                  onDelete={(messageId) => {
+                    // TODO: Implement message deletion
+                    console.log('Delete message:', messageId);
+                  }}
+                  onReaction={(messageId, emoji) => {
+                    // TODO: Implement message reactions
+                    console.log('Add reaction:', messageId, emoji);
+                  }}
+                />
+              </React.Fragment>
+            );
+          })
+        )}
+      </Box>
+
+      {/* Message Input */}
+      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+        {/* Attachments Preview */}
+        {attachments.length > 0 && (
+          <Box sx={{ mb: 1 }}>
+            {attachments.map((file, index) => (
+              <Paper
+                key={index}
+                variant="outlined"
+                sx={{
+                  p: 1,
+                  mb: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Typography variant="body2" noWrap>
+                  {file.name}
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => removeAttachment(index)}
+                >
+                  ×
+                </IconButton>
+              </Paper>
+            ))}
+          </Box>
+        )}
+
+        {/* Input Row */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+          {/* File Input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            style={{ display: 'none' }}
+            onChange={handleFileSelect}
+          />
+
+          {/* Attach File Button */}
+          <IconButton
+            size="small"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending}
+          >
+            <AttachFile />
+          </IconButton>
+
+          {/* Message Input */}
+          <TextField
+            ref={messageInputRef}
+            fullWidth
+            multiline
+            maxRows={4}
+            placeholder={threadId ? 'Reply to thread...' : 'Type a message...'}
+            value={messageText}
+            onChange={handleMessageChange}
+            onKeyPress={handleKeyPress}
+            disabled={sending || !isConnected}
+            variant="outlined"
+            size="small"
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+              },
+            }}
+          />
+
+          {/* Emoji Button */}
+          <IconButton size="small" disabled={sending}>
+            <EmojiEmotions />
+          </IconButton>
+
+          {/* Send Button */}
+          <IconButton
+            color="primary"
+            onClick={handleSend}
+            disabled={
+              (!messageText.trim() && attachments.length === 0) ||
+              sending ||
+              !isConnected
+            }
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+              },
+              '&:disabled': {
+                bgcolor: 'action.disabledBackground',
+                color: 'action.disabled',
+              },
+            }}
+          >
+            {sending ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              <Send />
+            )}
+          </IconButton>
+        </Box>
+
+        {/* Connection Status */}
+        {!isConnected && (
+          <Typography
+            variant="caption"
+            color="warning.main"
+            sx={{ mt: 1, display: 'block' }}
+          >
+            Offline - Messages will be sent when connection is restored
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+};
+
+export default MessageThread;
