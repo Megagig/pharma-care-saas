@@ -603,28 +603,31 @@ export const useCommunicationStore = create<CommunicationState>()(
                     });
                 },
 
-                deleteMessage: async (messageId) => {
+                deleteMessage: async (messageId, reason = 'Message deleted') => {
                     const { setLoading, setError } = get();
                     setLoading('deleteMessage', true);
                     setError('deleteMessage', null);
 
                     try {
-                        // TODO: Replace with actual API call
-                        const response = await fetch(`/api/messages/${messageId}`, {
+                        const response = await fetch(`/api/communication/messages/${messageId}`, {
                             method: 'DELETE',
                             headers: {
+                                'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
                             },
+                            body: JSON.stringify({ reason }),
                         });
 
                         if (!response.ok) {
-                            throw new Error('Failed to delete message');
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || 'Failed to delete message');
                         }
 
                         // Mark message as deleted in state
                         get().updateMessage(messageId, {
                             isDeleted: true,
-                            deletedAt: new Date().toISOString()
+                            deletedAt: new Date().toISOString(),
+                            deletedBy: localStorage.getItem('userId') || '',
                         });
 
                         return true;
@@ -639,15 +642,40 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                 markMessageAsRead: async (messageId) => {
                     try {
-                        // TODO: Replace with actual API call
-                        await fetch(`/api/messages/${messageId}/read`, {
-                            method: 'PATCH',
+                        const response = await fetch(`/api/communication/messages/${messageId}/read`, {
+                            method: 'PUT',
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
                             },
                         });
 
-                        get().updateMessage(messageId, { status: 'read' });
+                        if (!response.ok) {
+                            throw new Error('Failed to mark message as read');
+                        }
+
+                        // Update message status and add to readBy array
+                        const currentMessages = get().messages;
+                        Object.keys(currentMessages).forEach((conversationId) => {
+                            const messageIndex = currentMessages[conversationId].findIndex(m => m._id === messageId);
+                            if (messageIndex !== -1) {
+                                const message = currentMessages[conversationId][messageIndex];
+                                const userId = localStorage.getItem('userId') || '';
+
+                                // Check if user hasn't already read this message
+                                const alreadyRead = message.readBy.some(r => r.userId === userId);
+                                if (!alreadyRead) {
+                                    message.readBy.push({
+                                        userId,
+                                        readAt: new Date().toISOString(),
+                                    });
+                                }
+
+                                get().updateMessage(messageId, {
+                                    status: 'read',
+                                    readBy: message.readBy
+                                });
+                            }
+                        });
                     } catch (error) {
                         console.error('Failed to mark message as read:', error);
                     }
@@ -675,24 +703,27 @@ export const useCommunicationStore = create<CommunicationState>()(
                     }
                 },
 
-                editMessage: async (messageId, newContent) => {
+                editMessage: async (messageId, newContent, reason = 'Message edited') => {
                     const { setLoading, setError } = get();
                     setLoading('editMessage', true);
                     setError('editMessage', null);
 
                     try {
-                        // TODO: Replace with actual API call
-                        const response = await fetch(`/api/messages/${messageId}`, {
-                            method: 'PATCH',
+                        const response = await fetch(`/api/communication/messages/${messageId}`, {
+                            method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
                             },
-                            body: JSON.stringify({ content: { text: newContent } }),
+                            body: JSON.stringify({
+                                content: newContent,
+                                reason
+                            }),
                         });
 
                         if (!response.ok) {
-                            throw new Error('Failed to edit message');
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || 'Failed to edit message');
                         }
 
                         const result = await response.json();
@@ -710,8 +741,7 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                 addReaction: async (messageId, emoji) => {
                     try {
-                        // TODO: Replace with actual API call
-                        const response = await fetch(`/api/messages/${messageId}/reactions`, {
+                        const response = await fetch(`/api/communication/messages/${messageId}/reactions`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -721,11 +751,30 @@ export const useCommunicationStore = create<CommunicationState>()(
                         });
 
                         if (!response.ok) {
-                            throw new Error('Failed to add reaction');
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || 'Failed to add reaction');
                         }
 
-                        const result = await response.json();
-                        get().updateMessage(messageId, { reactions: result.data.reactions });
+                        // Optimistically update the UI
+                        const currentMessages = get().messages;
+                        Object.keys(currentMessages).forEach((conversationId) => {
+                            const messageIndex = currentMessages[conversationId].findIndex(m => m._id === messageId);
+                            if (messageIndex !== -1) {
+                                const message = currentMessages[conversationId][messageIndex];
+                                const existingReactionIndex = message.reactions.findIndex(
+                                    r => r.emoji === emoji && r.userId === localStorage.getItem('userId')
+                                );
+
+                                if (existingReactionIndex === -1) {
+                                    message.reactions.push({
+                                        userId: localStorage.getItem('userId') || '',
+                                        emoji,
+                                        createdAt: new Date().toISOString(),
+                                    });
+                                    get().updateMessage(messageId, { reactions: message.reactions });
+                                }
+                            }
+                        });
 
                         return true;
                     } catch (error) {
@@ -736,8 +785,7 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                 removeReaction: async (messageId, emoji) => {
                     try {
-                        // TODO: Replace with actual API call
-                        const response = await fetch(`/api/messages/${messageId}/reactions/${emoji}`, {
+                        const response = await fetch(`/api/communication/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`, {
                             method: 'DELETE',
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -745,11 +793,22 @@ export const useCommunicationStore = create<CommunicationState>()(
                         });
 
                         if (!response.ok) {
-                            throw new Error('Failed to remove reaction');
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || 'Failed to remove reaction');
                         }
 
-                        const result = await response.json();
-                        get().updateMessage(messageId, { reactions: result.data.reactions });
+                        // Optimistically update the UI
+                        const currentMessages = get().messages;
+                        Object.keys(currentMessages).forEach((conversationId) => {
+                            const messageIndex = currentMessages[conversationId].findIndex(m => m._id === messageId);
+                            if (messageIndex !== -1) {
+                                const message = currentMessages[conversationId][messageIndex];
+                                message.reactions = message.reactions.filter(
+                                    r => !(r.emoji === emoji && r.userId === localStorage.getItem('userId'))
+                                );
+                                get().updateMessage(messageId, { reactions: message.reactions });
+                            }
+                        });
 
                         return true;
                     } catch (error) {

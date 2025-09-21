@@ -199,8 +199,7 @@ app.use('/api/communication', communicationRoutes);
 import communicationAuditRoutes from './routes/communicationAuditRoutes';
 app.use('/api/communication/audit', communicationAuditRoutes);
 
-// Mention routes
-import mentionRoutes from './routes/mentionRoutes';
+// Mention routes (already imported above)
 app.use('/api/mentions', mentionRoutes);
 
 // Clinical Notes routes - added special debug log

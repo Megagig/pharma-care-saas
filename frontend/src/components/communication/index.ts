@@ -46,6 +46,12 @@ export { default as ComplianceDashboard } from './ComplianceDashboard';
 export { default as AuditTrailVisualization } from './AuditTrailVisualization';
 export { default as AuditSearch } from './AuditSearch';
 
+// Mobile and Responsive Components
+export { default as ResponsiveCommunicationHub } from './ResponsiveCommunicationHub';
+export { default as MobileChatInterface } from './MobileChatInterface';
+export { default as MobileMessageInput } from './MobileMessageInput';
+export { default as MobileFileUpload } from './MobileFileUpload';
+
 // Export types for external use
 export type { default as ChatInterfaceProps } from './ChatInterface';
 export type { default as MessageThreadProps } from './MessageThread';

@@ -267,6 +267,38 @@ router.put(
     communicationController.editMessage
 );
 
+/**
+ * @route   DELETE /api/communication/messages/:id
+ * @desc    Delete message
+ * @access  Private
+ */
+router.delete(
+    '/messages/:id',
+    auth,
+    [
+        param('id').isMongoId(),
+        body('reason').optional().isString().trim().isLength({ max: 200 }),
+    ],
+    handleValidationErrors,
+    communicationController.deleteMessage
+);
+
+/**
+ * @route   POST /api/communication/messages/statuses
+ * @desc    Get message statuses for multiple messages
+ * @access  Private
+ */
+router.post(
+    '/messages/statuses',
+    auth,
+    [
+        body('messageIds').isArray({ min: 1, max: 100 }),
+        body('messageIds.*').isMongoId(),
+    ],
+    handleValidationErrors,
+    communicationController.getMessageStatuses
+);
+
 // Search routes
 
 /**
