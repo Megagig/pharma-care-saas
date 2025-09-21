@@ -221,7 +221,7 @@ permissionSchema.methods.checkSubscriptionRequirement = function (
 
     // Check plan features requirement
     if (this.requiredPlanFeatures && this.requiredPlanFeatures.length > 0) {
-        const hasAllFeatures = this.requiredPlanFeatures.every(feature =>
+        const hasAllFeatures = this.requiredPlanFeatures.every((feature: string) =>
             userPlanFeatures.includes(feature)
         );
 
@@ -237,7 +237,7 @@ permissionSchema.methods.validateDependencies = async function (
     grantedPermissions: string[]
 ): Promise<{ valid: boolean; missingDependencies: string[] }> {
     const missingDependencies = this.dependencies.filter(
-        dep => !grantedPermissions.includes(dep)
+        (dep: string) => !grantedPermissions.includes(dep)
     );
 
     return {
@@ -250,7 +250,7 @@ permissionSchema.methods.validateConflicts = function (
     grantedPermissions: string[]
 ): { valid: boolean; conflictingPermissions: string[] } {
     const conflictingPermissions = this.conflicts.filter(
-        conflict => grantedPermissions.includes(conflict)
+        (conflict: string) => grantedPermissions.includes(conflict)
     );
 
     return {
