@@ -18,7 +18,22 @@ import {
     validateEncryptionCompliance,
 } from '../middlewares/encryptionMiddleware';
 
+// Enhanced security middleware
+import communicationRBAC from '../middlewares/communicationRBAC';
+import communicationRateLimiting from '../middlewares/communicationRateLimiting';
+import communicationSecurity from '../middlewares/communicationSecurity';
+import communicationCSRF from '../middlewares/communicationCSRF';
+import communicationSessionManagement from '../middlewares/communicationSessionManagement';
+import { monitorSecurityEvents, monitorDataAccess } from '../middlewares/securityMonitoring';
+
 const router = express.Router();
+
+// Apply global security middleware for all communication routes
+router.use(communicationSecurity.setCommunicationCSP);
+router.use(communicationSecurity.preventNoSQLInjection);
+router.use(communicationSecurity.validateCommunicationInput);
+router.use(communicationSessionManagement.validateSession);
+router.use(communicationCSRF.setCSRFCookie);
 
 // Validation middleware
 const handleValidationErrors = (req: express.Request, res: express.Response, next: express.NextFunction): void => {
@@ -44,6 +59,7 @@ const handleValidationErrors = (req: express.Request, res: express.Response, nex
 router.get(
     '/conversations',
     auth,
+    communicationRateLimiting.searchRateLimit,
     [
         query('status').optional().isIn(['active', 'archived', 'resolved', 'closed']),
         query('type').optional().isIn(['direct', 'group', 'patient_query', 'clinical_consultation']),
@@ -54,6 +70,8 @@ router.get(
         query('offset').optional().isInt({ min: 0 }),
     ],
     handleValidationErrors,
+    communicationSecurity.sanitizeSearchQuery,
+    monitorDataAccess('conversation'),
     communicationController.getConversations
 );
 
@@ -65,6 +83,8 @@ router.get(
 router.post(
     '/conversations',
     auth,
+    communicationRateLimiting.conversationRateLimit,
+    communicationCSRF.requireCSRFToken,
     [
         body('title').optional().isString().trim().isLength({ min: 1, max: 200 }),
         body('type').isIn(['direct', 'group', 'patient_query', 'clinical_consultation']),
@@ -77,6 +97,10 @@ router.post(
         body('tags.*').isString().trim().isLength({ max: 50 }),
     ],
     handleValidationErrors,
+    communicationSecurity.sanitizeConversationData,
+    communicationRBAC.validateParticipantRoles,
+    communicationRBAC.enforceConversationTypeRestrictions,
+    monitorSecurityEvents('conversation_creation'),
     ...auditConversation('conversation_created'),
     communicationController.createConversation
 );
@@ -91,6 +115,8 @@ router.get(
     auth,
     [param('id').isMongoId()],
     handleValidationErrors,
+    communicationRBAC.requireConversationAccess('canViewConversation'),
+    monitorDataAccess('conversation'),
     communicationController.getConversation
 );
 
@@ -102,6 +128,7 @@ router.get(
 router.put(
     '/conversations/:id',
     auth,
+    communicationCSRF.requireCSRFToken,
     [
         param('id').isMongoId(),
         body('title').optional().isString().trim().isLength({ min: 1, max: 200 }),
@@ -111,6 +138,9 @@ router.put(
         body('status').optional().isIn(['active', 'archived', 'resolved', 'closed']),
     ],
     handleValidationErrors,
+    communicationSecurity.sanitizeConversationData,
+    communicationRBAC.requireConversationAccess('canUpdateConversation'),
+    monitorSecurityEvents('conversation_update'),
     communicationController.updateConversation
 );
 
@@ -183,6 +213,10 @@ router.get(
 router.post(
     '/conversations/:id/messages',
     auth,
+    communicationRateLimiting.messageRateLimit,
+    communicationRateLimiting.burstProtection,
+    communicationRateLimiting.spamDetection,
+    communicationCSRF.requireCSRFToken,
     [
         param('id').isMongoId(),
         body('content.text').optional().isString().trim().isLength({ min: 1, max: 10000 }),
@@ -195,8 +229,11 @@ router.post(
         body('priority').optional().isIn(['normal', 'high', 'urgent']),
     ],
     handleValidationErrors,
+    communicationSecurity.sanitizeMessageContent,
+    communicationRBAC.requireConversationAccess('canSendMessage'),
     encryptMessageContent,
     validateEncryptionCompliance,
+    monitorSecurityEvents('message_sent'),
     ...auditMessage('message_sent'),
     communicationController.sendMessage
 );
@@ -223,6 +260,7 @@ router.put(
 router.post(
     '/messages/:id/reactions',
     auth,
+    communicationCSRF.requireCSRFToken,
     [
         param('id').isMongoId(),
         body('emoji').isString().isIn([
@@ -231,6 +269,8 @@ router.post(
         ]),
     ],
     handleValidationErrors,
+    communicationSecurity.validateEmojiReaction,
+    communicationRBAC.requireMessageAccess('canSendMessage'),
     communicationController.addReaction
 );
 
@@ -258,12 +298,16 @@ router.delete(
 router.put(
     '/messages/:id',
     auth,
+    communicationCSRF.requireCSRFToken,
     [
         param('id').isMongoId(),
         body('content').isString().trim().isLength({ min: 1, max: 10000 }),
         body('reason').optional().isString().trim().isLength({ max: 200 }),
     ],
     handleValidationErrors,
+    communicationSecurity.sanitizeMessageContent,
+    communicationRBAC.requireMessageAccess('canEditMessage'),
+    monitorSecurityEvents('message_edit'),
     communicationController.editMessage
 );
 
@@ -275,11 +319,14 @@ router.put(
 router.delete(
     '/messages/:id',
     auth,
+    communicationCSRF.requireCSRFToken,
     [
         param('id').isMongoId(),
         body('reason').optional().isString().trim().isLength({ max: 200 }),
     ],
     handleValidationErrors,
+    communicationRBAC.requireMessageAccess('canDeleteMessage'),
+    monitorSecurityEvents('message_delete'),
     communicationController.deleteMessage
 );
 
@@ -549,12 +596,17 @@ router.get(
 router.post(
     '/upload',
     auth,
+    communicationRateLimiting.fileUploadRateLimit,
+    communicationCSRF.requireCSRFToken,
     uploadMiddleware.array('files', 10), // Allow up to 10 files
     [
         body('conversationId').optional().isMongoId(),
         body('messageType').optional().isIn(['file', 'image', 'voice_note']),
     ],
     handleValidationErrors,
+    communicationSecurity.validateFileUpload,
+    communicationRBAC.requireFileAccess('upload'),
+    monitorSecurityEvents('file_upload'),
     ...auditFile('file_uploaded'),
     communicationController.uploadFiles
 );
@@ -603,6 +655,46 @@ router.get(
     communicationController.getConversationFiles
 );
 
+// Security and session management endpoints
+
+/**
+ * @route   GET /api/communication/csrf-token
+ * @desc    Get CSRF token for secure operations
+ * @access  Private
+ */
+router.get('/csrf-token', auth, communicationCSRF.provideCSRFToken);
+
+/**
+ * @route   GET /api/communication/sessions
+ * @desc    Get user's active sessions
+ * @access  Private
+ */
+router.get('/sessions', auth, communicationSessionManagement.sessionManagementEndpoints.getSessions);
+
+/**
+ * @route   DELETE /api/communication/sessions/:sessionId
+ * @desc    Terminate specific session
+ * @access  Private
+ */
+router.delete(
+    '/sessions/:sessionId',
+    auth,
+    communicationCSRF.requireCSRFToken,
+    communicationSessionManagement.sessionManagementEndpoints.terminateSession
+);
+
+/**
+ * @route   DELETE /api/communication/sessions
+ * @desc    Terminate all other sessions
+ * @access  Private
+ */
+router.delete(
+    '/sessions',
+    auth,
+    communicationCSRF.requireCSRFToken,
+    communicationSessionManagement.sessionManagementEndpoints.terminateAllOtherSessions
+);
+
 /**
  * @route   GET /api/communication/health
  * @desc    Health check for communication module
@@ -622,6 +714,14 @@ router.get('/health', (req, res) => {
             search: true,
             analytics: true,
             threading: true,
+            security: {
+                rbac: true,
+                rateLimiting: true,
+                inputSanitization: true,
+                csrfProtection: true,
+                sessionManagement: true,
+                auditLogging: true,
+            },
         },
     });
 });
