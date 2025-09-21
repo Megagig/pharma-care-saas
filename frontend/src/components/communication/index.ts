@@ -24,6 +24,10 @@ export { default as NotificationItem } from './NotificationItem';
 export { default as NotificationPreferences } from './NotificationPreferences';
 export { default as NotificationIndicators } from './NotificationIndicators';
 
+// Patient query management components
+export { default as PatientQueryDashboard } from './PatientQueryDashboard';
+export { default as QueryCard } from './QueryCard';
+
 // Export types for external use
 export type { default as ChatInterfaceProps } from './ChatInterface';
 export type { default as MessageThreadProps } from './MessageThread';
