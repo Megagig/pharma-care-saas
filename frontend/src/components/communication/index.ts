@@ -58,6 +58,11 @@ export { default as VirtualizedConversationList } from './VirtualizedConversatio
 export { default as OptimizedChatInterface } from './OptimizedChatInterface';
 export { default as LazyImage } from './LazyImage';
 
+// Dashboard integration components
+export { default as CommunicationWidget } from './CommunicationWidget';
+export { default as CommunicationMetrics } from './CommunicationMetrics';
+export { default as CommunicationNotificationBadge } from './CommunicationNotificationBadge';
+
 // Export types for external use
 export type { default as ChatInterfaceProps } from './ChatInterface';
 export type { default as MessageThreadProps } from './MessageThread';
