@@ -9,30 +9,30 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   role:
-    | 'pharmacist'
-    | 'pharmacy_team'
-    | 'pharmacy_outlet'
-    | 'intern_pharmacist'
-    | 'super_admin'
-    | 'owner';
+  | 'pharmacist'
+  | 'pharmacy_team'
+  | 'pharmacy_outlet'
+  | 'intern_pharmacist'
+  | 'super_admin'
+  | 'owner';
   status:
-    | 'pending'
-    | 'active'
-    | 'suspended'
-    | 'license_pending'
-    | 'license_rejected';
+  | 'pending'
+  | 'active'
+  | 'suspended'
+  | 'license_pending'
+  | 'license_rejected';
   emailVerified: boolean;
   verificationToken?: string;
   verificationCode?: string;
   resetToken?: string;
   workplaceId?: mongoose.Types.ObjectId; // Changed from pharmacyId
   workplaceRole?:
-    | 'Owner'
-    | 'Staff'
-    | 'Pharmacist'
-    | 'Cashier'
-    | 'Technician'
-    | 'Assistant'; // Role within workplace
+  | 'Owner'
+  | 'Staff'
+  | 'Pharmacist'
+  | 'Cashier'
+  | 'Technician'
+  | 'Assistant'; // Role within workplace
   currentPlanId: mongoose.Types.ObjectId;
   planOverride?: Record<string, any>;
   currentSubscriptionId?: mongoose.Types.ObjectId;
@@ -57,14 +57,28 @@ export interface IUser extends Document {
   teamMembers?: mongoose.Types.ObjectId[]; // For team leads
   permissions: string[]; // Custom permissions array
 
+  // Dynamic RBAC fields
+  assignedRoles: mongoose.Types.ObjectId[]; // References to Role documents
+  directPermissions: string[]; // Explicit permission grants
+  deniedPermissions: string[]; // Explicit permission denials
+  cachedPermissions?: {
+    permissions: string[];
+    lastUpdated: Date;
+    workspaceId?: mongoose.Types.ObjectId;
+  }; // Performance optimization cache
+
+  // Role audit fields
+  roleLastModifiedBy?: mongoose.Types.ObjectId;
+  roleLastModifiedAt?: Date;
+
   // Subscription and access
   subscriptionTier:
-    | 'free_trial'
-    | 'basic'
-    | 'pro'
-    | 'pharmily'
-    | 'network'
-    | 'enterprise';
+  | 'free_trial'
+  | 'basic'
+  | 'pro'
+  | 'pharmily'
+  | 'network'
+  | 'enterprise';
   trialStartDate?: Date;
   trialEndDate?: Date;
   features: string[]; // Enabled features for this user
@@ -253,6 +267,46 @@ const userSchema = new Schema(
       },
     ],
 
+    // Dynamic RBAC fields
+    assignedRoles: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Role',
+        index: true,
+      },
+    ],
+    directPermissions: [
+      {
+        type: String,
+        index: true,
+      },
+    ],
+    deniedPermissions: [
+      {
+        type: String,
+        index: true,
+      },
+    ],
+    cachedPermissions: {
+      permissions: [String],
+      lastUpdated: {
+        type: Date,
+        index: true,
+      },
+      workspaceId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Workplace',
+      },
+    },
+    roleLastModifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    roleLastModifiedAt: {
+      type: Date,
+      index: true,
+    },
+
     // Subscription and access
     subscriptionTier: {
       type: String,
@@ -358,6 +412,238 @@ userSchema.methods.hasFeature = function (feature: string): boolean {
   return this.features.includes(feature) || this.role === 'super_admin';
 };
 
+// Dynamic RBAC methods
+userSchema.methods.getAllRoles = async function (workspaceId?: mongoose.Types.ObjectId): Promise<any[]> {
+  const UserRole = mongoose.model('UserRole');
+  const query: any = {
+    userId: this._id,
+    isActive: true,
+    $or: [
+      { isTemporary: false },
+      { isTemporary: true, expiresAt: { $gt: new Date() } },
+    ],
+  };
+
+  if (workspaceId) {
+    query.workspaceId = workspaceId;
+  }
+
+  const userRoles = await UserRole.find(query).populate('roleId');
+  return userRoles.map((ur: any) => ur.roleId).filter(Boolean);
+};
+
+userSchema.methods.getAllPermissions = async function (
+  workspaceId?: mongoose.Types.ObjectId,
+  useCache: boolean = true
+): Promise<string[]> {
+  // Check cache first if enabled
+  if (useCache && this.cachedPermissions &&
+    this.cachedPermissions.lastUpdated > new Date(Date.now() - 5 * 60 * 1000) && // 5 minutes
+    (!workspaceId || this.cachedPermissions.workspaceId?.equals(workspaceId))) {
+    return this.cachedPermissions.permissions;
+  }
+
+  const allPermissions = new Set<string>();
+
+  // Add legacy permissions for backward compatibility
+  this.permissions.forEach((permission: string) => allPermissions.add(permission));
+
+  // Add direct permissions
+  this.directPermissions.forEach((permission: string) => allPermissions.add(permission));
+
+  // Get permissions from roles
+  const roles = await this.getAllRoles(workspaceId);
+  for (const role of roles) {
+    const rolePermissions = await role.getAllPermissions();
+    rolePermissions.forEach((permission: string) => allPermissions.add(permission));
+  }
+
+  // Remove denied permissions
+  this.deniedPermissions.forEach((permission: string) => allPermissions.delete(permission));
+
+  const finalPermissions = Array.from(allPermissions);
+
+  // Update cache
+  this.cachedPermissions = {
+    permissions: finalPermissions,
+    lastUpdated: new Date(),
+    workspaceId: workspaceId,
+  };
+
+  return finalPermissions;
+};
+
+userSchema.methods.hasRolePermission = async function (
+  permission: string,
+  workspaceId?: mongoose.Types.ObjectId
+): Promise<boolean> {
+  // Check if permission is explicitly denied
+  if (this.deniedPermissions.includes(permission)) {
+    return false;
+  }
+
+  // Check direct permissions
+  if (this.directPermissions.includes(permission)) {
+    return true;
+  }
+
+  // Check legacy permissions for backward compatibility
+  if (this.permissions.includes(permission)) {
+    return true;
+  }
+
+  // Check role-based permissions
+  const allPermissions = await this.getAllPermissions(workspaceId, true);
+  return allPermissions.includes(permission);
+};
+
+userSchema.methods.assignRole = async function (
+  roleId: mongoose.Types.ObjectId,
+  assignedBy: mongoose.Types.ObjectId,
+  workspaceId?: mongoose.Types.ObjectId,
+  options?: {
+    isTemporary?: boolean;
+    expiresAt?: Date;
+    reason?: string;
+  }
+): Promise<any> {
+  const UserRole = mongoose.model('UserRole');
+
+  // Check if role assignment already exists
+  const existingAssignment = await UserRole.findOne({
+    userId: this._id,
+    roleId: roleId,
+    workspaceId: workspaceId,
+    isActive: true,
+  });
+
+  if (existingAssignment) {
+    throw new Error('Role is already assigned to this user');
+  }
+
+  const userRole = new UserRole({
+    userId: this._id,
+    roleId: roleId,
+    workspaceId: workspaceId,
+    assignedBy: assignedBy,
+    lastModifiedBy: assignedBy,
+    isTemporary: options?.isTemporary || false,
+    expiresAt: options?.expiresAt,
+    assignmentReason: options?.reason,
+  });
+
+  await userRole.save();
+
+  // Update user's assignedRoles array
+  if (!this.assignedRoles.includes(roleId)) {
+    this.assignedRoles.push(roleId);
+  }
+
+  // Update audit fields
+  this.roleLastModifiedBy = assignedBy;
+  this.roleLastModifiedAt = new Date();
+
+  // Clear permission cache
+  this.cachedPermissions = undefined;
+
+  await this.save();
+  return userRole;
+};
+
+userSchema.methods.revokeRole = async function (
+  roleId: mongoose.Types.ObjectId,
+  revokedBy: mongoose.Types.ObjectId,
+  workspaceId?: mongoose.Types.ObjectId,
+  reason?: string
+): Promise<void> {
+  const UserRole = mongoose.model('UserRole');
+
+  const userRole = await UserRole.findOne({
+    userId: this._id,
+    roleId: roleId,
+    workspaceId: workspaceId,
+    isActive: true,
+  });
+
+  if (!userRole) {
+    throw new Error('Role assignment not found');
+  }
+
+  userRole.revoke(revokedBy, reason);
+  await userRole.save();
+
+  // Remove from assignedRoles array if no other active assignments exist
+  const otherAssignments = await UserRole.findOne({
+    userId: this._id,
+    roleId: roleId,
+    isActive: true,
+    _id: { $ne: userRole._id },
+  });
+
+  if (!otherAssignments) {
+    this.assignedRoles = this.assignedRoles.filter((id: mongoose.Types.ObjectId) => !id.equals(roleId));
+  }
+
+  // Update audit fields
+  this.roleLastModifiedBy = revokedBy;
+  this.roleLastModifiedAt = new Date();
+
+  // Clear permission cache
+  this.cachedPermissions = undefined;
+
+  await this.save();
+};
+
+userSchema.methods.grantDirectPermission = function (
+  permission: string,
+  grantedBy: mongoose.Types.ObjectId
+): void {
+  if (!this.directPermissions.includes(permission)) {
+    this.directPermissions.push(permission);
+  }
+
+  // Remove from denied permissions if present
+  this.deniedPermissions = this.deniedPermissions.filter((p: string) => p !== permission);
+
+  // Update audit fields
+  this.roleLastModifiedBy = grantedBy;
+  this.roleLastModifiedAt = new Date();
+
+  // Clear permission cache
+  this.cachedPermissions = undefined;
+};
+
+userSchema.methods.denyDirectPermission = function (
+  permission: string,
+  deniedBy: mongoose.Types.ObjectId
+): void {
+  if (!this.deniedPermissions.includes(permission)) {
+    this.deniedPermissions.push(permission);
+  }
+
+  // Remove from direct permissions if present
+  this.directPermissions = this.directPermissions.filter((p: string) => p !== permission);
+
+  // Update audit fields
+  this.roleLastModifiedBy = deniedBy;
+  this.roleLastModifiedAt = new Date();
+
+  // Clear permission cache
+  this.cachedPermissions = undefined;
+};
+
+userSchema.methods.clearPermissionCache = function (): void {
+  this.cachedPermissions = undefined;
+};
+
+// Additional indexes for dynamic RBAC
+userSchema.index({ assignedRoles: 1 });
+userSchema.index({ directPermissions: 1 });
+userSchema.index({ deniedPermissions: 1 });
+userSchema.index({ roleLastModifiedAt: -1 });
+userSchema.index({ 'cachedPermissions.lastUpdated': -1 });
+userSchema.index({ 'cachedPermissions.workspaceId': 1 });
+
 // Set license requirements based on role
 userSchema.pre<IUser>('save', function (next) {
   if (this.isNew || this.isModified('role')) {
@@ -373,6 +659,15 @@ userSchema.pre<IUser>('save', function (next) {
       this.trialStartDate = new Date();
       this.trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
     }
+  }
+  next();
+});
+
+// Pre-save middleware to clear permission cache when roles change
+userSchema.pre<IUser>('save', function (next) {
+  if (this.isModified('assignedRoles') || this.isModified('directPermissions') || this.isModified('deniedPermissions')) {
+    this.cachedPermissions = undefined;
+    this.roleLastModifiedAt = new Date();
   }
   next();
 });
