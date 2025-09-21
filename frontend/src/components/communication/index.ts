@@ -33,6 +33,12 @@ export { default as MentionInput } from './MentionInput';
 export { default as MentionDisplay } from './MentionDisplay';
 export { default as MentionSearch } from './MentionSearch';
 
+// Audit and compliance components
+export { default as AuditLogViewer } from './AuditLogViewer';
+export { default as ComplianceDashboard } from './ComplianceDashboard';
+export { default as AuditTrailVisualization } from './AuditTrailVisualization';
+export { default as AuditSearch } from './AuditSearch';
+
 // Export types for external use
 export type { default as ChatInterfaceProps } from './ChatInterface';
 export type { default as MessageThreadProps } from './MessageThread';

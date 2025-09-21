@@ -21,12 +21,12 @@ const handleValidationErrors = (req: express.Request, res: express.Response, nex
 };
 
 /**
- * @route   GET /api/communication/audit/logs
+ * @route   GET /api/communication/audit
  * @desc    Get audit logs with filtering and pagination
  * @access  Private (Admin, Pharmacist, Doctor)
  */
 router.get(
-    '/logs',
+    '/',
     auth,
     rbac(['admin', 'pharmacist', 'doctor']),
     [
@@ -48,12 +48,12 @@ router.get(
 );
 
 /**
- * @route   GET /api/communication/audit/conversations/:conversationId/logs
+ * @route   GET /api/communication/audit/conversation/:conversationId
  * @desc    Get audit logs for a specific conversation
  * @access  Private (Admin, Pharmacist, Doctor)
  */
 router.get(
-    '/conversations/:conversationId/logs',
+    '/conversation/:conversationId',
     auth,
     rbac(['admin', 'pharmacist', 'doctor']),
     [
