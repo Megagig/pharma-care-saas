@@ -987,3 +987,15 @@
 {"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 22:18:36"}
 {"alertId":"7vtyrzr22","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.5230037745319%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"t39p6oxht","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 22:18:46","value":96.5230037745319}
 {"alertId":"7vtyrzr22","duration":59999,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.5230037745319%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 22:19:46"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 22:22:21"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758489767792","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 22:22:47"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 22:22:50"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 22:22:50"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 22:22:50"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 22:22:50"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 22:22:50"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 22:22:50"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 22:22:50"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 22:22:50"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 22:22:50"}
+{"alertId":"7y0zf9vkh","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.09586188314108%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"15kwuyxl0","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 22:22:51","value":96.09586188314108}
