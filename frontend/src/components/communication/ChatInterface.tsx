@@ -85,7 +85,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     content: string,
     attachments?: File[],
     threadId?: string,
-    parentMessageId?: string
+    parentMessageId?: string,
+    mentions?: string[]
   ) => {
     if (!content.trim() && (!attachments || attachments.length === 0)) {
       return;
@@ -100,6 +101,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       },
       threadId,
       parentMessageId,
+      mentions,
     };
 
     await sendMessage(messageData);
