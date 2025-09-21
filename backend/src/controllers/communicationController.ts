@@ -1,10 +1,12 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { communicationService } from '../services/communicationService';
+import { messageSearchService } from '../services/messageSearchService';
 import Conversation from '../models/Conversation';
 import Message from '../models/Message';
 import User from '../models/User';
 import Patient from '../models/Patient';
+import { SearchHistory, SavedSearch } from '../models/SearchHistory';
 import logger from '../utils/logger';
 import FileUploadService from '../services/fileUploadService';
 
@@ -556,74 +558,169 @@ export class CommunicationController {
     }
 
     /**
-     * Search messages
+     * Enhanced message search with advanced filtering and analytics
      */
     async searchMessages(req: AuthenticatedRequest, res: Response): Promise<void> {
+        const startTime = Date.now();
+
         try {
             const query = req.query.q as string;
             const userId = req.user!.id;
             const workplaceId = req.user!.workplaceId;
 
             const filters = {
+                query,
                 conversationId: req.query.conversationId as string,
                 senderId: req.query.senderId as string,
-                type: req.query.type as string,
-                priority: req.query.priority as string,
+                participantId: req.query.participantId as string,
+                messageType: req.query.type as any,
+                fileType: req.query.fileType as string,
+                priority: req.query.priority as any,
+                hasAttachments: req.query.hasAttachments === 'true' ? true :
+                    req.query.hasAttachments === 'false' ? false : undefined,
+                hasMentions: req.query.hasMentions === 'true' ? true :
+                    req.query.hasMentions === 'false' ? false : undefined,
                 dateFrom: req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined,
                 dateTo: req.query.dateTo ? new Date(req.query.dateTo as string) : undefined,
+                tags: req.query.tags ? (Array.isArray(req.query.tags) ? req.query.tags : [req.query.tags]) : undefined,
                 limit: parseInt(req.query.limit as string) || 50,
+                offset: parseInt(req.query.offset as string) || 0,
+                sortBy: (req.query.sortBy as any) || 'relevance',
+                sortOrder: (req.query.sortOrder as any) || 'desc',
             };
 
-            const messages = await communicationService.searchMessages(workplaceId, query, userId, filters);
+            const { results, stats } = await messageSearchService.searchMessages(workplaceId, userId, filters);
+
+            // Save search history if query is provided
+            if (query && query.trim()) {
+                await messageSearchService.saveSearchHistory(
+                    userId,
+                    query,
+                    filters,
+                    stats.totalResults
+                );
+
+                // Create search history record
+                const searchHistory = new SearchHistory({
+                    userId,
+                    workplaceId,
+                    query: query.trim(),
+                    filters: {
+                        conversationId: filters.conversationId,
+                        senderId: filters.senderId,
+                        messageType: filters.messageType,
+                        priority: filters.priority,
+                        dateFrom: filters.dateFrom,
+                        dateTo: filters.dateTo,
+                        tags: filters.tags,
+                    },
+                    resultCount: stats.totalResults,
+                    searchType: 'message',
+                    executionTime: Date.now() - startTime,
+                });
+
+                await searchHistory.save();
+            }
 
             res.json({
                 success: true,
-                data: messages,
+                data: results,
+                stats,
                 query,
-                total: messages.length,
+                filters: {
+                    applied: Object.keys(filters).filter(key =>
+                        filters[key as keyof typeof filters] !== undefined &&
+                        filters[key as keyof typeof filters] !== null &&
+                        filters[key as keyof typeof filters] !== ''
+                    ),
+                    available: [
+                        'conversationId', 'senderId', 'participantId', 'messageType',
+                        'fileType', 'priority', 'hasAttachments', 'hasMentions',
+                        'dateFrom', 'dateTo', 'tags'
+                    ]
+                },
+                pagination: {
+                    limit: filters.limit,
+                    offset: filters.offset,
+                    total: stats.totalResults,
+                    hasMore: stats.totalResults > (filters.offset + filters.limit)
+                }
             });
         } catch (error) {
-            logger.error('Error searching messages:', error);
+            logger.error('Error in enhanced message search:', error);
             res.status(500).json({
                 success: false,
                 message: 'Failed to search messages',
-                error: error.message,
+                error: error instanceof Error ? error.message : 'Unknown error',
+                executionTime: Date.now() - startTime
             });
         }
     }
 
     /**
-     * Search conversations
+     * Enhanced conversation search with advanced filtering
      */
     async searchConversations(req: AuthenticatedRequest, res: Response): Promise<void> {
+        const startTime = Date.now();
+
         try {
             const query = req.query.q as string;
             const userId = req.user!.id;
             const workplaceId = req.user!.workplaceId;
 
             const filters = {
-                search: query,
-                type: req.query.type as string,
-                status: req.query.status as string,
-                priority: req.query.priority as string,
-                patientId: req.query.patientId as string,
+                query,
+                priority: req.query.priority as any,
+                tags: req.query.tags ? (Array.isArray(req.query.tags) ? req.query.tags : [req.query.tags]) : undefined,
+                dateFrom: req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined,
+                dateTo: req.query.dateTo ? new Date(req.query.dateTo as string) : undefined,
                 limit: parseInt(req.query.limit as string) || 50,
+                offset: parseInt(req.query.offset as string) || 0,
+                sortBy: (req.query.sortBy as any) || 'relevance',
+                sortOrder: (req.query.sortOrder as any) || 'desc',
             };
 
-            const conversations = await communicationService.getConversations(userId, workplaceId, filters);
+            const { results, stats } = await messageSearchService.searchConversations(workplaceId, userId, filters);
+
+            // Save search history if query is provided
+            if (query && query.trim()) {
+                const searchHistory = new SearchHistory({
+                    userId,
+                    workplaceId,
+                    query: query.trim(),
+                    filters: {
+                        priority: filters.priority,
+                        dateFrom: filters.dateFrom,
+                        dateTo: filters.dateTo,
+                        tags: filters.tags,
+                    },
+                    resultCount: stats.totalResults || 0,
+                    searchType: 'conversation',
+                    executionTime: Date.now() - startTime,
+                });
+
+                await searchHistory.save();
+            }
 
             res.json({
                 success: true,
-                data: conversations,
+                data: results,
+                stats,
                 query,
-                total: conversations.length,
+                pagination: {
+                    limit: filters.limit,
+                    offset: filters.offset,
+                    total: stats.totalResults || 0,
+                    hasMore: (stats.totalResults || 0) > (filters.offset + filters.limit)
+                }
             });
         } catch (error) {
-            logger.error('Error searching conversations:', error);
+            logger.error('Error in enhanced conversation search:', error);
             res.status(500).json({
                 success: false,
                 message: 'Failed to search conversations',
-                error: error.message,
+                error: error instanceof Error ? error.message : 'Unknown error',
+                executionTime: Date.now() - startTime
             });
         }
     }
@@ -1212,6 +1309,244 @@ export class CommunicationController {
                 success: false,
                 message: 'Failed to get conversation files',
                 error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Get search suggestions
+     */
+    async getSearchSuggestions(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+            const query = req.query.q as string;
+
+            const suggestions = await messageSearchService.getSearchSuggestions(workplaceId, userId, query);
+
+            res.json({
+                success: true,
+                data: suggestions,
+            });
+        } catch (error) {
+            logger.error('Error getting search suggestions:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get search suggestions',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
+
+    /**
+     * Get user's search history
+     */
+    async getSearchHistory(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const userId = req.user!.id;
+            const searchType = req.query.type as 'message' | 'conversation';
+            const limit = parseInt(req.query.limit as string) || 20;
+
+            const history = await SearchHistory.getRecentSearches(
+                new mongoose.Types.ObjectId(userId),
+                limit
+            );
+
+            res.json({
+                success: true,
+                data: history,
+            });
+        } catch (error) {
+            logger.error('Error getting search history:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get search history',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
+
+    /**
+     * Get popular searches in workplace
+     */
+    async getPopularSearches(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const workplaceId = req.user!.workplaceId;
+            const searchType = req.query.type as 'message' | 'conversation';
+            const limit = parseInt(req.query.limit as string) || 10;
+
+            const popularSearches = await SearchHistory.getPopularSearches(
+                new mongoose.Types.ObjectId(workplaceId),
+                searchType,
+                limit
+            );
+
+            res.json({
+                success: true,
+                data: popularSearches,
+            });
+        } catch (error) {
+            logger.error('Error getting popular searches:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get popular searches',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
+
+    /**
+     * Save a search for future use
+     */
+    async saveSearch(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+
+            const savedSearch = new SavedSearch({
+                userId,
+                workplaceId,
+                name: req.body.name,
+                description: req.body.description,
+                query: req.body.query,
+                filters: req.body.filters || {},
+                searchType: req.body.searchType,
+                isPublic: req.body.isPublic || false,
+            });
+
+            await savedSearch.save();
+
+            res.status(201).json({
+                success: true,
+                data: savedSearch,
+                message: 'Search saved successfully',
+            });
+        } catch (error) {
+            logger.error('Error saving search:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to save search',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
+
+    /**
+     * Get user's saved searches
+     */
+    async getSavedSearches(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+            const searchType = req.query.type as 'message' | 'conversation';
+            const includePublic = req.query.includePublic === 'true';
+
+            let savedSearches;
+
+            if (includePublic) {
+                // Get both user's searches and public searches
+                const [userSearches, publicSearches] = await Promise.all([
+                    SavedSearch.getUserSearches(new mongoose.Types.ObjectId(userId), searchType),
+                    SavedSearch.getPublicSearches(new mongoose.Types.ObjectId(workplaceId), searchType)
+                ]);
+
+                savedSearches = {
+                    userSearches,
+                    publicSearches: publicSearches.filter(search =>
+                        search.userId.toString() !== userId
+                    )
+                };
+            } else {
+                savedSearches = await SavedSearch.getUserSearches(
+                    new mongoose.Types.ObjectId(userId),
+                    searchType
+                );
+            }
+
+            res.json({
+                success: true,
+                data: savedSearches,
+            });
+        } catch (error) {
+            logger.error('Error getting saved searches:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get saved searches',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
+
+    /**
+     * Use a saved search (increment use count)
+     */
+    async useSavedSearch(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const userId = req.user!.id;
+            const searchId = req.params.searchId;
+
+            const savedSearch = await SavedSearch.findOne({
+                _id: searchId,
+                $or: [
+                    { userId },
+                    { isPublic: true, workplaceId: req.user!.workplaceId }
+                ]
+            });
+
+            if (!savedSearch) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Saved search not found',
+                });
+            }
+
+            await savedSearch.incrementUseCount();
+
+            res.json({
+                success: true,
+                data: savedSearch,
+                message: 'Saved search loaded successfully',
+            });
+        } catch (error) {
+            logger.error('Error using saved search:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to load saved search',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
+
+    /**
+     * Delete a saved search
+     */
+    async deleteSavedSearch(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const userId = req.user!.id;
+            const searchId = req.params.searchId;
+
+            const savedSearch = await SavedSearch.findOneAndDelete({
+                _id: searchId,
+                userId, // Only allow users to delete their own searches
+            });
+
+            if (!savedSearch) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Saved search not found or access denied',
+                });
+            }
+
+            res.json({
+                success: true,
+                message: 'Saved search deleted successfully',
+            });
+        } catch (error) {
+            logger.error('Error deleting saved search:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to delete saved search',
+                error: error instanceof Error ? error.message : 'Unknown error',
             });
         }
     }
