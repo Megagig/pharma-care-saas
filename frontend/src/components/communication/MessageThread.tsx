@@ -165,6 +165,39 @@ const MessageThread: React.FC<MessageThreadProps> = ({
     // TODO: Implement reply functionality with parent message reference
   };
 
+  // Handle thread creation
+  const handleCreateThread = async (messageId: string) => {
+    try {
+      const response = await fetch(
+        `/api/communication/messages/${messageId}/thread`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to create thread');
+      }
+
+      const result = await response.json();
+      console.log('Thread created:', result.data.threadId);
+
+      // Refresh messages to show the new thread
+      // This would typically be handled by the parent component
+    } catch (error) {
+      console.error('Failed to create thread:', error);
+    }
+  };
+
+  // Handle thread view
+  const handleViewThread = (threadId: string) => {
+    // This would typically open a thread view modal or navigate to thread
+    console.log('View thread:', threadId);
+  };
+
   // Filter messages for this thread
   const threadMessages = threadId
     ? messages.filter((msg) => msg.threadId === threadId)
@@ -278,6 +311,10 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                     // TODO: Implement message reactions
                     console.log('Add reaction:', messageId, emoji);
                   }}
+                  onCreateThread={handleCreateThread}
+                  onViewThread={handleViewThread}
+                  showThreading={!threadId} // Don't show threading inside a thread
+                  conversationId={conversationId}
                 />
               </React.Fragment>
             );

@@ -30,6 +30,8 @@ export { default as QueryCard } from './QueryCard';
 
 // Mention system components
 export { default as MentionInput } from './MentionInput';
+export { default as ThreadView } from './ThreadView';
+export { default as ThreadIndicator } from './ThreadIndicator';
 export { default as MentionDisplay } from './MentionDisplay';
 export { default as MentionSearch } from './MentionSearch';
 

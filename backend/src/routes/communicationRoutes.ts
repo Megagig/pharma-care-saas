@@ -589,8 +589,104 @@ router.get('/health', (req, res) => {
             notifications: true,
             search: true,
             analytics: true,
+            threading: true,
         },
     });
 });
+
+// Threading routes
+
+/**
+ * @route   POST /api/communication/messages/:messageId/thread
+ * @desc    Create a thread from a message
+ * @access  Private
+ */
+router.post(
+    '/messages/:messageId/thread',
+    auth,
+    [
+        param('messageId').isMongoId().withMessage('Valid message ID is required'),
+    ],
+    handleValidationErrors,
+    auditMessage('thread_created'),
+    communicationController.createThread
+);
+
+/**
+ * @route   GET /api/communication/threads/:threadId/messages
+ * @desc    Get thread messages
+ * @access  Private
+ */
+router.get(
+    '/threads/:threadId/messages',
+    auth,
+    [
+        param('threadId').isMongoId().withMessage('Valid thread ID is required'),
+        query('senderId').optional().isMongoId(),
+        query('before').optional().isISO8601(),
+        query('after').optional().isISO8601(),
+        query('limit').optional().isInt({ min: 1, max: 100 }),
+    ],
+    handleValidationErrors,
+    auditMessage('thread_accessed'),
+    decryptMessageContent,
+    communicationController.getThreadMessages
+);
+
+/**
+ * @route   GET /api/communication/threads/:threadId/summary
+ * @desc    Get thread summary
+ * @access  Private
+ */
+router.get(
+    '/threads/:threadId/summary',
+    auth,
+    [
+        param('threadId').isMongoId().withMessage('Valid thread ID is required'),
+    ],
+    handleValidationErrors,
+    auditMessage('thread_summary_accessed'),
+    communicationController.getThreadSummary
+);
+
+/**
+ * @route   POST /api/communication/threads/:threadId/reply
+ * @desc    Reply to a thread
+ * @access  Private
+ */
+router.post(
+    '/threads/:threadId/reply',
+    auth,
+    uploadMiddleware.array('attachments', 10),
+    [
+        param('threadId').isMongoId().withMessage('Valid thread ID is required'),
+        body('content.text').optional().isString().trim().isLength({ min: 1, max: 10000 }),
+        body('content.type').isIn(['text', 'file', 'image', 'clinical_note']),
+        body('mentions').optional().isArray(),
+        body('mentions.*').optional().isMongoId(),
+        body('priority').optional().isIn(['normal', 'high', 'urgent']),
+    ],
+    handleValidationErrors,
+    validateEncryptionCompliance,
+    encryptMessageContent,
+    auditMessage('thread_reply_sent'),
+    communicationController.replyToThread
+);
+
+/**
+ * @route   GET /api/communication/conversations/:conversationId/threads
+ * @desc    Get conversation threads
+ * @access  Private
+ */
+router.get(
+    '/conversations/:conversationId/threads',
+    auth,
+    [
+        param('conversationId').isMongoId().withMessage('Valid conversation ID is required'),
+    ],
+    handleValidationErrors,
+    auditConversation('threads_accessed'),
+    communicationController.getConversationThreads
+);
 
 export default router;

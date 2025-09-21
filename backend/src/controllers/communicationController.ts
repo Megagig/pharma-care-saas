@@ -1550,6 +1550,211 @@ export class CommunicationController {
             });
         }
     }
+
+    /**
+     * Create a thread from a message
+     */
+    async createThread(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+            const { messageId } = req.params;
+
+            if (!messageId || !mongoose.Types.ObjectId.isValid(messageId)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Valid message ID is required',
+                });
+                return;
+            }
+
+            const threadId = await communicationService.createThread(messageId, userId, workplaceId);
+
+            res.json({
+                success: true,
+                message: 'Thread created successfully',
+                data: { threadId },
+            });
+        } catch (error) {
+            logger.error('Error creating thread:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to create thread',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
+
+    /**
+     * Get thread messages
+     */
+    async getThreadMessages(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+            const { threadId } = req.params;
+
+            if (!threadId || !mongoose.Types.ObjectId.isValid(threadId)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Valid thread ID is required',
+                });
+                return;
+            }
+
+            const filters = {
+                senderId: req.query.senderId as string,
+                before: req.query.before ? new Date(req.query.before as string) : undefined,
+                after: req.query.after ? new Date(req.query.after as string) : undefined,
+                limit: parseInt(req.query.limit as string) || 100,
+            };
+
+            const threadData = await communicationService.getThreadMessages(threadId, userId, workplaceId, filters);
+
+            res.json({
+                success: true,
+                message: 'Thread messages retrieved successfully',
+                data: threadData,
+            });
+        } catch (error) {
+            logger.error('Error getting thread messages:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get thread messages',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
+
+    /**
+     * Get thread summary
+     */
+    async getThreadSummary(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+            const { threadId } = req.params;
+
+            if (!threadId || !mongoose.Types.ObjectId.isValid(threadId)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Valid thread ID is required',
+                });
+                return;
+            }
+
+            const summary = await communicationService.getThreadSummary(threadId, userId, workplaceId);
+
+            res.json({
+                success: true,
+                message: 'Thread summary retrieved successfully',
+                data: summary,
+            });
+        } catch (error) {
+            logger.error('Error getting thread summary:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get thread summary',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
+
+    /**
+     * Reply to a thread
+     */
+    async replyToThread(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+            const { threadId } = req.params;
+
+            if (!threadId || !mongoose.Types.ObjectId.isValid(threadId)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Valid thread ID is required',
+                });
+                return;
+            }
+
+            const { content, mentions, priority } = req.body;
+
+            if (!content || !content.text?.trim()) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Message content is required',
+                });
+                return;
+            }
+
+            // Handle file attachments
+            let attachments: File[] = [];
+            if (req.files && Array.isArray(req.files)) {
+                attachments = req.files as File[];
+            }
+
+            const messageData = {
+                conversationId: '', // Will be set by the service
+                senderId: userId,
+                content: {
+                    ...content,
+                    attachments: attachments.length > 0 ? attachments : undefined,
+                },
+                mentions: mentions || [],
+                priority: priority || 'normal',
+                workplaceId,
+            };
+
+            const message = await communicationService.replyToThread(threadId, messageData);
+
+            res.status(201).json({
+                success: true,
+                message: 'Reply sent successfully',
+                data: message,
+            });
+        } catch (error) {
+            logger.error('Error replying to thread:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to send reply',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
+
+    /**
+     * Get conversation threads
+     */
+    async getConversationThreads(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+            const { conversationId } = req.params;
+
+            if (!conversationId || !mongoose.Types.ObjectId.isValid(conversationId)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Valid conversation ID is required',
+                });
+                return;
+            }
+
+            const threads = await communicationService.getConversationThreads(conversationId, userId, workplaceId);
+
+            res.json({
+                success: true,
+                message: 'Conversation threads retrieved successfully',
+                data: threads,
+            });
+        } catch (error) {
+            logger.error('Error getting conversation threads:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get conversation threads',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
 }
 
 export const communicationController = new CommunicationController();
