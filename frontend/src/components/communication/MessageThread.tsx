@@ -12,6 +12,7 @@ import {
 import { Send, AttachFile, EmojiEmotions, Reply } from '@mui/icons-material';
 import { Message } from '../../stores/types';
 import MessageItem from './MessageItem';
+import MentionInput from './MentionInput';
 import { useSocketConnection } from '../../hooks/useSocket';
 import { socketService } from '../../services/socketService';
 
@@ -22,7 +23,8 @@ interface MessageThreadProps {
     content: string,
     attachments?: File[],
     threadId?: string,
-    parentMessageId?: string
+    parentMessageId?: string,
+    mentions?: string[]
   ) => Promise<void>;
   loading?: boolean;
   error?: string | null;
@@ -43,6 +45,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
 }) => {
   const [messageText, setMessageText] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [mentions, setMentions] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [sending, setSending] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -90,9 +93,9 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   };
 
   // Handle message input changes
-  const handleMessageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
+  const handleMessageChange = (value: string, newMentions: string[]) => {
     setMessageText(value);
+    setMentions(newMentions);
 
     if (value.trim()) {
       handleTypingStart();
@@ -115,12 +118,14 @@ const MessageThread: React.FC<MessageThreadProps> = ({
         messageText,
         attachments.length > 0 ? attachments : undefined,
         threadId,
-        parentMessage?._id
+        parentMessage?._id,
+        mentions.length > 0 ? mentions : undefined
       );
 
       // Clear input after successful send
       setMessageText('');
       setAttachments([]);
+      setMentions([]);
       messageInputRef.current?.focus();
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -331,24 +336,17 @@ const MessageThread: React.FC<MessageThreadProps> = ({
             <AttachFile />
           </IconButton>
 
-          {/* Message Input */}
-          <TextField
-            ref={messageInputRef}
-            fullWidth
-            multiline
-            maxRows={4}
-            placeholder={threadId ? 'Reply to thread...' : 'Type a message...'}
+          {/* Message Input with Mentions */}
+          <MentionInput
             value={messageText}
             onChange={handleMessageChange}
             onKeyPress={handleKeyPress}
+            placeholder={threadId ? 'Reply to thread...' : 'Type a message...'}
             disabled={sending || !isConnected}
-            variant="outlined"
-            size="small"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-              },
-            }}
+            multiline
+            maxRows={4}
+            conversationId={conversationId}
+            autoFocus={false}
           />
 
           {/* Emoji Button */}

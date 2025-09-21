@@ -32,6 +32,7 @@ import {
 } from '@mui/icons-material';
 import { Message } from '../../stores/types';
 import { formatDistanceToNow, format } from 'date-fns';
+import MentionDisplay from './MentionDisplay';
 
 interface MessageItemProps {
   message: Message;
@@ -243,18 +244,20 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
         {/* Message Content */}
         <Box>
-          {/* Text Content */}
+          {/* Text Content with Mentions */}
           {message.content.text && (
-            <Typography
+            <MentionDisplay
+              text={message.content.text}
+              mentions={message.mentions}
               variant="body2"
+              onMentionClick={(userId) => {
+                // TODO: Handle mention click (e.g., show user profile)
+                console.log('Mention clicked:', userId);
+              }}
               sx={{
-                wordBreak: 'break-word',
-                whiteSpace: 'pre-wrap',
                 mb: message.content.attachments?.length ? 1 : 0,
               }}
-            >
-              {message.content.text}
-            </Typography>
+            />
           )}
 
           {/* Attachments */}

@@ -28,6 +28,11 @@ export { default as NotificationIndicators } from './NotificationIndicators';
 export { default as PatientQueryDashboard } from './PatientQueryDashboard';
 export { default as QueryCard } from './QueryCard';
 
+// Mention system components
+export { default as MentionInput } from './MentionInput';
+export { default as MentionDisplay } from './MentionDisplay';
+export { default as MentionSearch } from './MentionSearch';
+
 // Export types for external use
 export type { default as ChatInterfaceProps } from './ChatInterface';
 export type { default as MessageThreadProps } from './MessageThread';

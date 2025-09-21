@@ -48,6 +48,7 @@ import legacyApiRoutes from './routes/legacyApiRoutes';
 import migrationDashboardRoutes from './routes/migrationDashboardRoutes';
 import emailWebhookRoutes from './routes/emailWebhookRoutes';
 import drugRoutes from './modules/drug-info/routes/drugRoutes';
+import mentionRoutes from './routes/mentionRoutes';
 import manualLabRoutes from './modules/lab/routes/manualLabRoutes';
 import publicApiRoutes from './routes/publicApiRoutes';
 import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
@@ -197,6 +198,10 @@ app.use('/api/communication', communicationRoutes);
 // Communication Audit routes
 import communicationAuditRoutes from './routes/communicationAuditRoutes';
 app.use('/api/communication/audit', communicationAuditRoutes);
+
+// Mention routes
+import mentionRoutes from './routes/mentionRoutes';
+app.use('/api/mentions', mentionRoutes);
 
 // Clinical Notes routes - added special debug log
 app.use((req, res, next) => {

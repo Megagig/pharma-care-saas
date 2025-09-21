@@ -626,27 +626,44 @@ export class CommunicationService {
         conversation: IConversation
     ): Promise<void> {
         try {
+            // Get sender information
+            const sender = await User.findById(message.senderId).select('firstName lastName');
+            if (!sender) return;
+
+            const senderName = `${sender.firstName} ${sender.lastName}`;
+            const messagePreview = message.content.text?.substring(0, 100) || 'New message';
+
             for (const mentionedUserId of mentions) {
-                // Verify mentioned user is a participant
-                if (conversation.hasParticipant(mentionedUserId as any)) {
+                // Skip if mentioning self
+                if (mentionedUserId === message.senderId.toString()) continue;
+
+                // Verify mentioned user is a participant or can be added to conversation
+                const isParticipant = conversation.hasParticipant(mentionedUserId as any);
+
+                if (isParticipant) {
                     await notificationService.createNotification({
                         userId: mentionedUserId,
                         type: 'mention',
-                        title: 'You were mentioned',
-                        content: `You were mentioned in ${conversation.title}`,
+                        title: `${senderName} mentioned you`,
+                        content: messagePreview + (message.content.text && message.content.text.length > 100 ? '...' : ''),
                         data: {
                             conversationId: conversation._id,
                             messageId: message._id,
                             senderId: message.senderId,
+                            actionUrl: `/communication/${conversation._id}?message=${message._id}`,
                         },
-                        priority: 'normal',
+                        priority: message.priority === 'urgent' ? 'urgent' : 'normal',
                         deliveryChannels: {
                             inApp: true,
-                            email: false,
+                            email: message.priority === 'urgent',
                             sms: false,
                         },
                         workplaceId: conversation.workplaceId,
                     });
+
+                    logger.debug(`Mention notification sent to user ${mentionedUserId} for message ${message._id}`);
+                } else {
+                    logger.warn(`User ${mentionedUserId} mentioned but not a participant in conversation ${conversation._id}`);
                 }
             }
         } catch (error) {
