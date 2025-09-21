@@ -7,7 +7,7 @@ const getBaseURL = () => {
     if (import.meta.env.VITE_API_BASE_URL) {
       return import.meta.env.VITE_API_BASE_URL;
     }
-    
+
     // In development, use direct backend URL (proxy isn't working)
     if (import.meta.env.DEV) {
       return 'http://localhost:5000/api';
@@ -22,7 +22,7 @@ const getBaseURL = () => {
 
 const api = axios.create({
   baseURL: getBaseURL(),
-  timeout: 120000, // Increased from 30000 (30s) to 120000 (120s) for AI analysis
+  timeout: 60000, // Reduced from 120000 (120s) to 60000 (60s) for better UX
   withCredentials: true, // Include httpOnly cookies
   headers: {
     'Content-Type': 'application/json',
