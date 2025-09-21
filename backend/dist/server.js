@@ -50,6 +50,14 @@ const server = httpServer.listen(PORT, () => {
         UsageAlertCronService_1.default.start();
         EmailDeliveryCronService_1.emailDeliveryCronService.start();
     }
+    if (process.env.NODE_ENV === 'production') {
+        setInterval(() => {
+            if (global.gc) {
+                global.gc();
+                console.log('Garbage collection triggered');
+            }
+        }, 5 * 60 * 1000);
+    }
 });
 server.timeout = 90000;
 process.on('unhandledRejection', (err) => {

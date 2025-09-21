@@ -50,11 +50,13 @@ const legacyApiRoutes_1 = __importDefault(require("./routes/legacyApiRoutes"));
 const migrationDashboardRoutes_1 = __importDefault(require("./routes/migrationDashboardRoutes"));
 const emailWebhookRoutes_1 = __importDefault(require("./routes/emailWebhookRoutes"));
 const drugRoutes_1 = __importDefault(require("./modules/drug-info/routes/drugRoutes"));
+const mentionRoutes_1 = __importDefault(require("./routes/mentionRoutes"));
 const manualLabRoutes_1 = __importDefault(require("./modules/lab/routes/manualLabRoutes"));
 const publicApiRoutes_1 = __importDefault(require("./routes/publicApiRoutes"));
 const publicDrugDetailsRoutes_1 = __importDefault(require("./routes/publicDrugDetailsRoutes"));
 const diagnosticRoutes_1 = __importDefault(require("./routes/diagnosticRoutes"));
 const communicationRoutes_1 = __importDefault(require("./routes/communicationRoutes"));
+const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
 const systemIntegrationService_1 = __importDefault(require("./services/systemIntegrationService"));
 const app = (0, express_1.default)();
 const systemIntegration = systemIntegrationService_1.default.getInstance();
@@ -150,6 +152,9 @@ app.use('/api/diagnostics', diagnosticRoutes_1.default);
 app.use('/api/communication', communicationRoutes_1.default);
 const communicationAuditRoutes_1 = __importDefault(require("./routes/communicationAuditRoutes"));
 app.use('/api/communication/audit', communicationAuditRoutes_1.default);
+app.use('/api/notifications', notificationRoutes_1.default);
+app.use('/api/communication/notifications', notificationRoutes_1.default);
+app.use('/api/mentions', mentionRoutes_1.default);
 app.use((req, res, next) => {
     if (req.path.startsWith('/api/notes')) {
         console.log(`[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`);

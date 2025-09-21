@@ -1,19 +1,19 @@
 import express from 'express';
 import {
-    getUserSuggestions,
-    searchMessagesByMentions,
-    getMentionStats,
-    getMentionedUsers,
+  getUserSuggestions,
+  searchMessagesByMentions,
+  getMentionStats,
+  getMentionedUsers,
 } from '../controllers/mentionController';
 import { auth } from '../middlewares/auth';
-import { workspaceContext } from '../middlewares/workspaceContext';
-import { rateLimiting } from '../middlewares/rateLimiting';
+import { loadWorkspaceContext } from '../middlewares/workspaceContext';
+import rateLimiting from '../middlewares/rateLimiting';
 
 const router = express.Router();
 
 // Apply authentication and workspace context to all routes
 router.use(auth);
-router.use(workspaceContext);
+router.use(loadWorkspaceContext);
 
 /**
  * @route   GET /api/mentions/conversations/:conversationId/suggestions
@@ -24,9 +24,9 @@ router.use(workspaceContext);
  * @query   limit - Maximum number of suggestions (default: 10)
  */
 router.get(
-    '/conversations/:conversationId/suggestions',
-    rateLimiting({ windowMs: 60000, max: 100 }), // 100 requests per minute
-    getUserSuggestions
+  '/conversations/:conversationId/suggestions',
+  rateLimiting.createRateLimiter({ windowMs: 60000, max: 100 }), // 100 requests per minute
+  getUserSuggestions
 );
 
 /**
@@ -39,9 +39,9 @@ router.get(
  * @query   page - Page number for pagination (default: 1)
  */
 router.get(
-    '/conversations/:conversationId/messages',
-    rateLimiting({ windowMs: 60000, max: 50 }), // 50 requests per minute
-    searchMessagesByMentions
+  '/conversations/:conversationId/messages',
+  rateLimiting.createRateLimiter({ windowMs: 60000, max: 50 }), // 50 requests per minute
+  searchMessagesByMentions
 );
 
 /**
@@ -51,9 +51,9 @@ router.get(
  * @params  conversationId - ID of the conversation
  */
 router.get(
-    '/conversations/:conversationId/stats',
-    rateLimiting({ windowMs: 60000, max: 30 }), // 30 requests per minute
-    getMentionStats
+  '/conversations/:conversationId/stats',
+  rateLimiting.createRateLimiter({ windowMs: 60000, max: 30 }), // 30 requests per minute
+  getMentionStats
 );
 
 /**
@@ -63,9 +63,9 @@ router.get(
  * @params  conversationId - ID of the conversation
  */
 router.get(
-    '/conversations/:conversationId/users',
-    rateLimiting({ windowMs: 60000, max: 30 }), // 30 requests per minute
-    getMentionedUsers
+  '/conversations/:conversationId/users',
+  rateLimiting.createRateLimiter({ windowMs: 60000, max: 30 }), // 30 requests per minute
+  getMentionedUsers
 );
 
 export default router;

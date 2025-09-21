@@ -1,4 +1,4 @@
-import { Server as SocketIOServer } from 'socket.io';
+import { Server as SocketIOServer } from "socket.io";
 interface SocketUserData {
     userId: string;
     workplaceId: string;

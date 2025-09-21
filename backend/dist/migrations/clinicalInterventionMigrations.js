@@ -30,7 +30,9 @@ exports.clinicalInterventionMigrations = [
             ];
             for (const index of indexes) {
                 const cleanIndex = Object.fromEntries(Object.entries(index).filter(([_, value]) => value !== undefined));
-                await ClinicalIntervention_1.default.collection.createIndex(cleanIndex, { background: true });
+                await ClinicalIntervention_1.default.collection.createIndex(cleanIndex, {
+                    background: true,
+                });
             }
             logger_1.default.info('Clinical Interventions indexes created successfully');
         },
@@ -71,29 +73,35 @@ exports.clinicalInterventionMigrations = [
                         name: 'overdue_interventions',
                         background: true,
                         partialFilterExpression: {
-                            status: { $in: ['identified', 'planning', 'in_progress', 'implemented'] }
-                        }
-                    }
+                            status: {
+                                $in: ['identified', 'planning', 'in_progress', 'implemented'],
+                            },
+                        },
+                    },
                 },
                 {
-                    fields: { workplaceId: 1, 'followUp.scheduledDate': 1, 'followUp.required': 1 },
+                    fields: {
+                        workplaceId: 1,
+                        'followUp.scheduledDate': 1,
+                        'followUp.required': 1,
+                    },
                     options: {
                         name: 'followup_scheduling',
                         background: true,
                         sparse: true,
                         partialFilterExpression: {
                             'followUp.required': true,
-                            'followUp.scheduledDate': { $exists: true }
-                        }
-                    }
+                            'followUp.scheduledDate': { $exists: true },
+                        },
+                    },
                 },
                 {
                     fields: { workplaceId: 1, relatedMTRId: 1, isDeleted: 1 },
                     options: {
                         name: 'mtr_integration',
                         background: true,
-                        sparse: true
-                    }
+                        sparse: true,
+                    },
                 },
             ];
             for (const { fields, options } of performanceIndexes) {
@@ -104,7 +112,11 @@ exports.clinicalInterventionMigrations = [
         },
         down: async () => {
             logger_1.default.info('Dropping performance optimization indexes...');
-            const indexesToDrop = ['overdue_interventions', 'followup_scheduling', 'mtr_integration'];
+            const indexesToDrop = [
+                'overdue_interventions',
+                'followup_scheduling',
+                'mtr_integration',
+            ];
             for (const indexName of indexesToDrop) {
                 try {
                     await ClinicalIntervention_1.default.collection.dropIndex(indexName);
@@ -124,12 +136,13 @@ exports.clinicalInterventionMigrations = [
                 $or: [
                     { interventionNumber: { $exists: false } },
                     { interventionNumber: { $regex: /^(?!CI-)/ } },
-                ]
+                ],
             });
             logger_1.default.info(`Found ${interventionsToMigrate.length} interventions to migrate`);
             for (const intervention of interventionsToMigrate) {
                 try {
-                    if (!intervention.interventionNumber || !intervention.interventionNumber.match(/^CI-\d{6}-\d{4}$/)) {
+                    if (!intervention.interventionNumber ||
+                        !intervention.interventionNumber.match(/^CI-\d{6}-\d{4}$/)) {
                         const newNumber = await ClinicalIntervention_1.default.generateNextInterventionNumber(intervention.workplaceId);
                         intervention.interventionNumber = newNumber;
                     }
@@ -167,7 +180,7 @@ exports.clinicalInterventionMigrations = [
                 $set: {
                     createdBy: new mongoose_1.default.Types.ObjectId('000000000000000000000000'),
                     isDeleted: false,
-                }
+                },
             });
             logger_1.default.info(`Updated ${result.modifiedCount} interventions with audit fields`);
         },
@@ -178,7 +191,7 @@ exports.clinicalInterventionMigrations = [
                     createdBy: 1,
                     updatedBy: 1,
                     isDeleted: 1,
-                }
+                },
             });
         },
     },
@@ -217,8 +230,8 @@ class MigrationManager {
     }
     static async getPendingMigrations() {
         const applied = await this.getAppliedMigrations();
-        const appliedVersions = new Set(applied.map(m => m.version));
-        return exports.clinicalInterventionMigrations.filter(migration => !appliedVersions.has(migration.version));
+        const appliedVersions = new Set(applied.map((m) => m.version));
+        return exports.clinicalInterventionMigrations.filter((migration) => !appliedVersions.has(migration.version));
     }
     static async applyMigration(migration) {
         const startTime = Date.now();
@@ -240,7 +253,7 @@ class MigrationManager {
         }
     }
     static async rollbackMigration(version) {
-        const migration = exports.clinicalInterventionMigrations.find(m => m.version === version);
+        const migration = exports.clinicalInterventionMigrations.find((m) => m.version === version);
         if (!migration) {
             throw new Error(`Migration ${version} not found`);
         }
@@ -281,7 +294,7 @@ class MigrationManager {
     static async validateMigrations() {
         const issues = [];
         try {
-            const versions = exports.clinicalInterventionMigrations.map(m => m.version);
+            const versions = exports.clinicalInterventionMigrations.map((m) => m.version);
             const duplicates = versions.filter((v, i) => versions.indexOf(v) !== i);
             if (duplicates.length > 0) {
                 issues.push(`Duplicate migration versions: ${duplicates.join(', ')}`);
@@ -303,7 +316,7 @@ class MigrationManager {
             };
         }
         catch (error) {
-            issues.push(`Validation error: ${error.message}`);
+            issues.push(`Validation error: ${error instanceof Error ? error.message : String(error)}`);
             return { valid: false, issues };
         }
     }
@@ -319,14 +332,14 @@ const runMigrations = async (command, version) => {
                 console.log(`Pending: ${status.pending.length}`);
                 if (status.pending.length > 0) {
                     console.log('\nPending migrations:');
-                    status.pending.forEach(m => {
+                    status.pending.forEach((m) => {
                         console.log(`  ${m.version}: ${m.description}`);
                     });
                 }
                 break;
             case 'up':
                 if (version) {
-                    const migration = exports.clinicalInterventionMigrations.find(m => m.version === version);
+                    const migration = exports.clinicalInterventionMigrations.find((m) => m.version === version);
                     if (!migration) {
                         throw new Error(`Migration ${version} not found`);
                     }
@@ -349,7 +362,7 @@ const runMigrations = async (command, version) => {
                 }
                 else {
                     console.error('Migration validation failed:');
-                    validation.issues.forEach(issue => console.error(`  - ${issue}`));
+                    validation.issues.forEach((issue) => console.error(`  - ${issue}`));
                     process.exit(1);
                 }
                 break;

@@ -9,11 +9,11 @@ import {
   useTheme,
   alpha,
 } from '@mui/material';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { ResponsiveCommunicationHub } from '../components/communication/ResponsiveCommunicationHub';
-import { NotificationCenter } from '../components/communication/NotificationCenter';
-import { AuditLogViewer } from '../components/communication/AuditLogViewer';
-import { PatientQueryDashboard } from '../components/communication/PatientQueryDashboard';
+import { useLocation } from 'react-router-dom';
+import ResponsiveCommunicationHub from '../components/communication/ResponsiveCommunicationHub';
+import NotificationCenter from '../components/communication/NotificationCenter';
+import AuditLogViewer from '../components/communication/AuditLogViewer';
+import PatientQueryDashboard from '../components/communication/PatientQueryDashboard';
 import { CommunicationDeepLinks } from '../utils/communicationDeepLinks';
 
 interface TabPanelProps {
@@ -38,7 +38,6 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
 const CommunicationHub: React.FC = () => {
   const theme = useTheme();
   const location = useLocation();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {

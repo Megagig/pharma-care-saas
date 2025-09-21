@@ -47,6 +47,53 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format, parseISO } from 'date-fns';
 
+// Helper function to safely parse JSON responses
+const safeJsonParse = async (response: Response): Promise<any> => {
+  const contentType = response.headers.get('content-type');
+
+  if (contentType && contentType.includes('application/json')) {
+    try {
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to parse JSON response:', error);
+      throw new Error('Invalid JSON response from server');
+    }
+  } else {
+    // Try to get text response and see if it's actually JSON
+    const textResponse = await response.text();
+
+    // Check if it's an HTML error page (common when endpoints don't exist)
+    if (
+      textResponse.trim().startsWith('<!DOCTYPE') ||
+      textResponse.trim().startsWith('<html')
+    ) {
+      console.warn(
+        'Received HTML response instead of JSON - endpoint may not exist'
+      );
+      throw new Error(
+        `Server returned HTML instead of JSON: ${response.status} ${response.statusText}`
+      );
+    }
+
+    // Handle empty responses
+    if (!textResponse.trim()) {
+      console.warn('Received empty response');
+      throw new Error(
+        `Server returned empty response: ${response.status} ${response.statusText}`
+      );
+    }
+
+    try {
+      return JSON.parse(textResponse);
+    } catch (error) {
+      console.warn('Response is not JSON:', textResponse.substring(0, 200));
+      throw new Error(
+        `Server returned non-JSON response: ${response.status} ${response.statusText}`
+      );
+    }
+  }
+};
+
 interface AuditLog {
   _id: string;
   action: string;
@@ -152,10 +199,29 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch audit logs');
+        // Handle different error cases
+        if (response.status === 404) {
+          // Endpoint doesn't exist - return empty data
+          setLogs([]);
+          setTotalCount(0);
+          return;
+        }
+
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Authentication required. Please log in again.');
+        }
+
+        try {
+          const errorData = await safeJsonParse(response);
+          throw new Error(errorData.message || 'Failed to fetch audit logs');
+        } catch (parseError) {
+          throw new Error(
+            `Failed to fetch audit logs: ${response.status} ${response.statusText}`
+          );
+        }
       }
 
-      const data = await response.json();
+      const data = await safeJsonParse(response);
       setLogs(data.data);
       setTotalCount(data.pagination?.total || data.count || 0);
     } catch (err) {
@@ -213,7 +279,22 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
       );
 
       if (!response.ok) {
-        throw new Error('Failed to export audit logs');
+        if (response.status === 404) {
+          throw new Error('Export functionality is not available');
+        }
+
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Authentication required. Please log in again.');
+        }
+
+        try {
+          const errorData = await safeJsonParse(response);
+          throw new Error(errorData.message || 'Failed to export audit logs');
+        } catch (parseError) {
+          throw new Error(
+            `Failed to export audit logs: ${response.status} ${response.statusText}`
+          );
+        }
       }
 
       // Download file

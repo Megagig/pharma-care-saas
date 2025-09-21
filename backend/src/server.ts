@@ -3,6 +3,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import app from './app';
 import connectDB from './config/db';
 import { config } from 'dotenv';
+import { performanceCollector } from './utils/performanceMonitoring';
 import { invitationCronService } from './services/InvitationCronService';
 import WorkspaceStatsCronService from './services/WorkspaceStatsCronService';
 import UsageAlertCronService from './services/UsageAlertCronService';
@@ -64,6 +65,17 @@ const server = httpServer.listen(PORT, () => {
     WorkspaceStatsCronService.start();
     UsageAlertCronService.start();
     emailDeliveryCronService.start();
+  }
+
+  // Start memory optimization
+  if (process.env.NODE_ENV === 'production') {
+    // Force garbage collection every 5 minutes in production
+    setInterval(() => {
+      if (global.gc) {
+        global.gc();
+        console.log('Garbage collection triggered');
+      }
+    }, 5 * 60 * 1000);
   }
 });
 

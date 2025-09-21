@@ -1,13 +1,13 @@
-import mongoose from 'mongoose';
-import { Server as SocketIOServer } from 'socket.io';
-import { INotification, INotificationData, INotificationDeliveryChannels } from '../models/Notification';
+import mongoose from "mongoose";
+import { Server as SocketIOServer } from "socket.io";
+import { INotification, INotificationData, INotificationDeliveryChannels } from "../models/Notification";
 export interface CreateNotificationData {
     userId: mongoose.Types.ObjectId;
-    type: INotification['type'];
+    type: INotification["type"];
     title: string;
     content: string;
     data: INotificationData;
-    priority?: INotification['priority'];
+    priority?: INotification["priority"];
     deliveryChannels?: Partial<INotificationDeliveryChannels>;
     scheduledFor?: Date;
     expiresAt?: Date;
@@ -16,9 +16,9 @@ export interface CreateNotificationData {
     createdBy: mongoose.Types.ObjectId;
 }
 export interface NotificationFilters {
-    type?: INotification['type'];
-    status?: INotification['status'];
-    priority?: INotification['priority'];
+    type?: INotification["type"];
+    status?: INotification["status"];
+    priority?: INotification["priority"];
     startDate?: Date;
     endDate?: Date;
     limit?: number;
@@ -44,7 +44,7 @@ export interface NotificationPreferences {
         timezone: string;
     };
     batchDigest: boolean;
-    digestFrequency: 'hourly' | 'daily' | 'weekly';
+    digestFrequency: "hourly" | "daily" | "weekly";
 }
 export interface NotificationTemplate {
     subject: string;
@@ -70,7 +70,7 @@ declare class NotificationService {
         unreadCount: number;
     }>;
     processScheduledNotifications(): Promise<void>;
-    createConversationNotification(type: 'new_message' | 'mention' | 'conversation_invite', conversationId: string, senderId: string, recipientIds: string[], messageId?: string, customContent?: string): Promise<INotification[]>;
+    createConversationNotification(type: "new_message" | "mention" | "conversation_invite", conversationId: string, senderId: string, recipientIds: string[], messageId?: string, customContent?: string): Promise<INotification[]>;
     createPatientQueryNotification(patientId: string, conversationId: string, messageContent: string, recipientIds: string[]): Promise<INotification[]>;
     updateNotificationPreferences(userId: string, preferences: Partial<NotificationPreferences>): Promise<void>;
     getNotificationPreferences(userId: string): Promise<NotificationPreferences>;
