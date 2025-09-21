@@ -52,6 +52,12 @@ export { default as MobileChatInterface } from './MobileChatInterface';
 export { default as MobileMessageInput } from './MobileMessageInput';
 export { default as MobileFileUpload } from './MobileFileUpload';
 
+// Performance-optimized components
+export { default as VirtualizedMessageList } from './VirtualizedMessageList';
+export { default as VirtualizedConversationList } from './VirtualizedConversationList';
+export { default as OptimizedChatInterface } from './OptimizedChatInterface';
+export { default as LazyImage } from './LazyImage';
+
 // Export types for external use
 export type { default as ChatInterfaceProps } from './ChatInterface';
 export type { default as MessageThreadProps } from './MessageThread';
