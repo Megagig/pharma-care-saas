@@ -309,7 +309,8 @@ class DashboardService {
                     page: 1,
                     limit: 1000, // Get more for analytics
                     sort: '-createdAt' // Sort by newest first
-                }
+                },
+                timeout: 30000 // Reduce timeout for dashboard calls
             });
 
             console.log('📥 MTR sessions API response:', {
@@ -321,11 +322,21 @@ class DashboardService {
             const mtrs = this.extractArrayFromResponse(response.data);
             console.log('✅ Extracted MTR sessions:', mtrs.length);
             return mtrs;
-        } catch (error) {
+        } catch (error: any) {
             console.error('❌ Error fetching MTR sessions:', error);
 
-            // If MTR endpoint fails, return empty array for now
-            // This could be due to license requirements or other validation
+            // Handle specific error types
+            if (error.response?.status === 401) {
+                console.warn('🔐 MTR sessions require authentication - user may need to log in');
+            } else if (error.response?.status === 403) {
+                console.warn('🚫 MTR access denied - user may not have required license');
+            } else if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
+                console.warn('🌐 Network error fetching MTR sessions - backend may be unavailable');
+            } else if (error.message?.includes('timeout')) {
+                console.warn('⏱️ MTR sessions request timed out - reducing timeout for future requests');
+            }
+
+            // Return empty array to allow dashboard to continue functioning
             return [];
         }
     }
