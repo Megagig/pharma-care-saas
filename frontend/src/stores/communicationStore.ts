@@ -77,6 +77,13 @@ interface CommunicationState {
     addReaction: (messageId: string, emoji: string) => Promise<boolean>;
     removeReaction: (messageId: string, emoji: string) => Promise<boolean>;
 
+    // Actions - Threading
+    createThread: (messageId: string) => Promise<string | null>;
+    fetchThreadMessages: (threadId: string) => Promise<{ rootMessage: Message; replies: Message[] } | null>;
+    fetchThreadSummary: (threadId: string) => Promise<any>;
+    replyToThread: (threadId: string, content: string, attachments?: File[], mentions?: string[]) => Promise<Message | null>;
+    getConversationThreads: (conversationId: string) => Promise<any[]>;
+
     // Actions - File Management
     uploadFiles: (conversationId: string, files: File[]) => Promise<any[]>;
     downloadFile: (fileId: string) => Promise<void>;
@@ -748,6 +755,172 @@ export const useCommunicationStore = create<CommunicationState>()(
                     } catch (error) {
                         console.error('Failed to remove reaction:', error);
                         return false;
+                    }
+                },
+
+                // Threading Actions
+                createThread: async (messageId) => {
+                    const { setLoading, setError } = get();
+                    setLoading('createThread', true);
+                    setError('createThread', null);
+
+                    try {
+                        const response = await fetch(`/api/communication/messages/${messageId}/thread`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            },
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to create thread');
+                        }
+
+                        const result = await response.json();
+                        const threadId = result.data.threadId;
+
+                        // Update the message to include threadId
+                        get().updateMessage(messageId, { threadId });
+
+                        return threadId;
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+                        setError('createThread', errorMessage);
+                        return null;
+                    } finally {
+                        setLoading('createThread', false);
+                    }
+                },
+
+                fetchThreadMessages: async (threadId) => {
+                    const { setLoading, setError } = get();
+                    setLoading('fetchThreadMessages', true);
+                    setError('fetchThreadMessages', null);
+
+                    try {
+                        const response = await fetch(`/api/communication/threads/${threadId}/messages`, {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            },
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch thread messages');
+                        }
+
+                        const result = await response.json();
+                        return result.data;
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+                        setError('fetchThreadMessages', errorMessage);
+                        return null;
+                    } finally {
+                        setLoading('fetchThreadMessages', false);
+                    }
+                },
+
+                fetchThreadSummary: async (threadId) => {
+                    const { setLoading, setError } = get();
+                    setLoading('fetchThreadSummary', true);
+                    setError('fetchThreadSummary', null);
+
+                    try {
+                        const response = await fetch(`/api/communication/threads/${threadId}/summary`, {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            },
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch thread summary');
+                        }
+
+                        const result = await response.json();
+                        return result.data;
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+                        setError('fetchThreadSummary', errorMessage);
+                        return null;
+                    } finally {
+                        setLoading('fetchThreadSummary', false);
+                    }
+                },
+
+                replyToThread: async (threadId, content, attachments, mentions) => {
+                    const { setLoading, setError } = get();
+                    setLoading('replyToThread', true);
+                    setError('replyToThread', null);
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('content', JSON.stringify({
+                            text: content,
+                            type: 'text',
+                        }));
+
+                        if (mentions) {
+                            formData.append('mentions', JSON.stringify(mentions));
+                        }
+
+                        // Add file attachments
+                        if (attachments) {
+                            attachments.forEach((file) => {
+                                formData.append('attachments', file);
+                            });
+                        }
+
+                        const response = await fetch(`/api/communication/threads/${threadId}/reply`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            },
+                            body: formData,
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to reply to thread');
+                        }
+
+                        const result = await response.json();
+                        const newMessage = result.data;
+
+                        // Add message to conversation
+                        get().addMessage(newMessage.conversationId, newMessage);
+
+                        return newMessage;
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+                        setError('replyToThread', errorMessage);
+                        return null;
+                    } finally {
+                        setLoading('replyToThread', false);
+                    }
+                },
+
+                getConversationThreads: async (conversationId) => {
+                    const { setLoading, setError } = get();
+                    setLoading('getConversationThreads', true);
+                    setError('getConversationThreads', null);
+
+                    try {
+                        const response = await fetch(`/api/communication/conversations/${conversationId}/threads`, {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            },
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch conversation threads');
+                        }
+
+                        const result = await response.json();
+                        return result.data;
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+                        setError('getConversationThreads', errorMessage);
+                        return [];
+                    } finally {
+                        setLoading('getConversationThreads', false);
                     }
                 },
 

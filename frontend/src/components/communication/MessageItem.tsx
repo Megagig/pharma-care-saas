@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Avatar,
@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Collapse,
 } from '@mui/material';
 import {
   MoreVert,
@@ -29,10 +30,13 @@ import {
   Download,
   Image as ImageIcon,
   Description,
+  Forum,
 } from '@mui/icons-material';
 import { Message } from '../../stores/types';
 import { formatDistanceToNow, format } from 'date-fns';
 import MentionDisplay from './MentionDisplay';
+import ThreadIndicator from './ThreadIndicator';
+import ThreadView from './ThreadView';
 
 interface MessageItemProps {
   message: Message;
@@ -43,7 +47,11 @@ interface MessageItemProps {
   onEdit?: (messageId: string, newContent: string) => void;
   onDelete?: (messageId: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
+  onCreateThread?: (messageId: string) => void;
+  onViewThread?: (threadId: string) => void;
   compact?: boolean;
+  showThreading?: boolean;
+  conversationId?: string;
 }
 
 const MessageItem: React.FC<MessageItemProps> = ({
@@ -55,14 +63,65 @@ const MessageItem: React.FC<MessageItemProps> = ({
   onEdit,
   onDelete,
   onReaction,
+  onCreateThread,
+  onViewThread,
   compact = false,
+  showThreading = true,
+  conversationId,
 }) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editContent, setEditContent] = useState(message.content.text || '');
   const [showReactions, setShowReactions] = useState(false);
+  const [threadSummary, setThreadSummary] = useState<{
+    replyCount: number;
+    participants: string[];
+    lastReplyAt?: string;
+    unreadCount: number;
+  } | null>(null);
+  const [threadExpanded, setThreadExpanded] = useState(false);
+  const [loadingThread, setLoadingThread] = useState(false);
 
   const menuOpen = Boolean(menuAnchor);
+
+  // Fetch thread summary if this message has a thread
+  useEffect(() => {
+    const fetchThreadSummary = async () => {
+      if (!message.threadId || !showThreading) return;
+
+      try {
+        setLoadingThread(true);
+        const response = await fetch(
+          `/api/communication/threads/${message.threadId}/summary`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const result = await response.json();
+          setThreadSummary({
+            replyCount: result.data.replyCount,
+            participants: result.data.participants,
+            lastReplyAt: result.data.lastReplyAt,
+            unreadCount: result.data.unreadCount,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch thread summary:', error);
+      } finally {
+        setLoadingThread(false);
+      }
+    };
+
+    fetchThreadSummary();
+  }, [message.threadId, showThreading]);
+
+  // Check if this message is the root of a thread
+  const isThreadRoot = message.threadId === message._id;
+  const hasThread = threadSummary && threadSummary.replyCount > 0;
 
   // Handle menu actions
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -86,6 +145,17 @@ const MessageItem: React.FC<MessageItemProps> = ({
   const handleDelete = () => {
     onDelete?.(message._id);
     handleMenuClose();
+  };
+
+  const handleCreateThread = () => {
+    onCreateThread?.(message._id);
+    handleMenuClose();
+  };
+
+  const handleViewThread = () => {
+    if (message.threadId) {
+      onViewThread?.(message.threadId);
+    }
   };
 
   const handleEditSave = () => {
@@ -323,7 +393,39 @@ const MessageItem: React.FC<MessageItemProps> = ({
               ))}
             </Box>
           )}
+
+          {/* Thread Indicator */}
+          {showThreading && hasThread && isThreadRoot && (
+            <ThreadIndicator
+              threadId={message.threadId!}
+              replyCount={threadSummary.replyCount}
+              participants={threadSummary.participants}
+              lastReplyAt={threadSummary.lastReplyAt}
+              unreadCount={threadSummary.unreadCount}
+              expanded={threadExpanded}
+              onToggle={() => setThreadExpanded(!threadExpanded)}
+              onViewThread={handleViewThread}
+              variant="compact"
+            />
+          )}
         </Box>
+
+        {/* Thread View */}
+        {showThreading &&
+          hasThread &&
+          isThreadRoot &&
+          threadExpanded &&
+          conversationId && (
+            <Box sx={{ mt: 2 }}>
+              <ThreadView
+                threadId={message.threadId!}
+                conversationId={conversationId}
+                compact={true}
+                showReplyInput={true}
+                maxHeight="400px"
+              />
+            </Box>
+          )}
       </Box>
 
       {/* Actions */}
@@ -387,6 +489,12 @@ const MessageItem: React.FC<MessageItemProps> = ({
           <Reply fontSize="small" sx={{ mr: 1 }} />
           Reply
         </MenuItem>
+        {showThreading && !message.threadId && onCreateThread && (
+          <MenuItem onClick={handleCreateThread}>
+            <Forum fontSize="small" sx={{ mr: 1 }} />
+            Start Thread
+          </MenuItem>
+        )}
         {isOwn && (
           <MenuItem onClick={handleEdit}>
             <Edit fontSize="small" sx={{ mr: 1 }} />

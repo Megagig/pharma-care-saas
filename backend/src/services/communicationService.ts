@@ -586,6 +586,324 @@ export class CommunicationService {
     }
 
     /**
+     * Create a thread from a message
+     */
+    async createThread(
+        messageId: string,
+        userId: string,
+        workplaceId: string
+    ): Promise<string> {
+        try {
+            const message = await Message.findOne({
+                _id: messageId,
+                workplaceId,
+            });
+
+            if (!message) {
+                throw new Error('Message not found');
+            }
+
+            // Validate user is participant in conversation
+            const conversation = await Conversation.findOne({
+                _id: message.conversationId,
+                'participants.userId': userId,
+                'participants.leftAt': { $exists: false },
+            });
+
+            if (!conversation) {
+                throw new Error('Access denied');
+            }
+
+            // If message already has a threadId, return it
+            if (message.threadId) {
+                return message.threadId.toString();
+            }
+
+            // Create thread by setting the message's threadId to its own ID
+            message.threadId = message._id;
+            await message.save();
+
+            logger.info(`Thread created from message ${messageId} by user ${userId}`);
+            return message._id.toString();
+        } catch (error) {
+            logger.error('Error creating thread:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get thread messages
+     */
+    async getThreadMessages(
+        threadId: string,
+        userId: string,
+        workplaceId: string,
+        filters: MessageFilters = {}
+    ): Promise<{ rootMessage: IMessage; replies: IMessage[] }> {
+        try {
+            // Get the root message (thread starter)
+            const rootMessage = await Message.findOne({
+                _id: threadId,
+                workplaceId,
+            }).populate('senderId', 'firstName lastName role');
+
+            if (!rootMessage) {
+                throw new Error('Thread not found');
+            }
+
+            // Validate user is participant in conversation
+            const conversation = await Conversation.findOne({
+                _id: rootMessage.conversationId,
+                'participants.userId': userId,
+                'participants.leftAt': { $exists: false },
+            });
+
+            if (!conversation) {
+                throw new Error('Access denied');
+            }
+
+            // Get thread replies
+            const query: any = {
+                threadId,
+                _id: { $ne: threadId }, // Exclude the root message
+                workplaceId,
+            };
+
+            if (filters.senderId) {
+                query.senderId = filters.senderId;
+            }
+
+            if (filters.before) {
+                query.createdAt = { ...query.createdAt, $lt: filters.before };
+            }
+
+            if (filters.after) {
+                query.createdAt = { ...query.createdAt, $gt: filters.after };
+            }
+
+            const replies = await Message.find(query)
+                .populate('senderId', 'firstName lastName role')
+                .populate('mentions', 'firstName lastName role')
+                .populate('readBy.userId', 'firstName lastName')
+                .sort({ createdAt: 1 }) // Chronological order for threads
+                .limit(filters.limit || 100);
+
+            return { rootMessage, replies };
+        } catch (error) {
+            logger.error('Error getting thread messages:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get thread summary
+     */
+    async getThreadSummary(
+        threadId: string,
+        userId: string,
+        workplaceId: string
+    ): Promise<{
+        threadId: string;
+        rootMessage: IMessage;
+        replyCount: number;
+        participants: string[];
+        lastReplyAt?: Date;
+        unreadCount: number;
+    }> {
+        try {
+            // Get the root message
+            const rootMessage = await Message.findOne({
+                _id: threadId,
+                workplaceId,
+            }).populate('senderId', 'firstName lastName role');
+
+            if (!rootMessage) {
+                throw new Error('Thread not found');
+            }
+
+            // Validate user is participant in conversation
+            const conversation = await Conversation.findOne({
+                _id: rootMessage.conversationId,
+                'participants.userId': userId,
+                'participants.leftAt': { $exists: false },
+            });
+
+            if (!conversation) {
+                throw new Error('Access denied');
+            }
+
+            // Get thread statistics
+            const threadStats = await Message.aggregate([
+                {
+                    $match: {
+                        threadId: new mongoose.Types.ObjectId(threadId),
+                        _id: { $ne: new mongoose.Types.ObjectId(threadId) },
+                        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        replyCount: { $sum: 1 },
+                        participants: { $addToSet: '$senderId' },
+                        lastReplyAt: { $max: '$createdAt' },
+                        unreadMessages: {
+                            $push: {
+                                $cond: [
+                                    {
+                                        $not: {
+                                            $in: [
+                                                new mongoose.Types.ObjectId(userId),
+                                                '$readBy.userId',
+                                            ],
+                                        },
+                                    },
+                                    '$_id',
+                                    null,
+                                ],
+                            },
+                        },
+                    },
+                },
+                {
+                    $project: {
+                        replyCount: 1,
+                        participants: 1,
+                        lastReplyAt: 1,
+                        unreadCount: {
+                            $size: {
+                                $filter: {
+                                    input: '$unreadMessages',
+                                    cond: { $ne: ['$$this', null] },
+                                },
+                            },
+                        },
+                    },
+                },
+            ]);
+
+            const stats = threadStats[0] || {
+                replyCount: 0,
+                participants: [],
+                lastReplyAt: null,
+                unreadCount: 0,
+            };
+
+            return {
+                threadId,
+                rootMessage,
+                replyCount: stats.replyCount,
+                participants: stats.participants.map((p: any) => p.toString()),
+                lastReplyAt: stats.lastReplyAt,
+                unreadCount: stats.unreadCount,
+            };
+        } catch (error) {
+            logger.error('Error getting thread summary:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Reply to a thread
+     */
+    async replyToThread(
+        threadId: string,
+        data: Omit<SendMessageData, 'threadId' | 'parentMessageId'>
+    ): Promise<IMessage> {
+        try {
+            // Get the root message to validate thread exists
+            const rootMessage = await Message.findOne({
+                _id: threadId,
+                workplaceId: data.workplaceId,
+            });
+
+            if (!rootMessage) {
+                throw new Error('Thread not found');
+            }
+
+            // Send message with thread context
+            const replyData: SendMessageData = {
+                ...data,
+                threadId,
+                parentMessageId: threadId, // Parent is the root message
+            };
+
+            return await this.sendMessage(replyData);
+        } catch (error) {
+            logger.error('Error replying to thread:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get conversation threads
+     */
+    async getConversationThreads(
+        conversationId: string,
+        userId: string,
+        workplaceId: string
+    ): Promise<Array<{
+        threadId: string;
+        rootMessage: IMessage;
+        replyCount: number;
+        lastReplyAt?: Date;
+        unreadCount: number;
+    }>> {
+        try {
+            // Validate user is participant in conversation
+            const conversation = await Conversation.findOne({
+                _id: conversationId,
+                workplaceId,
+                'participants.userId': userId,
+                'participants.leftAt': { $exists: false },
+            });
+
+            if (!conversation) {
+                throw new Error('Conversation not found or access denied');
+            }
+
+            // Get all root messages that have threads
+            const rootMessages = await Message.find({
+                conversationId,
+                threadId: { $exists: true },
+                workplaceId,
+            }).populate('senderId', 'firstName lastName role');
+
+            // Get thread summaries
+            const threadSummaries = await Promise.all(
+                rootMessages.map(async (rootMessage) => {
+                    if (rootMessage.threadId?.toString() === rootMessage._id.toString()) {
+                        const summary = await this.getThreadSummary(
+                            rootMessage._id.toString(),
+                            userId,
+                            workplaceId
+                        );
+                        return {
+                            threadId: summary.threadId,
+                            rootMessage: summary.rootMessage,
+                            replyCount: summary.replyCount,
+                            lastReplyAt: summary.lastReplyAt,
+                            unreadCount: summary.unreadCount,
+                        };
+                    }
+                    return null;
+                })
+            );
+
+            return threadSummaries.filter(Boolean) as Array<{
+                threadId: string;
+                rootMessage: IMessage;
+                replyCount: number;
+                lastReplyAt?: Date;
+                unreadCount: number;
+            }>;
+        } catch (error) {
+            logger.error('Error getting conversation threads:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Create system message
      */
     private async createSystemMessage(
