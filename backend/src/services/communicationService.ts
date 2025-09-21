@@ -142,7 +142,7 @@ export class CommunicationService {
                     content: `You've been added to a new conversation: ${conversation.title}`,
                     data: {
                         conversationId: conversation._id,
-                        senderId: data.createdBy,
+                        senderId: data.createdBy as any,
                     },
                     priority: 'normal',
                     deliveryChannels: {
@@ -150,7 +150,7 @@ export class CommunicationService {
                         email: false,
                         sms: false,
                     },
-                    workplaceId: data.workplaceId,
+                    workplaceId: data.workplaceId as any,
                 });
             }
 
@@ -213,13 +213,13 @@ export class CommunicationService {
 
             // Send notification to new participant
             await notificationService.createNotification({
-                userId: userId,
+                userId: userId as any,
                 type: 'conversation_invite',
                 title: 'Added to Conversation',
                 content: `You've been added to the conversation: ${conversation.title}`,
                 data: {
                     conversationId: conversation._id,
-                    senderId: addedBy,
+                    senderId: addedBy as any,
                 },
                 priority: 'normal',
                 deliveryChannels: {
@@ -227,7 +227,7 @@ export class CommunicationService {
                     email: false,
                     sms: false,
                 },
-                workplaceId,
+                workplaceId: workplaceId as any,
             });
 
             logger.info(`User ${userId} added to conversation ${conversationId} by ${addedBy}`);
@@ -960,7 +960,7 @@ export class CommunicationService {
 
                 if (isParticipant) {
                     await notificationService.createNotification({
-                        userId: mentionedUserId,
+                        userId: mentionedUserId as any,
                         type: 'mention',
                         title: `${senderName} mentioned you`,
                         content: messagePreview + (message.content.text && message.content.text.length > 100 ? '...' : ''),
@@ -1003,7 +1003,7 @@ export class CommunicationService {
 
             for (const participant of participants) {
                 await notificationService.createNotification({
-                    userId: participant.userId.toString(),
+                    userId: participant.userId as any,
                     type: 'urgent_message',
                     title: 'Urgent Message',
                     content: `Urgent message in ${conversation.title}`,
@@ -1023,6 +1023,253 @@ export class CommunicationService {
             }
         } catch (error) {
             logger.error('Error handling urgent message notifications:', error);
+        }
+    }
+
+    /**
+     * Delete message with audit trail
+     */
+    async deleteMessage(
+        messageId: string,
+        userId: string,
+        workplaceId: string,
+        reason?: string
+    ): Promise<void> {
+        try {
+            const message = await Message.findOne({
+                _id: messageId,
+                workplaceId,
+            });
+
+            if (!message) {
+                throw new Error('Message not found');
+            }
+
+            // Check if user can delete (only sender or admin)
+            if (message.senderId.toString() !== userId) {
+                // Check if user is admin/pharmacist
+                const user = await User.findById(userId);
+                if (!user || !['pharmacist', 'doctor'].includes(user.role)) {
+                    throw new Error('Insufficient permissions to delete message');
+                }
+            }
+
+            // Soft delete the message
+            message.isDeleted = true;
+            message.deletedAt = new Date();
+            message.deletedBy = userId as any;
+            await message.save();
+
+            // TODO: Create audit log for message deletion
+            // await CommunicationAuditService.logMessageAction({
+            //     action: 'message_deleted',
+            //     userId,
+            //     messageId: message._id,
+            //     conversationId: message.conversationId,
+            //     details: {
+            //         reason,
+            //         originalContent: message.content.text,
+            //         deletedAt: message.deletedAt,
+            //     },
+            //     workplaceId,
+            // });
+
+            logger.info(`Message ${messageId} deleted by user ${userId}`);
+        } catch (error) {
+            logger.error('Error deleting message:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Add reaction to message
+     */
+    async addMessageReaction(
+        messageId: string,
+        userId: string,
+        emoji: string,
+        workplaceId: string
+    ): Promise<void> {
+        try {
+            const message = await Message.findOne({
+                _id: messageId,
+                workplaceId,
+            });
+
+            if (!message) {
+                throw new Error('Message not found');
+            }
+
+            // Validate user is participant in conversation
+            const conversation = await Conversation.findOne({
+                _id: message.conversationId,
+                'participants.userId': userId,
+                'participants.leftAt': { $exists: false },
+            });
+
+            if (!conversation) {
+                throw new Error('Access denied');
+            }
+
+            message.addReaction(userId as any, emoji);
+            await message.save();
+
+            // TODO: Create audit log for reaction added
+            // await CommunicationAuditService.logMessageAction({
+            //     action: 'reaction_added',
+            //     userId,
+            //     messageId: message._id,
+            //     conversationId: message.conversationId,
+            //     details: {
+            //         emoji,
+            //         timestamp: new Date(),
+            //     },
+            //     workplaceId,
+            // });
+
+            logger.debug(`Reaction ${emoji} added to message ${messageId} by user ${userId}`);
+        } catch (error) {
+            logger.error('Error adding reaction:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Remove reaction from message
+     */
+    async removeMessageReaction(
+        messageId: string,
+        userId: string,
+        emoji: string,
+        workplaceId: string
+    ): Promise<void> {
+        try {
+            const message = await Message.findOne({
+                _id: messageId,
+                workplaceId,
+            });
+
+            if (!message) {
+                throw new Error('Message not found');
+            }
+
+            // Validate user is participant in conversation
+            const conversation = await Conversation.findOne({
+                _id: message.conversationId,
+                'participants.userId': userId,
+                'participants.leftAt': { $exists: false },
+            });
+
+            if (!conversation) {
+                throw new Error('Access denied');
+            }
+
+            message.removeReaction(userId as any, emoji);
+            await message.save();
+
+            // TODO: Create audit log for reaction removed
+            // await CommunicationAuditService.logMessageAction({
+            //     action: 'reaction_removed',
+            //     userId,
+            //     messageId: message._id,
+            //     conversationId: message.conversationId,
+            //     details: {
+            //         emoji,
+            //         timestamp: new Date(),
+            //     },
+            //     workplaceId,
+            // });
+
+            logger.debug(`Reaction ${emoji} removed from message ${messageId} by user ${userId}`);
+        } catch (error) {
+            logger.error('Error removing reaction:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Edit message with version tracking
+     */
+    async editMessage(
+        messageId: string,
+        userId: string,
+        newContent: string,
+        reason: string,
+        workplaceId: string
+    ): Promise<void> {
+        try {
+            const message = await Message.findOne({
+                _id: messageId,
+                senderId: userId,
+                workplaceId,
+            });
+
+            if (!message) {
+                throw new Error('Message not found or not authorized to edit');
+            }
+
+            // Check if message is too old to edit (24 hours)
+            const messageAge = Date.now() - new Date(message.createdAt).getTime();
+            const maxEditAge = 24 * 60 * 60 * 1000; // 24 hours
+
+            if (messageAge > maxEditAge) {
+                throw new Error('Message is too old to edit');
+            }
+
+            const originalContent = message.content.text;
+            message.addEdit(newContent, userId as any, reason);
+            await message.save();
+
+            // TODO: Create audit log for message edited
+            // await CommunicationAuditService.logMessageAction({
+            //     action: 'message_edited',
+            //     userId,
+            //     messageId: message._id,
+            //     conversationId: message.conversationId,
+            //     details: {
+            //         originalContent,
+            //         newContent,
+            //         reason,
+            //         editedAt: new Date(),
+            //     },
+            //     workplaceId,
+            // });
+
+            logger.info(`Message ${messageId} edited by user ${userId}`);
+        } catch (error) {
+            logger.error('Error editing message:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get message status for multiple messages
+     */
+    async getMessageStatuses(
+        messageIds: string[],
+        userId: string,
+        workplaceId: string
+    ): Promise<Record<string, { status: string; readBy: any[]; reactions: any[] }>> {
+        try {
+            const messages = await Message.find({
+                _id: { $in: messageIds },
+                workplaceId,
+            }).select('_id status readBy reactions');
+
+            const statuses: Record<string, any> = {};
+
+            messages.forEach((message) => {
+                statuses[message._id.toString()] = {
+                    status: message.status,
+                    readBy: message.readBy,
+                    reactions: message.reactions,
+                };
+            });
+
+            return statuses;
+        } catch (error) {
+            logger.error('Error getting message statuses:', error);
+            throw error;
         }
     }
 

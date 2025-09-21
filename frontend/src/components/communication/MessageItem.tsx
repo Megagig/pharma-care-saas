@@ -15,25 +15,28 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Collapse,
+  Popover,
+  Grid,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
-import {
-  MoreVert,
-  Reply,
-  Edit,
-  Delete,
-  Check,
-  CheckCircle,
-  Schedule,
-  Error as ErrorIcon,
-  AttachFile,
-  Download,
-  Image as ImageIcon,
-  Description,
-  Forum,
-} from '@mui/icons-material';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import ReplyIcon from '@mui/icons-material/Reply';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CheckIcon from '@mui/icons-material/Check';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import ErrorIcon from '@mui/icons-material/Error';
+import DownloadIcon from '@mui/icons-material/Download';
+import ImageIcon from '@mui/icons-material/Image';
+import DescriptionIcon from '@mui/icons-material/Description';
+import ForumIcon from '@mui/icons-material/Forum';
+import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
 import { Message } from '../../stores/types';
 import { formatDistanceToNow, format } from 'date-fns';
+import { useResponsive, useIsTouchDevice } from '../../hooks/useResponsive';
+import { useTouchGestures } from '../../hooks/useTouchGestures';
 import MentionDisplay from './MentionDisplay';
 import ThreadIndicator from './ThreadIndicator';
 import ThreadView from './ThreadView';
@@ -52,6 +55,8 @@ interface MessageItemProps {
   compact?: boolean;
   showThreading?: boolean;
   conversationId?: string;
+  mobile?: boolean;
+  touchOptimized?: boolean;
 }
 
 const MessageItem: React.FC<MessageItemProps> = ({
@@ -68,7 +73,16 @@ const MessageItem: React.FC<MessageItemProps> = ({
   compact = false,
   showThreading = true,
   conversationId,
+  mobile = false,
+  touchOptimized = false,
 }) => {
+  const theme = useTheme();
+  const { isMobile, isSmallMobile } = useResponsive();
+  const isTouchDevice = useIsTouchDevice();
+
+  // Use mobile mode if explicitly set or detected
+  const isMobileMode = mobile || isMobile;
+  const isCompactMode = compact || isSmallMobile;
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editContent, setEditContent] = useState(message.content.text || '');
@@ -81,8 +95,42 @@ const MessageItem: React.FC<MessageItemProps> = ({
   } | null>(null);
   const [threadExpanded, setThreadExpanded] = useState(false);
   const [loadingThread, setLoadingThread] = useState(false);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isSwipeActive, setIsSwipeActive] = useState(false);
 
   const menuOpen = Boolean(menuAnchor);
+  const messageRef = React.useRef<HTMLDivElement>(null);
+
+  // Touch gestures for mobile interactions
+  const { attachGestures } = useTouchGestures({
+    onSwipeRight: () => {
+      if (isMobileMode && !isOwn) {
+        handleReply();
+      }
+    },
+    onSwipeLeft: () => {
+      if (isMobileMode && isOwn) {
+        handleEdit();
+      }
+    },
+    onLongPress: () => {
+      if (isMobileMode) {
+        handleMenuClick({ currentTarget: messageRef.current } as unknown);
+      }
+    },
+    onDoubleTap: () => {
+      if (isMobileMode) {
+        handleReactionClick('👍');
+      }
+    },
+  });
+
+  // Attach gestures to message element
+  React.useEffect(() => {
+    if (touchOptimized && messageRef.current) {
+      attachGestures(messageRef.current);
+    }
+  }, [touchOptimized, attachGestures]);
 
   // Fetch thread summary if this message has a thread
   useEffect(() => {
@@ -180,15 +228,15 @@ const MessageItem: React.FC<MessageItemProps> = ({
   const getStatusIcon = () => {
     switch (message.status) {
       case 'sent':
-        return <Check fontSize="small" color="disabled" />;
+        return <CheckIcon fontSize="small" color="disabled" />;
       case 'delivered':
-        return <CheckCircle fontSize="small" color="disabled" />;
+        return <CheckCircleIcon fontSize="small" color="disabled" />;
       case 'read':
-        return <CheckCircle fontSize="small" color="primary" />;
+        return <CheckCircleIcon fontSize="small" color="primary" />;
       case 'failed':
         return <ErrorIcon fontSize="small" color="error" />;
       default:
-        return <Schedule fontSize="small" color="disabled" />;
+        return <ScheduleIcon fontSize="small" color="disabled" />;
     }
   };
 
@@ -197,7 +245,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
     if (mimeType.startsWith('image/')) {
       return <ImageIcon />;
     }
-    return <Description />;
+    return <DescriptionIcon />;
   };
 
   // Format timestamp
@@ -241,7 +289,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
       >
         {showAvatar && (
           <Avatar sx={{ width: 32, height: 32, bgcolor: 'grey.300' }}>
-            <Delete fontSize="small" />
+            <DeleteIcon fontSize="small" />
           </Avatar>
         )}
         <Typography variant="body2" color="text.secondary" fontStyle="italic">
@@ -258,32 +306,63 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   return (
     <Box
+      ref={messageRef}
       sx={{
         display: 'flex',
-        gap: 1,
-        py: compact ? 0.5 : 1,
-        px: 1,
-        '&:hover': {
-          bgcolor: 'action.hover',
-        },
+        gap: isMobileMode ? 0.5 : 1,
+        py: isCompactMode ? 0.5 : 1,
+        px: isMobileMode ? 0.5 : 1,
+        '&:hover': !isMobileMode
+          ? {
+              bgcolor: 'action.hover',
+            }
+          : {},
         alignItems: 'flex-start',
+        position: 'relative',
+        transform: `translateX(${swipeOffset}px)`,
+        transition: isSwipeActive ? 'none' : 'transform 0.2s ease',
+        // Mobile-specific touch styles
+        ...(isMobileMode && {
+          minHeight: 48, // Minimum touch target size
+          '&:active': {
+            bgcolor: 'action.selected',
+          },
+        }),
       }}
     >
       {/* Avatar */}
       {showAvatar ? (
-        <Avatar sx={{ width: 32, height: 32 }}>
+        <Avatar
+          sx={{
+            width: isMobileMode ? 28 : 32,
+            height: isMobileMode ? 28 : 32,
+            fontSize: isMobileMode ? '0.75rem' : '1rem',
+          }}
+        >
           {/* TODO: Get user initials or avatar */}U
         </Avatar>
       ) : (
-        <Box sx={{ width: 32 }} /> // Spacer for alignment
+        <Box sx={{ width: isMobileMode ? 28 : 32 }} /> // Spacer for alignment
       )}
 
       {/* Message Content */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
         {/* Header */}
         {showAvatar && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-            <Typography variant="subtitle2" fontWeight="bold">
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: isMobileMode ? 0.5 : 1,
+              mb: 0.5,
+              flexWrap: isMobileMode ? 'wrap' : 'nowrap',
+            }}
+          >
+            <Typography
+              variant={isMobileMode ? 'body2' : 'subtitle2'}
+              fontWeight="bold"
+              sx={{ fontSize: isMobileMode ? '0.875rem' : undefined }}
+            >
               {/* TODO: Get user name */}
               User Name
             </Typography>
@@ -299,7 +378,14 @@ const MessageItem: React.FC<MessageItemProps> = ({
             )}
 
             {showTimestamp && (
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  fontSize: isMobileMode ? '0.75rem' : undefined,
+                  flexShrink: 0,
+                }}
+              >
                 {formatTimestamp(message.createdAt)}
               </Typography>
             )}
@@ -339,12 +425,18 @@ const MessageItem: React.FC<MessageItemProps> = ({
                     key={index}
                     variant="outlined"
                     sx={{
-                      p: 1,
+                      p: isMobileMode ? 0.75 : 1,
                       mb: 1,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 1,
-                      maxWidth: 300,
+                      gap: isMobileMode ? 0.5 : 1,
+                      maxWidth: isMobileMode ? '100%' : 300,
+                      cursor: isMobileMode ? 'pointer' : 'default',
+                      '&:active': isMobileMode
+                        ? {
+                            bgcolor: 'action.selected',
+                          }
+                        : {},
                     }}
                   >
                     {getFileIcon(attachment.mimeType)}
@@ -363,7 +455,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                           window.open(attachment.secureUrl, '_blank')
                         }
                       >
-                        <Download fontSize="small" />
+                        <DownloadIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   </Paper>
@@ -382,12 +474,20 @@ const MessageItem: React.FC<MessageItemProps> = ({
                   variant={hasUserReacted(emoji) ? 'filled' : 'outlined'}
                   onClick={() => handleReactionClick(emoji)}
                   sx={{
-                    height: 24,
-                    fontSize: '0.75rem',
+                    height: isMobileMode ? 28 : 24,
+                    fontSize: isMobileMode ? '0.8rem' : '0.75rem',
                     cursor: 'pointer',
-                    '&:hover': {
-                      bgcolor: 'action.hover',
-                    },
+                    minWidth: isMobileMode ? 44 : 'auto', // Minimum touch target
+                    '&:hover': !isMobileMode
+                      ? {
+                          bgcolor: 'action.hover',
+                        }
+                      : {},
+                    '&:active': isMobileMode
+                      ? {
+                          bgcolor: 'action.selected',
+                        }
+                      : {},
                   }}
                 />
               ))}
@@ -443,30 +543,45 @@ const MessageItem: React.FC<MessageItemProps> = ({
         <Box
           sx={{
             display: 'flex',
-            opacity: 0,
+            opacity: isMobileMode ? 1 : 0, // Always visible on mobile
             transition: 'opacity 0.2s',
-            '.MuiBox-root:hover &': {
-              opacity: 1,
-            },
+            '.MuiBox-root:hover &': !isMobileMode
+              ? {
+                  opacity: 1,
+                }
+              : {},
           }}
         >
-          <Tooltip title="Reply">
-            <IconButton size="small" onClick={handleReply}>
-              <Reply fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          {!isMobileMode && (
+            <>
+              <Tooltip title="Reply">
+                <IconButton size="small" onClick={handleReply}>
+                  <ReplyIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
 
-          <Tooltip title="Add reaction">
-            <IconButton
-              size="small"
-              onClick={() => setShowReactions(!showReactions)}
-            >
-              😊
-            </IconButton>
-          </Tooltip>
+              <Tooltip title="Add reaction">
+                <IconButton
+                  size="small"
+                  onClick={() => setShowReactions(!showReactions)}
+                >
+                  <EmojiEmotionsIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
 
-          <IconButton size="small" onClick={handleMenuClick}>
-            <MoreVert fontSize="small" />
+          <IconButton
+            size={isMobileMode ? 'medium' : 'small'}
+            onClick={handleMenuClick}
+            sx={{
+              ...(isMobileMode && {
+                minWidth: 44,
+                minHeight: 44,
+              }),
+            }}
+          >
+            <MoreVertIcon fontSize={isMobileMode ? 'medium' : 'small'} />
           </IconButton>
         </Box>
       </Box>
@@ -486,24 +601,24 @@ const MessageItem: React.FC<MessageItemProps> = ({
         }}
       >
         <MenuItem onClick={handleReply}>
-          <Reply fontSize="small" sx={{ mr: 1 }} />
+          <ReplyIcon fontSize="small" sx={{ mr: 1 }} />
           Reply
         </MenuItem>
         {showThreading && !message.threadId && onCreateThread && (
           <MenuItem onClick={handleCreateThread}>
-            <Forum fontSize="small" sx={{ mr: 1 }} />
+            <ForumIcon fontSize="small" sx={{ mr: 1 }} />
             Start Thread
           </MenuItem>
         )}
         {isOwn && (
           <MenuItem onClick={handleEdit}>
-            <Edit fontSize="small" sx={{ mr: 1 }} />
+            <EditIcon fontSize="small" sx={{ mr: 1 }} />
             Edit
           </MenuItem>
         )}
         {isOwn && (
           <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-            <Delete fontSize="small" sx={{ mr: 1 }} />
+            <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
             Delete
           </MenuItem>
         )}
@@ -515,22 +630,59 @@ const MessageItem: React.FC<MessageItemProps> = ({
           sx={{
             position: 'absolute',
             zIndex: 1000,
-            p: 1,
-            display: 'flex',
-            gap: 0.5,
+            p: 2,
             mt: 4,
+            ml: -2,
+            borderRadius: 2,
+            boxShadow: 3,
           }}
         >
-          {['👍', '❤️', '😊', '😮', '😢', '😡'].map((emoji) => (
-            <Button
-              key={emoji}
-              size="small"
-              onClick={() => handleReactionClick(emoji)}
-              sx={{ minWidth: 'auto', p: 0.5 }}
-            >
-              {emoji}
-            </Button>
-          ))}
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mb: 1, display: 'block' }}
+          >
+            Healthcare Reactions
+          </Typography>
+          <Grid container spacing={0.5} sx={{ maxWidth: 200 }}>
+            {[
+              { emoji: '👍', label: 'Approve' },
+              { emoji: '👎', label: 'Disapprove' },
+              { emoji: '❤️', label: 'Care' },
+              { emoji: '😊', label: 'Happy' },
+              { emoji: '😢', label: 'Concern' },
+              { emoji: '😮', label: 'Surprised' },
+              { emoji: '🤔', label: 'Thinking' },
+              { emoji: '✅', label: 'Confirmed' },
+              { emoji: '❌', label: 'Declined' },
+              { emoji: '⚠️', label: 'Warning' },
+              { emoji: '🚨', label: 'Urgent' },
+              { emoji: '📋', label: 'Note' },
+              { emoji: '💊', label: 'Medication' },
+              { emoji: '🩺', label: 'Medical' },
+              { emoji: '📊', label: 'Data' },
+            ].map(({ emoji, label }) => (
+              <Grid item key={emoji}>
+                <Tooltip title={label}>
+                  <Button
+                    size="small"
+                    onClick={() => handleReactionClick(emoji)}
+                    sx={{
+                      minWidth: 'auto',
+                      p: 0.5,
+                      fontSize: '1.2rem',
+                      '&:hover': {
+                        bgcolor: 'action.hover',
+                        transform: 'scale(1.1)',
+                      },
+                    }}
+                  >
+                    {emoji}
+                  </Button>
+                </Tooltip>
+              </Grid>
+            ))}
+          </Grid>
         </Paper>
       )}
 

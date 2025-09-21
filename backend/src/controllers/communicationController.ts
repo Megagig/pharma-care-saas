@@ -412,30 +412,21 @@ export class CommunicationController {
             const userId = req.user!.id;
             const workplaceId = req.user!.workplaceId;
 
-            const message = await Message.findOne({
-                _id: messageId,
-                workplaceId,
-            });
+            await communicationService.addMessageReaction(messageId, userId, emoji, workplaceId);
 
-            if (!message) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Message not found',
-                });
-            }
-
-            message.addReaction(userId as any, emoji);
-            await message.save();
+            // Get updated message for socket notification
+            const message = await Message.findById(messageId);
 
             // Notify via socket
             const app = req.app;
             const communicationSocket = app.get('communicationSocket');
-            if (communicationSocket) {
+            if (communicationSocket && message) {
                 communicationSocket.io.to(`conversation:${message.conversationId}`).emit('message:reaction_added', {
                     messageId,
                     emoji,
                     userId,
                     timestamp: new Date(),
+                    reactions: message.reactions,
                 });
             }
 
@@ -463,30 +454,21 @@ export class CommunicationController {
             const userId = req.user!.id;
             const workplaceId = req.user!.workplaceId;
 
-            const message = await Message.findOne({
-                _id: messageId,
-                workplaceId,
-            });
+            await communicationService.removeMessageReaction(messageId, userId, emoji, workplaceId);
 
-            if (!message) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Message not found',
-                });
-            }
-
-            message.removeReaction(userId as any, emoji);
-            await message.save();
+            // Get updated message for socket notification
+            const message = await Message.findById(messageId);
 
             // Notify via socket
             const app = req.app;
             const communicationSocket = app.get('communicationSocket');
-            if (communicationSocket) {
+            if (communicationSocket && message) {
                 communicationSocket.io.to(`conversation:${message.conversationId}`).emit('message:reaction_removed', {
                     messageId,
                     emoji,
                     userId,
                     timestamp: new Date(),
+                    reactions: message.reactions,
                 });
             }
 
@@ -527,24 +509,29 @@ export class CommunicationController {
                 });
             }
 
-            message.addEdit(content, userId as any, reason);
-            await message.save();
+            await communicationService.editMessage(messageId, userId, content, reason || 'Message edited', workplaceId);
+
+            // Get updated message
+            const updatedMessage = await Message.findById(messageId)
+                .populate('senderId', 'firstName lastName role')
+                .populate('editHistory.editedBy', 'firstName lastName');
 
             // Notify via socket
             const app = req.app;
             const communicationSocket = app.get('communicationSocket');
-            if (communicationSocket) {
-                communicationSocket.io.to(`conversation:${message.conversationId}`).emit('message:edited', {
+            if (communicationSocket && updatedMessage) {
+                communicationSocket.io.to(`conversation:${updatedMessage.conversationId}`).emit('message:edited', {
                     messageId,
                     content,
                     editedBy: userId,
                     timestamp: new Date(),
+                    editHistory: updatedMessage.editHistory,
                 });
             }
 
             res.json({
                 success: true,
-                data: message,
+                data: updatedMessage,
                 message: 'Message edited successfully',
             });
         } catch (error) {
@@ -552,6 +539,79 @@ export class CommunicationController {
             res.status(400).json({
                 success: false,
                 message: 'Failed to edit message',
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Delete message
+     */
+    async deleteMessage(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const messageId = req.params.id;
+            const { reason } = req.body;
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+
+            await communicationService.deleteMessage(messageId, userId, workplaceId, reason);
+
+            // Get updated message to show deletion
+            const message = await Message.findById(messageId);
+
+            // Notify via socket
+            const app = req.app;
+            const communicationSocket = app.get('communicationSocket');
+            if (communicationSocket && message) {
+                communicationSocket.io.to(`conversation:${message.conversationId}`).emit('message:deleted', {
+                    messageId,
+                    deletedBy: userId,
+                    timestamp: new Date(),
+                    reason,
+                });
+            }
+
+            res.json({
+                success: true,
+                message: 'Message deleted successfully',
+            });
+        } catch (error) {
+            logger.error('Error deleting message:', error);
+            res.status(400).json({
+                success: false,
+                message: 'Failed to delete message',
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Get message statuses
+     */
+    async getMessageStatuses(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const { messageIds } = req.body;
+            const userId = req.user!.id;
+            const workplaceId = req.user!.workplaceId;
+
+            if (!Array.isArray(messageIds) || messageIds.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Message IDs array is required',
+                });
+            }
+
+            const statuses = await communicationService.getMessageStatuses(messageIds, userId, workplaceId);
+
+            res.json({
+                success: true,
+                data: statuses,
+            });
+        } catch (error) {
+            logger.error('Error getting message statuses:', error);
+            res.status(400).json({
+                success: false,
+                message: 'Failed to get message statuses',
                 error: error.message,
             });
         }

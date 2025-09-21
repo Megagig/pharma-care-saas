@@ -1,189 +1,140 @@
-import { useTheme, useMediaQuery } from '@mui/material';
-import { Breakpoint } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
+import { useMediaQuery } from '@mui/material';
+import { useState, useEffect } from 'react';
 
-/**
- * Hook for responsive design utilities
- */
-export const useResponsive = () => {
+export interface ResponsiveBreakpoints {
+  isMobile: boolean;
+  isTablet: boolean;
+  isDesktop: boolean;
+  isSmallMobile: boolean;
+  isLargeMobile: boolean;
+  screenWidth: number;
+  screenHeight: number;
+}
+
+export const useResponsive = (): ResponsiveBreakpoints => {
   const theme = useTheme();
+  const [screenDimensions, setScreenDimensions] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800,
+  });
 
-  // Breakpoint queries
+  // MUI breakpoints
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isLargeMobile = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
-  // Pre-computed breakpoint queries to avoid hooks in helper functions
-  const breakpointQueries = {
-    xs: useMediaQuery(theme.breakpoints.up('xs')),
-    sm: useMediaQuery(theme.breakpoints.up('sm')),
-    md: useMediaQuery(theme.breakpoints.up('md')),
-    lg: useMediaQuery(theme.breakpoints.up('lg')),
-    xl: useMediaQuery(theme.breakpoints.up('xl')),
-    down_xs: useMediaQuery(theme.breakpoints.down('xs')),
-    down_sm: useMediaQuery(theme.breakpoints.down('sm')),
-    down_md: useMediaQuery(theme.breakpoints.down('md')),
-    down_lg: useMediaQuery(theme.breakpoints.down('lg')),
-    down_xl: useMediaQuery(theme.breakpoints.down('xl')),
-  };
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
 
-  // Helper functions that use pre-computed queries
-  const isUp = (breakpoint: Breakpoint) => {
-    return breakpointQueries[breakpoint] || false;
-  };
-
-  const isDown = (breakpoint: Breakpoint) => {
-    return breakpointQueries[`down_${breakpoint}` as keyof typeof breakpointQueries] || false;
-  };
-
-  const isBetween = (start: Breakpoint, end: Breakpoint) => {
-    return isUp(start) && isDown(end);
-  };
-
-  // Screen size categories
-  const screenSize = (() => {
-    if (isSmallMobile) return 'xs';
-    if (isLargeMobile) return 'sm';
-    if (isTablet) return 'md';
-    if (isDesktop) return 'lg';
-    return 'xl';
-  })();
-
-  // Responsive column counts
-  const getColumns = (xs = 1, sm = 2, md = 3, lg = 4, xl = 5) => {
-    if (isSmallMobile) return xs;
-    if (isLargeMobile) return sm;
-    if (isTablet) return md;
-    if (isDesktop) return lg;
-    return xl;
-  };
-
-  // Responsive spacing
-  const getSpacing = (mobile = 1, tablet = 2, desktop = 3) => {
-    if (isMobile) return mobile;
-    if (isTablet) return tablet;
-    return desktop;
-  };
-
-  // Responsive font sizes
-  const getFontSize = (
-    mobile = '0.875rem',
-    tablet = '1rem',
-    desktop = '1.125rem'
-  ) => {
-    if (isMobile) return mobile;
-    if (isTablet) return tablet;
-    return desktop;
-  };
-
-  // Dialog size based on screen
-  const getDialogMaxWidth = (
-    mobile: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false = 'sm',
-    tablet: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false = 'md',
-    desktop: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false = 'lg'
-  ) => {
-    if (isMobile) return mobile;
-    if (isTablet) return tablet;
-    return desktop;
-  };
-
-  // Table display mode
-  const shouldUseCardLayout = isMobile;
-  const shouldCollapseSidebar = isMobile;
-  const shouldShowCompactHeader = isMobile;
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return {
-    // Breakpoint booleans
     isMobile,
     isTablet,
     isDesktop,
     isSmallMobile,
     isLargeMobile,
-
-    // Breakpoint functions
-    isUp,
-    isDown,
-    isBetween,
-
-    // Screen size
-    screenSize,
-
-    // Responsive helpers
-    getColumns,
-    getSpacing,
-    getFontSize,
-    getDialogMaxWidth,
-
-    // Layout decisions
-    shouldUseCardLayout,
-    shouldCollapseSidebar,
-    shouldShowCompactHeader,
-
-    // Theme reference
-    theme,
+    screenWidth: screenDimensions.width,
+    screenHeight: screenDimensions.height,
   };
 };
 
-/**
- * Hook for responsive table/list switching
- */
-export const useResponsiveList = () => {
-  const { isMobile } = useResponsive();
-
-  return {
-    useCardLayout: isMobile,
-    useTableLayout: !isMobile,
-  };
+export const useIsMobile = (): boolean => {
+  const theme = useTheme();
+  return useMediaQuery(theme.breakpoints.down('md'));
 };
 
-/**
- * Hook for responsive dialog sizing
- */
-export const useResponsiveDialog = () => {
-  const { getDialogMaxWidth, isMobile } = useResponsive();
-
-  return {
-    maxWidth: getDialogMaxWidth('xs', 'sm', 'md'),
-    fullScreen: isMobile,
-    PaperProps: {
-      sx: {
-        ...(isMobile && {
-          margin: 0,
-          width: '100%',
-          maxHeight: '100%',
-          borderRadius: 0,
-        }),
-      },
-    },
-  };
+export const useIsTablet = (): boolean => {
+  const theme = useTheme();
+  return useMediaQuery(theme.breakpoints.between('md', 'lg'));
 };
 
-/**
- * Hook for responsive grid layouts
- */
-export const useResponsiveGrid = () => {
-  const { getColumns, getSpacing } = useResponsive();
+export const useIsDesktop = (): boolean => {
+  const theme = useTheme();
+  return useMediaQuery(theme.breakpoints.up('lg'));
+};
 
-  const getGridProps = (
-    cols = { xs: 1, sm: 2, md: 3, lg: 4 },
-    spacing = { mobile: 1, tablet: 2, desktop: 3 }
-  ) => ({
-    container: true,
-    spacing: getSpacing(spacing.mobile, spacing.tablet, spacing.desktop),
-    columns: {
-      xs: cols.xs,
-      sm: cols.sm,
-      md: cols.md,
-      lg: cols.lg,
-    },
+// Touch device detection
+export const useIsTouchDevice = (): boolean => {
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    const checkTouchDevice = () => {
+      return (
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0 ||
+        // @ts-ignore
+        navigator.msMaxTouchPoints > 0
+      );
+    };
+
+    setIsTouchDevice(checkTouchDevice());
+  }, []);
+
+  return isTouchDevice;
+};
+
+// Orientation detection
+export const useOrientation = () => {
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
+
+  useEffect(() => {
+    const handleOrientationChange = () => {
+      setOrientation(window.innerHeight > window.innerWidth ? 'portrait' : 'landscape');
+    };
+
+    handleOrientationChange(); // Set initial orientation
+    window.addEventListener('resize', handleOrientationChange);
+    window.addEventListener('orientationchange', handleOrientationChange);
+
+    return () => {
+      window.removeEventListener('resize', handleOrientationChange);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+    };
+  }, []);
+
+  return orientation;
+};
+
+// Safe area insets for mobile devices (notch support)
+export const useSafeAreaInsets = () => {
+  const [safeAreaInsets, setSafeAreaInsets] = useState({
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
   });
 
-  return {
-    getGridProps,
-    getColumns,
-    spacing: getSpacing(),
-  };
-};
+  useEffect(() => {
+    const updateSafeAreaInsets = () => {
+      const computedStyle = getComputedStyle(document.documentElement);
+      setSafeAreaInsets({
+        top: parseInt(computedStyle.getPropertyValue('--safe-area-inset-top') || '0'),
+        right: parseInt(computedStyle.getPropertyValue('--safe-area-inset-right') || '0'),
+        bottom: parseInt(computedStyle.getPropertyValue('--safe-area-inset-bottom') || '0'),
+        left: parseInt(computedStyle.getPropertyValue('--safe-area-inset-left') || '0'),
+      });
+    };
 
-export default useResponsive;
+    updateSafeAreaInsets();
+    window.addEventListener('resize', updateSafeAreaInsets);
+    window.addEventListener('orientationchange', updateSafeAreaInsets);
+
+    return () => {
+      window.removeEventListener('resize', updateSafeAreaInsets);
+      window.removeEventListener('orientationchange', updateSafeAreaInsets);
+    };
+  }, []);
+
+  return safeAreaInsets;
+};
