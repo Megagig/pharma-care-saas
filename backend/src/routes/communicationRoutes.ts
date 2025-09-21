@@ -271,7 +271,7 @@ router.put(
 
 /**
  * @route   GET /api/communication/search/messages
- * @desc    Search messages
+ * @desc    Enhanced message search with advanced filtering
  * @access  Private
  */
 router.get(
@@ -281,11 +281,20 @@ router.get(
         query('q').isString().trim().isLength({ min: 1, max: 100 }),
         query('conversationId').optional().isMongoId(),
         query('senderId').optional().isMongoId(),
+        query('participantId').optional().isMongoId(),
         query('type').optional().isIn(['text', 'file', 'image', 'clinical_note', 'system', 'voice_note']),
+        query('fileType').optional().isString().trim(),
         query('priority').optional().isIn(['normal', 'high', 'urgent']),
+        query('hasAttachments').optional().isBoolean(),
+        query('hasMentions').optional().isBoolean(),
         query('dateFrom').optional().isISO8601(),
         query('dateTo').optional().isISO8601(),
+        query('tags').optional().isArray(),
+        query('tags.*').optional().isString().trim(),
+        query('sortBy').optional().isIn(['relevance', 'date', 'sender']),
+        query('sortOrder').optional().isIn(['asc', 'desc']),
         query('limit').optional().isInt({ min: 1, max: 100 }),
+        query('offset').optional().isInt({ min: 0 }),
     ],
     handleValidationErrors,
     decryptMessageContent,
@@ -307,10 +316,130 @@ router.get(
         query('status').optional().isIn(['active', 'archived', 'resolved', 'closed']),
         query('priority').optional().isIn(['low', 'normal', 'high', 'urgent']),
         query('patientId').optional().isMongoId(),
+        query('tags').optional().isArray(),
+        query('tags.*').optional().isString().trim(),
+        query('dateFrom').optional().isISO8601(),
+        query('dateTo').optional().isISO8601(),
+        query('sortBy').optional().isIn(['relevance', 'date']),
+        query('sortOrder').optional().isIn(['asc', 'desc']),
         query('limit').optional().isInt({ min: 1, max: 100 }),
+        query('offset').optional().isInt({ min: 0 }),
     ],
     handleValidationErrors,
     communicationController.searchConversations
+);
+
+/**
+ * @route   GET /api/communication/search/suggestions
+ * @desc    Get search suggestions
+ * @access  Private
+ */
+router.get(
+    '/search/suggestions',
+    auth,
+    [
+        query('q').optional().isString().trim().isLength({ max: 100 }),
+    ],
+    handleValidationErrors,
+    communicationController.getSearchSuggestions
+);
+
+/**
+ * @route   GET /api/communication/search/history
+ * @desc    Get user's search history
+ * @access  Private
+ */
+router.get(
+    '/search/history',
+    auth,
+    [
+        query('type').optional().isIn(['message', 'conversation']),
+        query('limit').optional().isInt({ min: 1, max: 50 }),
+    ],
+    handleValidationErrors,
+    communicationController.getSearchHistory
+);
+
+/**
+ * @route   GET /api/communication/search/popular
+ * @desc    Get popular searches in workplace
+ * @access  Private
+ */
+router.get(
+    '/search/popular',
+    auth,
+    [
+        query('type').optional().isIn(['message', 'conversation']),
+        query('limit').optional().isInt({ min: 1, max: 20 }),
+    ],
+    handleValidationErrors,
+    communicationController.getPopularSearches
+);
+
+/**
+ * @route   POST /api/communication/search/save
+ * @desc    Save a search for future use
+ * @access  Private
+ */
+router.post(
+    '/search/save',
+    auth,
+    [
+        body('name').isString().trim().isLength({ min: 1, max: 100 }),
+        body('description').optional().isString().trim().isLength({ max: 500 }),
+        body('query').isString().trim().isLength({ min: 1, max: 500 }),
+        body('filters').optional().isObject(),
+        body('searchType').isIn(['message', 'conversation']),
+        body('isPublic').optional().isBoolean(),
+    ],
+    handleValidationErrors,
+    communicationController.saveSearch
+);
+
+/**
+ * @route   GET /api/communication/search/saved
+ * @desc    Get user's saved searches
+ * @access  Private
+ */
+router.get(
+    '/search/saved',
+    auth,
+    [
+        query('type').optional().isIn(['message', 'conversation']),
+        query('includePublic').optional().isBoolean(),
+    ],
+    handleValidationErrors,
+    communicationController.getSavedSearches
+);
+
+/**
+ * @route   POST /api/communication/search/saved/:searchId/use
+ * @desc    Use a saved search (increment use count)
+ * @access  Private
+ */
+router.post(
+    '/search/saved/:searchId/use',
+    auth,
+    [
+        param('searchId').isMongoId(),
+    ],
+    handleValidationErrors,
+    communicationController.useSavedSearch
+);
+
+/**
+ * @route   DELETE /api/communication/search/saved/:searchId
+ * @desc    Delete a saved search
+ * @access  Private
+ */
+router.delete(
+    '/search/saved/:searchId',
+    auth,
+    [
+        param('searchId').isMongoId(),
+    ],
+    handleValidationErrors,
+    communicationController.deleteSavedSearch
 );
 
 // Patient-specific routes

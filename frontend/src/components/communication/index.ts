@@ -33,6 +33,11 @@ export { default as MentionInput } from './MentionInput';
 export { default as MentionDisplay } from './MentionDisplay';
 export { default as MentionSearch } from './MentionSearch';
 
+// Search components
+export { default as SearchInterface } from './SearchInterface';
+export { default as MessageSearch } from './MessageSearch';
+export { default as ConversationSearch } from './ConversationSearch';
+
 // Audit and compliance components
 export { default as AuditLogViewer } from './AuditLogViewer';
 export { default as ComplianceDashboard } from './ComplianceDashboard';
