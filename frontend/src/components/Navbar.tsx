@@ -17,6 +17,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
 import ThemeToggle from './common/ThemeToggle';
+import CommunicationNotificationBadge from './communication/CommunicationNotificationBadge';
 
 /**
  * Main navigation bar component displayed at the top of the application
@@ -99,6 +100,9 @@ const Navbar: React.FC = () => {
           <Box sx={{ mr: 1 }}>
             <ThemeToggle size="sm" />
           </Box>
+
+          {/* Communication Hub Notification Badge */}
+          <CommunicationNotificationBadge size="medium" showPreview={true} />
 
           <IconButton
             size="large"
