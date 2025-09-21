@@ -11,6 +11,10 @@ import {
     LoadingState,
     ErrorState,
 } from './types';
+import { communicationCache } from '../services/cacheService';
+import { offlineStorage } from '../services/offlineStorageService';
+import { performanceMonitor } from '../utils/performanceMonitor';
+import { useConnectionPool } from '../hooks/useConnectionPool';
 
 interface CommunicationState {
     // Conversations
@@ -89,7 +93,7 @@ interface CommunicationState {
     downloadFile: (fileId: string) => Promise<void>;
     deleteFile: (fileId: string) => Promise<boolean>;
     getFileMetadata: (fileId: string) => Promise<any>;
-    listConversationFiles: (conversationId: string, filters?: any) => Promise<any[]>;
+    listConversationFiles: (conversationId: string, filters?: any) => Promise<unknown[]>;
 
     // Actions - Real-time Updates
     setTypingUsers: (conversationId: string, userIds: string[]) => void;
@@ -215,47 +219,89 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                 fetchConversations: async (filters) => {
                     const { setLoading, setError } = get();
-                    setLoading('fetchConversations', true);
-                    setError('fetchConversations', null);
 
-                    try {
-                        const currentFilters = filters || get().conversationFilters;
-                        const queryParams = new URLSearchParams();
+                    return performanceMonitor.measureFunction('fetch_conversations', async () => {
+                        setLoading('fetchConversations', true);
+                        setError('fetchConversations', null);
 
-                        Object.entries(currentFilters).forEach(([key, value]) => {
-                            if (value !== undefined && value !== null && value !== '') {
-                                queryParams.append(key, value.toString());
+                        try {
+                            const currentFilters = filters || get().conversationFilters;
+                            const cacheKey = JSON.stringify(currentFilters);
+
+                            // Check cache first
+                            const cachedConversations = communicationCache.getCachedConversationList(cacheKey);
+                            if (cachedConversations) {
+                                set({
+                                    conversations: cachedConversations,
+                                });
+                                return;
                             }
-                        });
 
-                        // TODO: Replace with actual API call
-                        const response = await fetch(`/api/conversations?${queryParams}`, {
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            // Try offline storage if online request fails
+                            let conversations: Conversation[] = [];
+                            let pagination = {
+                                page: currentFilters.page || 1,
+                                limit: currentFilters.limit || 20,
+                                total: 0,
+                                pages: 0,
+                            };
 
-                        if (!response.ok) {
-                            throw new Error('Failed to fetch conversations');
+                            try {
+                                const queryParams = new URLSearchParams();
+                                Object.entries(currentFilters).forEach(([key, value]) => {
+                                    if (value !== undefined && value !== null && value !== '') {
+                                        queryParams.append(key, value.toString());
+                                    }
+                                });
+
+                                const response = await fetch(`/api/conversations?${queryParams}`, {
+                                    headers: {
+                                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                    },
+                                });
+
+                                if (!response.ok) {
+                                    throw new Error('Failed to fetch conversations');
+                                }
+
+                                const result = await response.json();
+                                conversations = result.data || [];
+                                pagination = {
+                                    page: result.pagination?.page || currentFilters.page || 1,
+                                    limit: result.pagination?.limit || currentFilters.limit || 20,
+                                    total: result.pagination?.total || 0,
+                                    pages: result.pagination?.pages || 0,
+                                };
+
+                                // Cache the results
+                                communicationCache.cacheConversationList(cacheKey, conversations);
+
+                                // Store offline for future use
+                                conversations.forEach(conv => offlineStorage.storeConversation(conv));
+
+                            } catch (networkError) {
+                                // Fall back to offline storage
+                                const workplaceId = localStorage.getItem('workplaceId');
+                                if (workplaceId) {
+                                    conversations = await offlineStorage.getStoredConversations(workplaceId);
+                                }
+
+                                if (conversations.length === 0) {
+                                    throw networkError;
+                                }
+                            }
+
+                            set({
+                                conversations,
+                                conversationPagination: pagination,
+                            });
+                        } catch (error) {
+                            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+                            setError('fetchConversations', errorMessage);
+                        } finally {
+                            setLoading('fetchConversations', false);
                         }
-
-                        const result = await response.json();
-
-                        set({
-                            conversations: result.data || [],
-                            conversationPagination: {
-                                page: result.pagination?.page || currentFilters.page || 1,
-                                limit: result.pagination?.limit || currentFilters.limit || 20,
-                                total: result.pagination?.total || 0,
-                                pages: result.pagination?.pages || 0,
-                            },
-                        });
-                    } catch (error) {
-                        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-                        setError('fetchConversations', errorMessage);
-                    } finally {
-                        setLoading('fetchConversations', false);
-                    }
+                    });
                 },
 
                 updateConversation: (id, updates) => {
@@ -499,59 +545,102 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                 fetchMessages: async (conversationId, filters) => {
                     const { setLoading, setError } = get();
-                    setLoading('fetchMessages', true);
-                    setError('fetchMessages', null);
 
-                    try {
-                        const currentFilters = filters || get().messageFilters[conversationId] || {
-                            sortBy: 'createdAt',
-                            sortOrder: 'desc',
-                            page: 1,
-                            limit: 50,
-                        };
+                    return performanceMonitor.measureFunction('fetch_messages', async () => {
+                        setLoading('fetchMessages', true);
+                        setError('fetchMessages', null);
 
-                        const queryParams = new URLSearchParams();
-                        Object.entries(currentFilters).forEach(([key, value]) => {
-                            if (value !== undefined && value !== null && value !== '') {
-                                queryParams.append(key, value.toString());
+                        try {
+                            const currentFilters = filters || get().messageFilters[conversationId] || {
+                                sortBy: 'createdAt',
+                                sortOrder: 'desc',
+                                page: 1,
+                                limit: 50,
+                            };
+
+                            const page = currentFilters.page || 1;
+
+                            // Check cache first
+                            const cachedMessages = communicationCache.getCachedMessageList(conversationId, page);
+                            if (cachedMessages) {
+                                set((state) => ({
+                                    messages: {
+                                        ...state.messages,
+                                        [conversationId]: cachedMessages,
+                                    },
+                                }));
+                                return;
                             }
-                        });
 
-                        // TODO: Replace with actual API call
-                        const response = await fetch(`/api/conversations/${conversationId}/messages?${queryParams}`, {
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            let messages: Message[] = [];
+                            let pagination = {
+                                page: currentFilters.page || 1,
+                                limit: currentFilters.limit || 50,
+                                total: 0,
+                                pages: 0,
+                                hasMore: false,
+                            };
 
-                        if (!response.ok) {
-                            throw new Error('Failed to fetch messages');
-                        }
+                            try {
+                                const queryParams = new URLSearchParams();
+                                Object.entries(currentFilters).forEach(([key, value]) => {
+                                    if (value !== undefined && value !== null && value !== '') {
+                                        queryParams.append(key, value.toString());
+                                    }
+                                });
 
-                        const result = await response.json();
+                                const response = await fetch(`/api/conversations/${conversationId}/messages?${queryParams}`, {
+                                    headers: {
+                                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                    },
+                                });
 
-                        set((state) => ({
-                            messages: {
-                                ...state.messages,
-                                [conversationId]: result.data || [],
-                            },
-                            messagePagination: {
-                                ...state.messagePagination,
-                                [conversationId]: {
+                                if (!response.ok) {
+                                    throw new Error('Failed to fetch messages');
+                                }
+
+                                const result = await response.json();
+                                messages = result.data || [];
+                                pagination = {
                                     page: result.pagination?.page || currentFilters.page || 1,
                                     limit: result.pagination?.limit || currentFilters.limit || 50,
                                     total: result.pagination?.total || 0,
                                     pages: result.pagination?.pages || 0,
                                     hasMore: result.pagination?.hasMore || false,
+                                };
+
+                                // Cache the results
+                                communicationCache.cacheMessageList(conversationId, messages, page);
+
+                                // Store offline
+                                messages.forEach(msg => offlineStorage.storeMessage(msg));
+
+                            } catch (networkError) {
+                                // Fall back to offline storage
+                                messages = await offlineStorage.getStoredMessages(conversationId, currentFilters.limit);
+
+                                if (messages.length === 0) {
+                                    throw networkError;
+                                }
+                            }
+
+                            set((state) => ({
+                                messages: {
+                                    ...state.messages,
+                                    [conversationId]: messages,
                                 },
-                            },
-                        }));
-                    } catch (error) {
-                        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-                        setError('fetchMessages', errorMessage);
-                    } finally {
-                        setLoading('fetchMessages', false);
-                    }
+                                messagePagination: {
+                                    ...state.messagePagination,
+                                    [conversationId]: pagination,
+                                },
+                            }));
+                        } catch (error) {
+                            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+                            setError('fetchMessages', errorMessage);
+                        } finally {
+                            setLoading('fetchMessages', false);
+                        }
+                    }, { conversationId });
                 },
 
                 loadMoreMessages: async (conversationId) => {
