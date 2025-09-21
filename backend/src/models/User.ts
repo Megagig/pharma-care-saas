@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
+import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 
 export interface IUser extends Document {
   email: string;
@@ -9,30 +9,30 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   role:
-  | 'pharmacist'
-  | 'pharmacy_team'
-  | 'pharmacy_outlet'
-  | 'intern_pharmacist'
-  | 'super_admin'
-  | 'owner';
+    | 'pharmacist'
+    | 'pharmacy_team'
+    | 'pharmacy_outlet'
+    | 'intern_pharmacist'
+    | 'super_admin'
+    | 'owner';
   status:
-  | 'pending'
-  | 'active'
-  | 'suspended'
-  | 'license_pending'
-  | 'license_rejected';
+    | 'pending'
+    | 'active'
+    | 'suspended'
+    | 'license_pending'
+    | 'license_rejected';
   emailVerified: boolean;
   verificationToken?: string;
   verificationCode?: string;
   resetToken?: string;
   workplaceId?: mongoose.Types.ObjectId; // Changed from pharmacyId
   workplaceRole?:
-  | 'Owner'
-  | 'Staff'
-  | 'Pharmacist'
-  | 'Cashier'
-  | 'Technician'
-  | 'Assistant'; // Role within workplace
+    | 'Owner'
+    | 'Staff'
+    | 'Pharmacist'
+    | 'Cashier'
+    | 'Technician'
+    | 'Assistant'; // Role within workplace
   currentPlanId: mongoose.Types.ObjectId;
   planOverride?: Record<string, any>;
   currentSubscriptionId?: mongoose.Types.ObjectId;
@@ -59,12 +59,12 @@ export interface IUser extends Document {
 
   // Subscription and access
   subscriptionTier:
-  | 'free_trial'
-  | 'basic'
-  | 'pro'
-  | 'pharmily'
-  | 'network'
-  | 'enterprise';
+    | 'free_trial'
+    | 'basic'
+    | 'pro'
+    | 'pharmily'
+    | 'network'
+    | 'enterprise';
   trialStartDate?: Date;
   trialEndDate?: Date;
   features: string[]; // Enabled features for this user

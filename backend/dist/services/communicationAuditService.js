@@ -26,31 +26,31 @@ class CommunicationAuditService {
             });
             auditLog.setRiskLevel();
             await auditLog.save();
-            logger_1.default.info('Communication audit log created', {
+            logger_1.default.info("Communication audit log created", {
                 auditId: auditLog._id,
                 action: auditLog.action,
                 userId: context.userId,
                 targetType: data.targetType,
                 riskLevel: auditLog.riskLevel,
-                service: 'communication-audit',
+                service: "communication-audit",
             });
             return auditLog;
         }
         catch (error) {
-            logger_1.default.error('Failed to create communication audit log', {
-                error: error instanceof Error ? error.message : 'Unknown error',
+            logger_1.default.error("Failed to create communication audit log", {
+                error: error instanceof Error ? error.message : "Unknown error",
                 action: data.action,
                 userId: context.userId,
-                service: 'communication-audit',
+                service: "communication-audit",
             });
             throw error;
         }
     }
     static async logMessageSent(context, messageId, conversationId, details) {
         return this.createAuditLog(context, {
-            action: 'message_sent',
+            action: "message_sent",
             targetId: messageId,
-            targetType: 'message',
+            targetType: "message",
             details: {
                 conversationId,
                 patientId: details.patientId,
@@ -58,16 +58,16 @@ class CommunicationAuditService {
                     messageType: details.messageType,
                     hasAttachments: details.hasAttachments || false,
                     mentionCount: details.mentionCount || 0,
-                    priority: details.priority || 'normal',
+                    priority: details.priority || "normal",
                 },
             },
         });
     }
     static async logMessageRead(context, messageId, conversationId, patientId) {
         return this.createAuditLog(context, {
-            action: 'message_read',
+            action: "message_read",
             targetId: messageId,
-            targetType: 'message',
+            targetType: "message",
             details: {
                 conversationId,
                 patientId,
@@ -79,25 +79,25 @@ class CommunicationAuditService {
     }
     static async logConversationCreated(context, conversationId, details) {
         return this.createAuditLog(context, {
-            action: 'conversation_created',
+            action: "conversation_created",
             targetId: conversationId,
-            targetType: 'conversation',
+            targetType: "conversation",
             details: {
                 conversationId,
                 patientId: details.patientId,
                 metadata: {
                     conversationType: details.conversationType,
                     participantCount: details.participantCount,
-                    priority: details.priority || 'normal',
+                    priority: details.priority || "normal",
                 },
             },
         });
     }
     static async logParticipantAdded(context, conversationId, addedUserId, details) {
         return this.createAuditLog(context, {
-            action: 'participant_added',
+            action: "participant_added",
             targetId: conversationId,
-            targetType: 'conversation',
+            targetType: "conversation",
             details: {
                 conversationId,
                 patientId: details.patientId,
@@ -111,9 +111,9 @@ class CommunicationAuditService {
     }
     static async logFileUploaded(context, fileId, conversationId, details) {
         return this.createAuditLog(context, {
-            action: 'file_uploaded',
+            action: "file_uploaded",
             targetId: conversationId,
-            targetType: 'file',
+            targetType: "file",
             details: {
                 conversationId,
                 patientId: details.patientId,
@@ -128,9 +128,9 @@ class CommunicationAuditService {
     }
     static async logConversationExported(context, conversationId, details) {
         return this.createAuditLog(context, {
-            action: 'conversation_exported',
+            action: "conversation_exported",
             targetId: conversationId,
-            targetType: 'conversation',
+            targetType: "conversation",
             details: {
                 conversationId,
                 patientId: details.patientId,
@@ -146,7 +146,9 @@ class CommunicationAuditService {
     static async getAuditLogs(workplaceId, filters = {}) {
         try {
             const { userId, action, targetType, conversationId, patientId, riskLevel, complianceCategory, success, startDate, endDate, limit = 50, offset = 0, } = filters;
-            const query = { workplaceId: new mongoose_1.default.Types.ObjectId(workplaceId) };
+            const query = {
+                workplaceId: new mongoose_1.default.Types.ObjectId(workplaceId),
+            };
             if (userId)
                 query.userId = new mongoose_1.default.Types.ObjectId(userId);
             if (action)
@@ -154,9 +156,9 @@ class CommunicationAuditService {
             if (targetType)
                 query.targetType = targetType;
             if (conversationId)
-                query['details.conversationId'] = new mongoose_1.default.Types.ObjectId(conversationId);
+                query["details.conversationId"] = new mongoose_1.default.Types.ObjectId(conversationId);
             if (patientId)
-                query['details.patientId'] = new mongoose_1.default.Types.ObjectId(patientId);
+                query["details.patientId"] = new mongoose_1.default.Types.ObjectId(patientId);
             if (riskLevel)
                 query.riskLevel = riskLevel;
             if (complianceCategory)
@@ -172,7 +174,7 @@ class CommunicationAuditService {
             }
             const [logs, total] = await Promise.all([
                 CommunicationAuditLog_1.default.find(query)
-                    .populate('userId', 'firstName lastName role email')
+                    .populate("userId", "firstName lastName role email")
                     .sort({ timestamp: -1 })
                     .limit(limit)
                     .skip(offset)
@@ -190,11 +192,11 @@ class CommunicationAuditService {
             };
         }
         catch (error) {
-            logger_1.default.error('Failed to get communication audit logs', {
-                error: error instanceof Error ? error.message : 'Unknown error',
+            logger_1.default.error("Failed to get communication audit logs", {
+                error: error instanceof Error ? error.message : "Unknown error",
                 workplaceId,
                 filters,
-                service: 'communication-audit',
+                service: "communication-audit",
             });
             throw error;
         }
@@ -203,7 +205,7 @@ class CommunicationAuditService {
         try {
             const query = {
                 workplaceId: new mongoose_1.default.Types.ObjectId(workplaceId),
-                'details.conversationId': new mongoose_1.default.Types.ObjectId(conversationId),
+                "details.conversationId": new mongoose_1.default.Types.ObjectId(conversationId),
             };
             if (options.startDate || options.endDate) {
                 query.timestamp = {};
@@ -213,16 +215,16 @@ class CommunicationAuditService {
                     query.timestamp.$lte = options.endDate;
             }
             return await CommunicationAuditLog_1.default.find(query)
-                .populate('userId', 'firstName lastName role')
+                .populate("userId", "firstName lastName role")
                 .sort({ timestamp: -1 })
                 .limit(options.limit || 100);
         }
         catch (error) {
-            logger_1.default.error('Failed to get conversation audit logs', {
-                error: error instanceof Error ? error.message : 'Unknown error',
+            logger_1.default.error("Failed to get conversation audit logs", {
+                error: error instanceof Error ? error.message : "Unknown error",
                 conversationId,
                 workplaceId,
-                service: 'communication-audit',
+                service: "communication-audit",
             });
             throw error;
         }
@@ -231,21 +233,21 @@ class CommunicationAuditService {
         try {
             return await CommunicationAuditLog_1.default.find({
                 workplaceId: new mongoose_1.default.Types.ObjectId(workplaceId),
-                riskLevel: { $in: ['high', 'critical'] },
+                riskLevel: { $in: ["high", "critical"] },
                 timestamp: {
                     $gte: timeRange.start,
                     $lte: timeRange.end,
                 },
             })
-                .populate('userId', 'firstName lastName role')
+                .populate("userId", "firstName lastName role")
                 .sort({ timestamp: -1 });
         }
         catch (error) {
-            logger_1.default.error('Failed to get high-risk activities', {
-                error: error instanceof Error ? error.message : 'Unknown error',
+            logger_1.default.error("Failed to get high-risk activities", {
+                error: error instanceof Error ? error.message : "Unknown error",
                 workplaceId,
                 timeRange,
-                service: 'communication-audit',
+                service: "communication-audit",
             });
             throw error;
         }
@@ -265,37 +267,37 @@ class CommunicationAuditService {
                 {
                     $group: {
                         _id: {
-                            complianceCategory: '$complianceCategory',
-                            riskLevel: '$riskLevel',
-                            success: '$success',
+                            complianceCategory: "$complianceCategory",
+                            riskLevel: "$riskLevel",
+                            success: "$success",
                         },
                         count: { $sum: 1 },
-                        avgDuration: { $avg: '$duration' },
-                        actions: { $addToSet: '$action' },
+                        avgDuration: { $avg: "$duration" },
+                        actions: { $addToSet: "$action" },
                     },
                 },
                 {
-                    $sort: { '_id.riskLevel': -1, count: -1 },
+                    $sort: { "_id.riskLevel": -1, count: -1 },
                 },
             ]);
         }
         catch (error) {
-            logger_1.default.error('Failed to generate compliance report', {
-                error: error instanceof Error ? error.message : 'Unknown error',
+            logger_1.default.error("Failed to generate compliance report", {
+                error: error instanceof Error ? error.message : "Unknown error",
                 workplaceId,
                 dateRange,
-                service: 'communication-audit',
+                service: "communication-audit",
             });
             throw error;
         }
     }
-    static async exportAuditLogs(workplaceId, filters, format = 'csv') {
+    static async exportAuditLogs(workplaceId, filters, format = "csv") {
         try {
             const result = await this.getAuditLogs(workplaceId, {
                 ...filters,
                 limit: 10000,
             });
-            if (format === 'csv') {
+            if (format === "csv") {
                 return this.convertToCSV(result.logs);
             }
             else {
@@ -303,65 +305,67 @@ class CommunicationAuditService {
             }
         }
         catch (error) {
-            logger_1.default.error('Failed to export audit logs', {
-                error: error instanceof Error ? error.message : 'Unknown error',
+            logger_1.default.error("Failed to export audit logs", {
+                error: error instanceof Error ? error.message : "Unknown error",
                 workplaceId,
                 filters,
                 format,
-                service: 'communication-audit',
+                service: "communication-audit",
             });
             throw error;
         }
     }
     static convertToCSV(logs) {
         if (logs.length === 0) {
-            return 'No data available';
+            return "No data available";
         }
         const headers = [
-            'Timestamp',
-            'Action',
-            'User',
-            'User Email',
-            'Target Type',
-            'Target ID',
-            'Risk Level',
-            'Compliance Category',
-            'Success',
-            'Conversation ID',
-            'Patient ID',
-            'IP Address',
-            'Duration (ms)',
-            'Details',
+            "Timestamp",
+            "Action",
+            "User",
+            "User Email",
+            "Target Type",
+            "Target ID",
+            "Risk Level",
+            "Compliance Category",
+            "Success",
+            "Conversation ID",
+            "Patient ID",
+            "IP Address",
+            "Duration (ms)",
+            "Details",
         ];
-        const rows = logs.map(log => [
+        const rows = logs.map((log) => [
             log.timestamp,
             log.action,
-            log.userId ? `${log.userId.firstName} ${log.userId.lastName}` : 'Unknown',
-            log.userId?.email || 'Unknown',
+            log.userId ? `${log.userId.firstName} ${log.userId.lastName}` : "Unknown",
+            log.userId?.email || "Unknown",
             log.targetType,
             log.targetId,
             log.riskLevel,
             log.complianceCategory,
-            log.success ? 'Yes' : 'No',
-            log.details?.conversationId || '',
-            log.details?.patientId || '',
+            log.success ? "Yes" : "No",
+            log.details?.conversationId || "",
+            log.details?.patientId || "",
             log.ipAddress,
-            log.duration || '',
-            log.getFormattedDetails ? log.getFormattedDetails() : JSON.stringify(log.details).replace(/"/g, '""'),
+            log.duration || "",
+            log.getFormattedDetails
+                ? log.getFormattedDetails()
+                : JSON.stringify(log.details).replace(/"/g, '""'),
         ]);
         const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.map(field => `"${field}"`).join(',')),
-        ].join('\n');
+            headers.join(","),
+            ...rows.map((row) => row.map((field) => `"${field}"`).join(",")),
+        ].join("\n");
         return csvContent;
     }
     static createAuditContext(req) {
         return {
             userId: req.user._id,
             workplaceId: req.user.workplaceId,
-            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
-            userAgent: req.get('User-Agent') || 'unknown',
-            sessionId: req.sessionID || req.get('X-Session-ID'),
+            ipAddress: req.ip || req.connection.remoteAddress || "unknown",
+            userAgent: req.get("User-Agent") || "unknown",
+            sessionId: req.sessionID || req.get("X-Session-ID"),
         };
     }
     static async getUserActivitySummary(userId, workplaceId, dateRange) {
@@ -379,11 +383,11 @@ class CommunicationAuditService {
                 },
                 {
                     $group: {
-                        _id: '$action',
+                        _id: "$action",
                         count: { $sum: 1 },
-                        lastActivity: { $max: '$timestamp' },
+                        lastActivity: { $max: "$timestamp" },
                         successRate: {
-                            $avg: { $cond: ['$success', 1, 0] },
+                            $avg: { $cond: ["$success", 1, 0] },
                         },
                     },
                 },
@@ -393,19 +397,19 @@ class CommunicationAuditService {
             ]);
         }
         catch (error) {
-            logger_1.default.error('Failed to get user activity summary', {
-                error: error instanceof Error ? error.message : 'Unknown error',
+            logger_1.default.error("Failed to get user activity summary", {
+                error: error instanceof Error ? error.message : "Unknown error",
                 userId,
                 workplaceId,
                 dateRange,
-                service: 'communication-audit',
+                service: "communication-audit",
             });
             throw error;
         }
     }
     static async logBulkOperation(context, action, targetIds, targetType, details) {
         if (targetIds.length === 0) {
-            throw new Error('No target IDs provided for bulk operation');
+            throw new Error("No target IDs provided for bulk operation");
         }
         return this.createAuditLog(context, {
             action: action,
@@ -417,7 +421,7 @@ class CommunicationAuditService {
                     ...details.metadata,
                     bulkOperation: true,
                     targetCount: targetIds.length,
-                    allTargetIds: targetIds.map(id => id.toString()),
+                    allTargetIds: targetIds.map((id) => id.toString()),
                 },
             },
         });
@@ -432,15 +436,15 @@ class CommunicationAuditService {
             logger_1.default.info(`Cleaned up ${result.deletedCount} old communication audit logs`, {
                 cutoffDate,
                 deletedCount: result.deletedCount,
-                service: 'communication-audit',
+                service: "communication-audit",
             });
             return result.deletedCount;
         }
         catch (error) {
-            logger_1.default.error('Failed to cleanup old communication audit logs', {
-                error: error instanceof Error ? error.message : 'Unknown error',
+            logger_1.default.error("Failed to cleanup old communication audit logs", {
+                error: error instanceof Error ? error.message : "Unknown error",
                 daysToKeep,
-                service: 'communication-audit',
+                service: "communication-audit",
             });
             throw error;
         }

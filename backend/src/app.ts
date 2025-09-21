@@ -54,6 +54,7 @@ import publicApiRoutes from './routes/publicApiRoutes';
 import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
 import diagnosticRoutes from './routes/diagnosticRoutes';
 import communicationRoutes from './routes/communicationRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -198,6 +199,12 @@ app.use('/api/communication', communicationRoutes);
 // Communication Audit routes
 import communicationAuditRoutes from './routes/communicationAuditRoutes';
 app.use('/api/communication/audit', communicationAuditRoutes);
+
+// Notification routes
+app.use('/api/notifications', notificationRoutes);
+
+// Communication-specific notifications
+app.use('/api/communication/notifications', notificationRoutes);
 
 // Mention routes (already imported above)
 app.use('/api/mentions', mentionRoutes);

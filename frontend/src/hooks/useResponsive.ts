@@ -10,6 +10,10 @@ export interface ResponsiveBreakpoints {
   isLargeMobile: boolean;
   screenWidth: number;
   screenHeight: number;
+  shouldUseCardLayout: boolean;
+  getSpacing: (mobile: number, tablet?: number, desktop?: number) => number;
+  getDialogMaxWidth: (mobile?: 'xs' | 'sm' | 'md' | 'lg' | 'xl', tablet?: 'xs' | 'sm' | 'md' | 'lg' | 'xl', desktop?: 'xs' | 'sm' | 'md' | 'lg' | 'xl') => 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  getColumns: (mobile: number, tablet?: number, desktop?: number, largeDesktop?: number, extraLarge?: number) => number;
 }
 
 export const useResponsive = (): ResponsiveBreakpoints => {
@@ -38,6 +42,40 @@ export const useResponsive = (): ResponsiveBreakpoints => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Helper functions
+  const shouldUseCardLayout = isMobile || isTablet;
+
+  const getSpacing = (mobile: number, tablet: number = mobile, desktop: number = tablet): number => {
+    if (isMobile) return mobile;
+    if (isTablet) return tablet;
+    return desktop;
+  };
+
+  const getDialogMaxWidth = (
+    mobile: 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'xs',
+    tablet: 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'sm',
+    desktop: 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'md'
+  ): 'xs' | 'sm' | 'md' | 'lg' | 'xl' => {
+    if (isMobile) return mobile;
+    if (isTablet) return tablet;
+    return desktop;
+  };
+
+  const getColumns = (
+    mobile: number,
+    tablet: number = mobile,
+    desktop: number = tablet,
+    largeDesktop: number = desktop,
+    extraLarge: number = largeDesktop
+  ): number => {
+    if (isSmallMobile) return mobile;
+    if (isMobile) return tablet;
+    if (isTablet) return desktop;
+    if (screenDimensions.width >= 1920) return extraLarge;
+    if (screenDimensions.width >= 1440) return largeDesktop;
+    return desktop;
+  };
+
   return {
     isMobile,
     isTablet,
@@ -46,6 +84,10 @@ export const useResponsive = (): ResponsiveBreakpoints => {
     isLargeMobile,
     screenWidth: screenDimensions.width,
     screenHeight: screenDimensions.height,
+    shouldUseCardLayout,
+    getSpacing,
+    getDialogMaxWidth,
+    getColumns,
   };
 };
 
@@ -73,7 +115,7 @@ export const useIsTouchDevice = (): boolean => {
       return (
         'ontouchstart' in window ||
         navigator.maxTouchPoints > 0 ||
-        // @ts-ignore
+        // @ts-expect-error
         navigator.msMaxTouchPoints > 0
       );
     };

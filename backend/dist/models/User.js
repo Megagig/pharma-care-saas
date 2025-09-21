@@ -32,13 +32,10 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const crypto_1 = __importDefault(require("crypto"));
+const bcrypt = __importStar(require("bcryptjs"));
+const crypto = __importStar(require("crypto"));
 const userSchema = new mongoose_1.Schema({
     email: {
         type: String,
@@ -242,15 +239,15 @@ const userSchema = new mongoose_1.Schema({
 userSchema.pre('save', async function (next) {
     if (!this.isModified('passwordHash'))
         return next();
-    this.passwordHash = await bcryptjs_1.default.hash(this.passwordHash, 12);
+    this.passwordHash = await bcrypt.hash(this.passwordHash, 12);
     next();
 });
 userSchema.methods.comparePassword = async function (password) {
-    return await bcryptjs_1.default.compare(password, this.passwordHash);
+    return await bcrypt.compare(password, this.passwordHash);
 };
 userSchema.methods.generateVerificationToken = function () {
-    const token = crypto_1.default.randomBytes(32).toString('hex');
-    this.verificationToken = crypto_1.default
+    const token = crypto.randomBytes(32).toString('hex');
+    this.verificationToken = crypto
         .createHash('sha256')
         .update(token)
         .digest('hex');
@@ -258,15 +255,15 @@ userSchema.methods.generateVerificationToken = function () {
 };
 userSchema.methods.generateVerificationCode = function () {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    this.verificationCode = crypto_1.default
+    this.verificationCode = crypto
         .createHash('sha256')
         .update(code)
         .digest('hex');
     return code;
 };
 userSchema.methods.generateResetToken = function () {
-    const token = crypto_1.default.randomBytes(32).toString('hex');
-    this.resetToken = crypto_1.default.createHash('sha256').update(token).digest('hex');
+    const token = crypto.randomBytes(32).toString('hex');
+    this.resetToken = crypto.createHash('sha256').update(token).digest('hex');
     return token;
 };
 userSchema.methods.hasPermission = function (permission) {

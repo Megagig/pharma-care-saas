@@ -70,7 +70,31 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
   onConversationCreated,
 }) => {
   const { createConversation, loading, errors } = useCommunicationStore();
-  const { data: patients } = usePatients() || { data: [] };
+  const { data: patientsResponse } = usePatients() || { data: null };
+
+  // Extract patients array from the response, handling different possible structures
+  const patients = React.useMemo(() => {
+    if (!patientsResponse) return [];
+
+    // Handle different response structures
+    if (Array.isArray(patientsResponse)) {
+      return patientsResponse;
+    }
+
+    if (patientsResponse.data && Array.isArray(patientsResponse.data)) {
+      return patientsResponse.data;
+    }
+
+    if (patientsResponse.results && Array.isArray(patientsResponse.results)) {
+      return patientsResponse.results;
+    }
+
+    if (patientsResponse.patients && Array.isArray(patientsResponse.patients)) {
+      return patientsResponse.patients;
+    }
+
+    return [];
+  }, [patientsResponse]);
 
   // Form state
   const [activeStep, setActiveStep] = useState(0);
@@ -124,15 +148,13 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
   ];
 
   // Convert patients to participant options
-  const patientOptions: ParticipantOption[] = (patients || []).map(
-    (patient) => ({
-      userId: patient._id,
-      firstName: patient.firstName,
-      lastName: patient.lastName,
-      email: patient.email || '',
-      role: 'patient' as const,
-    })
-  );
+  const patientOptions: ParticipantOption[] = patients.map((patient) => ({
+    userId: patient._id,
+    firstName: patient.firstName,
+    lastName: patient.lastName,
+    email: patient.email || '',
+    role: 'patient' as const,
+  }));
 
   // All available participants
   const allParticipants = [...mockHealthcareProviders, ...patientOptions];

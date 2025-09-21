@@ -49,8 +49,12 @@ const getUserNotifications = async (req, res) => {
             type: req.query.type,
             status: req.query.status,
             priority: req.query.priority,
-            startDate: req.query.startDate ? new Date(req.query.startDate) : undefined,
-            endDate: req.query.endDate ? new Date(req.query.endDate) : undefined,
+            startDate: req.query.startDate
+                ? new Date(req.query.startDate)
+                : undefined,
+            endDate: req.query.endDate
+                ? new Date(req.query.endDate)
+                : undefined,
             limit: req.query.limit ? parseInt(req.query.limit) : 50,
             offset: req.query.offset ? parseInt(req.query.offset) : 0,
         };
@@ -86,12 +90,12 @@ const markMultipleAsRead = async (req, res) => {
         if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Invalid notification IDs array', 400);
         }
-        const validIds = notificationIds.filter(id => mongoose_1.default.Types.ObjectId.isValid(id));
+        const validIds = notificationIds.filter((id) => mongoose_1.default.Types.ObjectId.isValid(id));
         if (validIds.length === 0) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'No valid notification IDs provided', 400);
         }
         await Notification_1.default.updateMany({
-            _id: { $in: validIds.map(id => new mongoose_1.default.Types.ObjectId(id)) },
+            _id: { $in: validIds.map((id) => new mongoose_1.default.Types.ObjectId(id)) },
             userId: new mongoose_1.default.Types.ObjectId(userId),
             status: 'unread',
         }, {
@@ -172,14 +176,14 @@ const updateNotificationPreferences = async (req, res) => {
 exports.updateNotificationPreferences = updateNotificationPreferences;
 const createConversationNotification = async (req, res) => {
     try {
-        const { type, conversationId, recipientIds, messageId, customContent, } = req.body;
+        const { type, conversationId, recipientIds, messageId, customContent } = req.body;
         if (!type || !conversationId || !Array.isArray(recipientIds)) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Missing required fields: type, conversationId, recipientIds', 400);
         }
         if (!mongoose_1.default.Types.ObjectId.isValid(conversationId)) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Invalid conversation ID', 400);
         }
-        const validRecipientIds = recipientIds.filter(id => mongoose_1.default.Types.ObjectId.isValid(id));
+        const validRecipientIds = recipientIds.filter((id) => mongoose_1.default.Types.ObjectId.isValid(id));
         if (validRecipientIds.length === 0) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'No valid recipient IDs provided', 400);
         }
@@ -195,14 +199,18 @@ const createConversationNotification = async (req, res) => {
 exports.createConversationNotification = createConversationNotification;
 const createPatientQueryNotification = async (req, res) => {
     try {
-        const { patientId, conversationId, messageContent, recipientIds, } = req.body;
-        if (!patientId || !conversationId || !messageContent || !Array.isArray(recipientIds)) {
+        const { patientId, conversationId, messageContent, recipientIds } = req.body;
+        if (!patientId ||
+            !conversationId ||
+            !messageContent ||
+            !Array.isArray(recipientIds)) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Missing required fields: patientId, conversationId, messageContent, recipientIds', 400);
         }
-        if (!mongoose_1.default.Types.ObjectId.isValid(patientId) || !mongoose_1.default.Types.ObjectId.isValid(conversationId)) {
+        if (!mongoose_1.default.Types.ObjectId.isValid(patientId) ||
+            !mongoose_1.default.Types.ObjectId.isValid(conversationId)) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Invalid patient ID or conversation ID', 400);
         }
-        const validRecipientIds = recipientIds.filter(id => mongoose_1.default.Types.ObjectId.isValid(id));
+        const validRecipientIds = recipientIds.filter((id) => mongoose_1.default.Types.ObjectId.isValid(id));
         if (validRecipientIds.length === 0) {
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'No valid recipient IDs provided', 400);
         }
@@ -220,7 +228,9 @@ const getNotificationStatistics = async (req, res) => {
         const workplaceId = req.user.workplaceId;
         const { startDate, endDate } = req.query;
         const dateRange = {
-            start: startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+            start: startDate
+                ? new Date(startDate)
+                : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
             end: endDate ? new Date(endDate) : new Date(),
         };
         const stats = await Notification_1.default.getNotificationStats(new mongoose_1.default.Types.ObjectId(workplaceId), dateRange);

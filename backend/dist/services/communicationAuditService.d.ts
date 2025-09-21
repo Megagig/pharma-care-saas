@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
-import { ICommunicationAuditLog, ICommunicationAuditLogDetails } from '../models/CommunicationAuditLog';
-import { AuthRequest } from '../types/auth';
+import mongoose from "mongoose";
+import { ICommunicationAuditLog, ICommunicationAuditLogDetails } from "../models/CommunicationAuditLog";
+import { AuthRequest } from "../types/auth";
 export interface CommunicationAuditContext {
     userId: mongoose.Types.ObjectId;
     workplaceId: mongoose.Types.ObjectId;
@@ -9,9 +9,9 @@ export interface CommunicationAuditContext {
     sessionId?: string;
 }
 export interface CreateCommunicationAuditLogData {
-    action: ICommunicationAuditLog['action'];
+    action: ICommunicationAuditLog["action"];
     targetId: mongoose.Types.ObjectId;
-    targetType: ICommunicationAuditLog['targetType'];
+    targetType: ICommunicationAuditLog["targetType"];
     details: ICommunicationAuditLogDetails;
     success?: boolean;
     errorMessage?: string;
@@ -86,14 +86,14 @@ export declare class CommunicationAuditService {
         start: Date;
         end: Date;
     }): Promise<any[]>;
-    static exportAuditLogs(workplaceId: string, filters: CommunicationAuditFilters, format?: 'csv' | 'json'): Promise<string>;
+    static exportAuditLogs(workplaceId: string, filters: CommunicationAuditFilters, format?: "csv" | "json"): Promise<string>;
     private static convertToCSV;
     static createAuditContext(req: AuthRequest): CommunicationAuditContext;
     static getUserActivitySummary(userId: string, workplaceId: string, dateRange: {
         start: Date;
         end: Date;
     }): Promise<any[]>;
-    static logBulkOperation(context: CommunicationAuditContext, action: string, targetIds: mongoose.Types.ObjectId[], targetType: ICommunicationAuditLog['targetType'], details: ICommunicationAuditLogDetails): Promise<ICommunicationAuditLog>;
+    static logBulkOperation(context: CommunicationAuditContext, action: string, targetIds: mongoose.Types.ObjectId[], targetType: ICommunicationAuditLog["targetType"], details: ICommunicationAuditLogDetails): Promise<ICommunicationAuditLog>;
     static cleanupOldLogs(daysToKeep?: number): Promise<number>;
 }
 export default CommunicationAuditService;

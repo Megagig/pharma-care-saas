@@ -104,7 +104,8 @@ const auditMiddleware = (options) => {
             await (0, exports.createAuditLog)({
                 action: options.action,
                 category: options.category,
-                severity: options.severity || determineSeverity(res.statusCode, options.category),
+                severity: options.severity ||
+                    determineSeverity(res.statusCode, options.category),
                 userId: req.user?._id,
                 userEmail: req.user?.email,
                 userRole: req.user?.role,
@@ -116,7 +117,9 @@ const auditMiddleware = (options) => {
                 requestId: req.get('X-Request-ID'),
                 sessionId: req.sessionID,
                 resourceType: options.resourceType,
-                resourceId: req.params.id ? new mongoose_1.default.Types.ObjectId(req.params.id) : undefined,
+                resourceId: req.params.id
+                    ? new mongoose_1.default.Types.ObjectId(req.params.id)
+                    : undefined,
                 details: {
                     requestBody: options.includeRequestBody ? req.body : undefined,
                     responseBody: options.includeResponseBody ? responseBody : undefined,
@@ -433,7 +436,8 @@ function calculateRiskScore(logData) {
         critical: 4,
     };
     score *= severityMultipliers[logData.severity || 'low'];
-    if (logData.errorMessage || (logData.statusCode && logData.statusCode >= 400)) {
+    if (logData.errorMessage ||
+        (logData.statusCode && logData.statusCode >= 400)) {
         score += 2;
     }
     if (logData.suspicious) {
@@ -442,9 +446,14 @@ function calculateRiskScore(logData) {
     return Math.min(score, 10);
 }
 function isComplianceRelevant(logData) {
-    const complianceCategories = ['authentication', 'authorization', 'data_access', 'user_management'];
-    return complianceCategories.includes(logData.category || 'system') ||
-        Boolean(logData.severity && ['high', 'critical'].includes(logData.severity));
+    const complianceCategories = [
+        'authentication',
+        'authorization',
+        'data_access',
+        'user_management',
+    ];
+    return (complianceCategories.includes(logData.category || 'system') ||
+        Boolean(logData.severity && ['high', 'critical'].includes(logData.severity)));
 }
 function getRetentionPeriod(category) {
     const retentionPeriods = {
@@ -474,16 +483,18 @@ function detectSuspiciousRequest(req, res) {
         res.statusCode === 401 || res.statusCode === 403,
         req.originalUrl.includes('admin') && req.user?.role !== 'super_admin',
         req.method === 'DELETE' && !req.user,
-        req.get('User-Agent')?.includes('bot') || req.get('User-Agent')?.includes('crawler'),
+        req.get('User-Agent')?.includes('bot') ||
+            req.get('User-Agent')?.includes('crawler'),
     ];
-    return suspiciousPatterns.some(pattern => pattern);
+    return suspiciousPatterns.some((pattern) => pattern);
 }
 function getChangedFields(oldObj, newObj) {
     if (!oldObj || !newObj)
         return [];
     const changes = [];
     const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
-    for (const key of allKeys) {
+    const keysArray = Array.from(allKeys);
+    for (const key of keysArray) {
         if (JSON.stringify(oldObj[key]) !== JSON.stringify(newObj[key])) {
             changes.push(key);
         }
@@ -513,9 +524,10 @@ async function triggerSecurityAlert(auditLog) {
     });
 }
 async function detectSuspiciousActivity(auditLog) {
-    const recentLogs = auditLogs.filter(log => log.timestamp > new Date(Date.now() - 60 * 60 * 1000) &&
-        (log.userId?.toString() === auditLog.userId?.toString() || log.ipAddress === auditLog.ipAddress));
-    const failedAttempts = recentLogs.filter(log => log.errorMessage && log.category === 'authentication').length;
+    const recentLogs = auditLogs.filter((log) => log.timestamp > new Date(Date.now() - 60 * 60 * 1000) &&
+        (log.userId?.toString() === auditLog.userId?.toString() ||
+            log.ipAddress === auditLog.ipAddress));
+    const failedAttempts = recentLogs.filter((log) => log.errorMessage && log.category === 'authentication').length;
     if (failedAttempts > 5) {
         logger_1.default.warn('Suspicious activity: Multiple failed authentication attempts', {
             userId: auditLog.userId,
@@ -536,25 +548,25 @@ async function detectSuspiciousActivity(auditLog) {
 const getAuditLogs = (filters) => {
     let filteredLogs = [...auditLogs];
     if (filters.userId) {
-        filteredLogs = filteredLogs.filter(log => log.userId?.toString() === filters.userId);
+        filteredLogs = filteredLogs.filter((log) => log.userId?.toString() === filters.userId);
     }
     if (filters.workspaceId) {
-        filteredLogs = filteredLogs.filter(log => log.workspaceId?.toString() === filters.workspaceId);
+        filteredLogs = filteredLogs.filter((log) => log.workspaceId?.toString() === filters.workspaceId);
     }
     if (filters.category) {
-        filteredLogs = filteredLogs.filter(log => log.category === filters.category);
+        filteredLogs = filteredLogs.filter((log) => log.category === filters.category);
     }
     if (filters.severity) {
-        filteredLogs = filteredLogs.filter(log => log.severity === filters.severity);
+        filteredLogs = filteredLogs.filter((log) => log.severity === filters.severity);
     }
     if (filters.startDate) {
-        filteredLogs = filteredLogs.filter(log => log.timestamp >= filters.startDate);
+        filteredLogs = filteredLogs.filter((log) => log.timestamp >= filters.startDate);
     }
     if (filters.endDate) {
-        filteredLogs = filteredLogs.filter(log => log.timestamp <= filters.endDate);
+        filteredLogs = filteredLogs.filter((log) => log.timestamp <= filters.endDate);
     }
     if (filters.suspicious !== undefined) {
-        filteredLogs = filteredLogs.filter(log => log.suspicious === filters.suspicious);
+        filteredLogs = filteredLogs.filter((log) => log.suspicious === filters.suspicious);
     }
     filteredLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
     if (filters.limit) {

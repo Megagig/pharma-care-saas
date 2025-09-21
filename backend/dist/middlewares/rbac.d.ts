@@ -2,7 +2,6 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../types/auth';
 export declare const requirePermission: (action: string) => (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const requireRole: (...roles: string[]) => (req: AuthRequest, res: Response, next: NextFunction) => void;
-export declare const requireRole: (...roles: string[]) => (req: AuthRequest, res: Response, next: NextFunction) => void;
 export declare const requireWorkplaceRole: (...roles: string[]) => (req: AuthRequest, res: Response, next: NextFunction) => void;
 export declare const requireFeature: (...features: string[]) => (req: AuthRequest, res: Response, next: NextFunction) => void;
 export declare const requirePlanTier: (...tiers: string[]) => (req: AuthRequest, res: Response, next: NextFunction) => void;

@@ -56,7 +56,7 @@ async function runCommunicationHubMigration() {
             logger_1.default.info('✓ Communication indexes created successfully');
         }
         catch (error) {
-            const errorMsg = `Failed to create indexes: ${error.message}`;
+            const errorMsg = `Failed to create indexes: ${error instanceof Error ? error.message : String(error)}`;
             results.errors.push(errorMsg);
             logger_1.default.error(errorMsg, error);
         }
@@ -69,7 +69,7 @@ async function runCommunicationHubMigration() {
             logger_1.default.info('✓ Data validation completed');
         }
         catch (error) {
-            const errorMsg = `Failed to validate data: ${error.message}`;
+            const errorMsg = `Failed to validate data: ${error instanceof Error ? error.message : String(error)}`;
             results.errors.push(errorMsg);
             logger_1.default.error(errorMsg, error);
         }
@@ -79,7 +79,7 @@ async function runCommunicationHubMigration() {
             logger_1.default.info(`✓ Updated ${updateResults.totalUpdated} existing documents`);
         }
         catch (error) {
-            const errorMsg = `Failed to update documents: ${error.message}`;
+            const errorMsg = `Failed to update documents: ${error instanceof Error ? error.message : String(error)}`;
             results.errors.push(errorMsg);
             logger_1.default.error(errorMsg, error);
         }
@@ -88,7 +88,7 @@ async function runCommunicationHubMigration() {
             logger_1.default.info('✓ Default permissions configured');
         }
         catch (error) {
-            const errorMsg = `Failed to setup permissions: ${error.message}`;
+            const errorMsg = `Failed to setup permissions: ${error instanceof Error ? error.message : String(error)}`;
             results.errors.push(errorMsg);
             logger_1.default.error(errorMsg, error);
         }
@@ -105,12 +105,12 @@ async function runCommunicationHubMigration() {
         };
     }
     catch (error) {
-        const errorMsg = `Communication Hub migration failed: ${error.message}`;
+        const errorMsg = `Communication Hub migration failed: ${error instanceof Error ? error.message : String(error)}`;
         logger_1.default.error(errorMsg, error);
         return {
             success: false,
             message: errorMsg,
-            errors: [error.message],
+            errors: [error instanceof Error ? error.message : String(error)],
         };
     }
 }
@@ -160,7 +160,7 @@ async function validateExistingData() {
                 $count: 'orphanedCount',
             },
         ]);
-        const orphanedCount = orphanedMessages[0]?.orphanedCount || 0;
+        const orphanedCount = orphanedMessages.length > 0 ? orphanedMessages[0].orphanedCount : 0;
         if (orphanedCount > 0) {
             errors.push(`Found ${orphanedCount} orphaned messages without valid conversations`);
         }
@@ -173,7 +173,9 @@ async function validateExistingData() {
         logger_1.default.error('Error during data validation:', error);
         return {
             success: false,
-            errors: [`Data validation failed: ${error.message}`],
+            errors: [
+                `Data validation failed: ${error instanceof Error ? error.message : String(error)}`,
+            ],
         };
     }
 }
@@ -276,7 +278,11 @@ async function setupDefaultPermissions() {
                 if (!participant.permissions || participant.permissions.length === 0) {
                     switch (participant.role) {
                         case 'patient':
-                            participant.permissions = ['read_messages', 'send_messages', 'upload_files'];
+                            participant.permissions = [
+                                'read_messages',
+                                'send_messages',
+                                'upload_files',
+                            ];
                             break;
                         case 'pharmacist':
                         case 'doctor':
@@ -327,7 +333,7 @@ async function rollbackCommunicationHubMigration() {
             logger_1.default.info('✓ Communication indexes dropped');
         }
         catch (error) {
-            const errorMsg = `Failed to drop indexes: ${error.message}`;
+            const errorMsg = `Failed to drop indexes: ${error instanceof Error ? error.message : String(error)}`;
             results.errors.push(errorMsg);
             logger_1.default.error(errorMsg, error);
         }
@@ -359,7 +365,7 @@ async function rollbackCommunicationHubMigration() {
             logger_1.default.info('✓ Migration fields removed');
         }
         catch (error) {
-            const errorMsg = `Failed to remove fields: ${error.message}`;
+            const errorMsg = `Failed to remove fields: ${error instanceof Error ? error.message : String(error)}`;
             results.errors.push(errorMsg);
             logger_1.default.error(errorMsg, error);
         }
@@ -376,12 +382,12 @@ async function rollbackCommunicationHubMigration() {
         };
     }
     catch (error) {
-        const errorMsg = `Communication Hub migration rollback failed: ${error.message}`;
+        const errorMsg = `Communication Hub migration rollback failed: ${error instanceof Error ? error.message : String(error)}`;
         logger_1.default.error(errorMsg, error);
         return {
             success: false,
             message: errorMsg,
-            errors: [error.message],
+            errors: [error instanceof Error ? error.message : String(error)],
         };
     }
 }
@@ -395,7 +401,9 @@ async function checkCommunicationHubMigrationStatus() {
         };
         try {
             const db = mongoose_1.default.connection.db;
-            const conversationIndexes = await db.collection('conversations').indexes();
+            const conversationIndexes = await db
+                .collection('conversations')
+                .indexes();
             status.indexesExist = conversationIndexes.length > 1;
         }
         catch (error) {
@@ -429,7 +437,8 @@ async function checkCommunicationHubMigrationStatus() {
                 isEncrypted: true,
                 encryptionKeyId: { $exists: false },
             }).countDocuments();
-            status.encryptionKeysGenerated = conversationsWithoutKeys === 0 && messagesWithoutKeys === 0;
+            status.encryptionKeysGenerated =
+                conversationsWithoutKeys === 0 && messagesWithoutKeys === 0;
         }
         catch (error) {
             logger_1.default.warn('Could not check encryption keys status:', error);
@@ -444,7 +453,9 @@ async function checkCommunicationHubMigrationStatus() {
         logger_1.default.error('Error checking migration status:', error);
         return {
             isComplete: false,
-            details: { error: error.message },
+            details: {
+                error: error instanceof Error ? error.message : String(error),
+            },
         };
     }
 }

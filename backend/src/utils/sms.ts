@@ -19,12 +19,14 @@ const isValidTwilioConfig = () => {
   const authToken = process.env.TWILIO_AUTH_TOKEN;
   const phoneNumber = process.env.TWILIO_PHONE_NUMBER;
 
-  return accountSid &&
+  return (
+    accountSid &&
     authToken &&
     phoneNumber &&
     accountSid.startsWith('AC') &&
     accountSid !== 'your-twilio-account-sid' &&
-    authToken !== 'your-twilio-auth-token';
+    authToken !== 'your-twilio-auth-token'
+  );
 };
 
 // Initialize Twilio client only if credentials are valid
@@ -32,14 +34,19 @@ let client: twilio.Twilio | null = null;
 
 if (isValidTwilioConfig()) {
   try {
-    client = twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!);
+    client = twilio(
+      process.env.TWILIO_ACCOUNT_SID!,
+      process.env.TWILIO_AUTH_TOKEN!
+    );
     console.log('Twilio SMS service initialized successfully');
   } catch (error) {
     console.warn('Failed to initialize Twilio client:', error);
     client = null;
   }
 } else {
-  console.warn('Twilio SMS service not configured - using mock mode. Please set valid TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in your .env file');
+  console.log(
+    'Twilio SMS service not configured - using mock mode. SMS features will be simulated.'
+  );
 }
 
 export const sendSMS = async (to: string, message: string): Promise<any> => {
@@ -50,7 +57,7 @@ export const sendSMS = async (to: string, message: string): Promise<any> => {
       status: 'delivered',
       to: to,
       body: message,
-      mock: true
+      mock: true,
     };
   }
 
@@ -58,7 +65,7 @@ export const sendSMS = async (to: string, message: string): Promise<any> => {
     const result = await client.messages.create({
       body: message,
       from: process.env.TWILIO_PHONE_NUMBER,
-      to: to
+      to: to,
     });
     return result;
   } catch (error) {
@@ -67,12 +74,18 @@ export const sendSMS = async (to: string, message: string): Promise<any> => {
   }
 };
 
-export const sendMedicationReminder = async (patient: Patient, medication: Medication): Promise<any> => {
+export const sendMedicationReminder = async (
+  patient: Patient,
+  medication: Medication
+): Promise<any> => {
   const message = `Reminder: Time to take your ${medication.drugName}. Instructions: ${medication.instructions.dosage}`;
   return await sendSMS(patient.contactInfo.phone, message);
 };
 
-export const sendAppointmentReminder = async (patient: Patient, appointmentDate: string): Promise<any> => {
+export const sendAppointmentReminder = async (
+  patient: Patient,
+  appointmentDate: string
+): Promise<any> => {
   const message = `Reminder: You have a pharmacy consultation scheduled for ${appointmentDate}. Please bring your medications.`;
   return await sendSMS(patient.contactInfo.phone, message);
 };

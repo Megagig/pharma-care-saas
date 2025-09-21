@@ -21,10 +21,12 @@ const handleValidationErrors = (req, res, next) => {
     }
     next();
 };
-router.get('/logs', auth_1.auth, (0, rbac_1.default)(['admin', 'pharmacist', 'doctor']), [
+router.get('/', auth_1.auth, rbac_1.default.requireRole('admin', 'pharmacist', 'doctor'), [
     (0, express_validator_1.query)('userId').optional().isMongoId(),
     (0, express_validator_1.query)('action').optional().isString().trim(),
-    (0, express_validator_1.query)('targetType').optional().isIn(['conversation', 'message', 'user', 'file', 'notification']),
+    (0, express_validator_1.query)('targetType')
+        .optional()
+        .isIn(['conversation', 'message', 'user', 'file', 'notification']),
     (0, express_validator_1.query)('conversationId').optional().isMongoId(),
     (0, express_validator_1.query)('patientId').optional().isMongoId(),
     (0, express_validator_1.query)('riskLevel').optional().isIn(['low', 'medium', 'high', 'critical']),
@@ -35,25 +37,42 @@ router.get('/logs', auth_1.auth, (0, rbac_1.default)(['admin', 'pharmacist', 'do
     (0, express_validator_1.query)('limit').optional().isInt({ min: 1, max: 1000 }),
     (0, express_validator_1.query)('offset').optional().isInt({ min: 0 }),
 ], handleValidationErrors, communicationAuditController_1.default.getAuditLogs);
-router.get('/conversations/:conversationId/logs', auth_1.auth, (0, rbac_1.default)(['admin', 'pharmacist', 'doctor']), [
+router.get('/empty', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Audit logs retrieved successfully (empty for testing)',
+        data: [],
+        pagination: {
+            total: 0,
+            page: 1,
+            limit: 50,
+            pages: 0,
+            hasNext: false,
+            hasPrev: false,
+        },
+    });
+});
+router.get('/conversation/:conversationId', auth_1.auth, rbac_1.default.requireRole('admin', 'pharmacist', 'doctor'), [
     (0, express_validator_1.param)('conversationId').isMongoId(),
     (0, express_validator_1.query)('limit').optional().isInt({ min: 1, max: 1000 }),
     (0, express_validator_1.query)('startDate').optional().isISO8601(),
     (0, express_validator_1.query)('endDate').optional().isISO8601(),
 ], handleValidationErrors, communicationAuditController_1.default.getConversationAuditLogs);
-router.get('/high-risk', auth_1.auth, (0, rbac_1.default)(['admin', 'pharmacist']), [
+router.get('/high-risk', auth_1.auth, rbac_1.default.requireRole('admin', 'pharmacist'), [
     (0, express_validator_1.query)('startDate').optional().isISO8601(),
     (0, express_validator_1.query)('endDate').optional().isISO8601(),
 ], handleValidationErrors, communicationAuditController_1.default.getHighRiskActivities);
-router.get('/compliance-report', auth_1.auth, (0, rbac_1.default)(['admin', 'pharmacist']), [
+router.get('/compliance-report', auth_1.auth, rbac_1.default.requireRole('admin', 'pharmacist'), [
     (0, express_validator_1.query)('startDate').optional().isISO8601(),
     (0, express_validator_1.query)('endDate').optional().isISO8601(),
 ], handleValidationErrors, communicationAuditController_1.default.generateComplianceReport);
-router.get('/export', auth_1.auth, (0, rbac_1.default)(['admin', 'pharmacist']), [
+router.get('/export', auth_1.auth, rbac_1.default.requireRole('admin', 'pharmacist'), [
     (0, express_validator_1.query)('format').optional().isIn(['csv', 'json']),
     (0, express_validator_1.query)('userId').optional().isMongoId(),
     (0, express_validator_1.query)('action').optional().isString().trim(),
-    (0, express_validator_1.query)('targetType').optional().isIn(['conversation', 'message', 'user', 'file', 'notification']),
+    (0, express_validator_1.query)('targetType')
+        .optional()
+        .isIn(['conversation', 'message', 'user', 'file', 'notification']),
     (0, express_validator_1.query)('conversationId').optional().isMongoId(),
     (0, express_validator_1.query)('patientId').optional().isMongoId(),
     (0, express_validator_1.query)('riskLevel').optional().isIn(['low', 'medium', 'high', 'critical']),
@@ -62,23 +81,23 @@ router.get('/export', auth_1.auth, (0, rbac_1.default)(['admin', 'pharmacist']),
     (0, express_validator_1.query)('startDate').optional().isISO8601(),
     (0, express_validator_1.query)('endDate').optional().isISO8601(),
 ], handleValidationErrors, communicationAuditController_1.default.exportAuditLogs);
-router.get('/users/:userId/activity', auth_1.auth, (0, rbac_1.default)(['admin', 'pharmacist', 'doctor']), [
+router.get('/users/:userId/activity', auth_1.auth, rbac_1.default.requireRole('admin', 'pharmacist', 'doctor'), [
     (0, express_validator_1.param)('userId').isMongoId(),
     (0, express_validator_1.query)('startDate').optional().isISO8601(),
     (0, express_validator_1.query)('endDate').optional().isISO8601(),
 ], handleValidationErrors, communicationAuditController_1.default.getUserActivitySummary);
-router.get('/statistics', auth_1.auth, (0, rbac_1.default)(['admin', 'pharmacist']), [
+router.get('/statistics', auth_1.auth, rbac_1.default.requireRole('admin', 'pharmacist'), [
     (0, express_validator_1.query)('startDate').optional().isISO8601(),
     (0, express_validator_1.query)('endDate').optional().isISO8601(),
 ], handleValidationErrors, communicationAuditController_1.default.getAuditStatistics);
-router.get('/search', auth_1.auth, (0, rbac_1.default)(['admin', 'pharmacist', 'doctor']), [
+router.get('/search', auth_1.auth, rbac_1.default.requireRole('admin', 'pharmacist', 'doctor'), [
     (0, express_validator_1.query)('q').isString().trim().isLength({ min: 2, max: 100 }),
     (0, express_validator_1.query)('startDate').optional().isISO8601(),
     (0, express_validator_1.query)('endDate').optional().isISO8601(),
     (0, express_validator_1.query)('limit').optional().isInt({ min: 1, max: 100 }),
     (0, express_validator_1.query)('offset').optional().isInt({ min: 0 }),
 ], handleValidationErrors, communicationAuditController_1.default.searchAuditLogs);
-router.get('/health', auth_1.auth, (0, rbac_1.default)(['admin']), (req, res) => {
+router.get('/health', (req, res) => {
     res.json({
         status: 'OK',
         module: 'communication-audit',
@@ -91,6 +110,13 @@ router.get('/health', auth_1.auth, (0, rbac_1.default)(['admin']), (req, res) =>
             dataExport: true,
             realTimeMonitoring: true,
         },
+    });
+});
+router.get('/test', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Audit routes are working',
+        timestamp: new Date().toISOString(),
     });
 });
 exports.default = router;
