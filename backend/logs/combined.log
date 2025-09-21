@@ -1071,3 +1071,230 @@
 {"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 22:56:33"}
 {"alertId":"ja9iotrsj","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.23175367744665%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"ud6uoq44r","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 22:56:42","value":96.23175367744665}
 {"alertId":"ja9iotrsj","duration":59999,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.23175367744665%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 22:57:42"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:14:12"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758492867461","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:14:27"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:14:29"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:14:29"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:14:29"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:14:29"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:14:29"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:14:29"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:14:29"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:14:29"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:14:29"}
+{"alertId":"icz2tfpm9","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.72889533017474%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"igt6t3bwm","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:14:42","value":96.72889533017474}
+{"alertId":"icz2tfpm9","duration":30000,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.72889533017474%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 23:15:12"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:15:47"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758492964322","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:16:04"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:16:06"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:16:06"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:16:06"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:16:06"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:16:06"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:16:06"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:16:06"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:16:06"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:16:06"}
+{"alertId":"dqkcixgqb","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.12648136393828%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"w11bnzt7k","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:16:17","value":96.12648136393828}
+{"alertId":"dqkcixgqb","duration":30000,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.12648136393828%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 23:16:47"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:22:33"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758493369026","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:22:49"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:22:51"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:22:51"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:22:51"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:22:51"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:22:51"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:22:51"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:22:51"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:22:51"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:22:51"}
+{"alertId":"8pp9oupgs","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.47260308264025%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"a5u9r9vur","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:23:03","value":96.47260308264025}
+{"alertId":"8pp9oupgs","duration":30000,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.47260308264025%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 23:23:33"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:24:26"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758493480003","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:24:40"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:24:41"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:24:41"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:24:41"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:24:41"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:24:41"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:24:41"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:24:41"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:24:41"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:24:41"}
+{"alertId":"9rw3s042b","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 95.92527142528672%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"cd6v7v40a","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:24:56","value":95.92527142528672}
+{"alertId":"9rw3s042b","duration":29999,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 95.92527142528672%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 23:25:26"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:37:33"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758494266270","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:37:46"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:37:47"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:37:47"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:37:47"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:37:48"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:37:48"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:37:48"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:37:48"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:37:48"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:37:48"}
+{"alertId":"mfgw3ul80","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.52770664194156%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"bfzokkl6h","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:38:03","value":96.52770664194156}
+{"alertId":"mfgw3ul80","duration":30000,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.52770664194156%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 23:38:33"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:39:16"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758494370376","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:39:30"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:39:32"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:39:32"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:39:32"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:39:32"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:39:32"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:39:32"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:39:32"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:39:32"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:39:32"}
+{"alertId":"5vw6t5pv6","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.43304863012368%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"j0ctwoqnr","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:39:46","value":96.43304863012368}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:41:25"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758494499924","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:41:39"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:41:42"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:41:42"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:41:42"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:41:42"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:41:42"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:41:42"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:41:42"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:41:42"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:41:42"}
+{"alertId":"7leof6515","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.55188055991188%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"nlajd6kte","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:41:55","value":96.55188055991188}
+{"alertId":"7leof6515","duration":30136,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.55188055991188%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 23:42:25"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:43:14"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758494609360","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:43:29"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:43:31"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:43:31"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:43:31"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:43:31"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:43:31"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:43:31"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:43:31"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:43:31"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:43:31"}
+{"alertId":"3u8vnl859","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.79294638562794%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"iasrrywdh","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:43:44","value":96.79294638562794}
+{"alertId":"3u8vnl859","duration":30001,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.79294638562794%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 23:44:14"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:44:44"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758494698623","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:44:58"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:45:00"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:45:00"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:45:00"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:45:01"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:45:01"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:45:01"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:45:01"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:45:01"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:45:01"}
+{"alertId":"v9cbeybjo","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.666592520309%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"e8pm30brh","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:45:14","value":96.666592520309}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:47:38"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758494876378","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:47:56"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:47:58"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:47:58"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:47:58"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:47:58"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:47:58"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:47:58"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:47:58"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:47:58"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:47:58"}
+{"alertId":"w39c49r44","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.46996660998231%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"26zf7kg0s","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:48:08","value":96.46996660998231}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:49:12"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758494970009","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:49:30"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:49:32"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:49:32"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:49:32"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:49:32"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:49:32"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:49:32"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:49:32"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:49:32"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:49:32"}
+{"alertId":"ho1lgktiz","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.35503248289962%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"tgbcb2inz","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:49:42","value":96.35503248289962}
+{"alertId":"ho1lgktiz","duration":30002,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.35503248289962%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 23:50:12"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:51:01"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758495075218","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:51:15"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:51:17"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:51:17"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:51:17"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:51:17"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:51:17"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:51:17"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:51:17"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:51:17"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:51:17"}
+{"alertId":"09elhg21a","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.74487570588805%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"7x80lrcff","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:51:31","value":96.74487570588805}
+{"alertId":"09elhg21a","duration":30000,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.74487570588805%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 23:52:01"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:52:41"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758495179509","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:52:59"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:53:02"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:53:02"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:53:02"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:53:02"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:53:02"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:53:02"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:53:02"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:53:02"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:53:02"}
+{"alertId":"4vzt8hr70","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.09390733253524%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"uiybqc5zp","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:53:11","value":96.09390733253524}
+{"alertId":"4vzt8hr70","duration":60001,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.09390733253524%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 23:54:11"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:54:52"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758495304372","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:55:04"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:55:05"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:55:05"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:55:05"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:55:05"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:55:06"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:55:06"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:55:06"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:55:06"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:55:06"}
+{"alertId":"kd4tyqw3v","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.63805694293734%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"15m6ondid","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:55:22","value":96.63805694293734}
+{"alertId":"kd4tyqw3v","duration":30000,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.63805694293734%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 23:55:52"}
+{"level":"info","message":"System metrics collection started","service":"pharma-care-api","timestamp":"2025-09-21 23:57:50"}
+{"algorithm":"aes-256-cbc","keyId":"default-key-1758495488106","level":"info","message":"Encryption service initialized with default key","service":"pharma-care-api","timestamp":"2025-09-21 23:58:08"}
+{"level":"info","message":"Communication Socket service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:58:10"}
+{"level":"info","message":"Socket.IO server set for NotificationService","service":"pharma-care-api","timestamp":"2025-09-21 23:58:10"}
+{"level":"info","message":"Socket notification service initialized","service":"pharma-care-api","timestamp":"2025-09-21 23:58:10"}
+{"level":"info","message":"Daily workspace stats recalculation job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:58:10"}
+{"level":"info","message":"Monthly API call reset job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:58:10"}
+{"level":"info","message":"Stale stats check job scheduled","service":"pharma-care-api","timestamp":"2025-09-21 23:58:10"}
+{"level":"info","message":"Workspace stats cron jobs started","service":"pharma-care-api","timestamp":"2025-09-21 23:58:10"}
+{"level":"info","message":"Usage alert check job scheduled (every 6 hours)","service":"pharma-care-api","timestamp":"2025-09-21 23:58:10"}
+{"level":"info","message":"Usage alert cron job started","service":"pharma-care-api","timestamp":"2025-09-21 23:58:10"}
+{"alertId":"blt5yzdmq","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 96.3332610111997%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"zsqhp6z3w","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-21 23:58:20","value":96.3332610111997}
+{"alertId":"blt5yzdmq","duration":60000,"level":"info","message":"Alert resolved: High Memory Usage: memory_heap_usage_percent is 96.3332610111997%, threshold is 90%","service":"pharma-care-api","timestamp":"2025-09-21 23:59:20"}
+{"level":"info","message":"Starting stale stats check","service":"pharma-care-api","timestamp":"2025-09-22 00:00:00"}
+{"level":"info","message":"Starting usage alert check","service":"pharma-care-api","timestamp":"2025-09-22 00:00:00"}
+{"level":"info","message":"Starting usage alert check for all workspaces","service":"pharma-care-api","timestamp":"2025-09-22 00:00:00"}
+{"level":"info","message":"Found 16 workspaces with stale stats","service":"pharma-care-api","timestamp":"2025-09-22 00:00:01"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b0466005118ea02f14588c","service":"pharma-care-api","timestamp":"2025-09-22 00:00:01"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:01.529Z","patientsCount":0,"storageUsed":0,"usersCount":0},"previousStats":{"lastUpdated":"2025-09-19T17:00:01.087Z","patientsCount":0,"usersCount":0},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:01","workspaceId":"68ae26bdc943af4210e525b4"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b54b0d3b448a4546d6a858","service":"pharma-care-api","timestamp":"2025-09-22 00:00:01"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b54db1cfd812c804c80aa9","service":"pharma-care-api","timestamp":"2025-09-22 00:00:02"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b5820ad73f6a654cfc3d4a","service":"pharma-care-api","timestamp":"2025-09-22 00:00:02"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:02.406Z","patientsCount":6,"storageUsed":0,"usersCount":0},"previousStats":{"lastUpdated":"2025-09-19T17:00:02.213Z","patientsCount":6,"usersCount":0},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:02","workspaceId":"68ae3ec5e61f67c1699cbe5a"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b599483de419871c5444db","service":"pharma-care-api","timestamp":"2025-09-22 00:00:03"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b599843de419871c5444e5","service":"pharma-care-api","timestamp":"2025-09-22 00:00:03"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:03.366Z","patientsCount":0,"storageUsed":0,"usersCount":1},"previousStats":{"lastUpdated":"2025-09-19T17:00:05.083Z","patientsCount":0,"usersCount":1},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:03","workspaceId":"68b0466005118ea02f14588c"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b5a25bd5080d27fcb48dbb","service":"pharma-care-api","timestamp":"2025-09-22 00:00:03"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b5bdb52ea8593c9468e709","service":"pharma-care-api","timestamp":"2025-09-22 00:00:04"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b5be182ea8593c9468e713","service":"pharma-care-api","timestamp":"2025-09-22 00:00:04"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:04.351Z","patientsCount":0,"storageUsed":0,"usersCount":0},"previousStats":{"lastUpdated":"2025-09-19T17:00:06.104Z","patientsCount":0,"usersCount":0},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:04","workspaceId":"68b046fce4a9dd1452295f65"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b5cb82f1f0f9758b8afadf","service":"pharma-care-api","timestamp":"2025-09-22 00:00:04"}
+{"level":"warn","message":"Missing subscription or plan for workspace 68b5cd85f1f0f9758b8afbbf","service":"pharma-care-api","timestamp":"2025-09-22 00:00:06"}
+{"level":"info","message":"Usage alert check completed: 0 alerts found, 0 notifications sent","service":"pharma-care-api","timestamp":"2025-09-22 00:00:06"}
+{"level":"info","message":"Usage alert check completed successfully","service":"pharma-care-api","timestamp":"2025-09-22 00:00:06"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:06.605Z","patientsCount":0,"storageUsed":0,"usersCount":0},"previousStats":{"lastUpdated":"2025-09-19T17:00:07.132Z","patientsCount":0,"usersCount":0},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:07","workspaceId":"68b04725d7bacfa4c8669955"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:08.286Z","patientsCount":0,"storageUsed":0,"usersCount":0},"previousStats":{"lastUpdated":"2025-09-19T17:00:08.151Z","patientsCount":0,"usersCount":0},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:08","workspaceId":"68b047542aa0fe852abdec6d"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:09.471Z","patientsCount":0,"storageUsed":0,"usersCount":0},"previousStats":{"lastUpdated":"2025-09-19T17:00:11.788Z","patientsCount":0,"usersCount":0},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:09","workspaceId":"68b54b0d3b448a4546d6a858"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:12.339Z","patientsCount":0,"storageUsed":0,"usersCount":0},"previousStats":{"lastUpdated":"2025-09-19T17:00:12.926Z","patientsCount":0,"usersCount":0},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:12","workspaceId":"68b54db1cfd812c804c80aa9"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:13.368Z","patientsCount":0,"storageUsed":0,"usersCount":0},"previousStats":{"lastUpdated":"2025-09-19T17:00:15.932Z","patientsCount":0,"usersCount":0},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:15","workspaceId":"68b5820ad73f6a654cfc3d4a"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:15.923Z","patientsCount":0,"storageUsed":0,"usersCount":0},"previousStats":{"lastUpdated":"2025-09-19T17:00:17.366Z","patientsCount":0,"usersCount":0},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:16","workspaceId":"68b599483de419871c5444db"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:17.049Z","patientsCount":0,"storageUsed":0,"usersCount":0},"previousStats":{"lastUpdated":"2025-09-19T17:00:20.131Z","patientsCount":0,"usersCount":0},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:17","workspaceId":"68b599843de419871c5444e5"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:18.380Z","patientsCount":0,"storageUsed":0,"usersCount":0},"previousStats":{"lastUpdated":"2025-09-19T17:00:22.589Z","patientsCount":0,"usersCount":0},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:18","workspaceId":"68b5a25bd5080d27fcb48dbb"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:19.262Z","patientsCount":0,"storageUsed":0,"usersCount":0},"previousStats":{"lastUpdated":"2025-09-19T17:00:24.022Z","patientsCount":0,"usersCount":0},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:19","workspaceId":"68b5bdb52ea8593c9468e709"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:20.326Z","patientsCount":0,"storageUsed":0,"usersCount":0},"previousStats":{"lastUpdated":"2025-09-19T17:00:26.335Z","patientsCount":0,"usersCount":0},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:20","workspaceId":"68b5be182ea8593c9468e713"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:22.908Z","patientsCount":6,"storageUsed":0,"usersCount":1},"previousStats":{"lastUpdated":"2025-09-19T17:00:27.810Z","patientsCount":6,"usersCount":1},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:23","workspaceId":"68b5cb82f1f0f9758b8afadf"}
+{"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-21T23:00:23.807Z","patientsCount":0,"storageUsed":0,"usersCount":1},"previousStats":{"lastUpdated":"2025-09-19T17:00:30.371Z","patientsCount":0,"usersCount":1},"service":"pharma-care-api","timestamp":"2025-09-22 00:00:24","workspaceId":"68b5cd85f1f0f9758b8afbbf"}
+{"level":"info","message":"Batch recalculation completed: 16 successful, 0 failed","service":"pharma-care-api","timestamp":"2025-09-22 00:00:24"}
+{"level":"info","message":"Stale stats recalculation completed: 16 workspaces updated","service":"pharma-care-api","timestamp":"2025-09-22 00:00:24"}
