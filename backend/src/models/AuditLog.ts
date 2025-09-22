@@ -20,6 +20,21 @@ export interface IAuditLog extends Document {
         version: string;
         environment: string;
     };
+    // RBAC-specific fields
+    roleId?: mongoose.Types.ObjectId;
+    roleName?: string;
+    targetUserId?: mongoose.Types.ObjectId;
+    permissionAction?: string;
+    permissionSource?: 'direct' | 'role' | 'inherited' | 'legacy';
+    hierarchyLevel?: number;
+    bulkOperationId?: string;
+    securityContext?: {
+        riskScore: number;
+        anomalyDetected: boolean;
+        escalationReason?: string;
+        previousPermissions?: string[];
+        newPermissions?: string[];
+    };
 }
 
 const auditLogSchema = new Schema<IAuditLog>({
@@ -66,7 +81,29 @@ const auditLogSchema = new Schema<IAuditLog>({
             'VIEW_PATIENT_NOTES',
             'UPLOAD_NOTE_ATTACHMENT',
             'DELETE_NOTE_ATTACHMENT',
-            'DOWNLOAD_NOTE_ATTACHMENT'
+            'DOWNLOAD_NOTE_ATTACHMENT',
+            // RBAC Actions
+            'ROLE_CREATED',
+            'ROLE_UPDATED',
+            'ROLE_DELETED',
+            'ROLE_ASSIGNED',
+            'ROLE_REVOKED',
+            'ROLE_HIERARCHY_MODIFIED',
+            'PERMISSION_GRANTED',
+            'PERMISSION_REVOKED',
+            'PERMISSION_CHECKED',
+            'PERMISSION_DENIED',
+            'BULK_ROLE_ASSIGNMENT',
+            'BULK_PERMISSION_UPDATE',
+            'PRIVILEGE_ESCALATION_ATTEMPT',
+            'UNAUTHORIZED_ACCESS_ATTEMPT',
+            'ROLE_INHERITANCE_MODIFIED',
+            'PERMISSION_CACHE_INVALIDATED',
+            'SECURITY_POLICY_VIOLATION',
+            'ADMIN_ROLE_ASSIGNMENT',
+            'SUPER_ADMIN_ACCESS',
+            'RBAC_MIGRATION_EXECUTED',
+            'RBAC_ROLLBACK_EXECUTED'
         ]
     },
     timestamp: {
@@ -108,7 +145,11 @@ const auditLogSchema = new Schema<IAuditLog>({
             'system_security',
             'workflow_management',
             'risk_management',
-            'data_access'
+            'data_access',
+            'rbac_management',
+            'security_monitoring',
+            'privilege_management',
+            'access_control'
         ]
     },
     changedFields: [{
@@ -152,6 +193,60 @@ const auditLogSchema = new Schema<IAuditLog>({
             type: String,
             default: process.env.NODE_ENV || 'development'
         }
+    },
+    // RBAC-specific fields
+    roleId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Role',
+        required: false
+    },
+    roleName: {
+        type: String,
+        required: false
+    },
+    targetUserId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
+    },
+    permissionAction: {
+        type: String,
+        required: false
+    },
+    permissionSource: {
+        type: String,
+        enum: ['direct', 'role', 'inherited', 'legacy'],
+        required: false
+    },
+    hierarchyLevel: {
+        type: Number,
+        required: false
+    },
+    bulkOperationId: {
+        type: String,
+        required: false
+    },
+    securityContext: {
+        riskScore: {
+            type: Number,
+            min: 0,
+            max: 100,
+            required: false
+        },
+        anomalyDetected: {
+            type: Boolean,
+            default: false
+        },
+        escalationReason: {
+            type: String,
+            required: false
+        },
+        previousPermissions: [{
+            type: String
+        }],
+        newPermissions: [{
+            type: String
+        }]
     }
 }, {
     timestamps: true,
@@ -171,5 +266,19 @@ auditLogSchema.index({ workspaceId: 1, timestamp: -1 });
 auditLogSchema.index({ interventionId: 1, action: 1, timestamp: -1 });
 auditLogSchema.index({ userId: 1, action: 1, timestamp: -1 });
 auditLogSchema.index({ riskLevel: 1, complianceCategory: 1, timestamp: -1 });
+
+// RBAC-specific indexes
+auditLogSchema.index({ roleId: 1, timestamp: -1 });
+auditLogSchema.index({ targetUserId: 1, timestamp: -1 });
+auditLogSchema.index({ permissionAction: 1, timestamp: -1 });
+auditLogSchema.index({ bulkOperationId: 1, timestamp: -1 });
+auditLogSchema.index({ 'securityContext.anomalyDetected': 1, timestamp: -1 });
+auditLogSchema.index({ 'securityContext.riskScore': 1, timestamp: -1 });
+
+// Compound indexes for RBAC queries
+auditLogSchema.index({ roleId: 1, action: 1, timestamp: -1 });
+auditLogSchema.index({ targetUserId: 1, action: 1, timestamp: -1 });
+auditLogSchema.index({ permissionAction: 1, permissionSource: 1, timestamp: -1 });
+auditLogSchema.index({ complianceCategory: 1, action: 1, timestamp: -1 });
 
 export const AuditLog = mongoose.model<IAuditLog>('AuditLog', auditLogSchema);
