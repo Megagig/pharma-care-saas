@@ -569,17 +569,30 @@ class CacheManager {
                 }
             }
 
+            // Check for orphaned cache entries
+            await this.checkOrphanedEntries(issues, repaired);
+
+            // Check cache key patterns for consistency
+            await this.validateCacheKeyPatterns(issues);
+
             // Check memory usage
             try {
                 const memoryStats = await this.redis.memory('STATS') as string[];
                 const memoryUsage = memoryStats.length > 0 && memoryStats[0] ? parseInt(memoryStats[0]) : 0;
                 if (memoryUsage > this.MAX_MEMORY_USAGE) {
                     issues.push(`Memory usage (${memoryUsage}) exceeds limit (${this.MAX_MEMORY_USAGE})`);
+
+                    // Trigger cache cleanup if memory usage is too high
+                    await this.performMemoryCleanup();
+                    repaired++;
                 }
             } catch (error) {
                 // Memory command might not be available in all Redis versions
                 logger.debug('Memory stats not available:', error);
             }
+
+            // Check for cache fragmentation
+            await this.checkCacheFragmentation(issues);
 
             return {
                 consistent: issues.length === 0,
@@ -594,6 +607,170 @@ class CacheManager {
                 issues: ['Error checking consistency'],
                 repaired
             };
+        }
+    }
+
+    /**
+     * Check for orphaned cache entries
+     */
+    private async checkOrphanedEntries(issues: string[], repaired: number): Promise<void> {
+        if (!this.isConnected || !this.redis) {
+            return;
+        }
+
+        try {
+            // Check for user permission entries without corresponding users
+            const userPermKeys = await this.redis.keys(`${this.PREFIXES.USER_PERMISSIONS}*`);
+
+            for (const key of userPermKeys) {
+                const userId = key.replace(this.PREFIXES.USER_PERMISSIONS, '').split(':')[0];
+
+                if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+                    try {
+                        const User = (await import('../models/User')).default;
+                        const userExists = await User.exists({ _id: userId });
+
+                        if (!userExists) {
+                            await this.redis.del(key);
+                            issues.push(`Removed orphaned user permission cache: ${userId}`);
+                            repaired++;
+                        }
+                    } catch (error) {
+                        logger.debug(`Error checking user existence for ${userId}:`, error);
+                    }
+                }
+            }
+
+            // Check for role permission entries without corresponding roles
+            const rolePermKeys = await this.redis.keys(`${this.PREFIXES.ROLE_PERMISSIONS}*`);
+
+            for (const key of rolePermKeys) {
+                const roleId = key.replace(this.PREFIXES.ROLE_PERMISSIONS, '');
+
+                if (roleId && mongoose.Types.ObjectId.isValid(roleId)) {
+                    try {
+                        const Role = (await import('../models/Role')).default;
+                        const roleExists = await Role.exists({ _id: roleId, isActive: true });
+
+                        if (!roleExists) {
+                            await this.redis.del(key);
+                            issues.push(`Removed orphaned role permission cache: ${roleId}`);
+                            repaired++;
+                        }
+                    } catch (error) {
+                        logger.debug(`Error checking role existence for ${roleId}:`, error);
+                    }
+                }
+            }
+
+        } catch (error) {
+            logger.error('Error checking orphaned entries:', error);
+        }
+    }
+
+    /**
+     * Validate cache key patterns
+     */
+    private async validateCacheKeyPatterns(issues: string[]): Promise<void> {
+        if (!this.isConnected || !this.redis) {
+            return;
+        }
+
+        try {
+            const allKeys = await this.redis.keys('*');
+            const validPrefixes = Object.values(this.PREFIXES);
+
+            for (const key of allKeys) {
+                const hasValidPrefix = validPrefixes.some(prefix => key.startsWith(prefix));
+
+                if (!hasValidPrefix) {
+                    issues.push(`Invalid cache key pattern: ${key}`);
+                }
+            }
+
+        } catch (error) {
+            logger.error('Error validating cache key patterns:', error);
+        }
+    }
+
+    /**
+     * Perform memory cleanup when usage is high
+     */
+    private async performMemoryCleanup(): Promise<void> {
+        if (!this.isConnected || !this.redis) {
+            return;
+        }
+
+        try {
+            // Remove expired entries first
+            const allKeys = await this.redis.keys('*');
+            const now = Date.now();
+            let cleanedCount = 0;
+
+            for (const key of allKeys) {
+                try {
+                    const value = await this.redis.get(key);
+                    if (value) {
+                        const parsed = JSON.parse(value);
+                        if (parsed.expiresAt && now > parsed.expiresAt) {
+                            await this.redis.del(key);
+                            cleanedCount++;
+                        }
+                    }
+                } catch (error) {
+                    // Remove invalid entries
+                    await this.redis.del(key);
+                    cleanedCount++;
+                }
+            }
+
+            // If still high memory usage, remove oldest entries
+            const memoryStats = await this.redis.memory('STATS') as string[];
+            const memoryUsage = memoryStats.length > 0 && memoryStats[0] ? parseInt(memoryStats[0]) : 0;
+
+            if (memoryUsage > this.MAX_MEMORY_USAGE * 0.8) { // 80% threshold
+                // Implement LRU-style cleanup
+                const keysToRemove = Math.floor(allKeys.length * 0.1); // Remove 10% of keys
+                const sortedKeys = allKeys.sort(); // Simple sorting, could be improved with access time
+
+                for (let i = 0; i < keysToRemove && i < sortedKeys.length; i++) {
+                    const key = sortedKeys[i];
+                    if (key) {
+                        await this.redis.del(key);
+                        cleanedCount++;
+                    }
+                }
+            }
+
+            logger.info(`Memory cleanup completed, removed ${cleanedCount} cache entries`);
+
+        } catch (error) {
+            logger.error('Error performing memory cleanup:', error);
+        }
+    }
+
+    /**
+     * Check for cache fragmentation
+     */
+    private async checkCacheFragmentation(issues: string[]): Promise<void> {
+        if (!this.isConnected || !this.redis) {
+            return;
+        }
+
+        try {
+            const info = await this.redis.info('memory');
+            const fragmentationMatch = info.match(/mem_fragmentation_ratio:(\d+\.?\d*)/);
+
+            if (fragmentationMatch && fragmentationMatch[1]) {
+                const fragmentationRatio = parseFloat(fragmentationMatch[1]);
+
+                if (fragmentationRatio > 1.5) { // 50% fragmentation threshold
+                    issues.push(`High memory fragmentation ratio: ${fragmentationRatio}`);
+                }
+            }
+
+        } catch (error) {
+            logger.debug('Error checking cache fragmentation:', error);
         }
     }
 

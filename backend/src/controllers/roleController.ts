@@ -559,7 +559,7 @@ export class RoleController {
             }
 
             // Invalidate caches for affected users
-            await this.invalidateRoleCaches(role._id);
+            await this.invalidateRoleCaches(role._id, 'Role updated', req.user!._id);
 
             logger.info('Role updated successfully', {
                 roleId: role._id,
@@ -726,7 +726,7 @@ export class RoleController {
                 });
 
                 // Invalidate caches for affected users
-                await this.invalidateRoleCaches(role._id);
+                await this.invalidateRoleCaches(role._id, 'Role deleted', req.user!._id);
 
                 logger.info('Role deleted successfully', {
                     roleId: role._id,
@@ -853,19 +853,18 @@ export class RoleController {
     /**
      * Helper method to invalidate caches for users with this role
      */
-    private async invalidateRoleCaches(roleId: mongoose.Types.ObjectId): Promise<void> {
+    private async invalidateRoleCaches(
+        roleId: mongoose.Types.ObjectId,
+        reason: string = 'Role modification',
+        initiatedBy?: mongoose.Types.ObjectId
+    ): Promise<void> {
         try {
-            // Get all users with this role
-            const userRoles = await UserRole.find({ roleId, isActive: true });
-            const userIds = userRoles.map(ur => ur.userId);
-
-            // Invalidate user caches
-            for (const userId of userIds) {
-                await this.dynamicPermissionService.invalidateUserCache(userId);
-            }
-
-            // Invalidate role cache
-            await this.dynamicPermissionService.invalidateRoleCache(roleId);
+            // Use the enhanced cache invalidation service
+            await this.dynamicPermissionService.invalidateRoleCache(
+                roleId,
+                reason,
+                initiatedBy
+            );
 
         } catch (error) {
             logger.error('Error invalidating role caches:', error);
