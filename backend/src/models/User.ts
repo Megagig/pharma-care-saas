@@ -64,12 +64,14 @@ export interface IUser extends Document {
   cachedPermissions?: {
     permissions: string[];
     lastUpdated: Date;
+    expiresAt: Date;
     workspaceId?: mongoose.Types.ObjectId;
   }; // Performance optimization cache
 
   // Role audit fields
   roleLastModifiedBy?: mongoose.Types.ObjectId;
   roleLastModifiedAt?: Date;
+  lastPermissionCheck?: Date; // For real-time permission validation
 
   // Subscription and access
   subscriptionTier:
@@ -293,6 +295,10 @@ const userSchema = new Schema(
         type: Date,
         index: true,
       },
+      expiresAt: {
+        type: Date,
+        index: true,
+      },
       workspaceId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Workplace',
@@ -303,6 +309,10 @@ const userSchema = new Schema(
       ref: 'User',
     },
     roleLastModifiedAt: {
+      type: Date,
+      index: true,
+    },
+    lastPermissionCheck: {
       type: Date,
       index: true,
     },
