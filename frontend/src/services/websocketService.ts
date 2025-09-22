@@ -3,6 +3,7 @@
  * Handles real-time permission and role change notifications
  */
 
+import React from 'react';
 import type { PermissionChangeNotification } from '../types/rbac';
 
 export interface WebSocketMessage {

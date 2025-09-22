@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, MouseEvent } from 'react';
 import {
   Box,
   Paper,
@@ -103,32 +103,57 @@ const PharmacyUserManagement: React.FC = () => {
     severity: 'info',
   });
 
-  // Check if user has access to user management
-  if (!hasFeature('user_management')) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="warning">
-          You don't have permission to access User Management. Please contact
-          your administrator.
-        </Alert>
-      </Box>
-    );
-  }
+  const showSnackbar = useCallback(
+    (message: string, severity: 'success' | 'error' | 'warning' | 'info') => {
+      setSnackbar({ open: true, message, severity });
+    },
+    []
+  );
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [usersResponse, rolesResponse] = await Promise.all([
+        rbacService.getUsers({ page: 1, limit: 100 }),
+        rbacService.getRoles({ page: 1, limit: 100 }),
+      ]);
+
+      if (usersResponse.success && usersResponse.data?.users) {
+        setUsers(usersResponse.data.users);
+      } else {
+        setUsers([]);
+      }
+
+      if (rolesResponse.success && rolesResponse.data?.roles) {
+        setRoles(rolesResponse.data.roles);
+      } else {
+        setRoles([]);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setUsers([]);
+      setRoles([]);
+      showSnackbar(
+        'Failed to load user data. The RBAC service may not be available.',
+        'error'
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [showSnackbar]);
 
   // Load initial data
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   // Subscribe to real-time updates
   useEffect(() => {
     const unsubscribeUserUpdates = subscribe('user_update', (message) => {
-      // Reload user data when users are updated
       loadData();
     });
 
     const unsubscribeRoleUpdates = subscribe('role_change', (message) => {
-      // Reload data when roles change
       loadData();
     });
 
@@ -137,7 +162,6 @@ const PharmacyUserManagement: React.FC = () => {
 
       if (operationId === bulkOperationId) {
         if (status === 'completed' || status === 'failed') {
-          // Reload data when bulk operation completes
           loadData();
         }
       }
@@ -149,36 +173,6 @@ const PharmacyUserManagement: React.FC = () => {
       unsubscribeBulkOperations();
     };
   }, [subscribe, bulkOperationId, loadData]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [usersResponse, rolesResponse] = await Promise.all([
-        rbacService.getUsers({ page: 1, limit: 100 }),
-        rbacService.getRoles({ page: 1, limit: 100 }),
-      ]);
-
-      if (usersResponse.success) {
-        setUsers(usersResponse.data.users);
-      }
-
-      if (rolesResponse.success) {
-        setRoles(rolesResponse.data.roles);
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-      showSnackbar('Failed to load user data', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const showSnackbar = (
-    message: string,
-    severity: 'success' | 'error' | 'warning' | 'info'
-  ) => {
-    setSnackbar({ open: true, message, severity });
-  };
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
@@ -230,11 +224,8 @@ const PharmacyUserManagement: React.FC = () => {
     try {
       setBulkOperationInProgress(true);
 
-      // Generate operation ID for tracking
       const operationId = `role-assignment-${Date.now()}`;
       setBulkOperationId(operationId);
-
-      // Show progress dialog
       setProgressDialogOpen(true);
 
       const result = await rbacService.bulkAssignRoles({
@@ -255,7 +246,6 @@ const PharmacyUserManagement: React.FC = () => {
           );
         }
 
-        // Reload data and close dialog
         await loadData();
         setRoleAssignmentOpen(false);
         setSelectedRolesForAssignment([]);
@@ -267,13 +257,12 @@ const PharmacyUserManagement: React.FC = () => {
       showSnackbar('Failed to assign roles', 'error');
     } finally {
       setBulkOperationInProgress(false);
-      // Keep progress dialog open until operation completes
     }
   };
 
   // Handle individual user actions
   const handleUserMenuOpen = (
-    event: React.MouseEvent<HTMLElement>,
+    event: MouseEvent<HTMLElement>,
     user: DynamicUser
   ) => {
     setAnchorEl(event.currentTarget);
@@ -286,7 +275,6 @@ const PharmacyUserManagement: React.FC = () => {
   };
 
   const handleEditUser = (user: DynamicUser) => {
-    // TODO: Implement user editing
     console.log('Edit user:', user);
     handleUserMenuClose();
   };
@@ -295,7 +283,6 @@ const PharmacyUserManagement: React.FC = () => {
     try {
       const response = await rbacService.getUserRoles(user._id);
       if (response.success) {
-        // TODO: Show user roles in a dialog
         console.log('User roles:', response.data);
       }
     } catch (error) {
@@ -304,6 +291,18 @@ const PharmacyUserManagement: React.FC = () => {
     }
     handleUserMenuClose();
   };
+
+  // Check if user has access to user management
+  if (!hasFeature('user_management')) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="warning">
+          You don't have permission to access User Management. Please contact
+          your administrator.
+        </Alert>
+      </Box>
+    );
+  }
 
   // Filter users based on search and filters
   const filteredUsers = users.filter((user) => {
@@ -435,17 +434,20 @@ const PharmacyUserManagement: React.FC = () => {
       width: 100,
       getActions: (params: GridRowParams) => [
         <GridActionsCellItem
+          key="edit"
           icon={<EditIcon />}
           label="Edit"
           onClick={() => handleEditUser(params.row)}
           disabled={!canAccess('canUpdate')}
         />,
         <GridActionsCellItem
+          key="roles"
           icon={<SecurityIcon />}
           label="View Roles"
           onClick={() => handleViewUserRoles(params.row)}
         />,
         <GridActionsCellItem
+          key="more"
           icon={<MoreVertIcon />}
           label="More"
           onClick={(event) => handleUserMenuOpen(event, params.row)}
@@ -601,24 +603,51 @@ const PharmacyUserManagement: React.FC = () => {
 
       {/* Data Grid */}
       <Paper sx={{ height: 600 }}>
-        <DataGrid
-          rows={filteredUsers}
-          columns={columns}
-          getRowId={(row) => row._id}
-          checkboxSelection
-          disableRowSelectionOnClick
-          rowSelectionModel={selectedUsers}
-          onRowSelectionModelChange={setSelectedUsers}
-          pageSizeOptions={[25, 50, 100]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 25 } },
-          }}
-          sx={{
-            '& .MuiDataGrid-row:hover': {
-              backgroundColor: 'action.hover',
-            },
-          }}
-        />
+        {users.length === 0 && !loading ? (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              p: 3,
+            }}
+          >
+            <Typography variant="h6" color="textSecondary" gutterBottom>
+              No users found
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              The RBAC service may not be available or no users exist.
+            </Typography>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={loadData}
+            >
+              Try Again
+            </Button>
+          </Box>
+        ) : (
+          <DataGrid
+            rows={filteredUsers || []}
+            columns={columns}
+            getRowId={(row) => row._id}
+            checkboxSelection
+            disableRowSelectionOnClick
+            rowSelectionModel={selectedUsers}
+            onRowSelectionModelChange={setSelectedUsers}
+            pageSizeOptions={[25, 50, 100]}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 25 } },
+            }}
+            sx={{
+              '& .MuiDataGrid-row:hover': {
+                backgroundColor: 'action.hover',
+              },
+            }}
+          />
+        )}
       </Paper>
 
       {/* Role Assignment Dialog */}
