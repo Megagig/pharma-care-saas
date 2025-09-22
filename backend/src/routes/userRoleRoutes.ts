@@ -9,15 +9,16 @@ const router = express.Router();
 router.use(auth);
 router.use(requireSuperAdmin);
 
-// User role assignment operations
-router.post('/:id/roles', requireDynamicPermission('user:update'), userRoleController.assignUserRoles);
-router.delete('/:id/roles/:roleId', requireDynamicPermission('user:update'), userRoleController.revokeUserRole);
+// User role assignment operations - Super admin has full access
+router.get('/:id/roles', userRoleController.getUserRoles);
+router.post('/:id/roles', userRoleController.assignUserRoles);
+router.delete('/:id/roles/:roleId', userRoleController.revokeUserRole);
 
 // User permission management
-router.put('/:id/permissions', requireDynamicPermission('user:update'), userRoleController.updateUserPermissions);
-router.get('/:id/effective-permissions', requireDynamicPermission('user:read'), userRoleController.getUserEffectivePermissions);
+router.put('/:id/permissions', userRoleController.updateUserPermissions);
+router.get('/:id/effective-permissions', userRoleController.getUserEffectivePermissions);
 
 // Bulk operations
-router.post('/bulk-update', requireDynamicPermission('user:update'), userRoleController.bulkUpdateUsers);
+router.post('/bulk-update', userRoleController.bulkUpdateUsers);
 
 export default router;
