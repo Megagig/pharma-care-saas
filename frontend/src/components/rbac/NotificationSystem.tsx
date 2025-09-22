@@ -74,7 +74,11 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({
   showInAppNotifications = true,
 }) => {
   const { user } = useAuth();
-  const { status, subscribe, connect } = useWebSocket();
+
+  // Disable WebSocket functionality completely to prevent connection attempts
+  const status = 'disabled';
+  const subscribe = () => () => {}; // No-op function
+  const connect = () => Promise.resolve();
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [activeSnackbars, setActiveSnackbars] = useState<Set<string>>(
@@ -83,12 +87,11 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({
   const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Connect to WebSocket on mount
+  // WebSocket connection disabled - no connection attempts
   useEffect(() => {
-    if (status === 'disconnected') {
-      connect().catch(console.error);
-    }
-  }, [status, connect]);
+    // WebSocket functionality is disabled to prevent connection errors
+    // Real-time notifications are not available
+  }, []);
 
   // Subscribe to permission change notifications
   useEffect(() => {
@@ -186,7 +189,7 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({
   }, []);
 
   const handleBulkOperationNotification = useCallback(
-    (data: any) => {
+    (data: unknown) => {
       if (data.affectedUsers?.includes(user?.id)) {
         addNotification({
           type: 'system_update',

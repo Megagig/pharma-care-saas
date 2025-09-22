@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -15,6 +15,12 @@ apiClient.interceptors.request.use(
   (config) => {
     // Authentication is handled via httpOnly cookies
     // No need to manually add Authorization header
+
+    // Add super admin test header for development RBAC testing
+    if (import.meta.env.DEV && config.url?.includes('/admin/')) {
+      config.headers['X-Super-Admin-Test'] = 'true';
+    }
+
     return config;
   },
   (error) => {

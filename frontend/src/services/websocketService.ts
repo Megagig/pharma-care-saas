@@ -8,7 +8,7 @@ import type { PermissionChangeNotification } from '../types/rbac';
 
 export interface WebSocketMessage {
     type: 'permission_change' | 'role_change' | 'user_update' | 'bulk_operation' | 'system_notification';
-    data: any;
+    data: unknown;
     timestamp: string;
     userId?: string;
 }
@@ -31,12 +31,13 @@ class WebSocketService {
     private heartbeatTimer: NodeJS.Timeout | null = null;
     private isConnecting = false;
     private isManuallyDisconnected = false;
+    private isDisabled = false; // Flag to completely disable WebSocket
 
     constructor(config?: Partial<WebSocketConfig>) {
         this.config = {
             url: import.meta.env.VITE_WS_URL || 'ws://localhost:5000/ws',
             reconnectInterval: 5000,
-            maxReconnectAttempts: 10,
+            maxReconnectAttempts: 3, // Reduced from 10 to 3
             heartbeatInterval: 30000,
             ...config,
         };
@@ -85,13 +86,21 @@ class WebSocketService {
                     this.isConnecting = false;
                     this.stopHeartbeat();
 
-                    if (!this.isManuallyDisconnected && this.reconnectAttempts < this.config.maxReconnectAttempts) {
+                    // Don't reconnect if it's a connection refused (1006) or server unavailable
+                    if (!this.isManuallyDisconnected &&
+                        this.reconnectAttempts < this.config.maxReconnectAttempts &&
+                        event.code !== 1006) {
                         this.scheduleReconnect();
+                    } else if (event.code === 1006) {
+                        console.warn('WebSocket server unavailable. Stopping reconnection attempts.');
+                        this.reconnectAttempts = this.config.maxReconnectAttempts; // Stop further attempts
                     }
                 };
 
                 this.ws.onerror = (error) => {
-                    console.error('WebSocket error:', error);
+                    if (this.reconnectAttempts === 0) {
+                        console.warn('WebSocket connection failed. Server may not be available.');
+                    }
                     this.isConnecting = false;
                     reject(error);
                 };
@@ -211,14 +220,21 @@ class WebSocketService {
     private scheduleReconnect(): void {
         this.clearReconnectTimer();
 
+        // Exponential backoff: increase delay with each attempt
+        const delay = Math.min(this.config.reconnectInterval * Math.pow(2, this.reconnectAttempts), 30000);
+
         this.reconnectTimer = setTimeout(() => {
             this.reconnectAttempts++;
-            console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`);
+            if (this.reconnectAttempts <= 3) {
+                console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`);
+            }
 
             this.connect().catch(error => {
-                console.error('Reconnection failed:', error);
+                if (this.reconnectAttempts <= 3) {
+                    console.warn('Reconnection failed. WebSocket server may not be available.');
+                }
             });
-        }, this.config.reconnectInterval);
+        }, delay);
     }
 
     /**
