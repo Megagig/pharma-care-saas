@@ -32,6 +32,18 @@ export interface IUser extends Document {
     parentUserId?: mongoose.Types.ObjectId;
     teamMembers?: mongoose.Types.ObjectId[];
     permissions: string[];
+    assignedRoles: mongoose.Types.ObjectId[];
+    directPermissions: string[];
+    deniedPermissions: string[];
+    cachedPermissions?: {
+        permissions: string[];
+        lastUpdated: Date;
+        expiresAt: Date;
+        workspaceId?: mongoose.Types.ObjectId;
+    };
+    roleLastModifiedBy?: mongoose.Types.ObjectId;
+    roleLastModifiedAt?: Date;
+    lastPermissionCheck?: Date;
     subscriptionTier: 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
     trialStartDate?: Date;
     trialEndDate?: Date;

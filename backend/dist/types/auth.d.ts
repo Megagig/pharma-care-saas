@@ -37,6 +37,7 @@ export interface AuthRequest extends Request {
     user?: IUser & {
         currentUsage?: number;
         usageLimit?: number;
+        lastPermissionCheck?: Date;
     };
     subscription?: ISubscription | null;
     workspace?: IWorkplace | null;
@@ -47,6 +48,13 @@ export interface AuthRequest extends Request {
     interventionData?: any;
     patient?: any;
     clinicalNotes?: any[];
+    permissionContext?: {
+        action: string;
+        source: string;
+        roleId?: any;
+        roleName?: string;
+        inheritedFrom?: string;
+    };
 }
 export interface UsageLimitResult {
     allowed: boolean;

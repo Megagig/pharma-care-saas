@@ -19,6 +19,20 @@ export interface IAuditLog extends Document {
         version: string;
         environment: string;
     };
+    roleId?: mongoose.Types.ObjectId;
+    roleName?: string;
+    targetUserId?: mongoose.Types.ObjectId;
+    permissionAction?: string;
+    permissionSource?: 'direct' | 'role' | 'inherited' | 'legacy';
+    hierarchyLevel?: number;
+    bulkOperationId?: string;
+    securityContext?: {
+        riskScore: number;
+        anomalyDetected: boolean;
+        escalationReason?: string;
+        previousPermissions?: string[];
+        newPermissions?: string[];
+    };
 }
 export declare const AuditLog: mongoose.Model<IAuditLog, {}, {}, {}, mongoose.Document<unknown, {}, IAuditLog> & IAuditLog & {
     _id: mongoose.Types.ObjectId;
