@@ -1,6 +1,10 @@
 import express from 'express';
 import { auth, requireAdmin, authorize } from '../middlewares/auth';
 import { adminController } from '../controllers/adminController';
+import roleRoutes from './roleRoutes';
+import permissionRoutes from './permissionRoutes';
+import userRoleRoutes from './userRoleRoutes';
+import roleHierarchyRoutes from './roleHierarchyRoutes';
 
 const router = express.Router();
 
@@ -27,5 +31,11 @@ router.put('/feature-flags/:flagId', adminController.updateFeatureFlag);
 
 // System Analytics
 router.get('/analytics', adminController.getSystemAnalytics);
+
+// Dynamic RBAC Management Routes
+router.use('/roles', roleRoutes);
+router.use('/permissions', permissionRoutes);
+router.use('/users', userRoleRoutes);
+router.use('/roles', roleHierarchyRoutes);
 
 export default router;
