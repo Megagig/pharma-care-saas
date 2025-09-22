@@ -8,6 +8,8 @@ import RolePermission, { IRolePermission } from '../models/RolePermission';
 import { WorkspaceContext, PermissionResult } from '../types/auth';
 import RoleHierarchyService from './RoleHierarchyService';
 import CacheManager from './CacheManager';
+import CacheInvalidationService from './CacheInvalidationService';
+import DatabaseOptimizationService from './DatabaseOptimizationService';
 import PermissionAggregationService from './PermissionAggregationService';
 import logger from '../utils/logger';
 import { auditOperations } from '../middlewares/auditLogging';
@@ -39,11 +41,15 @@ class DynamicPermissionService {
 
     private roleHierarchyService: RoleHierarchyService;
     private cacheManager: CacheManager;
+    private cacheInvalidationService: CacheInvalidationService;
+    private dbOptimizationService: DatabaseOptimizationService;
     private aggregationService: PermissionAggregationService;
 
     private constructor() {
         this.roleHierarchyService = RoleHierarchyService.getInstance();
         this.cacheManager = CacheManager.getInstance();
+        this.cacheInvalidationService = CacheInvalidationService.getInstance();
+        this.dbOptimizationService = DatabaseOptimizationService.getInstance();
         this.aggregationService = PermissionAggregationService.getInstance();
     }
 
@@ -63,18 +69,44 @@ class DynamicPermissionService {
         context: WorkspaceContext,
         permissionContext: PermissionContext = {}
     ): Promise<DynamicPermissionResult> {
-        try {
-            // 1. Super admin bypass with audit logging
-            if (user.role === 'super_admin') {
-                await this.auditPermissionCheck(user, action, context, {
-                    allowed: true,
-                    source: 'super_admin'
-                });
+        const startTime = Date.now();
 
+        try {
+            // 1. Check cache first for performance optimization
+            const cachedResult = await this.cacheManager.getCachedPermissionCheck(
+                user._id,
+                action,
+                context.workspace?._id
+            );
+
+            if (cachedResult) {
+                logger.debug(`Cache hit for permission check: ${user._id}:${action}`);
                 return {
+                    allowed: cachedResult.allowed,
+                    source: cachedResult.source as any,
+                    reason: cachedResult.allowed ? undefined : 'Cached permission denial'
+                };
+            }
+
+            // 2. Super admin bypass with audit logging
+            if (user.role === 'super_admin') {
+                const result: DynamicPermissionResult = {
                     allowed: true,
                     source: 'super_admin'
                 };
+
+                // Cache the result
+                await this.cacheManager.cachePermissionCheck(
+                    user._id,
+                    action,
+                    true,
+                    'super_admin',
+                    context.workspace?._id,
+                    this.CACHE_TTL / 1000
+                );
+
+                await this.auditPermissionCheck(user, action, context, result);
+                return result;
             }
 
             // 2. Check user status first
@@ -92,6 +124,16 @@ class DynamicPermissionService {
                     source: 'direct_denial'
                 };
 
+                // Cache the denial result
+                await this.cacheManager.cachePermissionCheck(
+                    user._id,
+                    action,
+                    false,
+                    'direct_denial',
+                    context.workspace?._id,
+                    this.CACHE_TTL / 1000
+                );
+
                 await this.auditPermissionCheck(user, action, context, result);
                 return result;
             }
@@ -102,6 +144,16 @@ class DynamicPermissionService {
                     allowed: true,
                     source: 'direct_permission'
                 };
+
+                // Cache the result
+                await this.cacheManager.cachePermissionCheck(
+                    user._id,
+                    action,
+                    true,
+                    'direct_permission',
+                    context.workspace?._id,
+                    this.CACHE_TTL / 1000
+                );
 
                 await this.auditPermissionCheck(user, action, context, result);
                 return result;
@@ -116,6 +168,16 @@ class DynamicPermissionService {
             );
 
             if (rolePermissionResult.allowed) {
+                // Cache the successful role permission result
+                await this.cacheManager.cachePermissionCheck(
+                    user._id,
+                    action,
+                    true,
+                    rolePermissionResult.source || 'role',
+                    context.workspace?._id,
+                    this.CACHE_TTL / 1000
+                );
+
                 await this.auditPermissionCheck(user, action, context, rolePermissionResult);
                 return rolePermissionResult;
             }
@@ -127,6 +189,16 @@ class DynamicPermissionService {
                     ...legacyResult,
                     source: 'legacy'
                 };
+
+                // Cache the legacy permission result
+                await this.cacheManager.cachePermissionCheck(
+                    user._id,
+                    action,
+                    true,
+                    'legacy',
+                    context.workspace?._id,
+                    this.CACHE_TTL / 1000
+                );
 
                 await this.auditPermissionCheck(user, action, context, result);
                 return result;
@@ -140,6 +212,16 @@ class DynamicPermissionService {
                 source: 'none',
                 suggestions
             };
+
+            // Cache the negative result with shorter TTL
+            await this.cacheManager.cachePermissionCheck(
+                user._id,
+                action,
+                false,
+                'none',
+                context.workspace?._id,
+                Math.floor(this.CACHE_TTL / 2000) // Half the normal TTL for negative results
+            );
 
             await this.auditPermissionCheck(user, action, context, result);
             return result;
@@ -155,6 +237,17 @@ class DynamicPermissionService {
 
             await this.auditPermissionCheck(user, action, context, result);
             return result;
+        } finally {
+            // Record performance metrics
+            const executionTime = Date.now() - startTime;
+            this.dbOptimizationService.recordQueryMetrics({
+                query: `checkPermission:${action}`,
+                executionTime,
+                documentsExamined: 0, // Would need to be tracked per query
+                documentsReturned: 1,
+                indexUsed: true, // Assume cache hit or optimized query
+                timestamp: new Date()
+            });
         }
     }
 
@@ -171,6 +264,20 @@ class DynamicPermissionService {
         deniedPermissions: string[];
     }> {
         try {
+            // Check cache first
+            const cachedPermissions = await this.cacheManager.getCachedUserPermissions(
+                user._id,
+                context.workspace?._id
+            );
+
+            if (cachedPermissions) {
+                logger.debug(`Cache hit for user permissions: ${user._id}`);
+                return {
+                    permissions: cachedPermissions.permissions,
+                    sources: cachedPermissions.sources,
+                    deniedPermissions: cachedPermissions.deniedPermissions
+                };
+            }
             const allPermissions = new Set<string>();
             const permissionSources: Record<string, string> = {};
             const deniedPermissions = new Set<string>();
@@ -227,11 +334,23 @@ class DynamicPermissionService {
                 });
             }
 
-            return {
+            const result = {
                 permissions: Array.from(allPermissions),
                 sources: permissionSources,
                 deniedPermissions: Array.from(deniedPermissions)
             };
+
+            // Cache the resolved permissions
+            await this.cacheManager.cacheUserPermissions(
+                user._id,
+                result.permissions,
+                result.sources,
+                result.deniedPermissions,
+                context.workspace?._id,
+                this.CACHE_TTL / 1000
+            );
+
+            return result;
 
         } catch (error) {
             logger.error('Error resolving user permissions:', error);
@@ -470,6 +589,18 @@ class DynamicPermissionService {
         }
         visited.add(role._id.toString());
 
+        // Check cache for role permissions
+        const cachedRolePermissions = await this.cacheManager.getCachedRolePermissions(role._id);
+        if (cachedRolePermissions && visited.size === 1) { // Only use cache for top-level call
+            logger.debug(`Cache hit for role permissions: ${role._id}`);
+            return cachedRolePermissions.permissions.map(permission => ({
+                permission,
+                source: 'role',
+                roleId: role._id,
+                roleName: role.name
+            }));
+        }
+
         const permissions: Array<{
             permission: string;
             source: string;
@@ -534,6 +665,23 @@ class DynamicPermissionService {
                         });
                     });
                 }
+            }
+
+            // Cache the role permissions if this is the top-level call
+            if (visited.size === 1 && permissions.length > 0) {
+                const allPermissions = permissions.map(p => p.permission);
+                const inheritedPermissions = permissions
+                    .filter(p => p.source === 'inherited')
+                    .map(p => p.permission);
+
+                await this.cacheManager.cacheRolePermissions(
+                    role._id,
+                    allPermissions,
+                    inheritedPermissions,
+                    role.hierarchyLevel || 0,
+                    role.parentRole,
+                    this.CACHE_TTL / 1000
+                );
             }
 
             return permissions;
@@ -654,10 +802,22 @@ class DynamicPermissionService {
      */
     public async invalidateUserCache(
         userId: mongoose.Types.ObjectId,
-        workspaceId?: mongoose.Types.ObjectId
+        workspaceId?: mongoose.Types.ObjectId,
+        reason: string = 'User permission change',
+        initiatedBy?: mongoose.Types.ObjectId
     ): Promise<void> {
         try {
-            await this.cacheManager.invalidateUserCache(userId, workspaceId);
+            await this.cacheInvalidationService.invalidateUserPermissions(userId, {
+                workspaceId,
+                reason,
+                initiatedBy,
+                strategy: {
+                    immediate: true,
+                    cascade: false,
+                    selective: true,
+                    distributed: true
+                }
+            });
             logger.debug(`Invalidated permission cache for user ${userId}`);
         } catch (error) {
             logger.error('Error invalidating user cache:', error);
@@ -667,13 +827,51 @@ class DynamicPermissionService {
     /**
      * Invalidate role permission cache when role permissions change
      */
-    public async invalidateRoleCache(roleId: mongoose.Types.ObjectId): Promise<void> {
+    public async invalidateRoleCache(
+        roleId: mongoose.Types.ObjectId,
+        reason: string = 'Role permission change',
+        initiatedBy?: mongoose.Types.ObjectId
+    ): Promise<void> {
         try {
-            await this.cacheManager.invalidateRoleCache(roleId);
+            await this.cacheInvalidationService.invalidateRolePermissions(roleId, {
+                reason,
+                initiatedBy,
+                strategy: {
+                    immediate: true,
+                    cascade: true,
+                    selective: true,
+                    distributed: true
+                }
+            });
             this.roleHierarchyService.clearHierarchyCache(roleId);
             logger.debug(`Invalidated permission cache for role ${roleId}`);
         } catch (error) {
             logger.error('Error invalidating role cache:', error);
+        }
+    }
+
+    /**
+     * Invalidate role hierarchy cache when hierarchy changes
+     */
+    public async invalidateRoleHierarchyCache(
+        roleId: mongoose.Types.ObjectId,
+        reason: string = 'Role hierarchy change',
+        initiatedBy?: mongoose.Types.ObjectId
+    ): Promise<void> {
+        try {
+            await this.cacheInvalidationService.invalidateRoleHierarchy(roleId, {
+                reason,
+                initiatedBy,
+                strategy: {
+                    immediate: true,
+                    cascade: true,
+                    selective: true,
+                    distributed: true
+                }
+            });
+            logger.debug(`Invalidated hierarchy cache for role ${roleId}`);
+        } catch (error) {
+            logger.error('Error invalidating role hierarchy cache:', error);
         }
     }
 
@@ -805,6 +1003,148 @@ class DynamicPermissionService {
             });
         } catch (error) {
             logger.error('Error auditing permission change:', error);
+        }
+    }
+
+    /**
+     * Warm cache for frequently accessed permissions
+     */
+    public async warmPermissionCache(options: {
+        userIds?: mongoose.Types.ObjectId[];
+        roleIds?: mongoose.Types.ObjectId[];
+        commonActions?: string[];
+        workspaceId?: mongoose.Types.ObjectId;
+    }): Promise<void> {
+        try {
+            logger.info('Starting permission cache warming', options);
+
+            // Warm user permissions
+            if (options.userIds && options.userIds.length > 0) {
+                for (const userId of options.userIds) {
+                    try {
+                        const user = await User.findById(userId);
+                        if (user) {
+                            await this.resolveUserPermissions(
+                                user,
+                                { workspace: options.workspaceId ? { _id: options.workspaceId } : undefined } as WorkspaceContext
+                            );
+                        }
+                    } catch (error) {
+                        logger.error(`Error warming cache for user ${userId}:`, error);
+                    }
+                }
+            }
+
+            // Warm role permissions
+            if (options.roleIds && options.roleIds.length > 0) {
+                for (const roleId of options.roleIds) {
+                    try {
+                        const role = await Role.findById(roleId);
+                        if (role) {
+                            await this.getAllPermissionsForRole(role, {
+                                workspaceId: options.workspaceId,
+                                currentTime: new Date()
+                            });
+                        }
+                    } catch (error) {
+                        logger.error(`Error warming cache for role ${roleId}:`, error);
+                    }
+                }
+            }
+
+            // Warm common permission checks
+            if (options.userIds && options.commonActions && options.commonActions.length > 0) {
+                for (const userId of options.userIds) {
+                    const user = await User.findById(userId);
+                    if (user) {
+                        for (const action of options.commonActions) {
+                            try {
+                                await this.checkPermission(
+                                    user,
+                                    action,
+                                    { workspace: options.workspaceId ? { _id: options.workspaceId } : undefined } as WorkspaceContext
+                                );
+                            } catch (error) {
+                                logger.error(`Error warming cache for permission ${userId}:${action}:`, error);
+                            }
+                        }
+                    }
+                }
+            }
+
+            logger.info('Permission cache warming completed');
+
+        } catch (error) {
+            logger.error('Error warming permission cache:', error);
+        }
+    }
+
+    /**
+     * Get cache performance metrics
+     */
+    public async getCacheMetrics(): Promise<any> {
+        try {
+            return await this.cacheManager.getMetrics();
+        } catch (error) {
+            logger.error('Error getting cache metrics:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Check cache consistency and repair if needed
+     */
+    public async checkCacheConsistency(): Promise<{
+        consistent: boolean;
+        issues: string[];
+        repaired: number;
+    }> {
+        try {
+            return await this.cacheManager.checkConsistency();
+        } catch (error) {
+            logger.error('Error checking cache consistency:', error);
+            return {
+                consistent: false,
+                issues: ['Error checking consistency'],
+                repaired: 0
+            };
+        }
+    }
+
+    /**
+     * Initialize database optimizations
+     */
+    public async initializeDatabaseOptimizations(): Promise<void> {
+        try {
+            await this.dbOptimizationService.createOptimizedIndexes();
+            await this.dbOptimizationService.optimizeConnectionPool();
+            logger.info('Database optimizations initialized successfully');
+        } catch (error) {
+            logger.error('Error initializing database optimizations:', error);
+        }
+    }
+
+    /**
+     * Get database optimization report
+     */
+    public async getDatabaseOptimizationReport(): Promise<any> {
+        try {
+            return await this.dbOptimizationService.analyzeQueryPerformance();
+        } catch (error) {
+            logger.error('Error getting database optimization report:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Get query performance statistics
+     */
+    public getQueryPerformanceStats(): any {
+        try {
+            return this.dbOptimizationService.getQueryStats();
+        } catch (error) {
+            logger.error('Error getting query performance stats:', error);
+            return null;
         }
     }
 
