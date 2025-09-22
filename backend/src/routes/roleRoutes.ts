@@ -9,14 +9,14 @@ const router = express.Router();
 router.use(auth);
 router.use(requireSuperAdmin);
 
-// Role CRUD operations
-router.post('/', requireDynamicPermission('role:create'), roleController.createRole);
-router.get('/', requireDynamicPermission('role:read'), roleController.getRoles);
-router.get('/:id', requireDynamicPermission('role:read'), roleController.getRoleById);
-router.put('/:id', requireDynamicPermission('role:update'), roleController.updateRole);
-router.delete('/:id', requireDynamicPermission('role:delete'), roleController.deleteRole);
+// Role CRUD operations - Super admin has full access without dynamic permission checks
+router.post('/', roleController.createRole);
+router.get('/', roleController.getRoles);
+router.get('/:id', roleController.getRoleById);
+router.put('/:id', roleController.updateRole);
+router.delete('/:id', roleController.deleteRole);
 
 // Role permissions
-router.get('/:id/permissions', requireDynamicPermission('role:read'), roleController.getRolePermissions);
+router.get('/:id/permissions', roleController.getRolePermissions);
 
 export default router;

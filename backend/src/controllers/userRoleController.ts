@@ -19,6 +19,115 @@ export class UserRoleController {
     }
 
     /**
+     * Get user roles
+     * GET /api/admin/users/:id/roles
+     */
+    async getUserRoles(req: AuthRequest, res: Response): Promise<any> {
+        try {
+            const { id } = req.params;
+
+            if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid user ID format',
+                });
+            }
+
+            // Validate user exists
+            const user = await User.findById(id);
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found',
+                });
+            }
+
+            // Get user role assignments
+            const userRoles = await UserRole.find({
+                userId: id,
+                isActive: true
+            })
+                .populate('roleId', 'name displayName description category isActive')
+                .populate('assignedBy', 'firstName lastName')
+                .sort({ assignedAt: -1 });
+
+            // Get roles from user's assignedRoles array as well (for backward compatibility)
+            const assignedRoleIds = user.assignedRoles || [];
+            const assignedRoles = await Role.find({
+                _id: { $in: assignedRoleIds },
+                isActive: true
+            }).select('name displayName description category isActive');
+
+            // Combine and deduplicate roles
+            const allRoles = new Map();
+
+            // Add roles from UserRole collection
+            userRoles.forEach(ur => {
+                if (ur.roleId && typeof ur.roleId === 'object' && 'name' in ur.roleId) {
+                    const role = ur.roleId as any;
+                    allRoles.set(role._id.toString(), {
+                        _id: role._id,
+                        name: role.name,
+                        displayName: role.displayName,
+                        description: role.description,
+                        category: role.category,
+                        isActive: role.isActive,
+                        assignmentDetails: {
+                            assignedAt: ur.assignedAt,
+                            assignedBy: ur.assignedBy,
+                            isTemporary: ur.isTemporary,
+                            expiresAt: ur.expiresAt,
+                            assignmentReason: ur.assignmentReason,
+                            workspaceId: ur.workspaceId
+                        }
+                    });
+                }
+            });
+
+            // Add roles from user's assignedRoles array
+            assignedRoles.forEach(role => {
+                if (!allRoles.has(role._id.toString())) {
+                    allRoles.set(role._id.toString(), {
+                        _id: role._id,
+                        name: role.name,
+                        displayName: role.displayName,
+                        description: role.description,
+                        category: role.category,
+                        isActive: role.isActive,
+                        assignmentDetails: {
+                            assignedAt: user.roleLastModifiedAt || user.createdAt,
+                            assignedBy: user.roleLastModifiedBy,
+                            isTemporary: false,
+                            source: 'legacy'
+                        }
+                    });
+                }
+            });
+
+            const roles = Array.from(allRoles.values());
+
+            res.json({
+                success: true,
+                data: {
+                    userId: id,
+                    roles,
+                    totalRoles: roles.length,
+                    systemRole: user.role,
+                    lastModified: user.roleLastModifiedAt || user.updatedAt
+                },
+            });
+
+        } catch (error) {
+            logger.error('Error fetching user roles:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error fetching user roles',
+                error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+            });
+        }
+    }
+
+    /**
      * Assign roles to a user
      * POST /api/admin/users/:id/roles
      */
