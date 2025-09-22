@@ -16,6 +16,7 @@ import {
   Alert,
   Snackbar,
   CircularProgress,
+  IconButton,
   Tooltip,
   Badge,
   FormControl,
@@ -27,12 +28,13 @@ import {
   OutlinedInput,
 } from '@mui/material';
 import {
-  DataGrid,
-  GridColDef,
-  GridRowSelectionModel,
-  GridActionsCellItem,
-  GridRowParams,
-} from '@mui/x-data-grid';
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+} from '@mui/material';
 import {
   Search as SearchIcon,
   Edit as EditIcon,
@@ -46,7 +48,6 @@ import {
 } from '@mui/icons-material';
 import { useRBAC } from '../hooks/useRBAC';
 import { rbacService } from '../services/rbacService';
-import { useWebSocket } from '../services/websocketService';
 import NotificationSystem from '../components/rbac/NotificationSystem';
 import BulkOperationProgress from '../components/rbac/BulkOperationProgress';
 import type { DynamicUser, Role, PermissionPreview } from '../types/rbac';
@@ -64,33 +65,34 @@ const MenuProps = {
 
 const PharmacyUserManagement: React.FC = () => {
   const { hasFeature, canAccess } = useRBAC();
-  const { status: wsStatus, subscribe } = useWebSocket();
+
+  // Disable WebSocket functionality completely
+  const subscribe = useCallback(
+    (event: string, callback?: (data?: any) => void) => () => {},
+    []
+  ); // No-op function
 
   // State management
   const [users, setUsers] = useState<DynamicUser[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUsers, setSelectedUsers] = useState<GridRowSelectionModel>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [roleFilter, setRoleFilter] = useState<string[]>([]);
-
-  // Real-time updates and progress tracking
-  const [bulkOperationId, setBulkOperationId] = useState<string | null>(null);
-  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
-
-  // Dialog states
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
   const [roleAssignmentOpen, setRoleAssignmentOpen] = useState(false);
-  const [selectedRolesForAssignment, setSelectedRolesForAssignment] = useState<
-    string[]
-  >([]);
-  const [permissionPreview, setPermissionPreview] =
-    useState<PermissionPreview | null>(null);
+  const [selectedRolesForAssignment, setSelectedRolesForAssignment] = useState<string[]>([]);
+  const [permissionPreview, setPermissionPreview] = useState<PermissionPreview | null>(null);
   const [bulkOperationInProgress, setBulkOperationInProgress] = useState(false);
 
   // Menu states
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedUser, setSelectedUser] = useState<DynamicUser | null>(null);
+
+  // Real-time updates and progress tracking
+  const [bulkOperationId, setBulkOperationId] = useState<string | null>(null);
+  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
 
   // Notification states
   const [snackbar, setSnackbar] = useState<{
@@ -113,30 +115,55 @@ const PharmacyUserManagement: React.FC = () => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [usersResponse, rolesResponse] = await Promise.all([
-        rbacService.getUsers({ page: 1, limit: 100 }),
-        rbacService.getRoles({ page: 1, limit: 100 }),
-      ]);
 
-      if (usersResponse.success && usersResponse.data?.users) {
-        setUsers(usersResponse.data.users);
-      } else {
+      // Load users and roles separately to handle individual failures
+      let usersLoaded = false;
+      let rolesLoaded = false;
+
+      // Try to load users
+      try {
+        const usersResponse = await rbacService.getUsers({
+          page: 1,
+          limit: 100,
+        });
+        if (usersResponse.success && usersResponse.data?.users) {
+          setUsers(usersResponse.data.users);
+          usersLoaded = true;
+        } else {
+          setUsers([]);
+        }
+      } catch (userError) {
+        console.error('Error loading users:', userError);
         setUsers([]);
       }
 
-      if (rolesResponse.success && rolesResponse.data?.roles) {
-        setRoles(rolesResponse.data.roles);
-      } else {
+      // Try to load roles
+      try {
+        const rolesResponse = await rbacService.getRoles({
+          page: 1,
+          limit: 100,
+        });
+        if (rolesResponse.success && rolesResponse.data?.roles) {
+          setRoles(rolesResponse.data.roles);
+          rolesLoaded = true;
+        } else {
+          setRoles([]);
+        }
+      } catch (roleError) {
+        console.error('Error loading roles:', roleError);
         setRoles([]);
       }
-    } catch (error) {
-      console.error('Error loading data:', error);
-      setUsers([]);
-      setRoles([]);
-      showSnackbar(
-        'Failed to load user data. The RBAC service may not be available.',
-        'error'
-      );
+
+      // Show appropriate messages based on what loaded successfully
+      if (usersLoaded && rolesLoaded) {
+        showSnackbar('Data loaded successfully', 'success');
+      } else if (usersLoaded && !rolesLoaded) {
+        showSnackbar('Users loaded, but roles failed to load', 'warning');
+      } else if (!usersLoaded && rolesLoaded) {
+        showSnackbar('Roles loaded, but users failed to load', 'warning');
+      } else {
+        showSnackbar('Failed to load user and role data', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -149,23 +176,26 @@ const PharmacyUserManagement: React.FC = () => {
 
   // Subscribe to real-time updates
   useEffect(() => {
-    const unsubscribeUserUpdates = subscribe('user_update', (message) => {
+    const unsubscribeUserUpdates = subscribe('user_update', () => {
       loadData();
     });
 
-    const unsubscribeRoleUpdates = subscribe('role_change', (message) => {
+    const unsubscribeRoleUpdates = subscribe('role_change', () => {
       loadData();
     });
 
-    const unsubscribeBulkOperations = subscribe('bulk_operation', (message) => {
-      const { operationId, status } = message.data;
+    const unsubscribeBulkOperations = subscribe(
+      'bulk_operation',
+      (message?: any) => {
+        const { operationId, status } = message?.data || {};
 
-      if (operationId === bulkOperationId) {
-        if (status === 'completed' || status === 'failed') {
-          loadData();
+        if (operationId === bulkOperationId) {
+          if (status === 'completed' || status === 'failed') {
+            loadData();
+          }
         }
       }
-    });
+    );
 
     return () => {
       unsubscribeUserUpdates();
@@ -180,7 +210,7 @@ const PharmacyUserManagement: React.FC = () => {
 
   // Handle role assignment
   const handleOpenRoleAssignment = () => {
-    if (selectedUsers.length === 0) {
+    if (Array.isArray(selectedUsers) && selectedUsers.length === 0) {
       showSnackbar('Please select users to assign roles', 'warning');
       return;
     }
@@ -197,7 +227,11 @@ const PharmacyUserManagement: React.FC = () => {
   };
 
   const handlePreviewPermissions = async () => {
-    if (selectedUsers.length === 1 && selectedRolesForAssignment.length > 0) {
+    if (
+      Array.isArray(selectedUsers) &&
+      selectedUsers.length === 1 &&
+      selectedRolesForAssignment.length > 0
+    ) {
       try {
         const userId = selectedUsers[0] as string;
         const response = await rbacService.previewPermissionChanges(
@@ -216,7 +250,11 @@ const PharmacyUserManagement: React.FC = () => {
   };
 
   const handleAssignRoles = async () => {
-    if (selectedUsers.length === 0 || selectedRolesForAssignment.length === 0) {
+    if (
+      !Array.isArray(selectedUsers) ||
+      selectedUsers.length === 0 ||
+      selectedRolesForAssignment.length === 0
+    ) {
       showSnackbar('Please select users and roles', 'warning');
       return;
     }
@@ -229,7 +267,9 @@ const PharmacyUserManagement: React.FC = () => {
       setProgressDialogOpen(true);
 
       const result = await rbacService.bulkAssignRoles({
-        userIds: selectedUsers as string[],
+        userIds: Array.isArray(selectedUsers)
+          ? (selectedUsers as string[])
+          : [],
         roleIds: selectedRolesForAssignment,
       });
 
@@ -292,6 +332,31 @@ const PharmacyUserManagement: React.FC = () => {
     handleUserMenuClose();
   };
 
+  // Filter users based on search and filters
+  const filteredUsers = React.useMemo(() => {
+    if (!Array.isArray(users)) return [];
+
+    return users.filter((user) => {
+      if (!user || typeof user !== 'object') return false;
+
+      const matchesSearch =
+        !searchTerm ||
+        `${user.firstName || ''} ${user.lastName || ''}`
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (user.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus = !statusFilter || user.status === statusFilter;
+
+      const matchesRole =
+        roleFilter.length === 0 ||
+        (Array.isArray(user.assignedRoles) &&
+          user.assignedRoles.some((roleId) => roleFilter.includes(roleId)));
+
+      return matchesSearch && matchesStatus && matchesRole;
+    });
+  }, [users, searchTerm, statusFilter, roleFilter]);
+
   // Check if user has access to user management
   if (!hasFeature('user_management')) {
     return (
@@ -304,31 +369,15 @@ const PharmacyUserManagement: React.FC = () => {
     );
   }
 
-  // Filter users based on search and filters
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      !searchTerm ||
-      `${user.firstName} ${user.lastName}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus = !statusFilter || user.status === statusFilter;
-
-    const matchesRole =
-      roleFilter.length === 0 ||
-      user.assignedRoles.some((roleId) => roleFilter.includes(roleId));
-
-    return matchesSearch && matchesStatus && matchesRole;
-  });
-
   // DataGrid columns
-  const columns: GridColDef[] = [
+  const columns: GridColDef[] = React.useMemo(() => [
     {
       field: 'name',
       headerName: 'Name',
       width: 200,
-      valueGetter: (params) => `${params.row.firstName} ${params.row.lastName}`,
+      valueGetter: (params) =>
+        `${params.row.firstName || ''} ${params.row.lastName || ''}`.trim() ||
+        'Unknown User',
       renderCell: (params) => (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2" fontWeight="medium">
@@ -392,8 +441,16 @@ const PharmacyUserManagement: React.FC = () => {
       headerName: 'Dynamic Roles',
       width: 200,
       renderCell: (params) => {
-        const userRoles = roles.filter((role) =>
-          params.value.includes(role._id)
+        if (!Array.isArray(params.value) || !Array.isArray(roles)) {
+          return (
+            <Typography variant="body2" color="textSecondary">
+              No roles
+            </Typography>
+          );
+        }
+
+        const userRoles = roles.filter(
+          (role) => role && role._id && params.value.includes(role._id)
         );
 
         if (userRoles.length === 0) {
@@ -409,7 +466,7 @@ const PharmacyUserManagement: React.FC = () => {
             {userRoles.slice(0, 2).map((role) => (
               <Chip
                 key={role._id}
-                label={role.displayName}
+                label={role.displayName || 'Unknown Role'}
                 size="small"
                 variant="outlined"
                 color="secondary"
@@ -437,24 +494,26 @@ const PharmacyUserManagement: React.FC = () => {
           key="edit"
           icon={<EditIcon />}
           label="Edit"
-          onClick={() => handleEditUser(params.row)}
+          onClick={() => handleEditUser(params.row as DynamicUser)}
           disabled={!canAccess('canUpdate')}
         />,
         <GridActionsCellItem
           key="roles"
           icon={<SecurityIcon />}
           label="View Roles"
-          onClick={() => handleViewUserRoles(params.row)}
+          onClick={() => handleViewUserRoles(params.row as DynamicUser)}
         />,
         <GridActionsCellItem
           key="more"
           icon={<MoreVertIcon />}
           label="More"
-          onClick={(event) => handleUserMenuOpen(event, params.row)}
+          onClick={(event) =>
+            handleUserMenuOpen(event, params.row as DynamicUser)
+          }
         />,
       ],
     },
-  ];
+  ], [roles, canAccess]);
 
   if (loading) {
     return (
@@ -577,10 +636,14 @@ const PharmacyUserManagement: React.FC = () => {
                 variant="contained"
                 startIcon={<SecurityIcon />}
                 onClick={handleOpenRoleAssignment}
-                disabled={selectedUsers.length === 0 || !canAccess('canManage')}
+                disabled={
+                  !Array.isArray(selectedUsers) ||
+                  selectedUsers.length === 0 ||
+                  !canAccess('canManage')
+                }
               >
                 Assign Roles
-                {selectedUsers.length > 0 && (
+                {Array.isArray(selectedUsers) && selectedUsers.length > 0 && (
                   <Badge
                     badgeContent={selectedUsers.length}
                     color="secondary"
@@ -603,7 +666,7 @@ const PharmacyUserManagement: React.FC = () => {
 
       {/* Data Grid */}
       <Paper sx={{ height: 600 }}>
-        {users.length === 0 && !loading ? (
+        {(!Array.isArray(users) || users.length === 0) && !loading ? (
           <Box
             sx={{
               display: 'flex',
@@ -628,25 +691,126 @@ const PharmacyUserManagement: React.FC = () => {
               Try Again
             </Button>
           </Box>
-        ) : (
-          <DataGrid
-            rows={filteredUsers || []}
-            columns={columns}
-            getRowId={(row) => row._id}
-            checkboxSelection
-            disableRowSelectionOnClick
-            rowSelectionModel={selectedUsers}
-            onRowSelectionModelChange={setSelectedUsers}
-            pageSizeOptions={[25, 50, 100]}
-            initialState={{
-              pagination: { paginationModel: { pageSize: 25 } },
-            }}
+        ) : loading || !Array.isArray(filteredUsers) || !Array.isArray(users) || !Array.isArray(roles) ? (
+          <Box
             sx={{
-              '& .MuiDataGrid-row:hover': {
-                backgroundColor: 'action.hover',
-              },
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: 600,
+              p: 3,
             }}
-          />
+          >
+            <CircularProgress />
+            <Typography variant="body2" sx={{ mt: 2 }}>
+              Loading user management data...
+            </Typography>
+          </Box>
+        ) : (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>System Role</TableCell>
+                  <TableCell>Dynamic Roles</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredUsers.map((user) => (
+                  <TableRow key={user._id || user.id}>
+                    <TableCell>
+                      {`${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown User'}
+                    </TableCell>
+                    <TableCell>{user.email || '-'}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={user.status || 'Unknown'}
+                        color={
+                          user.status === 'active' ? 'success' :
+                          user.status === 'pending' ? 'warning' :
+                          user.status === 'suspended' ? 'error' : 'default'
+                        }
+                        size="small"
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={user.systemRole || 'User'}
+                        size="small"
+                        variant="filled"
+                        color="primary"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {Array.isArray(user.assignedRoles) && Array.isArray(roles) ? (
+                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                          {roles
+                            .filter((role) => role && role._id && user.assignedRoles.includes(role._id))
+                            .slice(0, 2)
+                            .map((role) => (
+                              <Chip
+                                key={role._id}
+                                label={role.displayName || 'Unknown Role'}
+                                size="small"
+                                variant="outlined"
+                                color="secondary"
+                              />
+                            ))}
+                          {roles.filter((role) => role && role._id && user.assignedRoles.includes(role._id)).length > 2 && (
+                            <Chip
+                              label={`+${roles.filter((role) => role && role._id && user.assignedRoles.includes(role._id)).length - 2}`}
+                              size="small"
+                              variant="outlined"
+                              color="default"
+                            />
+                          )}
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="textSecondary">
+                          No roles
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Tooltip title="Edit User">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditUser(user)}
+                            disabled={!canAccess('canUpdate')}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Manage Roles">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleViewUserRoles(user)}
+                          >
+                            <SecurityIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="More Options">
+                          <IconButton
+                            size="small"
+                            onClick={(event) => handleUserMenuOpen(event, user)}
+                          >
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
       </Paper>
 
@@ -658,8 +822,11 @@ const PharmacyUserManagement: React.FC = () => {
         fullWidth
       >
         <DialogTitle>
-          Assign Roles to {selectedUsers.length} User
-          {selectedUsers.length !== 1 ? 's' : ''}
+          Assign Roles to{' '}
+          {Array.isArray(selectedUsers) ? selectedUsers.length : 0} User
+          {Array.isArray(selectedUsers) && selectedUsers.length !== 1
+            ? 's'
+            : ''}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
@@ -698,7 +865,8 @@ const PharmacyUserManagement: React.FC = () => {
               </Select>
             </FormControl>
 
-            {selectedUsers.length === 1 &&
+            {Array.isArray(selectedUsers) &&
+              selectedUsers.length === 1 &&
               selectedRolesForAssignment.length > 0 && (
                 <Box sx={{ mt: 2 }}>
                   <Button
@@ -857,7 +1025,7 @@ const PharmacyUserManagement: React.FC = () => {
           type: 'role_assignment',
           status: 'in_progress',
           progress: {
-            total: selectedUsers.length,
+            total: Array.isArray(selectedUsers) ? selectedUsers.length : 0,
             processed: 0,
             successful: 0,
             failed: 0,
@@ -866,7 +1034,7 @@ const PharmacyUserManagement: React.FC = () => {
             roleNames: roles
               .filter((role) => selectedRolesForAssignment.includes(role._id))
               .map((role) => role.displayName),
-            userCount: selectedUsers.length,
+            userCount: Array.isArray(selectedUsers) ? selectedUsers.length : 0,
           },
         }}
       />

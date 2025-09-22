@@ -89,8 +89,11 @@ export class SystemRolePermissionSeeder {
                 continue;
             }
 
+            // Convert dot notation to colon notation for database storage
+            const dbAction = `${resource}:${operation}`;
+
             permissions.push({
-                action,
+                action: dbAction,
                 displayName: this.generateDisplayName(action),
                 description: this.generateDescription(action, config),
                 category: this.categorizePermission(resource),
@@ -508,27 +511,35 @@ export class SystemRolePermissionSeeder {
     }
 
     private extractDependencies(action: string): string[] {
-        // Define common permission dependencies
+        // Define common permission dependencies (using colon notation)
         const dependencyMap: Record<string, string[]> = {
-            'patient.update': ['patient.read'],
-            'patient.delete': ['patient.read', 'patient.update'],
-            'clinical_notes.update': ['clinical_notes.read'],
-            'clinical_notes.delete': ['clinical_notes.read'],
-            'medication.update': ['medication.read'],
-            'medication.delete': ['medication.read']
+            'patient:update': ['patient:read'],
+            'patient:delete': ['patient:read', 'patient:update'],
+            'clinical_notes:update': ['clinical_notes:read'],
+            'clinical_notes:delete': ['clinical_notes:read'],
+            'medication:update': ['medication:read'],
+            'medication:delete': ['medication:read']
         };
 
-        return dependencyMap[action] || [];
+        // Convert input action from dot to colon notation for lookup
+        const colonAction = action.replace('.', ':');
+        const dependencies = dependencyMap[colonAction] || [];
+
+        return dependencies;
     }
 
     private extractConflicts(action: string): string[] {
-        // Define permission conflicts (permissions that cannot coexist)
+        // Define permission conflicts (permissions that cannot coexist) (using colon notation)
         const conflictMap: Record<string, string[]> = {
-            'workspace.delete': ['workspace.transfer'],
-            'subscription.cancel': ['subscription.upgrade']
+            'workspace:delete': ['workspace:transfer'],
+            'subscription:cancel': ['subscription:upgrade']
         };
 
-        return conflictMap[action] || [];
+        // Convert input action from dot to colon notation for lookup
+        const colonAction = action.replace('.', ':');
+        const conflicts = conflictMap[colonAction] || [];
+
+        return conflicts;
     }
 
     private getPermissionsForSystemRole(role: string): string[] {
@@ -536,7 +547,9 @@ export class SystemRolePermissionSeeder {
 
         for (const [action, config] of Object.entries(PERMISSION_MATRIX)) {
             if (config.systemRoles?.includes(role as any)) {
-                permissions.push(action);
+                // Convert dot notation to colon notation
+                const dbAction = action.replace('.', ':');
+                permissions.push(dbAction);
             }
         }
 
@@ -548,7 +561,9 @@ export class SystemRolePermissionSeeder {
 
         for (const [action, config] of Object.entries(PERMISSION_MATRIX)) {
             if (config.workplaceRoles?.includes(role as any)) {
-                permissions.push(action);
+                // Convert dot notation to colon notation
+                const dbAction = action.replace('.', ':');
+                permissions.push(dbAction);
             }
         }
 
