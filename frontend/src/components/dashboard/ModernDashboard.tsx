@@ -1508,7 +1508,7 @@ export const ModernDashboard: React.FC = () => {
               description="Access detailed analytics and reports"
               icon="📊"
               color={theme.palette.warning.main}
-              navigateTo="/reports"
+              navigateTo="/pharmacy/reports"
               buttonText="View Reports"
             />
           </Box>

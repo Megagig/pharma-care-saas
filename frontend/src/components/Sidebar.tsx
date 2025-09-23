@@ -19,7 +19,6 @@ import {
   People as PeopleIcon,
   Description as DescriptionIcon,
   Medication as MedicationIcon,
-  Assessment as AssessmentIcon,
   CreditCard as CreditCardIcon,
   Settings as SettingsIcon,
   Help as HelpIcon,
@@ -113,11 +112,10 @@ const Sidebar = () => {
       badge: !subscriptionStatus?.isActive ? 'Premium' : null,
     },
     {
-      name: 'Reports',
-      path: '/reports',
-      icon: AssessmentIcon,
+      name: 'Reports & Analytics',
+      path: '/pharmacy/reports',
+      icon: AnalyticsIcon,
       show: hasFeature('basic_reports'),
-      badge: !subscriptionStatus?.isActive ? 'Pro' : null,
     },
     {
       name: 'Subscriptions',
@@ -166,12 +164,6 @@ const Sidebar = () => {
       badge: null, // Ensure no badge blocking
     },
     {
-      name: 'Reports & Analytics',
-      path: '/pharmacy/reports',
-      icon: AnalyticsIcon,
-      show: true,
-    },
-    {
       name: 'User Management',
       path: '/pharmacy/user-management',
       icon: SupervisorAccountIcon,
@@ -216,8 +208,8 @@ const Sidebar = () => {
         getLicenseStatus() === 'pending'
           ? 'Pending'
           : getLicenseStatus() === 'rejected'
-            ? 'Rejected'
-            : null,
+          ? 'Rejected'
+          : null,
     },
     {
       name: 'Subscription Management',
