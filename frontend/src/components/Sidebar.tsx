@@ -37,7 +37,6 @@ import MenuBook from '@mui/icons-material/MenuBook';
 import Psychology from '@mui/icons-material/Psychology';
 import Analytics from '@mui/icons-material/Analytics';
 import SupervisorAccount from '@mui/icons-material/SupervisorAccount';
-import Tune from '@mui/icons-material/Tune';
 
 // Use imported icons with aliases
 const AdminIcon = AdminPanelSettings;
@@ -52,7 +51,6 @@ const MenuBookIcon = MenuBook;
 const PsychologyIcon = Psychology;
 const AnalyticsIcon = Analytics;
 const SupervisorAccountIcon = SupervisorAccount;
-const TuneIcon = Tune;
 import { useSidebarControls } from '../stores/sidebarHooks';
 import { useRBAC } from '../hooks/useRBAC';
 import { ConditionalRender } from './AccessControl';
@@ -163,18 +161,6 @@ const Sidebar = () => {
       show: true,
       badge: null, // Ensure no badge blocking
     },
-    {
-      name: 'User Management',
-      path: '/pharmacy/user-management',
-      icon: SupervisorAccountIcon,
-      show: true,
-    },
-    {
-      name: 'Settings & Config',
-      path: '/pharmacy/settings',
-      icon: TuneIcon,
-      show: true,
-    },
   ];
 
   const adminItems = [
@@ -215,6 +201,12 @@ const Sidebar = () => {
       name: 'Subscription Management',
       path: '/subscription-management',
       icon: SubscriptionIcon,
+      show: true,
+    },
+    {
+      name: 'User Management',
+      path: '/user-management',
+      icon: SupervisorAccountIcon,
       show: true,
     },
     {

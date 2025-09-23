@@ -71,7 +71,6 @@ import DrugInformationCenter from './pages/DrugInformationCenter';
 import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
 import PharmacyReports from './pages/PharmacyReports';
 import PharmacyUserManagement from './pages/PharmacyUserManagement';
-import PharmacySettings from './pages/PharmacySettings';
 
 // Diagnostic Module Components
 import DiagnosticDashboard from './modules/diagnostics/pages/DiagnosticDashboard';
@@ -503,21 +502,11 @@ function App(): JSX.Element {
                             }
                           />
                           <Route
-                            path="/pharmacy/user-management"
+                            path="/user-management"
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
                                   <PharmacyUserManagement />
-                                </AppLayout>
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route
-                            path="/pharmacy/settings"
-                            element={
-                              <ProtectedRoute requiresActiveSubscription>
-                                <AppLayout>
-                                  <PharmacySettings />
                                 </AppLayout>
                               </ProtectedRoute>
                             }
