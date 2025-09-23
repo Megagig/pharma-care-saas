@@ -56,7 +56,6 @@ import Medications from './pages/Medications';
 import MedicationsManagementDashboard from './components/medications/MedicationsManagementDashboard';
 import PatientMedicationsPage from './components/medications/PatientMedicationsPage';
 import Subscriptions from './pages/Subscriptions';
-import Reports from './pages/Reports';
 import SaasSettings from './pages/SaasSettings';
 import FeatureFlagsPage from './pages/FeatureFlags';
 import Settings from './pages/Settings';
@@ -337,19 +336,6 @@ function App(): JSX.Element {
                               <ProtectedRoute>
                                 <AppLayout>
                                   <Subscriptions />
-                                </AppLayout>
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route
-                            path="/reports"
-                            element={
-                              <ProtectedRoute
-                                requiredFeature="basic_reports"
-                                requiresActiveSubscription
-                              >
-                                <AppLayout>
-                                  <Reports />
                                 </AppLayout>
                               </ProtectedRoute>
                             }
