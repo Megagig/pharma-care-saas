@@ -9,30 +9,30 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   role:
-  | 'pharmacist'
-  | 'pharmacy_team'
-  | 'pharmacy_outlet'
-  | 'intern_pharmacist'
-  | 'super_admin'
-  | 'owner';
+    | 'pharmacist'
+    | 'pharmacy_team'
+    | 'pharmacy_outlet'
+    | 'intern_pharmacist'
+    | 'super_admin'
+    | 'owner';
   status:
-  | 'pending'
-  | 'active'
-  | 'suspended'
-  | 'license_pending'
-  | 'license_rejected';
+    | 'pending'
+    | 'active'
+    | 'suspended'
+    | 'license_pending'
+    | 'license_rejected';
   emailVerified: boolean;
   verificationToken?: string;
   verificationCode?: string;
   resetToken?: string;
   workplaceId?: mongoose.Types.ObjectId; // Changed from pharmacyId
   workplaceRole?:
-  | 'Owner'
-  | 'Staff'
-  | 'Pharmacist'
-  | 'Cashier'
-  | 'Technician'
-  | 'Assistant'; // Role within workplace
+    | 'Owner'
+    | 'Staff'
+    | 'Pharmacist'
+    | 'Cashier'
+    | 'Technician'
+    | 'Assistant'; // Role within workplace
   currentPlanId: mongoose.Types.ObjectId;
   planOverride?: Record<string, any>;
   currentSubscriptionId?: mongoose.Types.ObjectId;
@@ -51,6 +51,14 @@ export interface IUser extends Document {
   licenseVerifiedAt?: Date;
   licenseVerifiedBy?: mongoose.Types.ObjectId;
   licenseRejectionReason?: string;
+  licenseExpirationDate?: Date;
+
+  // Suspension fields
+  suspensionReason?: string;
+  suspendedAt?: Date;
+  suspendedBy?: mongoose.Types.ObjectId;
+  reactivatedAt?: Date;
+  reactivatedBy?: mongoose.Types.ObjectId;
 
   // Team and hierarchy management
   parentUserId?: mongoose.Types.ObjectId; // For team members under a lead
@@ -75,12 +83,12 @@ export interface IUser extends Document {
 
   // Subscription and access
   subscriptionTier:
-  | 'free_trial'
-  | 'basic'
-  | 'pro'
-  | 'pharmily'
-  | 'network'
-  | 'enterprise';
+    | 'free_trial'
+    | 'basic'
+    | 'pro'
+    | 'pharmily'
+    | 'network'
+    | 'enterprise';
   trialStartDate?: Date;
   trialEndDate?: Date;
   features: string[]; // Enabled features for this user
@@ -249,6 +257,20 @@ const userSchema = new Schema(
       ref: 'User',
     },
     licenseRejectionReason: String,
+    licenseExpirationDate: Date,
+
+    // Suspension fields
+    suspensionReason: String,
+    suspendedAt: Date,
+    suspendedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    reactivatedAt: Date,
+    reactivatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
 
     // Team and hierarchy management
     parentUserId: {
@@ -423,7 +445,9 @@ userSchema.methods.hasFeature = function (feature: string): boolean {
 };
 
 // Dynamic RBAC methods
-userSchema.methods.getAllRoles = async function (workspaceId?: mongoose.Types.ObjectId): Promise<any[]> {
+userSchema.methods.getAllRoles = async function (
+  workspaceId?: mongoose.Types.ObjectId
+): Promise<any[]> {
   const UserRole = mongoose.model('UserRole');
   const query: any = {
     userId: this._id,
@@ -447,29 +471,40 @@ userSchema.methods.getAllPermissions = async function (
   useCache: boolean = true
 ): Promise<string[]> {
   // Check cache first if enabled
-  if (useCache && this.cachedPermissions &&
+  if (
+    useCache &&
+    this.cachedPermissions &&
     this.cachedPermissions.lastUpdated > new Date(Date.now() - 5 * 60 * 1000) && // 5 minutes
-    (!workspaceId || this.cachedPermissions.workspaceId?.equals(workspaceId))) {
+    (!workspaceId || this.cachedPermissions.workspaceId?.equals(workspaceId))
+  ) {
     return this.cachedPermissions.permissions;
   }
 
   const allPermissions = new Set<string>();
 
   // Add legacy permissions for backward compatibility
-  this.permissions.forEach((permission: string) => allPermissions.add(permission));
+  this.permissions.forEach((permission: string) =>
+    allPermissions.add(permission)
+  );
 
   // Add direct permissions
-  this.directPermissions.forEach((permission: string) => allPermissions.add(permission));
+  this.directPermissions.forEach((permission: string) =>
+    allPermissions.add(permission)
+  );
 
   // Get permissions from roles
   const roles = await this.getAllRoles(workspaceId);
   for (const role of roles) {
     const rolePermissions = await role.getAllPermissions();
-    rolePermissions.forEach((permission: string) => allPermissions.add(permission));
+    rolePermissions.forEach((permission: string) =>
+      allPermissions.add(permission)
+    );
   }
 
   // Remove denied permissions
-  this.deniedPermissions.forEach((permission: string) => allPermissions.delete(permission));
+  this.deniedPermissions.forEach((permission: string) =>
+    allPermissions.delete(permission)
+  );
 
   const finalPermissions = Array.from(allPermissions);
 
@@ -591,7 +626,9 @@ userSchema.methods.revokeRole = async function (
   });
 
   if (!otherAssignments) {
-    this.assignedRoles = this.assignedRoles.filter((id: mongoose.Types.ObjectId) => !id.equals(roleId));
+    this.assignedRoles = this.assignedRoles.filter(
+      (id: mongoose.Types.ObjectId) => !id.equals(roleId)
+    );
   }
 
   // Update audit fields
@@ -613,7 +650,9 @@ userSchema.methods.grantDirectPermission = function (
   }
 
   // Remove from denied permissions if present
-  this.deniedPermissions = this.deniedPermissions.filter((p: string) => p !== permission);
+  this.deniedPermissions = this.deniedPermissions.filter(
+    (p: string) => p !== permission
+  );
 
   // Update audit fields
   this.roleLastModifiedBy = grantedBy;
@@ -632,7 +671,9 @@ userSchema.methods.denyDirectPermission = function (
   }
 
   // Remove from direct permissions if present
-  this.directPermissions = this.directPermissions.filter((p: string) => p !== permission);
+  this.directPermissions = this.directPermissions.filter(
+    (p: string) => p !== permission
+  );
 
   // Update audit fields
   this.roleLastModifiedBy = deniedBy;
@@ -675,7 +716,11 @@ userSchema.pre<IUser>('save', function (next) {
 
 // Pre-save middleware to clear permission cache when roles change
 userSchema.pre<IUser>('save', function (next) {
-  if (this.isModified('assignedRoles') || this.isModified('directPermissions') || this.isModified('deniedPermissions')) {
+  if (
+    this.isModified('assignedRoles') ||
+    this.isModified('directPermissions') ||
+    this.isModified('deniedPermissions')
+  ) {
     this.cachedPermissions = undefined;
     this.roleLastModifiedAt = new Date();
   }

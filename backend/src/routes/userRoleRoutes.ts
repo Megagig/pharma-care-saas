@@ -1,24 +1,61 @@
-import express from 'express';
+import { Router } from 'express';
 import { auth, requireSuperAdmin } from '../middlewares/auth';
-import { requireDynamicPermission } from '../middlewares/rbac';
 import { userRoleController } from '../controllers/userRoleController';
 
-const router = express.Router();
+const router = Router();
 
-// All user role management routes require authentication and super admin privileges
+// Apply authentication middleware to all routes
 router.use(auth);
-router.use(requireSuperAdmin);
 
-// User role assignment operations - Super admin has full access
-router.get('/:id/roles', userRoleController.getUserRoles);
-router.post('/:id/roles', userRoleController.assignUserRoles);
-router.delete('/:id/roles/:roleId', userRoleController.revokeUserRole);
+// User role management routes - accessible by super admin and users with appropriate permissions
+router.get('/users/:id/roles', userRoleController.getUserRoles);
+router.get(
+  '/users/:id/effective-permissions',
+  userRoleController.getUserEffectivePermissions
+);
+router.post(
+  '/users/:id/check-permission',
+  userRoleController.checkUserPermission
+);
+router.post(
+  '/users/:id/preview-permissions',
+  userRoleController.previewPermissionChanges
+);
+router.post(
+  '/users/:id/refresh-cache',
+  userRoleController.refreshUserPermissionCache
+);
 
-// User permission management
-router.put('/:id/permissions', userRoleController.updateUserPermissions);
-router.get('/:id/effective-permissions', userRoleController.getUserEffectivePermissions);
-
-// Bulk operations
-router.post('/bulk-update', userRoleController.bulkUpdateUsers);
+// Admin-only routes
+router.post(
+  '/users/assign-roles',
+  requireSuperAdmin,
+  userRoleController.assignUserRoles
+);
+router.delete(
+  '/users/:id/roles/:roleId',
+  requireSuperAdmin,
+  userRoleController.revokeUserRole
+);
+router.put(
+  '/users/:id/permissions',
+  requireSuperAdmin,
+  userRoleController.updateUserPermissions
+);
+router.post(
+  '/users/bulk-update',
+  requireSuperAdmin,
+  userRoleController.bulkUpdateUsers
+);
+router.post(
+  '/users/:id/detect-conflicts',
+  requireSuperAdmin,
+  userRoleController.detectRoleConflicts
+);
+router.post(
+  '/users/:id/resolve-conflicts',
+  requireSuperAdmin,
+  userRoleController.resolveRoleConflicts
+);
 
 export default router;
