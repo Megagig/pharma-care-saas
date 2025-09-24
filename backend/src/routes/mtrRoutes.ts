@@ -31,6 +31,10 @@ import {
     getPharmacistPerformanceReport,
     getQualityAssuranceReport,
     getOutcomeMetricsReport,
+    getPatientOutcomeAnalytics,
+    getCostEffectivenessAnalysis,
+    getOperationalEfficiencyMetrics,
+    getTrendForecastingAnalytics,
 } from '../controllers/mtrReportsController';
 import { auth, requireLicense } from '../middlewares/auth';
 import { auditTimer, auditMTRActivity, auditPatientAccess } from '../middlewares/auditMiddleware';
@@ -187,6 +191,18 @@ router.get('/reports/outcomes', reportsQuerySchema, mtrValidationMiddleware.hand
 
 // GET /api/mtr/reports/audit - Audit trail reports
 router.get('/reports/audit', reportsQuerySchema, mtrValidationMiddleware.handleValidationErrors, getMTRAuditTrail);
+
+// GET /api/mtr/reports/patient-outcomes - Patient outcome analytics
+router.get('/reports/patient-outcomes', reportsQuerySchema, mtrValidationMiddleware.handleValidationErrors, getPatientOutcomeAnalytics);
+
+// GET /api/mtr/reports/cost-effectiveness - Cost-effectiveness analysis
+router.get('/reports/cost-effectiveness', reportsQuerySchema, mtrValidationMiddleware.handleValidationErrors, getCostEffectivenessAnalysis);
+
+// GET /api/mtr/reports/operational-efficiency - Operational efficiency metrics
+router.get('/reports/operational-efficiency', reportsQuerySchema, mtrValidationMiddleware.handleValidationErrors, getOperationalEfficiencyMetrics);
+
+// GET /api/mtr/reports/trend-forecasting - Trend identification and forecasting
+router.get('/reports/trend-forecasting', reportsQuerySchema, mtrValidationMiddleware.handleValidationErrors, getTrendForecastingAnalytics);
 
 // ===============================
 // DRUG INTERACTION CHECKING ROUTES

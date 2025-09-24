@@ -170,7 +170,7 @@ export const getPaymentMethods = async (req: AuthRequest, res: Response): Promis
 
     // Get default payment method
     const customer = await stripe.customers.retrieve(user.stripeCustomerId);
-    const defaultPaymentMethodId = typeof customer !== 'string' && !customer.deleted && customer.invoice_settings?.default_payment_method;
+    const defaultPaymentMethodId = typeof customer !== 'string' && !customer.deleted && 'invoice_settings' in customer && customer.invoice_settings?.default_payment_method;
 
     const formattedMethods = paymentMethods.data.map(pm => ({
       id: pm.id,

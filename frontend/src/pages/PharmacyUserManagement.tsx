@@ -71,7 +71,7 @@ const PharmacyUserManagement: React.FC = () => {
   const [users, setUsers] = useState<DynamicUser[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [roleFilter, setRoleFilter] = useState<string[]>([]);
@@ -192,7 +192,7 @@ const PharmacyUserManagement: React.FC = () => {
 
   // Handle role assignment
   const handleOpenRoleAssignment = () => {
-    if (Array.isArray(selectedUsers) && selectedUsers.length === 0) {
+    if (Array.isArray(selectedUserIds) && selectedUserIds.length === 0) {
       showSnackbar('Please select users to assign roles', 'warning');
       return;
     }
@@ -210,12 +210,12 @@ const PharmacyUserManagement: React.FC = () => {
 
   const handlePreviewPermissions = async () => {
     if (
-      Array.isArray(selectedUsers) &&
-      selectedUsers.length === 1 &&
+      Array.isArray(selectedUserIds) &&
+      selectedUserIds.length === 1 &&
       selectedRolesForAssignment.length > 0
     ) {
       try {
-        const userId = selectedUsers[0] as string;
+        const userId = selectedUserIds[0] as string;
         const response = await rbacService.previewPermissionChanges(userId, {
           roleIds: selectedRolesForAssignment,
         });
@@ -232,8 +232,8 @@ const PharmacyUserManagement: React.FC = () => {
 
   const handleAssignRoles = async () => {
     if (
-      !Array.isArray(selectedUsers) ||
-      selectedUsers.length === 0 ||
+      !Array.isArray(selectedUserIds) ||
+      selectedUserIds.length === 0 ||
       selectedRolesForAssignment.length === 0
     ) {
       showSnackbar('Please select users and roles', 'warning');
@@ -248,7 +248,7 @@ const PharmacyUserManagement: React.FC = () => {
       setProgressDialogOpen(true);
 
       const result = await rbacService.bulkAssignRoles(
-        Array.isArray(selectedUsers) ? (selectedUsers as string[]) : [],
+        Array.isArray(selectedUserIds) ? (selectedUserIds as string[]) : [],
         selectedRolesForAssignment[0] // bulkAssignRoles expects a single roleId, not an array
       );
 
@@ -258,7 +258,7 @@ const PharmacyUserManagement: React.FC = () => {
         await loadData();
         setRoleAssignmentOpen(false);
         setSelectedRolesForAssignment([]);
-        setSelectedUsers([]);
+        setSelectedUserIds([]);
         setPermissionPreview(null);
       }
     } catch (error) {
@@ -288,11 +288,21 @@ const PharmacyUserManagement: React.FC = () => {
     handleUserMenuClose();
   };
 
-  const handleViewUserRoles = async (user: DynamicUser) => {
+  const handleViewUserRoles = async (user: DynamicUser | null) => {
+    if (!user || !user._id) {
+      console.error('Invalid user data:', user);
+      showSnackbar('User data is not available', 'error');
+      handleUserMenuClose();
+      return;
+    }
+
     try {
       const response = await rbacService.getUserRoles(user._id);
       if (response.success) {
         console.log('User roles:', response.data);
+        showSnackbar('User roles loaded successfully', 'success');
+      } else {
+        showSnackbar('Failed to load user roles', 'error');
       }
     } catch (error) {
       console.error('Error fetching user roles:', error);
@@ -460,15 +470,15 @@ const PharmacyUserManagement: React.FC = () => {
                 startIcon={<SecurityIcon />}
                 onClick={handleOpenRoleAssignment}
                 disabled={
-                  !Array.isArray(selectedUsers) ||
-                  selectedUsers.length === 0 ||
+                  !Array.isArray(selectedUserIds) ||
+                  selectedUserIds.length === 0 ||
                   !canAccess('canManage')
                 }
               >
                 Assign Roles
-                {Array.isArray(selectedUsers) && selectedUsers.length > 0 && (
+                {Array.isArray(selectedUserIds) && selectedUserIds.length > 0 && (
                   <Badge
-                    badgeContent={selectedUsers.length}
+                    badgeContent={selectedUserIds.length}
                     color="secondary"
                     sx={{ ml: 1 }}
                   />
@@ -538,8 +548,8 @@ const PharmacyUserManagement: React.FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
+                  <TableCell>Select</TableCell>
                   <TableCell>Name</TableCell>
-                  <TableCell>Email</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>System Role</TableCell>
                   <TableCell>Dynamic Roles</TableCell>
@@ -549,11 +559,16 @@ const PharmacyUserManagement: React.FC = () => {
               <TableBody>
                 {filteredUsers.map((user) => (
                   <TableRow key={user._id}>
-                    <TableCell>
-                      {`${user.firstName || ''} ${
-                        user.lastName || ''
-                      }`.trim() || 'Unknown User'}
-                    </TableCell>
+                    <Checkbox
+                        checked={selectedUserIds.indexOf(user._id) > -1}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedUserIds([...selectedUserIds, user._id]);
+                          } else {
+                            setSelectedUserIds(selectedUserIds.filter(id => id !== user._id));
+                          }
+                        }}
+                      />
                     <TableCell>{user.email || '-'}</TableCell>
                     <TableCell>
                       <Chip
@@ -675,8 +690,8 @@ const PharmacyUserManagement: React.FC = () => {
       >
         <DialogTitle>
           Assign Roles to{' '}
-          {Array.isArray(selectedUsers) ? selectedUsers.length : 0} User
-          {Array.isArray(selectedUsers) && selectedUsers.length !== 1
+          {Array.isArray(selectedUserIds) ? selectedUserIds.length : 0} User
+          {Array.isArray(selectedUserIds) && selectedUserIds.length !== 1
             ? 's'
             : ''}
         </DialogTitle>
@@ -717,8 +732,8 @@ const PharmacyUserManagement: React.FC = () => {
               </Select>
             </FormControl>
 
-            {Array.isArray(selectedUsers) &&
-              selectedUsers.length === 1 &&
+            {Array.isArray(selectedUserIds) &&
+              selectedUserIds.length === 1 &&
               selectedRolesForAssignment.length > 0 && (
                 <Box sx={{ mt: 2 }}>
                   <Button
@@ -833,11 +848,11 @@ const PharmacyUserManagement: React.FC = () => {
         open={Boolean(anchorEl)}
         onClose={handleUserMenuClose}
       >
-        <MenuItem onClick={() => handleEditUser(selectedUser!)}>
+        <MenuItem onClick={() => selectedUser && handleEditUser(selectedUser)}>
           <EditIcon sx={{ mr: 1 }} />
           Edit User
         </MenuItem>
-        <MenuItem onClick={() => handleViewUserRoles(selectedUser!)}>
+        <MenuItem onClick={() => selectedUser && handleViewUserRoles(selectedUser)}>
           <SecurityIcon sx={{ mr: 1 }} />
           Manage Roles
         </MenuItem>
@@ -877,7 +892,7 @@ const PharmacyUserManagement: React.FC = () => {
           type: 'role_assignment',
           status: 'in_progress',
           progress: {
-            total: Array.isArray(selectedUsers) ? selectedUsers.length : 0,
+            total: Array.isArray(selectedUserIds) ? selectedUserIds.length : 0,
             processed: 0,
             successful: 0,
             failed: 0,
@@ -886,7 +901,7 @@ const PharmacyUserManagement: React.FC = () => {
             roleNames: roles
               .filter((role) => selectedRolesForAssignment.includes(role._id))
               .map((role) => role.displayName),
-            userCount: Array.isArray(selectedUsers) ? selectedUsers.length : 0,
+            userCount: Array.isArray(selectedUserIds) ? selectedUserIds.length : 0,
           },
         }}
       />

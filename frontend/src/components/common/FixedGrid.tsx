@@ -11,6 +11,7 @@ interface FixedGridProps {
   lg?: number;
   xl?: number;
   spacing?: number;
+  alignItems?: string;
   sx?: SxProps<Theme>;
 }
 
@@ -24,6 +25,7 @@ export const FixedGrid: React.FC<FixedGridProps> = ({
   lg,
   xl,
   spacing,
+  alignItems,
   sx,
   ...props
 }) => {
@@ -33,6 +35,7 @@ export const FixedGrid: React.FC<FixedGridProps> = ({
         sx={{
           display: 'flex',
           flexWrap: 'wrap',
+          alignItems: alignItems || 'stretch',
           gap: spacing ? `${spacing * 8}px` : 0,
           ...sx,
         }}

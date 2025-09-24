@@ -111,7 +111,7 @@ const Sidebar = () => {
     },
     {
       name: 'Reports & Analytics',
-      path: '/pharmacy/reports',
+      path: '/reports-analytics',
       icon: AnalyticsIcon,
       show: hasFeature('basic_reports'),
     },
