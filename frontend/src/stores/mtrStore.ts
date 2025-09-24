@@ -958,11 +958,31 @@ export const useMTRStore = create<MTRStore>()(
           });
 
           console.log('Created new MTR review for patient:', patientId);
-        } catch (error) {
+        } catch (error: any) {
           console.error('Failed to create MTR review:', error);
 
-          // Handle specific error types
-          if (error instanceof Error) {
+          // Handle specific error types with better user messaging
+          if (error?.response?.status === 401) {
+            setError(
+              'createReview',
+              'Authentication required. Please log in to create MTR reviews.'
+            );
+          } else if (error?.response?.status === 403) {
+            setError(
+              'createReview',
+              'You do not have permission to create MTR reviews. Please contact your administrator.'
+            );
+          } else if (error?.code === 'ERR_NETWORK') {
+            setError(
+              'createReview',
+              'Network error: Unable to connect to the server. Please check your connection and try again.'
+            );
+          } else if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+            setError(
+              'createReview',
+              'Request timed out. The server may be busy. Please try again in a moment.'
+            );
+          } else if (error instanceof Error) {
             if (
               error.message.includes('Permission denied') ||
               error.message.includes('403')

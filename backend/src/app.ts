@@ -48,10 +48,13 @@ import legacyApiRoutes from './routes/legacyApiRoutes';
 import migrationDashboardRoutes from './routes/migrationDashboardRoutes';
 import emailWebhookRoutes from './routes/emailWebhookRoutes';
 import drugRoutes from './modules/drug-info/routes/drugRoutes';
+import mentionRoutes from './routes/mentionRoutes';
 import manualLabRoutes from './modules/lab/routes/manualLabRoutes';
 import publicApiRoutes from './routes/publicApiRoutes';
 import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
 import diagnosticRoutes from './routes/diagnosticRoutes';
+import communicationRoutes from './routes/communicationRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -189,6 +192,22 @@ app.use('/api/manual-lab', manualLabRoutes);
 
 // AI Diagnostic routes
 app.use('/api/diagnostics', diagnosticRoutes);
+
+// Communication Hub routes
+app.use('/api/communication', communicationRoutes);
+
+// Communication Audit routes
+import communicationAuditRoutes from './routes/communicationAuditRoutes';
+app.use('/api/communication/audit', communicationAuditRoutes);
+
+// Notification routes
+app.use('/api/notifications', notificationRoutes);
+
+// Communication-specific notifications
+app.use('/api/communication/notifications', notificationRoutes);
+
+// Mention routes (already imported above)
+app.use('/api/mentions', mentionRoutes);
 
 // Clinical Notes routes - added special debug log
 app.use((req, res, next) => {

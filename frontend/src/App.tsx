@@ -56,7 +56,6 @@ import Medications from './pages/Medications';
 import MedicationsManagementDashboard from './components/medications/MedicationsManagementDashboard';
 import PatientMedicationsPage from './components/medications/PatientMedicationsPage';
 import Subscriptions from './pages/Subscriptions';
-import Reports from './pages/Reports';
 import SaasSettings from './pages/SaasSettings';
 import FeatureFlagsPage from './pages/FeatureFlags';
 import Settings from './pages/Settings';
@@ -72,7 +71,6 @@ import DrugInformationCenter from './pages/DrugInformationCenter';
 import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
 import PharmacyReports from './pages/PharmacyReports';
 import PharmacyUserManagement from './pages/PharmacyUserManagement';
-import PharmacySettings from './pages/PharmacySettings';
 
 // Diagnostic Module Components
 import DiagnosticDashboard from './modules/diagnostics/pages/DiagnosticDashboard';
@@ -94,6 +92,9 @@ import LicenseUpload from './components/license/LicenseUpload';
 import SubscriptionManagementNew from './pages/SubscriptionManagement';
 import SubscriptionSuccessNew from './pages/SubscriptionSuccess';
 import TrialExpiryHandler from './components/TrialExpiryHandler';
+
+// Reports & Analytics Module
+import ReportsAnalyticsDashboard from './modules/reports-analytics/components/ReportsAnalyticsDashboard';
 
 function App(): JSX.Element {
   // Initialize Zustand stores on app startup
@@ -341,15 +342,20 @@ function App(): JSX.Element {
                               </ProtectedRoute>
                             }
                           />
+
+                          {/* Reports & Analytics Module */}
                           <Route
-                            path="/reports"
+                            path="/reports-analytics"
                             element={
                               <ProtectedRoute
                                 requiredFeature="basic_reports"
                                 requiresActiveSubscription
                               >
                                 <AppLayout>
-                                  <Reports />
+                                  <ReportsAnalyticsDashboard
+                                    workspaceId="current-workspace"
+                                    userPermissions={[]}
+                                  />
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -517,21 +523,11 @@ function App(): JSX.Element {
                             }
                           />
                           <Route
-                            path="/pharmacy/user-management"
+                            path="/user-management"
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
                                   <PharmacyUserManagement />
-                                </AppLayout>
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route
-                            path="/pharmacy/settings"
-                            element={
-                              <ProtectedRoute requiresActiveSubscription>
-                                <AppLayout>
-                                  <PharmacySettings />
                                 </AppLayout>
                               </ProtectedRoute>
                             }

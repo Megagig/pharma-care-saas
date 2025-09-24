@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import {
   Box,
   Card,
@@ -31,6 +30,12 @@ import {
   Tab,
   Badge,
   Tooltip,
+  Checkbox,
+  FormControlLabel,
+  Switch,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import BlockIcon from '@mui/icons-material/Block';
@@ -47,8 +52,25 @@ import SwapVertIcon from '@mui/icons-material/SwapVert';
 import EmailIcon from '@mui/icons-material/Email';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import WebhookIcon from '@mui/icons-material/Webhook';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
+import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import { useUIStore } from '../../stores';
 import LoadingSpinner from '../LoadingSpinner';
+import BulkOperationProgress from '../rbac/BulkOperationProgress';
+import {
+  getAllUsers,
+  updateUserRole,
+  suspendUser,
+  approveLicense,
+  rejectLicense,
+  getAllRoles,
+  bulkAssignRoles,
+  bulkRevokeRoles,
+  getPendingLicenses,
+  getSystemAnalytics,
+} from '../../services/rbacService';
+import type { BulkRoleAssignment, DynamicUser, Role } from '../../types/rbac';
 
 // Import the new admin components
 import SecurityDashboard from './SecurityDashboard';
@@ -58,20 +80,6 @@ import InvitationManagement from './InvitationManagement';
 import LocationManagement from './LocationManagement';
 import WebhookManagement from './WebhookManagement';
 import AdvancedSubscriptionAnalytics from '../subscription/AdvancedSubscriptionAnalytics';
-
-interface User {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  status: string;
-  licenseStatus: string;
-  licenseNumber?: string;
-  subscriptionTier: string;
-  createdAt: string;
-  lastLoginAt?: string;
-}
 
 interface License {
   _id: string;
@@ -100,13 +108,14 @@ interface Analytics {
 
 const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<DynamicUser[]>([]);
   const [licenses, setLicenses] = useState<License[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<DynamicUser | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [licenseDialogOpen, setLicenseDialogOpen] = useState(false);
   const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
@@ -116,12 +125,31 @@ const AdminDashboard: React.FC = () => {
     licenseStatus: '',
   });
 
+  // Bulk operation states
+  const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false);
+  const [bulkRevokeDialogOpen, setBulkRevokeDialogOpen] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [bulkOperationId, setBulkOperationId] = useState<string>('');
+  const [bulkOperationProgressOpen, setBulkOperationProgressOpen] =
+    useState(false);
+  const [isTemporary, setIsTemporary] = useState(false);
+  const [expiresAt, setExpiresAt] = useState<string>('');
+  const [assignmentReason, setAssignmentReason] = useState<string>('');
+  const [revocationReason, setRevocationReason] = useState<string>('');
+
   const addNotification = useUIStore((state) => state.addNotification);
 
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, filters]);
+
+  useEffect(() => {
+    if (activeTab === 0) {
+      loadRoles();
+    }
+  }, [activeTab]);
 
   const loadData = async () => {
     setLoading(true);
@@ -150,19 +178,15 @@ const AdminDashboard: React.FC = () => {
   };
 
   const loadUsers = async () => {
-    const queryParams = new URLSearchParams({
-      page: (page + 1).toString(),
-      limit: rowsPerPage.toString(),
-      ...filters,
-    });
-
     try {
-      const response = await axios.get(`/api/admin/users?${queryParams}`, {
-        withCredentials: true,
+      const response = await getAllUsers({
+        page: page + 1,
+        limit: rowsPerPage,
+        ...filters,
       });
 
-      if (response.status === 200) {
-        setUsers(response.data.data.users);
+      if (response.success) {
+        setUsers(response.data.users);
       }
     } catch (error) {
       console.error('Failed to load users:', error);
@@ -171,12 +195,10 @@ const AdminDashboard: React.FC = () => {
 
   const loadLicenses = async () => {
     try {
-      const response = await axios.get('/api/admin/licenses/pending', {
-        withCredentials: true,
-      });
+      const response = await getPendingLicenses();
 
-      if (response.status === 200) {
-        setLicenses(response.data.data.licenses);
+      if (response.success) {
+        setLicenses(response.data.licenses as License[]);
       }
     } catch (error) {
       console.error('Failed to load licenses:', error);
@@ -185,29 +207,53 @@ const AdminDashboard: React.FC = () => {
 
   const loadAnalytics = async () => {
     try {
-      const response = await axios.get('/api/admin/analytics', {
-        withCredentials: true,
-      });
+      const response = await getSystemAnalytics();
 
-      if (response.status === 200) {
-        setAnalytics(response.data.data);
+      if (response.success) {
+        // Convert SystemAnalytics to our Analytics interface
+        const convertedAnalytics: Analytics = {
+          users: response.data.userAnalytics.byRole.map((item) => ({
+            _id: item._id,
+            count: item.count,
+            active: item.count, // Use count as active since we don't have active count
+          })),
+          subscriptions: response.data.userAnalytics.byStatus.map((item) => ({
+            _id: item._id,
+            count: item.count,
+            active: item.count,
+            revenue: 0, // Default revenue since we don't have this data
+          })),
+          licenses: response.data.permissionAnalytics.byCategory.map(
+            (item) => ({
+              _id: item._id,
+              count: item.count,
+            })
+          ),
+          generated: new Date().toISOString(),
+        };
+        setAnalytics(convertedAnalytics);
       }
     } catch (error) {
       console.error('Failed to load analytics:', error);
     }
   };
 
+  const loadRoles = async () => {
+    try {
+      const response = await getAllRoles({ page: 1, limit: 100 });
+      if (response.success) {
+        setRoles(response.data.roles);
+      }
+    } catch (error) {
+      console.error('Failed to load roles:', error);
+    }
+  };
+
   const handleUpdateUserRole = async (userId: string, role: string) => {
     try {
-      const response = await axios.put(
-        `/api/admin/users/${userId}/role`,
-        { role },
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await updateUserRole(userId, role);
 
-      if (response.status === 200) {
+      if (response.success) {
         addNotification({
           type: 'success',
           title: 'Success',
@@ -229,17 +275,9 @@ const AdminDashboard: React.FC = () => {
 
   const handleSuspendUser = async (userId: string) => {
     try {
-      const response = await axios.post(
-        `/api/admin/users/${userId}/suspend`,
-        {
-          reason: 'Administrative action',
-        },
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await suspendUser(userId, 'Administrative action');
 
-      if (response.status === 200) {
+      if (response.success) {
         addNotification({
           type: 'success',
           title: 'Success',
@@ -260,17 +298,9 @@ const AdminDashboard: React.FC = () => {
 
   const handleApproveLicense = async (userId: string) => {
     try {
-      const response = await axios.post(
-        `/api/admin/licenses/${userId}/approve`,
-        {
-          notes: 'Approved by admin',
-        },
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await approveLicense(userId);
 
-      if (response.status === 200) {
+      if (response.success) {
         addNotification({
           type: 'success',
           title: 'Success',
@@ -291,17 +321,9 @@ const AdminDashboard: React.FC = () => {
 
   const handleRejectLicense = async (userId: string, reason: string) => {
     try {
-      const response = await axios.post(
-        `/api/admin/licenses/${userId}/reject`,
-        {
-          reason,
-        },
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await rejectLicense(userId, reason);
 
-      if (response.status === 200) {
+      if (response.success) {
         addNotification({
           type: 'success',
           title: 'Success',
@@ -318,6 +340,137 @@ const AdminDashboard: React.FC = () => {
         message: 'Failed to reject license',
         duration: 5000,
       });
+    }
+  };
+
+  // Bulk role assignment handlers
+  const handleBulkAssignRoles = async () => {
+    if (selectedUsers.length === 0 || selectedRoles.length === 0) {
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Please select at least one user and one role',
+        duration: 5000,
+      });
+      return;
+    }
+
+    try {
+      const bulkData: BulkRoleAssignment = {
+        userIds: selectedUsers,
+        roleIds: selectedRoles,
+        workspaceId: undefined,
+        isTemporary,
+        expiresAt: isTemporary ? expiresAt : undefined,
+        assignmentReason,
+      };
+
+      const response = await bulkAssignRoles(
+        bulkData.userIds,
+        bulkData.roleIds[0]
+      );
+
+      if (response.success) {
+        setBulkOperationId('');
+        setBulkOperationProgressOpen(true);
+        setBulkAssignDialogOpen(false);
+        addNotification({
+          type: 'success',
+          title: 'Bulk Operation Started',
+          message: 'Bulk role assignment has been initiated',
+          duration: 5000,
+        });
+      } else {
+        addNotification({
+          type: 'error',
+          title: 'Error',
+          message: response.message || 'Failed to start bulk role assignment',
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error('Error in bulk role assignment:', error);
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to start bulk role assignment',
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleBulkRevokeRoles = async () => {
+    if (selectedUsers.length === 0 || selectedRoles.length === 0) {
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Please select at least one user and one role',
+        duration: 5000,
+      });
+      return;
+    }
+
+    try {
+      const response = await bulkRevokeRoles(selectedUsers, selectedRoles[0]);
+
+      if (response.success) {
+        setBulkOperationId('');
+        setBulkOperationProgressOpen(true);
+        setBulkRevokeDialogOpen(false);
+        addNotification({
+          type: 'success',
+          title: 'Bulk Operation Started',
+          message: 'Bulk role revocation has been initiated',
+          duration: 5000,
+        });
+      } else {
+        addNotification({
+          type: 'error',
+          title: 'Error',
+          message: response.message || 'Failed to start bulk role revocation',
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error('Error in bulk role revocation:', error);
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to start bulk role revocation',
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleUserSelection = (userId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedUsers([...selectedUsers, userId]);
+    } else {
+      setSelectedUsers(selectedUsers.filter((id) => id !== userId));
+    }
+  };
+
+  const handleRoleSelection = (roleId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedRoles([...selectedRoles, roleId]);
+    } else {
+      setSelectedRoles(selectedRoles.filter((id) => id !== roleId));
+    }
+  };
+
+  const handleSelectAllUsers = (checked: boolean) => {
+    if (checked) {
+      setSelectedUsers(users.map((user) => user._id));
+    } else {
+      setSelectedUsers([]);
+    }
+  };
+
+  const handleSelectAllRoles = (checked: boolean) => {
+    if (checked) {
+      setSelectedRoles(roles.map((role) => role._id));
+    } else {
+      setSelectedRoles([]);
     }
   };
 
@@ -438,6 +591,27 @@ const AdminDashboard: React.FC = () => {
       {/* Users Tab */}
       {activeTab === 0 && (
         <>
+          {/* Bulk Actions */}
+          <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+            <Button
+              variant="contained"
+              startIcon={<PlaylistAddCheckIcon />}
+              onClick={() => setBulkAssignDialogOpen(true)}
+              disabled={selectedUsers.length === 0}
+            >
+              Bulk Assign Roles ({selectedUsers.length})
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<RemoveCircleIcon />}
+              onClick={() => setBulkRevokeDialogOpen(true)}
+              disabled={selectedUsers.length === 0}
+            >
+              Bulk Revoke Roles ({selectedUsers.length})
+            </Button>
+          </Box>
+
           {/* Filters */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid size={{ xs: 12, md: 3 }}>
@@ -482,6 +656,19 @@ const AdminDashboard: React.FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={
+                        selectedUsers.length === users.length &&
+                        users.length > 0
+                      }
+                      indeterminate={
+                        selectedUsers.length > 0 &&
+                        selectedUsers.length < users.length
+                      }
+                      onChange={(e) => handleSelectAllUsers(e.target.checked)}
+                    />
+                  </TableCell>
                   <TableCell>Name</TableCell>
                   <TableCell>Email</TableCell>
                   <TableCell>Role</TableCell>
@@ -494,14 +681,22 @@ const AdminDashboard: React.FC = () => {
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user._id}>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={selectedUsers.includes(user._id)}
+                        onChange={(e) =>
+                          handleUserSelection(user._id, e.target.checked)
+                        }
+                      />
+                    </TableCell>
                     <TableCell>
                       {user.firstName} {user.lastName}
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <Chip
-                        label={user.role.replace('_', ' ')}
-                        color={getRoleColor(user.role)}
+                        label={user.systemRole.replace('_', ' ')}
+                        color={getRoleColor(user.systemRole)}
                         size="small"
                       />
                     </TableCell>
@@ -514,14 +709,14 @@ const AdminDashboard: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={user.licenseStatus}
-                        color={getStatusColor(user.licenseStatus)}
+                        label="not_required"
+                        color={getStatusColor('not_required')}
                         size="small"
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={user.subscriptionTier}
+                        label="free_trial"
                         variant="outlined"
                         size="small"
                       />
@@ -746,9 +941,12 @@ const AdminDashboard: React.FC = () => {
               <FormControl fullWidth>
                 <InputLabel>Role</InputLabel>
                 <Select
-                  value={selectedUser.role}
+                  value={selectedUser.systemRole}
                   onChange={(e) =>
-                    setSelectedUser({ ...selectedUser, role: e.target.value })
+                    setSelectedUser({
+                      ...selectedUser,
+                      systemRole: e.target.value,
+                    })
                   }
                 >
                   <MenuItem value="pharmacist">Pharmacist</MenuItem>
@@ -767,7 +965,7 @@ const AdminDashboard: React.FC = () => {
           <Button
             onClick={() =>
               selectedUser &&
-              handleUpdateUserRole(selectedUser._id, selectedUser.role)
+              handleUpdateUserRole(selectedUser._id, selectedUser.systemRole)
             }
             variant="contained"
           >
@@ -813,6 +1011,231 @@ const AdminDashboard: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Bulk Assign Roles Dialog */}
+      <Dialog
+        open={bulkAssignDialogOpen}
+        onClose={() => setBulkAssignDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Bulk Assign Roles</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Selected Users ({selectedUsers.length})
+            </Typography>
+            <Box sx={{ mb: 3, maxHeight: 150, overflow: 'auto' }}>
+              {users
+                .filter((user) => selectedUsers.includes(user._id))
+                .map((user) => (
+                  <Chip
+                    key={user._id}
+                    label={`${user.firstName} ${user.lastName}`}
+                    sx={{ m: 0.5 }}
+                  />
+                ))}
+            </Box>
+
+            <Typography variant="subtitle1" gutterBottom>
+              Select Roles
+            </Typography>
+            <Box sx={{ mb: 3 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={
+                      selectedRoles.length === roles.length && roles.length > 0
+                    }
+                    indeterminate={
+                      selectedRoles.length > 0 &&
+                      selectedRoles.length < roles.length
+                    }
+                    onChange={(e) => handleSelectAllRoles(e.target.checked)}
+                  />
+                }
+                label="Select All Roles"
+              />
+              <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
+                {roles.map((role) => (
+                  <FormControlLabel
+                    key={role._id}
+                    control={
+                      <Checkbox
+                        checked={selectedRoles.includes(role._id)}
+                        onChange={(e) =>
+                          handleRoleSelection(role._id, e.target.checked)
+                        }
+                      />
+                    }
+                    label={role.displayName}
+                  />
+                ))}
+              </Box>
+            </Box>
+
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography>Advanced Options</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={isTemporary}
+                        onChange={(e) => setIsTemporary(e.target.checked)}
+                      />
+                    }
+                    label="Temporary Assignment"
+                  />
+                  {isTemporary && (
+                    <TextField
+                      fullWidth
+                      label="Expiration Date"
+                      type="datetime-local"
+                      value={expiresAt}
+                      onChange={(e) => setExpiresAt(e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  )}
+                  <TextField
+                    fullWidth
+                    label="Assignment Reason (Optional)"
+                    value={assignmentReason}
+                    onChange={(e) => setAssignmentReason(e.target.value)}
+                    multiline
+                    rows={2}
+                  />
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBulkAssignDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleBulkAssignRoles}
+            variant="contained"
+            disabled={selectedRoles.length === 0}
+          >
+            Assign Roles
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Bulk Revoke Roles Dialog */}
+      <Dialog
+        open={bulkRevokeDialogOpen}
+        onClose={() => setBulkRevokeDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Bulk Revoke Roles</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Selected Users ({selectedUsers.length})
+            </Typography>
+            <Box sx={{ mb: 3, maxHeight: 150, overflow: 'auto' }}>
+              {users
+                .filter((user) => selectedUsers.includes(user._id))
+                .map((user) => (
+                  <Chip
+                    key={user._id}
+                    label={`${user.firstName} ${user.lastName}`}
+                    sx={{ m: 0.5 }}
+                  />
+                ))}
+            </Box>
+
+            <Typography variant="subtitle1" gutterBottom>
+              Select Roles to Revoke
+            </Typography>
+            <Box sx={{ mb: 3 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={
+                      selectedRoles.length === roles.length && roles.length > 0
+                    }
+                    indeterminate={
+                      selectedRoles.length > 0 &&
+                      selectedRoles.length < roles.length
+                    }
+                    onChange={(e) => handleSelectAllRoles(e.target.checked)}
+                  />
+                }
+                label="Select All Roles"
+              />
+              <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
+                {roles.map((role) => (
+                  <FormControlLabel
+                    key={role._id}
+                    control={
+                      <Checkbox
+                        checked={selectedRoles.includes(role._id)}
+                        onChange={(e) =>
+                          handleRoleSelection(role._id, e.target.checked)
+                        }
+                      />
+                    }
+                    label={role.displayName}
+                  />
+                ))}
+              </Box>
+            </Box>
+
+            <TextField
+              fullWidth
+              label="Revocation Reason (Optional)"
+              value={revocationReason}
+              onChange={(e) => setRevocationReason(e.target.value)}
+              multiline
+              rows={2}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBulkRevokeDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleBulkRevokeRoles}
+            variant="contained"
+            color="error"
+            disabled={selectedRoles.length === 0}
+          >
+            Revoke Roles
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Bulk Operation Progress Dialog */}
+      <BulkOperationProgress
+        open={bulkOperationProgressOpen}
+        onClose={() => {
+          setBulkOperationProgressOpen(false);
+          setSelectedUsers([]);
+          setSelectedRoles([]);
+          loadData();
+        }}
+        operationId={bulkOperationId}
+        initialData={{
+          type: 'role_assignment',
+          status: 'pending',
+          progress: {
+            total: selectedUsers.length,
+            processed: 0,
+            successful: 0,
+            failed: 0,
+          },
+          startTime: new Date().toISOString(),
+          errors: [],
+          warnings: [],
+          metadata: {
+            userCount: selectedUsers.length,
+          },
+        }}
+      />
     </Box>
   );
 };

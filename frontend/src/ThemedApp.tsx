@@ -1,6 +1,11 @@
 import React, { useMemo } from 'react';
 import { ThemeProvider, CssBaseline, Box, Toolbar } from '@mui/material';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { createAppTheme } from './theme/index';
 import { AuthProvider } from './context/AuthContext';
@@ -46,7 +51,6 @@ import Medications from './pages/Medications';
 import MedicationsManagementDashboard from './components/medications/MedicationsManagementDashboard';
 import PatientMedicationsPage from './components/medications/PatientMedicationsPage';
 import Subscriptions from './pages/Subscriptions';
-import Reports from './pages/Reports';
 import SaasSettings from './pages/SaasSettings';
 import FeatureFlagsPage from './pages/FeatureFlags';
 import Settings from './pages/Settings';
@@ -140,22 +144,13 @@ function ThemedApp(): JSX.Element {
                     <Route path="/contact" element={<Contact />} />
                     <Route path="/pricing" element={<Pricing />} />
                     <Route path="/login" element={<Login />} />
-                    <Route
-                      path="/register"
-                      element={<MultiStepRegister />}
-                    />
-                    <Route
-                      path="/verify-email"
-                      element={<VerifyEmail />}
-                    />
+                    <Route path="/register" element={<MultiStepRegister />} />
+                    <Route path="/verify-email" element={<VerifyEmail />} />
                     <Route
                       path="/forgot-password"
                       element={<ForgotPassword />}
                     />
-                    <Route
-                      path="/reset-password"
-                      element={<ResetPassword />}
-                    />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     {/* Protected Routes */}
                     <Route
                       path="/dashboard"
@@ -319,19 +314,6 @@ function ThemedApp(): JSX.Element {
                         <ProtectedRoute>
                           <AppLayout>
                             <Subscriptions />
-                          </AppLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/reports"
-                      element={
-                        <ProtectedRoute
-                          requiredFeature="basic_reports"
-                          requiresActiveSubscription
-                        >
-                          <AppLayout>
-                            <Reports />
                           </AppLayout>
                         </ProtectedRoute>
                       }

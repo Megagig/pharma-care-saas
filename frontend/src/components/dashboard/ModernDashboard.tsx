@@ -59,6 +59,10 @@ import QuickActionCard from './QuickActionCard';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useNavigate } from 'react-router-dom';
 
+// Communication Hub Components
+import CommunicationWidget from '../communication/CommunicationWidget';
+import CommunicationMetrics from '../communication/CommunicationMetrics';
+
 // All components enabled
 import AdminDashboardIntegration from './AdminDashboardIntegration';
 import UsageDashboard from './UsageDashboard';
@@ -919,6 +923,52 @@ export const ModernDashboard: React.FC = () => {
         </Box>
       </motion.div>
 
+      {/* Communication Hub Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.25 }}
+      >
+        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
+          Communication Hub
+        </Typography>
+        <Box
+          className="communication-widgets-grid"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: '1fr 1fr',
+              lg: '2fr 1fr 1fr',
+            },
+            gap: 3,
+            mb: 4,
+            width: '100%',
+          }}
+        >
+          <Box sx={{ width: '100%' }}>
+            <CommunicationWidget variant="overview" height={320} />
+          </Box>
+          <Box sx={{ width: '100%' }}>
+            <CommunicationWidget variant="recent-messages" height={320} />
+          </Box>
+          <Box sx={{ width: '100%' }}>
+            <CommunicationWidget variant="notifications" height={320} />
+          </Box>
+        </Box>
+      </motion.div>
+
+      {/* Communication Metrics */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.28 }}
+      >
+        <Box sx={{ mb: 4 }}>
+          <CommunicationMetrics timeRange="week" showTrends={true} />
+        </Box>
+      </motion.div>
+
       {/* Recent Activities Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -1458,7 +1508,7 @@ export const ModernDashboard: React.FC = () => {
               description="Access detailed analytics and reports"
               icon="📊"
               color={theme.palette.warning.main}
-              navigateTo="/reports"
+              navigateTo="/pharmacy/reports"
               buttonText="View Reports"
             />
           </Box>

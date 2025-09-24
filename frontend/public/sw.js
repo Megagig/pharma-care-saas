@@ -1,293 +1,229 @@
-// Clinical Interventions Service Worker
-// Provides offline functionality and background sync for intervention forms
-
-const CACHE_NAME = 'clinical-interventions-v1';
-const STATIC_CACHE_NAME = 'clinical-interventions-static-v1';
-const DYNAMIC_CACHE_NAME = 'clinical-interventions-dynamic-v1';
-
-// Static assets to cache
-const STATIC_ASSETS = [
+// Service Worker for Communication Hub Push Notifications
+const CACHE_NAME = 'communication-hub-v1';
+const urlsToCache = [
   '/',
   '/static/js/bundle.js',
   '/static/css/main.css',
-  '/manifest.json',
-  // Add other critical static assets
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+  '/icons/badge-72x72.png',
 ];
 
-// API endpoints to cache
-const API_CACHE_PATTERNS = [
-  /\/api\/patients\/search/,
-  /\/api\/clinical-interventions\/recommendations/,
-  /\/api\/workplaces\/\w+\/users/,
-];
-
-// Install event - cache static assets
+// Install event - cache resources
 self.addEventListener('install', (event) => {
-  console.log('Service Worker: Installing...');
-
   event.waitUntil(
-    caches
-      .open(STATIC_CACHE_NAME)
-      .then((cache) => {
-        console.log('Service Worker: Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
-      })
-      .then(() => {
-        console.log('Service Worker: Static assets cached');
-        return self.skipWaiting();
-      })
-      .catch((error) => {
-        console.error('Service Worker: Failed to cache static assets', error);
-      })
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(urlsToCache);
+    })
   );
 });
 
-// Activate event - clean up old caches
-self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Activating...');
-
-  event.waitUntil(
-    caches
-      .keys()
-      .then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (
-              cacheName !== STATIC_CACHE_NAME &&
-              cacheName !== DYNAMIC_CACHE_NAME &&
-              cacheName !== CACHE_NAME
-            ) {
-              console.log('Service Worker: Deleting old cache', cacheName);
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      })
-      .then(() => {
-        console.log('Service Worker: Activated');
-        return self.clients.claim();
-      })
-  );
-});
-
-// Fetch event - implement caching strategies
+// Fetch event - serve from cache when offline
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      // Return cached version or fetch from network
+      return response || fetch(event.request);
+    })
+  );
+});
 
-  // Skip non-GET requests and chrome-extension requests
-  if (request.method !== 'GET' || url.protocol === 'chrome-extension:') {
+// Push event - handle push notifications
+self.addEventListener('push', (event) => {
+  console.log('Push event received:', event);
+
+  let notificationData = {
+    title: 'New Message',
+    body: 'You have a new message',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/badge-72x72.png',
+    tag: 'communication-notification',
+    data: {},
+  };
+
+  if (event.data) {
+    try {
+      const payload = event.data.json();
+      notificationData = {
+        ...notificationData,
+        ...payload,
+      };
+    } catch (error) {
+      console.error('Error parsing push payload:', error);
+      notificationData.body = event.data.text();
+    }
+  }
+
+  const notificationOptions = {
+    body: notificationData.body,
+    icon: notificationData.icon,
+    badge: notificationData.badge,
+    tag: notificationData.tag,
+    data: notificationData.data,
+    requireInteraction: notificationData.requireInteraction || false,
+    silent: notificationData.silent || false,
+    vibrate: notificationData.vibrate || [200, 100, 200],
+    actions: [
+      {
+        action: 'reply',
+        title: 'Reply',
+        icon: '/icons/reply-icon.png',
+      },
+      {
+        action: 'view',
+        title: 'View',
+        icon: '/icons/view-icon.png',
+      },
+      {
+        action: 'dismiss',
+        title: 'Dismiss',
+        icon: '/icons/dismiss-icon.png',
+      },
+    ],
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(
+      notificationData.title,
+      notificationOptions
+    )
+  );
+});
+
+// Notification click event
+self.addEventListener('notificationclick', (event) => {
+  console.log('Notification clicked:', event);
+
+  const notification = event.notification;
+  const action = event.action;
+  const data = notification.data || {};
+
+  notification.close();
+
+  if (action === 'dismiss') {
     return;
   }
 
-  // Handle different types of requests
-  if (request.url.includes('/api/')) {
-    // API requests - Network First with Cache Fallback
-    event.respondWith(handleApiRequest(request));
-  } else if (STATIC_ASSETS.some((asset) => request.url.includes(asset))) {
-    // Static assets - Cache First
-    event.respondWith(handleStaticRequest(request));
-  } else {
-    // Other requests - Stale While Revalidate
-    event.respondWith(handleDynamicRequest(request));
+  // Handle different actions
+  let url = '/';
+
+  if (data.conversationId) {
+    if (action === 'reply') {
+      url = `/communication/${data.conversationId}?reply=true`;
+    } else {
+      url = `/communication/${data.conversationId}`;
+    }
   }
-});
 
-// Handle API requests with Network First strategy
-async function handleApiRequest(request) {
-  const url = new URL(request.url);
-
-  try {
-    // Try network first
-    const networkResponse = await fetch(request);
-
-    // Cache successful responses for specific endpoints
-    if (networkResponse.ok && shouldCacheApiResponse(url)) {
-      const cache = await caches.open(DYNAMIC_CACHE_NAME);
-      cache.put(request, networkResponse.clone());
-    }
-
-    return networkResponse;
-  } catch (error) {
-    console.log(
-      'Service Worker: Network failed, trying cache for',
-      request.url
-    );
-
-    // Fallback to cache
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-
-    // Return offline response for intervention-related APIs
-    if (url.pathname.includes('/clinical-interventions')) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Offline - data will sync when connection is restored',
-          offline: true,
-        }),
-        {
-          status: 503,
-          statusText: 'Service Unavailable',
-          headers: { 'Content-Type': 'application/json' },
+  event.waitUntil(
+    clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Check if there's already a window/tab open with the target URL
+        for (const client of clientList) {
+          if (client.url.includes('/communication') && 'focus' in client) {
+            // Send message to existing client
+            client.postMessage({
+              type: 'notification-click',
+              action: action,
+              data: data,
+            });
+            return client.focus();
+          }
         }
-      );
-    }
 
-    throw error;
-  }
-}
+        // If no existing window, open a new one
+        if (clients.openWindow) {
+          return clients.openWindow(url);
+        }
+      })
+  );
+});
 
-// Handle static requests with Cache First strategy
-async function handleStaticRequest(request) {
-  const cachedResponse = await caches.match(request);
-
-  if (cachedResponse) {
-    return cachedResponse;
-  }
-
-  try {
-    const networkResponse = await fetch(request);
-    const cache = await caches.open(STATIC_CACHE_NAME);
-    cache.put(request, networkResponse.clone());
-    return networkResponse;
-  } catch (error) {
-    console.error('Service Worker: Failed to fetch static asset', request.url);
-    throw error;
-  }
-}
-
-// Handle dynamic requests with Stale While Revalidate strategy
-async function handleDynamicRequest(request) {
-  const cache = await caches.open(DYNAMIC_CACHE_NAME);
-  const cachedResponse = await cache.match(request);
-
-  const fetchPromise = fetch(request)
-    .then((networkResponse) => {
-      if (networkResponse.ok) {
-        cache.put(request, networkResponse.clone());
-      }
-      return networkResponse;
-    })
-    .catch(() => cachedResponse);
-
-  return cachedResponse || fetchPromise;
-}
-
-// Check if API response should be cached
-function shouldCacheApiResponse(url) {
-  return API_CACHE_PATTERNS.some((pattern) => pattern.test(url.pathname));
-}
-
-// Background Sync for offline intervention submissions
+// Background sync for offline message sending
 self.addEventListener('sync', (event) => {
-  console.log('Service Worker: Background sync triggered', event.tag);
-
-  if (event.tag === 'intervention-sync') {
-    event.waitUntil(syncInterventions());
+  if (event.tag === 'background-sync-messages') {
+    event.waitUntil(syncMessages());
   }
 });
 
-// Sync offline interventions when connection is restored
-async function syncInterventions() {
-  console.log('Service Worker: Syncing offline interventions...');
-
+async function syncMessages() {
   try {
-    // Get offline interventions from IndexedDB
-    const offlineInterventions = await getOfflineInterventions();
+    // Get pending messages from IndexedDB
+    const pendingMessages = await getPendingMessages();
 
-    if (offlineInterventions.length === 0) {
-      console.log('Service Worker: No offline interventions to sync');
-      return;
-    }
-
-    console.log(
-      `Service Worker: Syncing ${offlineInterventions.length} interventions`
-    );
-
-    // Sync each intervention
-    for (const intervention of offlineInterventions) {
+    for (const message of pendingMessages) {
       try {
-        const response = await fetch('/api/clinical-interventions', {
+        // Attempt to send message
+        const response = await fetch('/api/messages', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: intervention.authToken,
+            Authorization: `Bearer ${message.token}`,
           },
-          body: JSON.stringify(intervention.data),
+          body: JSON.stringify(message.data),
         });
 
         if (response.ok) {
-          // Remove from offline storage
-          await removeOfflineIntervention(intervention.id);
-          console.log('Service Worker: Synced intervention', intervention.id);
+          // Remove from pending messages
+          await removePendingMessage(message.id);
 
-          // Notify client about successful sync
-          await notifyClients({
-            type: 'INTERVENTION_SYNCED',
-            interventionId: intervention.id,
-            success: true,
+          // Notify client of successful send
+          const clients = await self.clients.matchAll();
+          clients.forEach((client) => {
+            client.postMessage({
+              type: 'message-sent',
+              messageId: message.id,
+              success: true,
+            });
           });
-        } else {
-          console.error(
-            'Service Worker: Failed to sync intervention',
-            intervention.id,
-            response.status
-          );
         }
       } catch (error) {
-        console.error(
-          'Service Worker: Error syncing intervention',
-          intervention.id,
-          error
-        );
+        console.error('Failed to sync message:', error);
       }
     }
-
-    console.log('Service Worker: Intervention sync completed');
   } catch (error) {
-    console.error('Service Worker: Background sync failed', error);
+    console.error('Background sync failed:', error);
   }
 }
 
-// Get offline interventions from IndexedDB
-async function getOfflineInterventions() {
+// IndexedDB helpers for offline message storage
+async function getPendingMessages() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('ClinicalInterventionsDB', 1);
+    const request = indexedDB.open('CommunicationHub', 1);
 
     request.onerror = () => reject(request.error);
 
     request.onsuccess = () => {
       const db = request.result;
-      const transaction = db.transaction(['offlineInterventions'], 'readonly');
-      const store = transaction.objectStore('offlineInterventions');
+      const transaction = db.transaction(['pendingMessages'], 'readonly');
+      const store = transaction.objectStore('pendingMessages');
       const getAllRequest = store.getAll();
 
       getAllRequest.onsuccess = () => resolve(getAllRequest.result);
       getAllRequest.onerror = () => reject(getAllRequest.error);
     };
 
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains('offlineInterventions')) {
-        db.createObjectStore('offlineInterventions', { keyPath: 'id' });
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('pendingMessages')) {
+        db.createObjectStore('pendingMessages', { keyPath: 'id' });
       }
     };
   });
 }
 
-// Remove synced intervention from offline storage
-async function removeOfflineIntervention(id) {
+async function removePendingMessage(messageId) {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('ClinicalInterventionsDB', 1);
+    const request = indexedDB.open('CommunicationHub', 1);
+
+    request.onerror = () => reject(request.error);
 
     request.onsuccess = () => {
       const db = request.result;
-      const transaction = db.transaction(['offlineInterventions'], 'readwrite');
-      const store = transaction.objectStore('offlineInterventions');
-      const deleteRequest = store.delete(id);
+      const transaction = db.transaction(['pendingMessages'], 'readwrite');
+      const store = transaction.objectStore('pendingMessages');
+      const deleteRequest = store.delete(messageId);
 
       deleteRequest.onsuccess = () => resolve();
       deleteRequest.onerror = () => reject(deleteRequest.error);
@@ -295,58 +231,58 @@ async function removeOfflineIntervention(id) {
   });
 }
 
-// Notify all clients about sync status
-async function notifyClients(message) {
-  const clients = await self.clients.matchAll();
-  clients.forEach((client) => {
-    client.postMessage(message);
+// Message event for communication with main thread
+self.addEventListener('message', (event) => {
+  const { type, data } = event.data;
+
+  switch (type) {
+    case 'skip-waiting':
+      self.skipWaiting();
+      break;
+
+    case 'store-pending-message':
+      storePendingMessage(data);
+      break;
+
+    case 'clear-notifications':
+      clearAllNotifications();
+      break;
+
+    default:
+      console.log('Unknown message type:', type);
+  }
+});
+
+async function storePendingMessage(messageData) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('CommunicationHub', 1);
+
+    request.onerror = () => reject(request.error);
+
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction(['pendingMessages'], 'readwrite');
+      const store = transaction.objectStore('pendingMessages');
+      const addRequest = store.add({
+        id: Date.now() + Math.random(),
+        ...messageData,
+        timestamp: Date.now(),
+      });
+
+      addRequest.onsuccess = () => resolve();
+      addRequest.onerror = () => reject(addRequest.error);
+    };
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('pendingMessages')) {
+        db.createObjectStore('pendingMessages', { keyPath: 'id' });
+      }
+    };
   });
 }
 
-// Handle push notifications (for future use)
-self.addEventListener('push', (event) => {
-  console.log('Service Worker: Push notification received');
-
-  if (event.data) {
-    const data = event.data.json();
-
-    const options = {
-      body: data.body || 'New clinical intervention update',
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/badge-72x72.png',
-      tag: 'clinical-intervention',
-      data: data.data || {},
-      actions: [
-        {
-          action: 'view',
-          title: 'View Details',
-        },
-        {
-          action: 'dismiss',
-          title: 'Dismiss',
-        },
-      ],
-    };
-
-    event.waitUntil(
-      self.registration.showNotification(
-        data.title || 'Clinical Interventions',
-        options
-      )
-    );
-  }
-});
-
-// Handle notification clicks
-self.addEventListener('notificationclick', (event) => {
-  console.log('Service Worker: Notification clicked', event.action);
-
-  event.notification.close();
-
-  if (event.action === 'view') {
-    // Open the app to the relevant intervention
-    event.waitUntil(clients.openWindow('/clinical-interventions'));
-  }
-});
-
-console.log('Service Worker: Loaded');
+async function clearAllNotifications() {
+  const notifications = await self.registration.getNotifications();
+  notifications.forEach((notification) => notification.close());
+}

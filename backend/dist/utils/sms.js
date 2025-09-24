@@ -9,12 +9,12 @@ const isValidTwilioConfig = () => {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const phoneNumber = process.env.TWILIO_PHONE_NUMBER;
-    return accountSid &&
+    return (accountSid &&
         authToken &&
         phoneNumber &&
         accountSid.startsWith('AC') &&
         accountSid !== 'your-twilio-account-sid' &&
-        authToken !== 'your-twilio-auth-token';
+        authToken !== 'your-twilio-auth-token');
 };
 let client = null;
 if (isValidTwilioConfig()) {
@@ -28,7 +28,7 @@ if (isValidTwilioConfig()) {
     }
 }
 else {
-    console.warn('Twilio SMS service not configured - using mock mode. Please set valid TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in your .env file');
+    console.log('Twilio SMS service not configured - using mock mode. SMS features will be simulated.');
 }
 const sendSMS = async (to, message) => {
     if (!client) {
@@ -38,14 +38,14 @@ const sendSMS = async (to, message) => {
             status: 'delivered',
             to: to,
             body: message,
-            mock: true
+            mock: true,
         };
     }
     try {
         const result = await client.messages.create({
             body: message,
             from: process.env.TWILIO_PHONE_NUMBER,
-            to: to
+            to: to,
         });
         return result;
     }

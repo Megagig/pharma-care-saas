@@ -15,7 +15,15 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:communication": "playwright test communication-hub-*.spec.ts",
+    "test:e2e:communication:ui": "playwright test communication-hub-*.spec.ts --ui",
+    "test:e2e:communication:headed": "playwright test communication-hub-*.spec.ts --headed",
+    "test:e2e:communication:debug": "playwright test communication-hub-*.spec.ts --debug",
+    "test:e2e:load": "playwright test communication-hub-load-testing.spec.ts",
+    "test:e2e:accessibility": "playwright test communication-hub-accessibility.spec.ts",
+    "test:e2e:cross-browser": "playwright test communication-hub-cross-browser.spec.ts",
+    "test:e2e:coverage": "node e2e/generate-coverage-report.cjs"
   },
   "dependencies": {
     "@date-io/date-fns": "^3.2.1",
@@ -43,12 +51,15 @@
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-dropzone": "^14.3.8",
     "react-helmet-async": "^2.0.5",
     "react-hook-form": "^7.48.2",
     "react-hot-toast": "^2.4.1",
     "react-router-dom": "^7.8.2",
     "react-window": "^1.8.11",
+    "react-window-infinite-loader": "^2.0.0",
     "recharts": "^3.2.0",
+    "socket.io-client": "^4.8.1",
     "yup": "^1.7.0",
     "zod": "^4.1.8",
     "zustand": "^5.0.8"
