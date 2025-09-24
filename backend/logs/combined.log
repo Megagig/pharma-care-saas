@@ -2512,3 +2512,5 @@
 {"differences":{},"level":"info","message":"Workspace usage stats recalculated:","newStats":{"apiCallsThisMonth":0,"lastUpdated":"2025-09-24T05:00:18.573Z","patientsCount":0,"storageUsed":0,"usersCount":1},"previousStats":{"lastUpdated":"2025-09-22T01:00:27.922Z","patientsCount":0,"usersCount":1},"service":"pharma-care-api","timestamp":"2025-09-24 06:00:18","workspaceId":"68b5cd85f1f0f9758b8afbbf"}
 {"level":"info","message":"Batch recalculation completed: 16 successful, 0 failed","service":"pharma-care-api","timestamp":"2025-09-24 06:00:18"}
 {"level":"info","message":"Stale stats recalculation completed: 16 workspaces updated","service":"pharma-care-api","timestamp":"2025-09-24 06:00:18"}
+{"level":"info","message":"Cleaned up old performance metrics and alerts","service":"pharma-care-api","timestamp":"2025-09-24 06:44:19"}
+{"alertsRemoved":0,"level":"info","message":"Security monitoring cleanup completed","service":"security-monitoring","threatsRemoved":0,"timestamp":"2025-09-24 06:44:20"}
