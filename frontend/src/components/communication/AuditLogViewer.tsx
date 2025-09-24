@@ -19,7 +19,6 @@ import {
   Select,
   MenuItem,
   Button,
-  Grid,
   Card,
   CardContent,
   Dialog,
@@ -30,25 +29,31 @@ import {
   CircularProgress,
   Collapse,
 } from '@mui/material';
-import {
-  FilterList as FilterIcon,
-  Download as DownloadIcon,
-  Search as SearchIcon,
-  Visibility as ViewIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Security as SecurityIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
-  Info as InfoIcon,
-} from '@mui/icons-material';
+import FilterList from '@mui/icons-material/FilterList';
+import Download from '@mui/icons-material/Download';
+import Search from '@mui/icons-material/Search';
+import Visibility from '@mui/icons-material/Visibility';
+import Security from '@mui/icons-material/Security';
+import Warning from '@mui/icons-material/Warning';
+import Error from '@mui/icons-material/Error';
+import Info from '@mui/icons-material/Info';
+
+// Icon aliases for consistency
+const FilterIcon = FilterList;
+const DownloadIcon = Download;
+const SearchIcon = Search;
+const ViewIcon = Visibility;
+const SecurityIcon = Security;
+const WarningIcon = Warning;
+const ErrorIcon = Error;
+const InfoIcon = Info;
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format, parseISO } from 'date-fns';
 
 // Helper function to safely parse JSON responses
-const safeJsonParse = async (response: Response): Promise<any> => {
+const safeJsonParse = async (response: Response): Promise<unknown> => {
   const contentType = response.headers.get('content-type');
 
   if (contentType && contentType.includes('application/json')) {
@@ -85,7 +90,7 @@ const safeJsonParse = async (response: Response): Promise<any> => {
 
     try {
       return JSON.parse(textResponse);
-    } catch (error) {
+    } catch {
       console.warn('Response is not JSON:', textResponse.substring(0, 200));
       throw new Error(
         `Server returned non-JSON response: ${response.status} ${response.statusText}`
@@ -118,7 +123,7 @@ interface AuditLog {
     messageId?: string;
     patientId?: string;
     fileName?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   };
   errorMessage?: string;
 }
@@ -213,8 +218,11 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
 
         try {
           const errorData = await safeJsonParse(response);
-          throw new Error(errorData.message || 'Failed to fetch audit logs');
-        } catch (parseError) {
+          throw new Error(
+            (errorData as { message?: string }).message ||
+              'Failed to fetch audit logs'
+          );
+        } catch {
           throw new Error(
             `Failed to fetch audit logs: ${response.status} ${response.statusText}`
           );
@@ -222,12 +230,15 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
       }
 
       const data = await safeJsonParse(response);
-      setLogs(data.data);
-      setTotalCount(data.pagination?.total || data.count || 0);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to fetch audit logs'
+      setLogs((data as { data: AuditLog[] }).data);
+      setTotalCount(
+        (data as { pagination?: { total: number }; count?: number }).pagination
+          ?.total ||
+          (data as { count?: number }).count ||
+          0
       );
+    } catch (err) {
+      setError((err as Error).message || 'Failed to fetch audit logs');
     } finally {
       setLoading(false);
     }
@@ -238,7 +249,7 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
   }, [fetchAuditLogs]);
 
   // Handle filter changes
-  const handleFilterChange = (key: keyof AuditFilters, value: any) => {
+  const handleFilterChange = (key: keyof AuditFilters, value: unknown) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(0); // Reset to first page when filters change
   };
@@ -289,8 +300,11 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
 
         try {
           const errorData = await safeJsonParse(response);
-          throw new Error(errorData.message || 'Failed to export audit logs');
-        } catch (parseError) {
+          throw new Error(
+            (errorData as { message?: string }).message ||
+              'Failed to export audit logs'
+          );
+        } catch {
           throw new Error(
             `Failed to export audit logs: ${response.status} ${response.statusText}`
           );
@@ -310,9 +324,7 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to export audit logs'
-      );
+      setError((err as Error).message || 'Failed to export audit logs');
     } finally {
       setExporting(false);
     }
@@ -333,7 +345,16 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
     return (
       <Chip
         size="small"
-        color={color as any}
+        color={
+          color as
+            | 'success'
+            | 'warning'
+            | 'error'
+            | 'info'
+            | 'default'
+            | 'primary'
+            | 'secondary'
+        }
         icon={icon}
         label={riskLevel.toUpperCase()}
         variant="outlined"
@@ -429,8 +450,10 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
           <Collapse in={showFiltersPanel}>
             <Card variant="outlined" sx={{ mb: 2 }}>
               <CardContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6} md={3}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                  <div
+                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
+                  >
                     <TextField
                       fullWidth
                       size="small"
@@ -446,8 +469,10 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                         ),
                       }}
                     />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  </div>
+                  <div
+                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
+                  >
                     <FormControl fullWidth size="small">
                       <InputLabel>Action</InputLabel>
                       <Select
@@ -472,8 +497,10 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                         </MenuItem>
                       </Select>
                     </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  </div>
+                  <div
+                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
+                  >
                     <FormControl fullWidth size="small">
                       <InputLabel>Risk Level</InputLabel>
                       <Select
@@ -490,8 +517,10 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                         <MenuItem value="critical">Critical</MenuItem>
                       </Select>
                     </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  </div>
+                  <div
+                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
+                  >
                     <FormControl fullWidth size="small">
                       <InputLabel>Success</InputLabel>
                       <Select
@@ -515,8 +544,10 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                         <MenuItem value="false">Failed</MenuItem>
                       </Select>
                     </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  </div>
+                  <div
+                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
+                  >
                     <DatePicker
                       label="Start Date"
                       value={filters.startDate}
@@ -525,8 +556,10 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                         textField: { size: 'small', fullWidth: true },
                       }}
                     />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  </div>
+                  <div
+                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
+                  >
                     <DatePicker
                       label="End Date"
                       value={filters.endDate}
@@ -535,8 +568,10 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                         textField: { size: 'small', fullWidth: true },
                       }}
                     />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  </div>
+                  <div
+                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
+                  >
                     <Button
                       fullWidth
                       variant="outlined"
@@ -545,8 +580,8 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                     >
                       Clear Filters
                     </Button>
-                  </Grid>
-                </Grid>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </Collapse>
@@ -682,8 +717,10 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
           </DialogTitle>
           <DialogContent>
             {selectedLog && (
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                <div
+                  style={{ flex: '1 1 calc(50% - 16px)', minWidth: '250px' }}
+                >
                   <Typography variant="subtitle2" gutterBottom>
                     Basic Information
                   </Typography>
@@ -707,8 +744,10 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                   <Typography variant="body2">
                     <strong>Target ID:</strong> {selectedLog.targetId}
                   </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </div>
+                <div
+                  style={{ flex: '1 1 calc(50% - 16px)', minWidth: '250px' }}
+                >
                   <Typography variant="subtitle2" gutterBottom>
                     Security & Compliance
                   </Typography>
@@ -731,8 +770,8 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                       <strong>Duration:</strong> {selectedLog.duration}ms
                     </Typography>
                   )}
-                </Grid>
-                <Grid item xs={12}>
+                </div>
+                <div style={{ flex: '1 1 100%', minWidth: '250px' }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Details
                   </Typography>
@@ -747,16 +786,16 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                       {JSON.stringify(selectedLog.details, null, 2)}
                     </pre>
                   </Paper>
-                </Grid>
+                </div>
                 {selectedLog.errorMessage && (
-                  <Grid item xs={12}>
+                  <div style={{ flex: '1 1 100%', minWidth: '250px' }}>
                     <Typography variant="subtitle2" gutterBottom color="error">
                       Error Message
                     </Typography>
                     <Alert severity="error">{selectedLog.errorMessage}</Alert>
-                  </Grid>
+                  </div>
                 )}
-              </Grid>
+              </div>
             )}
           </DialogContent>
           <DialogActions>

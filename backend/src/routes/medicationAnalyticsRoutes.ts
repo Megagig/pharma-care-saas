@@ -8,6 +8,8 @@ import {
   getMedicationInteractionAnalytics,
   getMedicationCostAnalytics,
   getDashboardAnalytics,
+  getPatientDemographicsAnalytics,
+  getMedicationInventoryAnalytics,
 } from '../controllers/medicationAnalyticsController';
 
 // Local implementation of validatePatientId to avoid module resolution issues
@@ -71,5 +73,11 @@ router.get('/costs/:patientId', validatePatientId, getMedicationCostAnalytics);
 
 // Dashboard analytics endpoint that combines all analytics
 router.get('/dashboard/:patientId', validatePatientId, getDashboardAnalytics);
+
+// Patient demographics analytics endpoint
+router.get('/demographics/system', getPatientDemographicsAnalytics);
+
+// Medication inventory analytics endpoint
+router.get('/inventory/system', getMedicationInventoryAnalytics);
 
 export default router;

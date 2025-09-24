@@ -56,7 +56,19 @@ interface ResponsiveTableProps<T = TableRowData> {
   onRowClick?: (row: T) => void;
   cardTitle?: (row: T) => string;
   cardSubtitle?: (row: T) => string;
-  cardChips?: (row: T) => Array<{ label: string; color?: string }>;
+  cardChips?: (
+    row: T
+  ) => Array<{
+    label: string;
+    color?:
+      | 'default'
+      | 'primary'
+      | 'secondary'
+      | 'error'
+      | 'info'
+      | 'success'
+      | 'warning';
+  }>;
 }
 
 export const ResponsiveTable = <T extends TableRowData = TableRowData>({
@@ -206,7 +218,9 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
                             >
                               {column.label}:
                             </Typography>
-                            <Typography variant="body2">{value}</Typography>
+                            <Typography variant="body2">
+                              {value as React.ReactNode}
+                            </Typography>
                           </Box>
                         );
                       })}
@@ -313,7 +327,7 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
               >
                 {columns.map((column) => (
                   <TableCell key={column.key} align={column.align || 'left'}>
-                    {getCellValue(row, column, index)}
+                    {getCellValue(row, column, index) as React.ReactNode}
                   </TableCell>
                 ))}
                 {actions.length > 0 && (

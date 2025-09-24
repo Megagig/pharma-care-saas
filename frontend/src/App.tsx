@@ -93,6 +93,9 @@ import SubscriptionManagementNew from './pages/SubscriptionManagement';
 import SubscriptionSuccessNew from './pages/SubscriptionSuccess';
 import TrialExpiryHandler from './components/TrialExpiryHandler';
 
+// Reports & Analytics Module
+import ReportsAnalyticsDashboard from './modules/reports-analytics/components/ReportsAnalyticsDashboard';
+
 function App(): JSX.Element {
   // Initialize Zustand stores on app startup
   useEffect(() => {
@@ -335,6 +338,24 @@ function App(): JSX.Element {
                               <ProtectedRoute>
                                 <AppLayout>
                                   <Subscriptions />
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+
+                          {/* Reports & Analytics Module */}
+                          <Route
+                            path="/reports-analytics"
+                            element={
+                              <ProtectedRoute
+                                requiredFeature="basic_reports"
+                                requiresActiveSubscription
+                              >
+                                <AppLayout>
+                                  <ReportsAnalyticsDashboard
+                                    workspaceId="current-workspace"
+                                    userPermissions={[]}
+                                  />
                                 </AppLayout>
                               </ProtectedRoute>
                             }

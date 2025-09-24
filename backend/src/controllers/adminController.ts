@@ -1267,6 +1267,13 @@ export class AdminController {
    */
   async getAllRoles(req: AuthRequest, res: Response): Promise<any> {
     try {
+      console.log('getAllRoles called with query:', req.query);
+
+      // First, let's test if Role model is accessible
+      console.log('Testing Role model...');
+      const testCount = await Role.countDocuments({});
+      console.log('Total roles in database:', testCount);
+
       const {
         page = 1,
         limit = 10,
@@ -1303,9 +1310,13 @@ export class AdminController {
         query.isActive = isActive === 'true';
       }
 
+      console.log('Query built:', query);
+
       // Build sort object
       const sort: any = {};
       sort[sortBy as string] = sortOrder === 'desc' ? -1 : 1;
+
+      console.log('Sort object:', sort);
 
       // Get roles with pagination
       const roles = await Role.find(query)
@@ -1313,8 +1324,12 @@ export class AdminController {
         .skip(skip)
         .limit(limitNum);
 
+      console.log('Roles found:', roles.length);
+
       // Get total count for pagination
       const total = await Role.countDocuments(query);
+
+      console.log('Total count:', total);
 
       res.json({
         success: true,
@@ -1329,6 +1344,7 @@ export class AdminController {
         },
       });
     } catch (error) {
+      console.error('Error in getAllRoles:', error);
       logger.error('Error fetching roles:', error);
       res.status(500).json({
         success: false,
