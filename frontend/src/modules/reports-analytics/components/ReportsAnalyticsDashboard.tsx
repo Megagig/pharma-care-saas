@@ -41,16 +41,34 @@ interface ReportsAnalyticsDashboardProps {
   userPermissions?: string[];
 }
 
-const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = ({
-  initialReportType,
-}) => {
-  // Local state for UI that doesn't need persistence
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [activeReport, setActiveReport] = useState<ReportType | null>(null);
+const ReportsAnalyticsDashboard: React.FC<
+  ReportsAnalyticsDashboardProps
+> = () => {
+  // Get store state directly for reactive updates
+  const activeReport = useReportsStore((state) => state.activeReport);
+  const setActiveReportStore = useReportsStore(
+    (state) => state.setActiveReport
+  );
+  const addToHistory = useReportsStore((state) => state.addToHistory);
 
-  // Get store instances (but don't destructure to avoid dependency issues)
+  const searchQuery = useDashboardStore((state) => state.searchQuery);
+  const selectedCategory = useDashboardStore((state) => state.selectedCategory);
+  const favoriteReports = useDashboardStore((state) => state.favoriteReports);
+  const setSearchQueryStore = useDashboardStore(
+    (state) => state.setSearchQuery
+  );
+  const setSelectedCategoryStore = useDashboardStore(
+    (state) => state.setSelectedCategory
+  );
+  const toggleFavoriteStore = useDashboardStore(
+    (state) => state.toggleFavorite
+  );
+  const addToRecentlyViewed = useDashboardStore(
+    (state) => state.addToRecentlyViewed
+  );
+  const recentlyViewed = useDashboardStore((state) => state.recentlyViewed);
+
+  // Get store instances for fallback
   const reportsStore = useReportsStore();
   const dashboardStore = useDashboardStore();
 
@@ -212,10 +230,10 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = ({
     return ['all', ...cats.sort()];
   }, [reportConfig]);
 
-  // Get recent reports - simple approach to avoid infinite loops
-  const recentReports = [];
+  // Get recent reports from store
+  const recentReports = recentlyViewed.slice(0, 5);
 
-  // Safe store interaction functions
+  // Store interaction functions
   const handleReportClick = useCallback(
     (reportType: string) => {
       console.log('🎯 Report clicked:', reportType);
@@ -223,53 +241,31 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = ({
       try {
         const reportTypeEnum = reportType as ReportType;
 
-        // Set active report in local state for immediate UI feedback
-        setActiveReport(reportTypeEnum);
+        // Update stores directly using the store functions
+        setActiveReportStore(reportTypeEnum);
         console.log('✅ Active report set to:', reportTypeEnum);
 
-        // Update stores safely
-        if (reportsStore?.setActiveReport) {
-          reportsStore.setActiveReport(reportTypeEnum);
-          console.log('✅ Store updated with active report');
-        } else {
-          console.warn('⚠️ reportsStore.setActiveReport not available');
-        }
-
         // Add to recent reports
-        if (reportsStore?.addToHistory) {
-          const filters = {
-            dateRange: {
-              startDate: new Date(),
-              endDate: new Date(),
-              preset: '30d' as const,
-            },
-          };
-          reportsStore.addToHistory(reportTypeEnum, filters);
-          console.log('✅ Added to reports history');
-        } else {
-          console.warn('⚠️ reportsStore.addToHistory not available');
-        }
+        const filters = {
+          dateRange: {
+            startDate: new Date(),
+            endDate: new Date(),
+            preset: '30d' as const,
+          },
+        };
+        addToHistory(reportTypeEnum, filters);
+        console.log('✅ Added to reports history');
 
         // Add to dashboard recents
-        if (dashboardStore?.addToRecentlyViewed) {
-          dashboardStore.addToRecentlyViewed(reportTypeEnum, {
-            dateRange: {
-              startDate: new Date(),
-              endDate: new Date(),
-              preset: '30d' as const,
-            },
-          });
-          console.log('✅ Added to dashboard recents');
-        } else {
-          console.warn('⚠️ dashboardStore.addToRecentlyViewed not available');
-        }
+        addToRecentlyViewed(reportTypeEnum, filters);
+        console.log('✅ Added to dashboard recents');
 
         console.log('🎉 Report activation completed successfully');
       } catch (error) {
         console.error('❌ Error handling report click:', error);
       }
     },
-    [reportsStore, dashboardStore]
+    [setActiveReportStore, addToHistory, addToRecentlyViewed]
   );
 
   const handleFavoriteToggle = useCallback(
@@ -279,39 +275,42 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = ({
       try {
         const reportTypeEnum = reportType as ReportType;
 
-        // Update local state for immediate UI feedback
-        setFavorites((prev) => {
-          const newFavorites = new Set(prev);
-          const wasFavorite = newFavorites.has(reportType);
-
-          if (wasFavorite) {
-            newFavorites.delete(reportType);
-            console.log('✅ Removed from local favorites');
-          } else {
-            newFavorites.add(reportType);
-            console.log('✅ Added to local favorites');
-          }
-
-          return newFavorites;
-        });
-
-        // Update store safely
-        if (dashboardStore?.toggleFavorite) {
-          dashboardStore.toggleFavorite(reportTypeEnum);
-          console.log('✅ Store favorite toggled');
-        } else {
-          console.warn('⚠️ dashboardStore.toggleFavorite not available');
-        }
+        // Update store directly
+        toggleFavoriteStore(reportTypeEnum);
+        console.log('✅ Store favorite toggled');
 
         console.log('🎉 Favorite toggle completed successfully');
       } catch (error) {
         console.error('❌ Error toggling favorite:', error);
       }
     },
-    [dashboardStore]
+    [toggleFavoriteStore]
   );
 
-  const isFavoriteReport = (reportType: string) => favorites.has(reportType);
+  const isFavoriteReport = (reportType: string) =>
+    favoriteReports.includes(reportType as ReportType);
+
+  // Handle report generation
+  const handleGenerateReport = useCallback(
+    (reportType: ReportType) => {
+      console.log('🚀 Generate report clicked for:', reportType);
+
+      const reportLabel = reportConfig[reportType]?.label || reportType;
+
+      // Show immediate feedback
+      alert(`Generating ${reportLabel} report...`);
+
+      // Simulate report generation
+      setTimeout(() => {
+        console.log('✅ Report generation completed (simulated)');
+        alert(`${reportLabel} report generated successfully!`);
+
+        // You could add actual report generation logic here
+        // For example: navigate to a report view, download a file, etc.
+      }, 1500);
+    },
+    [reportConfig]
+  );
 
   // Filter reports based on search and category
   const filteredReports = useMemo(() => {
@@ -320,7 +319,7 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = ({
     // Filter by category
     if (selectedCategory !== 'all') {
       reports = reports.filter(
-        ([_, config]) => config.category === selectedCategory
+        ([, config]) => config.category === selectedCategory
       );
     }
 
@@ -344,22 +343,11 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = ({
     (value: string) => {
       console.log('🔍 Search query changed:', value);
 
-      setSearchQuery(value);
-      console.log('✅ Local search query updated');
-
-      // Optionally sync with dashboard store
-      try {
-        if (dashboardStore?.setSearchQuery) {
-          dashboardStore.setSearchQuery(value);
-          console.log('✅ Store search query synced');
-        } else {
-          console.warn('⚠️ dashboardStore.setSearchQuery not available');
-        }
-      } catch (error) {
-        console.error('❌ Error syncing search query:', error);
-      }
+      // Update store directly
+      setSearchQueryStore(value);
+      console.log('✅ Store search query updated');
     },
-    [dashboardStore]
+    [setSearchQueryStore]
   );
 
   // Handle category change with store sync
@@ -367,22 +355,11 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = ({
     (category: string) => {
       console.log('📂 Category changed:', category);
 
-      setSelectedCategory(category);
-      console.log('✅ Local category updated');
-
-      // Optionally sync with dashboard store
-      try {
-        if (dashboardStore?.setSelectedCategory) {
-          dashboardStore.setSelectedCategory(category);
-          console.log('✅ Store category synced');
-        } else {
-          console.warn('⚠️ dashboardStore.setSelectedCategory not available');
-        }
-      } catch (error) {
-        console.error('❌ Error syncing category:', error);
-      }
+      // Update store directly
+      setSelectedCategoryStore(category);
+      console.log('✅ Store category updated');
     },
-    [dashboardStore]
+    [setSelectedCategoryStore]
   );
 
   // Render main dashboard
@@ -672,27 +649,14 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = ({
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <Button
               variant="contained"
-              onClick={() => {
-                console.log('🚀 Generate report clicked for:', activeReport);
-
-                // Show a more visible indication that something is happening
-                alert(
-                  `Generating ${reportConfig[activeReport]?.label} report...`
-                );
-
-                // Here you would trigger the actual report generation
-                // For now, we'll simulate it
-                setTimeout(() => {
-                  console.log('✅ Report generation completed (simulated)');
-                  alert(
-                    `${reportConfig[activeReport]?.label} report generated successfully!`
-                  );
-                }, 1000);
-              }}
+              onClick={() => handleGenerateReport(activeReport)}
             >
               Generate Report
             </Button>
-            <Button variant="outlined" onClick={() => setActiveReport(null)}>
+            <Button
+              variant="outlined"
+              onClick={() => setActiveReportStore(null)}
+            >
               Back to Dashboard
             </Button>
           </Box>
