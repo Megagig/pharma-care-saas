@@ -25,7 +25,7 @@ class PerformanceCollector extends events_1.EventEmitter {
             unit,
             timestamp: new Date(),
             tags,
-            metadata
+            metadata,
         };
         this.metrics.push(metric);
         this.emit('metric', metric);
@@ -38,16 +38,16 @@ class PerformanceCollector extends events_1.EventEmitter {
         this.recordMetric('db_query_duration', duration, 'ms', {
             operation,
             collection,
-            index_used: indexUsed.toString()
+            index_used: indexUsed.toString(),
         }, {
             documentsExamined,
             documentsReturned,
-            efficiency: documentsReturned / Math.max(documentsExamined, 1)
+            efficiency: documentsReturned / Math.max(documentsExamined, 1),
         });
         const efficiency = documentsReturned / Math.max(documentsExamined, 1);
         this.recordMetric('db_query_efficiency', efficiency * 100, '%', {
             operation,
-            collection
+            collection,
         });
     }
     recordApiEndpoint(method, path, statusCode, duration, requestSize, responseSize) {
@@ -55,21 +55,21 @@ class PerformanceCollector extends events_1.EventEmitter {
             method,
             path,
             status_code: statusCode.toString(),
-            status_class: Math.floor(statusCode / 100) + 'xx'
+            status_class: Math.floor(statusCode / 100) + 'xx',
         }, {
             requestSize,
-            responseSize
+            responseSize,
         });
         this.recordMetric('api_request_rate', 1, 'count', {
             method,
             path,
-            status_code: statusCode.toString()
+            status_code: statusCode.toString(),
         });
         if (statusCode >= 400) {
             this.recordMetric('api_error_rate', 1, 'count', {
                 method,
                 path,
-                status_code: statusCode.toString()
+                status_code: statusCode.toString(),
             });
         }
     }
@@ -91,26 +91,26 @@ class PerformanceCollector extends events_1.EventEmitter {
         this.recordMetric('intervention_operation_duration', duration, 'ms', {
             operation,
             workplace_id: workplaceId,
-            success: success.toString()
+            success: success.toString(),
         }, metadata);
         this.recordMetric('intervention_operation_success', success ? 1 : 0, 'count', {
             operation,
-            workplace_id: workplaceId
+            workplace_id: workplaceId,
         });
     }
     getMetrics(name, startTime, endTime, tags) {
         let filtered = this.metrics;
         if (name) {
-            filtered = filtered.filter(m => m.name === name);
+            filtered = filtered.filter((m) => m.name === name);
         }
         if (startTime) {
-            filtered = filtered.filter(m => m.timestamp >= startTime);
+            filtered = filtered.filter((m) => m.timestamp >= startTime);
         }
         if (endTime) {
-            filtered = filtered.filter(m => m.timestamp <= endTime);
+            filtered = filtered.filter((m) => m.timestamp <= endTime);
         }
         if (tags) {
-            filtered = filtered.filter(m => {
+            filtered = filtered.filter((m) => {
                 return Object.entries(tags).every(([key, value]) => m.tags[key] === value);
             });
         }
@@ -127,10 +127,10 @@ class PerformanceCollector extends events_1.EventEmitter {
                 max: 0,
                 p50: 0,
                 p95: 0,
-                p99: 0
+                p99: 0,
             };
         }
-        const values = metrics.map(m => m.value).sort((a, b) => a - b);
+        const values = metrics.map((m) => m.value).sort((a, b) => a - b);
         const sum = values.reduce((acc, val) => acc + val, 0);
         return {
             count: values.length,
@@ -140,19 +140,19 @@ class PerformanceCollector extends events_1.EventEmitter {
             max: values[values.length - 1] || 0,
             p50: this.percentile(values, 50),
             p95: this.percentile(values, 95),
-            p99: this.percentile(values, 99)
+            p99: this.percentile(values, 99),
         };
     }
     addAlertRule(rule) {
         const alertRule = {
             id: this.generateId(),
-            ...rule
+            ...rule,
         };
         this.alertRules.push(alertRule);
         return alertRule.id;
     }
     checkAlertRules(metric) {
-        const applicableRules = this.alertRules.filter(rule => rule.enabled && rule.metric === metric.name);
+        const applicableRules = this.alertRules.filter((rule) => rule.enabled && rule.metric === metric.name);
         for (const rule of applicableRules) {
             const isTriggered = this.evaluateCondition(metric.value, rule.condition, rule.threshold);
             const alertKey = `${rule.id}_${JSON.stringify(metric.tags)}`;
@@ -168,7 +168,7 @@ class PerformanceCollector extends events_1.EventEmitter {
                         severity: rule.severity,
                         status: 'firing',
                         firedAt: new Date(),
-                        message: this.generateAlertMessage(rule, metric)
+                        message: this.generateAlertMessage(rule, metric),
                     };
                     this.activeAlerts.set(alertKey, alert);
                     this.alertHistory.push(alert);
@@ -178,7 +178,7 @@ class PerformanceCollector extends events_1.EventEmitter {
                         ruleId: rule.id,
                         metric: metric.name,
                         value: metric.value,
-                        threshold: rule.threshold
+                        threshold: rule.threshold,
                     });
                 }
             }
@@ -191,7 +191,7 @@ class PerformanceCollector extends events_1.EventEmitter {
                     this.emit('alertResolved', activeAlert);
                     logger_1.default.info(`Alert resolved: ${activeAlert.message}`, {
                         alertId: activeAlert.id,
-                        duration: activeAlert.resolvedAt.getTime() - activeAlert.firedAt.getTime()
+                        duration: activeAlert.resolvedAt.getTime() - activeAlert.firedAt.getTime(),
                     });
                 }
             }
@@ -206,7 +206,7 @@ class PerformanceCollector extends events_1.EventEmitter {
             duration: 60,
             severity: 'high',
             enabled: true,
-            channels: ['email', 'slack']
+            channels: ['email', 'slack'],
         });
         this.addAlertRule({
             name: 'Slow Database Query',
@@ -216,17 +216,17 @@ class PerformanceCollector extends events_1.EventEmitter {
             duration: 30,
             severity: 'medium',
             enabled: true,
-            channels: ['email']
+            channels: ['email'],
         });
         this.addAlertRule({
             name: 'High Memory Usage',
             metric: 'memory_heap_usage_percent',
             condition: 'gt',
-            threshold: 85,
+            threshold: 90,
             duration: 300,
             severity: 'high',
             enabled: true,
-            channels: ['email', 'slack']
+            channels: ['email', 'slack'],
         });
         this.addAlertRule({
             name: 'High Error Rate',
@@ -236,7 +236,7 @@ class PerformanceCollector extends events_1.EventEmitter {
             duration: 60,
             severity: 'critical',
             enabled: true,
-            channels: ['email', 'slack', 'webhook']
+            channels: ['email', 'slack', 'webhook'],
         });
         this.addAlertRule({
             name: 'Slow Intervention Operation',
@@ -246,7 +246,7 @@ class PerformanceCollector extends events_1.EventEmitter {
             duration: 120,
             severity: 'medium',
             enabled: true,
-            channels: ['email']
+            channels: ['email'],
         });
     }
     startSystemMetricsCollection() {
@@ -264,38 +264,38 @@ class PerformanceCollector extends events_1.EventEmitter {
         const dbEfficiencyStats = this.getAggregatedStats('db_query_efficiency', startTime, endTime);
         const memoryStats = this.getAggregatedStats('memory_heap_usage_percent', startTime, endTime);
         const cpuStats = this.getAggregatedStats('cpu_user_time', startTime, endTime);
-        const alertsInRange = this.alertHistory.filter(alert => alert.firedAt >= startTime && alert.firedAt <= endTime);
+        const alertsInRange = this.alertHistory.filter((alert) => alert.firedAt >= startTime && alert.firedAt <= endTime);
         return {
             summary: {
                 timeRange: {
                     start: startTime.toISOString(),
                     end: endTime.toISOString(),
-                    duration: endTime.getTime() - startTime.getTime()
+                    duration: endTime.getTime() - startTime.getTime(),
                 },
                 totalRequests: apiStats.count,
                 averageResponseTime: Math.round(apiStats.avg),
                 errorCount: errorStats.sum,
-                alertCount: alertsInRange.length
+                alertCount: alertsInRange.length,
             },
             apiPerformance: {
                 requestCount: apiStats.count,
                 averageResponseTime: Math.round(apiStats.avg),
                 p95ResponseTime: Math.round(apiStats.p95),
                 p99ResponseTime: Math.round(apiStats.p99),
-                errorRate: errorStats.sum / Math.max(apiStats.count, 1) * 100
+                errorRate: (errorStats.sum / Math.max(apiStats.count, 1)) * 100,
             },
             databasePerformance: {
                 queryCount: dbStats.count,
                 averageQueryTime: Math.round(dbStats.avg),
                 p95QueryTime: Math.round(dbStats.p95),
-                averageEfficiency: Math.round(dbEfficiencyStats.avg)
+                averageEfficiency: Math.round(dbEfficiencyStats.avg),
             },
             systemMetrics: {
                 averageMemoryUsage: Math.round(memoryStats.avg),
                 peakMemoryUsage: Math.round(memoryStats.max),
-                averageCpuTime: Math.round(cpuStats.avg)
+                averageCpuTime: Math.round(cpuStats.avg),
             },
-            alerts: alertsInRange
+            alerts: alertsInRange,
         };
     }
     generateId() {
@@ -310,16 +310,23 @@ class PerformanceCollector extends events_1.EventEmitter {
         if (lower === upper) {
             return values[lower] || 0;
         }
-        return (values[lower] || 0) * (upper - index) + (values[upper] || 0) * (index - lower);
+        return ((values[lower] || 0) * (upper - index) +
+            (values[upper] || 0) * (index - lower));
     }
     evaluateCondition(value, condition, threshold) {
         switch (condition) {
-            case 'gt': return value > threshold;
-            case 'gte': return value >= threshold;
-            case 'lt': return value < threshold;
-            case 'lte': return value <= threshold;
-            case 'eq': return value === threshold;
-            default: return false;
+            case 'gt':
+                return value > threshold;
+            case 'gte':
+                return value >= threshold;
+            case 'lt':
+                return value < threshold;
+            case 'lte':
+                return value <= threshold;
+            case 'eq':
+                return value === threshold;
+            default:
+                return false;
         }
     }
     generateAlertMessage(rule, metric) {
@@ -328,8 +335,8 @@ class PerformanceCollector extends events_1.EventEmitter {
     startMetricsCleanup() {
         setInterval(() => {
             const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-            this.metrics = this.metrics.filter(m => m.timestamp > cutoff);
-            this.alertHistory = this.alertHistory.filter(a => a.firedAt > cutoff);
+            this.metrics = this.metrics.filter((m) => m.timestamp > cutoff);
+            this.alertHistory = this.alertHistory.filter((a) => a.firedAt > cutoff);
             logger_1.default.info('Cleaned up old performance metrics and alerts');
         }, 60 * 60 * 1000);
     }

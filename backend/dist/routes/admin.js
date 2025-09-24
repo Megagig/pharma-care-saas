@@ -6,6 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const auth_1 = require("../middlewares/auth");
 const adminController_1 = require("../controllers/adminController");
+const roleRoutes_1 = __importDefault(require("./roleRoutes"));
+const permissionRoutes_1 = __importDefault(require("./permissionRoutes"));
+const userRoleRoutes_1 = __importDefault(require("./userRoleRoutes"));
+const roleHierarchyRoutes_1 = __importDefault(require("./roleHierarchyRoutes"));
 const router = express_1.default.Router();
 router.use(auth_1.auth);
 router.use(auth_1.requireAdmin);
@@ -21,5 +25,9 @@ router.get('/feature-flags', adminController_1.adminController.getAllFeatureFlag
 router.post('/feature-flags', adminController_1.adminController.createFeatureFlag);
 router.put('/feature-flags/:flagId', adminController_1.adminController.updateFeatureFlag);
 router.get('/analytics', adminController_1.adminController.getSystemAnalytics);
+router.use('/roles', roleRoutes_1.default);
+router.use('/permissions', permissionRoutes_1.default);
+router.use('/users', userRoleRoutes_1.default);
+router.use('/roles', roleHierarchyRoutes_1.default);
 exports.default = router;
 //# sourceMappingURL=admin.js.map

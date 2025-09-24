@@ -32,13 +32,10 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const crypto_1 = __importDefault(require("crypto"));
+const bcrypt = __importStar(require("bcryptjs"));
+const crypto = __importStar(require("crypto"));
 const userSchema = new mongoose_1.Schema({
     email: {
         type: String,
@@ -184,6 +181,52 @@ const userSchema = new mongoose_1.Schema({
             index: true,
         },
     ],
+    assignedRoles: [
+        {
+            type: mongoose_1.default.Schema.Types.ObjectId,
+            ref: 'Role',
+            index: true,
+        },
+    ],
+    directPermissions: [
+        {
+            type: String,
+            index: true,
+        },
+    ],
+    deniedPermissions: [
+        {
+            type: String,
+            index: true,
+        },
+    ],
+    cachedPermissions: {
+        permissions: [String],
+        lastUpdated: {
+            type: Date,
+            index: true,
+        },
+        expiresAt: {
+            type: Date,
+            index: true,
+        },
+        workspaceId: {
+            type: mongoose_1.default.Schema.Types.ObjectId,
+            ref: 'Workplace',
+        },
+    },
+    roleLastModifiedBy: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    roleLastModifiedAt: {
+        type: Date,
+        index: true,
+    },
+    lastPermissionCheck: {
+        type: Date,
+        index: true,
+    },
     subscriptionTier: {
         type: String,
         enum: ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'],
@@ -242,15 +285,15 @@ const userSchema = new mongoose_1.Schema({
 userSchema.pre('save', async function (next) {
     if (!this.isModified('passwordHash'))
         return next();
-    this.passwordHash = await bcryptjs_1.default.hash(this.passwordHash, 12);
+    this.passwordHash = await bcrypt.hash(this.passwordHash, 12);
     next();
 });
 userSchema.methods.comparePassword = async function (password) {
-    return await bcryptjs_1.default.compare(password, this.passwordHash);
+    return await bcrypt.compare(password, this.passwordHash);
 };
 userSchema.methods.generateVerificationToken = function () {
-    const token = crypto_1.default.randomBytes(32).toString('hex');
-    this.verificationToken = crypto_1.default
+    const token = crypto.randomBytes(32).toString('hex');
+    this.verificationToken = crypto
         .createHash('sha256')
         .update(token)
         .digest('hex');
@@ -258,15 +301,15 @@ userSchema.methods.generateVerificationToken = function () {
 };
 userSchema.methods.generateVerificationCode = function () {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    this.verificationCode = crypto_1.default
+    this.verificationCode = crypto
         .createHash('sha256')
         .update(code)
         .digest('hex');
     return code;
 };
 userSchema.methods.generateResetToken = function () {
-    const token = crypto_1.default.randomBytes(32).toString('hex');
-    this.resetToken = crypto_1.default.createHash('sha256').update(token).digest('hex');
+    const token = crypto.randomBytes(32).toString('hex');
+    this.resetToken = crypto.createHash('sha256').update(token).digest('hex');
     return token;
 };
 userSchema.methods.hasPermission = function (permission) {
@@ -275,6 +318,143 @@ userSchema.methods.hasPermission = function (permission) {
 userSchema.methods.hasFeature = function (feature) {
     return this.features.includes(feature) || this.role === 'super_admin';
 };
+userSchema.methods.getAllRoles = async function (workspaceId) {
+    const UserRole = mongoose_1.default.model('UserRole');
+    const query = {
+        userId: this._id,
+        isActive: true,
+        $or: [
+            { isTemporary: false },
+            { isTemporary: true, expiresAt: { $gt: new Date() } },
+        ],
+    };
+    if (workspaceId) {
+        query.workspaceId = workspaceId;
+    }
+    const userRoles = await UserRole.find(query).populate('roleId');
+    return userRoles.map((ur) => ur.roleId).filter(Boolean);
+};
+userSchema.methods.getAllPermissions = async function (workspaceId, useCache = true) {
+    if (useCache && this.cachedPermissions &&
+        this.cachedPermissions.lastUpdated > new Date(Date.now() - 5 * 60 * 1000) &&
+        (!workspaceId || this.cachedPermissions.workspaceId?.equals(workspaceId))) {
+        return this.cachedPermissions.permissions;
+    }
+    const allPermissions = new Set();
+    this.permissions.forEach((permission) => allPermissions.add(permission));
+    this.directPermissions.forEach((permission) => allPermissions.add(permission));
+    const roles = await this.getAllRoles(workspaceId);
+    for (const role of roles) {
+        const rolePermissions = await role.getAllPermissions();
+        rolePermissions.forEach((permission) => allPermissions.add(permission));
+    }
+    this.deniedPermissions.forEach((permission) => allPermissions.delete(permission));
+    const finalPermissions = Array.from(allPermissions);
+    this.cachedPermissions = {
+        permissions: finalPermissions,
+        lastUpdated: new Date(),
+        workspaceId: workspaceId,
+    };
+    return finalPermissions;
+};
+userSchema.methods.hasRolePermission = async function (permission, workspaceId) {
+    if (this.deniedPermissions.includes(permission)) {
+        return false;
+    }
+    if (this.directPermissions.includes(permission)) {
+        return true;
+    }
+    if (this.permissions.includes(permission)) {
+        return true;
+    }
+    const allPermissions = await this.getAllPermissions(workspaceId, true);
+    return allPermissions.includes(permission);
+};
+userSchema.methods.assignRole = async function (roleId, assignedBy, workspaceId, options) {
+    const UserRole = mongoose_1.default.model('UserRole');
+    const existingAssignment = await UserRole.findOne({
+        userId: this._id,
+        roleId: roleId,
+        workspaceId: workspaceId,
+        isActive: true,
+    });
+    if (existingAssignment) {
+        throw new Error('Role is already assigned to this user');
+    }
+    const userRole = new UserRole({
+        userId: this._id,
+        roleId: roleId,
+        workspaceId: workspaceId,
+        assignedBy: assignedBy,
+        lastModifiedBy: assignedBy,
+        isTemporary: options?.isTemporary || false,
+        expiresAt: options?.expiresAt,
+        assignmentReason: options?.reason,
+    });
+    await userRole.save();
+    if (!this.assignedRoles.includes(roleId)) {
+        this.assignedRoles.push(roleId);
+    }
+    this.roleLastModifiedBy = assignedBy;
+    this.roleLastModifiedAt = new Date();
+    this.cachedPermissions = undefined;
+    await this.save();
+    return userRole;
+};
+userSchema.methods.revokeRole = async function (roleId, revokedBy, workspaceId, reason) {
+    const UserRole = mongoose_1.default.model('UserRole');
+    const userRole = await UserRole.findOne({
+        userId: this._id,
+        roleId: roleId,
+        workspaceId: workspaceId,
+        isActive: true,
+    });
+    if (!userRole) {
+        throw new Error('Role assignment not found');
+    }
+    userRole.revoke(revokedBy, reason);
+    await userRole.save();
+    const otherAssignments = await UserRole.findOne({
+        userId: this._id,
+        roleId: roleId,
+        isActive: true,
+        _id: { $ne: userRole._id },
+    });
+    if (!otherAssignments) {
+        this.assignedRoles = this.assignedRoles.filter((id) => !id.equals(roleId));
+    }
+    this.roleLastModifiedBy = revokedBy;
+    this.roleLastModifiedAt = new Date();
+    this.cachedPermissions = undefined;
+    await this.save();
+};
+userSchema.methods.grantDirectPermission = function (permission, grantedBy) {
+    if (!this.directPermissions.includes(permission)) {
+        this.directPermissions.push(permission);
+    }
+    this.deniedPermissions = this.deniedPermissions.filter((p) => p !== permission);
+    this.roleLastModifiedBy = grantedBy;
+    this.roleLastModifiedAt = new Date();
+    this.cachedPermissions = undefined;
+};
+userSchema.methods.denyDirectPermission = function (permission, deniedBy) {
+    if (!this.deniedPermissions.includes(permission)) {
+        this.deniedPermissions.push(permission);
+    }
+    this.directPermissions = this.directPermissions.filter((p) => p !== permission);
+    this.roleLastModifiedBy = deniedBy;
+    this.roleLastModifiedAt = new Date();
+    this.cachedPermissions = undefined;
+};
+userSchema.methods.clearPermissionCache = function () {
+    this.cachedPermissions = undefined;
+};
+userSchema.index({ assignedRoles: 1 });
+userSchema.index({ directPermissions: 1 });
+userSchema.index({ deniedPermissions: 1 });
+userSchema.index({ roleLastModifiedAt: -1 });
+userSchema.index({ 'cachedPermissions.lastUpdated': -1 });
+userSchema.index({ 'cachedPermissions.workspaceId': 1 });
 userSchema.pre('save', function (next) {
     if (this.isNew || this.isModified('role')) {
         if (this.role === 'pharmacist' || this.role === 'intern_pharmacist') {
@@ -288,6 +468,13 @@ userSchema.pre('save', function (next) {
             this.trialStartDate = new Date();
             this.trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
         }
+    }
+    next();
+});
+userSchema.pre('save', function (next) {
+    if (this.isModified('assignedRoles') || this.isModified('directPermissions') || this.isModified('deniedPermissions')) {
+        this.cachedPermissions = undefined;
+        this.roleLastModifiedAt = new Date();
     }
     next();
 });

@@ -18,14 +18,12 @@ import {
   Typography,
   Zoom,
 } from '@mui/material';
-import {
-  CloudOff as CloudOffIcon,
-  CloudDone as CloudDoneIcon,
-  Sync as SyncIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Refresh as RefreshIcon,
-} from '@mui/icons-material';
+import CloudOffIcon from '@mui/icons-material/CloudOff';
+import CloudDoneIcon from '@mui/icons-material/CloudDone';
+import SyncIcon from '@mui/icons-material/Sync';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { syncService } from '../../services/syncService';
 import { useResponsive } from '../../hooks/useResponsive';
 
@@ -48,7 +46,9 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
   const [showSyncDetails, setShowSyncDetails] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<{
     success: boolean;
-    message: string;
+    synced: number;
+    failed: number;
+    errors: string[];
   } | null>(null);
   const [showSyncSnackbar, setShowSyncSnackbar] = useState(false);
 
@@ -218,32 +218,34 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
                       Last Sync Result
                     </Typography>
                     <Typography variant="body2" sx={{ mb: 1 }}>
-                      {lastSyncResult.synced} synced, {lastSyncResult.failed}{' '}
-                      failed
+                      {lastSyncResult?.synced || 0} synced,{' '}
+                      {lastSyncResult?.failed || 0} failed
                     </Typography>
-                    {lastSyncResult.errors.length > 0 && (
-                      <Box>
-                        <Typography variant="caption" color="error.main">
-                          Errors:
-                        </Typography>
-                        {lastSyncResult.errors
-                          .slice(0, 3)
-                          .map((error: string, index: number) => (
-                            <Typography
-                              key={index}
-                              variant="caption"
-                              sx={{ display: 'block', color: 'error.main' }}
-                            >
-                              • {error}
-                            </Typography>
-                          ))}
-                        {lastSyncResult.errors.length > 3 && (
+                    {lastSyncResult?.errors &&
+                      lastSyncResult.errors.length > 0 && (
+                        <Box>
                           <Typography variant="caption" color="error.main">
-                            ... and {lastSyncResult.errors.length - 3} more
+                            Errors:
                           </Typography>
-                        )}
-                      </Box>
-                    )}
+                          {lastSyncResult?.errors
+                            ?.slice(0, 3)
+                            .map((error: string, index: number) => (
+                              <Typography
+                                key={index}
+                                variant="caption"
+                                sx={{ display: 'block', color: 'error.main' }}
+                              >
+                                • {error}
+                              </Typography>
+                            ))}
+                          {lastSyncResult?.errors &&
+                            lastSyncResult.errors.length > 3 && (
+                              <Typography variant="caption" color="error.main">
+                                ... and {lastSyncResult.errors.length - 3} more
+                              </Typography>
+                            )}
+                        </Box>
+                      )}
                   </Box>
                 )}
 
@@ -290,7 +292,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
           sx={{ width: '100%' }}
         >
           {lastSyncResult?.success
-            ? `Sync completed: ${lastSyncResult.synced} items synced`
+            ? `Sync completed: ${lastSyncResult?.synced || 0} items synced`
             : `Sync failed: ${lastSyncResult?.failed || 0} errors`}
         </Alert>
       </Snackbar>

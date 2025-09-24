@@ -66,6 +66,7 @@ export interface AuthRequest extends Request {
   user?: IUser & {
     currentUsage?: number;
     usageLimit?: number;
+    lastPermissionCheck?: Date; // For real-time permission validation
   };
   subscription?: ISubscription | null;
   workspace?: IWorkplace | null;
@@ -74,6 +75,13 @@ export interface AuthRequest extends Request {
   interventionData?: any; // For storing intervention data in middleware
   patient?: any; // Patient data set by middleware
   clinicalNotes?: any[]; // Clinical notes set by middleware
+  permissionContext?: {
+    action: string;
+    source: string;
+    roleId?: any;
+    roleName?: string;
+    inheritedFrom?: string;
+  };
 }
 
 export interface UsageLimitResult {
