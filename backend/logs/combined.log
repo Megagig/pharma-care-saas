@@ -2514,3 +2514,4 @@
 {"level":"info","message":"Stale stats recalculation completed: 16 workspaces updated","service":"pharma-care-api","timestamp":"2025-09-24 06:00:18"}
 {"level":"info","message":"Cleaned up old performance metrics and alerts","service":"pharma-care-api","timestamp":"2025-09-24 06:44:19"}
 {"alertsRemoved":0,"level":"info","message":"Security monitoring cleanup completed","service":"security-monitoring","threatsRemoved":0,"timestamp":"2025-09-24 06:44:20"}
+{"alertId":"s8ewtzgvi","level":"warn","message":"Alert fired: High Memory Usage: memory_heap_usage_percent is 90.00174476957615%, threshold is 90%","metric":"memory_heap_usage_percent","ruleId":"h6nqp8wwp","service":"pharma-care-api","threshold":90,"timestamp":"2025-09-24 07:29:20","value":90.00174476957615}

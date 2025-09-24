@@ -15,6 +15,7 @@ import {
   Fade,
   useTheme,
   useMediaQuery,
+  CircularProgress,
 } from '@mui/material';
 import { useReportsStore } from '../stores';
 import { useDashboardStore } from '../stores/dashboardStore';
@@ -50,6 +51,14 @@ const ReportsAnalyticsDashboard: React.FC<
     (state) => state.setActiveReport
   );
   const addToHistory = useReportsStore((state) => state.addToHistory);
+  const reportData = useReportsStore((state) => state.reportData);
+  const loading = useReportsStore((state) => state.loading);
+  const getCurrentReportData = useReportsStore(
+    (state) => state.getCurrentReportData
+  );
+  const isCurrentReportLoading = useReportsStore(
+    (state) => state.isCurrentReportLoading
+  );
 
   const searchQuery = useDashboardStore((state) => state.searchQuery);
   const selectedCategory = useDashboardStore((state) => state.selectedCategory);
@@ -295,21 +304,99 @@ const ReportsAnalyticsDashboard: React.FC<
     (reportType: ReportType) => {
       console.log('🚀 Generate report clicked for:', reportType);
 
-      const reportLabel = reportConfig[reportType]?.label || reportType;
+      // Set loading state for the report
+      if (reportsStore?.setLoading) {
+        reportsStore.setLoading(reportType, true);
+      }
 
-      // Show immediate feedback
-      alert(`Generating ${reportLabel} report...`);
-
-      // Simulate report generation
+      // Generate mock report data
       setTimeout(() => {
-        console.log('✅ Report generation completed (simulated)');
-        alert(`${reportLabel} report generated successfully!`);
+        const mockReportData = {
+          id: `report-${reportType}-${Date.now()}`,
+          type: reportType,
+          title: reportConfig[reportType]?.label || reportType,
+          generatedAt: new Date(),
+          data: {
+            summary: {
+              totalRecords: Math.floor(Math.random() * 1000) + 100,
+              dateRange: '30 days',
+              status: 'completed',
+            },
+            charts: [
+              {
+                id: 'chart-1',
+                type: 'line',
+                title: 'Trend Analysis',
+                data: Array.from({ length: 30 }, (_, i) => ({
+                  date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000)
+                    .toISOString()
+                    .split('T')[0],
+                  value: Math.floor(Math.random() * 100) + 50,
+                })),
+              },
+              {
+                id: 'chart-2',
+                type: 'bar',
+                title: 'Category Breakdown',
+                data: [
+                  {
+                    category: 'Category A',
+                    value: Math.floor(Math.random() * 50) + 20,
+                  },
+                  {
+                    category: 'Category B',
+                    value: Math.floor(Math.random() * 50) + 20,
+                  },
+                  {
+                    category: 'Category C',
+                    value: Math.floor(Math.random() * 50) + 20,
+                  },
+                  {
+                    category: 'Category D',
+                    value: Math.floor(Math.random() * 50) + 20,
+                  },
+                ],
+              },
+            ],
+            tables: [
+              {
+                id: 'table-1',
+                title: 'Detailed Results',
+                headers: ['ID', 'Name', 'Value', 'Status', 'Date'],
+                rows: Array.from({ length: 10 }, (_, i) => [
+                  `${i + 1}`,
+                  `Item ${i + 1}`,
+                  `${Math.floor(Math.random() * 100)}%`,
+                  Math.random() > 0.5 ? 'Active' : 'Inactive',
+                  new Date(
+                    Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+                  ).toLocaleDateString(),
+                ]),
+              },
+            ],
+          },
+          metadata: {
+            filters: {
+              dateRange: {
+                startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+                endDate: new Date(),
+                preset: '30d' as const,
+              },
+            },
+            exportFormats: ['pdf', 'excel', 'csv'],
+            permissions: ['view', 'export'],
+          },
+        };
 
-        // You could add actual report generation logic here
-        // For example: navigate to a report view, download a file, etc.
-      }, 1500);
+        // Store the generated report data
+        if (reportsStore?.setReportData) {
+          reportsStore.setReportData(reportType, mockReportData);
+        }
+
+        console.log('✅ Report generated successfully:', mockReportData);
+      }, 1000);
     },
-    [reportConfig]
+    [reportConfig, reportsStore]
   );
 
   // Filter reports based on search and category
@@ -327,7 +414,7 @@ const ReportsAnalyticsDashboard: React.FC<
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       reports = reports.filter(
-        ([reportType, config]) =>
+        ([, config]) =>
           config.label.toLowerCase().includes(query) ||
           config.description.toLowerCase().includes(query) ||
           config.tags.some((tag) => tag.toLowerCase().includes(query))
@@ -436,23 +523,25 @@ const ReportsAnalyticsDashboard: React.FC<
               placeholder="Search reports..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-                endAdornment: searchQuery && (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() => handleSearchChange('')}
-                      edge="end"
-                    >
-                      <ClearIcon />
-                    </IconButton>
-                  </InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchQuery && (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleSearchChange('')}
+                        edge="end"
+                      >
+                        <ClearIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
               }}
             />
           </FixedGrid>
@@ -640,26 +729,251 @@ const ReportsAnalyticsDashboard: React.FC<
       {/* Active Report Display */}
       {activeReport && (
         <Paper sx={{ p: 3, mt: 4 }}>
-          <Typography variant="h5" gutterBottom>
-            {reportConfig[activeReport]?.label || activeReport}
-          </Typography>
-          <Typography variant="body1" color="text.secondary" paragraph>
-            {reportConfig[activeReport]?.description}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <Button
-              variant="contained"
-              onClick={() => handleGenerateReport(activeReport)}
-            >
-              Generate Report
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => setActiveReportStore(null)}
-            >
-              Back to Dashboard
-            </Button>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              mb: 3,
+            }}
+          >
+            <Box>
+              <Typography variant="h5" gutterBottom>
+                {reportConfig[activeReport]?.label || activeReport}
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                {reportConfig[activeReport]?.description}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <Button
+                variant="contained"
+                onClick={() => handleGenerateReport(activeReport)}
+                disabled={isCurrentReportLoading()}
+                sx={{ minWidth: 140 }}
+              >
+                {isCurrentReportLoading() ? 'Generating...' : 'Generate Report'}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => setActiveReportStore(null)}
+              >
+                Back to Dashboard
+              </Button>
+            </Box>
           </Box>
+
+          {/* Loading State */}
+          {isCurrentReportLoading() && (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="h6" color="primary" gutterBottom>
+                Generating Report...
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Please wait while we compile your data
+              </Typography>
+            </Box>
+          )}
+
+          {/* Report Data Display */}
+          {getCurrentReportData() && !isCurrentReportLoading() && (
+            <Box>
+              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                Report Summary
+              </Typography>
+
+              {/* Summary Cards */}
+              <FixedGrid container spacing={2} sx={{ mb: 3 }}>
+                <FixedGrid item xs={12} sm={4}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      textAlign: 'center',
+                      bgcolor: 'primary.light',
+                      color: 'primary.contrastText',
+                    }}
+                  >
+                    <Typography variant="h4">
+                      {getCurrentReportData()?.data?.summary?.totalRecords || 0}
+                    </Typography>
+                    <Typography variant="body2">Total Records</Typography>
+                  </Paper>
+                </FixedGrid>
+                <FixedGrid item xs={12} sm={4}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      textAlign: 'center',
+                      bgcolor: 'success.light',
+                      color: 'success.contrastText',
+                    }}
+                  >
+                    <Typography variant="h4">
+                      {getCurrentReportData()?.data?.summary?.dateRange ||
+                        'N/A'}
+                    </Typography>
+                    <Typography variant="body2">Date Range</Typography>
+                  </Paper>
+                </FixedGrid>
+                <FixedGrid item xs={12} sm={4}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      textAlign: 'center',
+                      bgcolor: 'info.light',
+                      color: 'info.contrastText',
+                    }}
+                  >
+                    <Typography variant="h4">
+                      {getCurrentReportData()?.data?.summary?.status || 'N/A'}
+                    </Typography>
+                    <Typography variant="body2">Status</Typography>
+                  </Paper>
+                </FixedGrid>
+              </FixedGrid>
+
+              {/* Charts Section */}
+              {getCurrentReportData()?.data?.charts && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Data Visualization
+                  </Typography>
+                  <FixedGrid container spacing={2}>
+                    {getCurrentReportData()?.data?.charts?.map(
+                      (chart: unknown) => (
+                        <FixedGrid item xs={12} md={6} key={chart.id}>
+                          <Paper sx={{ p: 2 }}>
+                            <Typography variant="subtitle1" gutterBottom>
+                              {chart.title}
+                            </Typography>
+                            <Box
+                              sx={{
+                                height: 200,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: 'grey.50',
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {chart.type === 'line' ? '📈' : '📊'}{' '}
+                                {chart.title} Chart
+                                <br />({chart.data?.length || 0} data points)
+                              </Typography>
+                            </Box>
+                          </Paper>
+                        </FixedGrid>
+                      )
+                    )}
+                  </FixedGrid>
+                </Box>
+              )}
+
+              {/* Data Table */}
+              {getCurrentReportData()?.data?.tables?.[0] && (
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    {getCurrentReportData()?.data?.tables?.[0]?.title ||
+                      'Data Table'}
+                  </Typography>
+                  <Paper sx={{ overflow: 'hidden' }}>
+                    <Box sx={{ overflowX: 'auto' }}>
+                      <table
+                        style={{ width: '100%', borderCollapse: 'collapse' }}
+                      >
+                        <thead>
+                          <tr
+                            style={{ backgroundColor: theme.palette.grey[100] }}
+                          >
+                            {getCurrentReportData()?.data?.tables?.[0]?.headers?.map(
+                              (header: string, index: number) => (
+                                <th
+                                  key={index}
+                                  style={{
+                                    padding: '12px',
+                                    textAlign: 'left',
+                                    borderBottom: `1px solid ${theme.palette.divider}`,
+                                  }}
+                                >
+                                  {header}
+                                </th>
+                              )
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {getCurrentReportData()?.data?.tables?.[0]?.rows?.map(
+                            (row: string[], rowIndex: number) => (
+                              <tr
+                                key={rowIndex}
+                                style={{
+                                  borderBottom: `1px solid ${theme.palette.divider}`,
+                                }}
+                              >
+                                {row.map((cell: string, cellIndex: number) => (
+                                  <td
+                                    key={cellIndex}
+                                    style={{ padding: '12px' }}
+                                  >
+                                    {cell}
+                                  </td>
+                                ))}
+                              </tr>
+                            )
+                          )}
+                        </tbody>
+                      </table>
+                    </Box>
+                  </Paper>
+                </Box>
+              )}
+
+              {/* Export Options */}
+              <Box
+                sx={{
+                  mt: 3,
+                  pt: 2,
+                  borderTop: `1px solid ${theme.palette.divider}`,
+                }}
+              >
+                <Typography variant="subtitle1" gutterBottom>
+                  Export Options
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {getCurrentReportData()?.metadata?.exportFormats?.map(
+                    (format: string) => (
+                      <Button
+                        key={format}
+                        variant="outlined"
+                        size="small"
+                        onClick={() => {
+                          console.log(`Exporting report as ${format}`);
+                          // Here you would implement actual export functionality
+                        }}
+                      >
+                        Export as {format.toUpperCase()}
+                      </Button>
+                    )
+                  )}
+                </Box>
+              </Box>
+            </Box>
+          )}
+
+          {/* No Data State */}
+          {!getCurrentReportData() && !isCurrentReportLoading() && (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No Report Data Available
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Click "Generate Report" to create a new report with current data
+              </Typography>
+            </Box>
+          )}
         </Paper>
       )}
     </Container>
