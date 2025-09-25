@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    /* Core theme colors */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -24,9 +25,43 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+
+    /* Extended theme colors for comprehensive coverage */
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 355.7 100% 97.3%;
+    --warning: 32.5 94.6% 43.7%;
+    --warning-foreground: 210 40% 98%;
+    --info: 221.2 83.2% 53.3%;
+    --info-foreground: 210 40% 98%;
+
+    /* Semantic colors for healthcare/pharmacy context */
+    --medical: 142.1 76.2% 36.3%;
+    --medical-foreground: 355.7 100% 97.3%;
+    --clinical: 221.2 83.2% 53.3%;
+    --clinical-foreground: 210 40% 98%;
+    --pharmacy: 262.1 83.3% 57.8%;
+    --pharmacy-foreground: 210 40% 98%;
+
+    /* Chart and data visualization colors */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    /* Sidebar and navigation */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 10.6% 64.9%;
   }
 
   .dark {
+    /* Core theme colors */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -46,6 +81,39 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 94.1%;
+
+    /* Extended theme colors for comprehensive coverage */
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 144.9 80.4% 10%;
+    --warning: 32.5 94.6% 43.7%;
+    --warning-foreground: 20.5 90.2% 4.3%;
+    --info: 217.2 91.2% 59.8%;
+    --info-foreground: 222.2 84% 4.9%;
+
+    /* Semantic colors for healthcare/pharmacy context */
+    --medical: 142.1 70.6% 45.3%;
+    --medical-foreground: 144.9 80.4% 10%;
+    --clinical: 217.2 91.2% 59.8%;
+    --clinical-foreground: 222.2 84% 4.9%;
+    --pharmacy: 263.4 70% 50.4%;
+    --pharmacy-foreground: 210 40% 98%;
+
+    /* Chart and data visualization colors */
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+
+    /* Sidebar and navigation */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 94.1%;
+    --sidebar-primary-foreground: 240 5.9% 10%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 10.6% 64.9%;
   }
 }
 
@@ -53,9 +121,179 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
       sans-serif;
+    /* Smooth theme transitions */
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  }
+
+  /* Ensure smooth theme transitions for all elements */
+  *,
+  *::before,
+  *::after {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  /* Remove transitions for reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Theme-aware component utilities */
+  .theme-card {
+    @apply bg-card text-card-foreground border border-border rounded-lg shadow-sm;
+  }
+
+  .theme-button-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .theme-button-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .theme-button-destructive {
+    @apply bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .theme-input {
+    @apply bg-background border border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .theme-sidebar {
+    @apply bg-sidebar-background text-sidebar-foreground border-r border-sidebar-border;
+  }
+
+  /* Healthcare/Pharmacy specific theme utilities */
+  .medical-accent {
+    @apply bg-medical text-medical-foreground;
+  }
+
+  .clinical-accent {
+    @apply bg-clinical text-clinical-foreground;
+  }
+
+  .pharmacy-accent {
+    @apply bg-pharmacy text-pharmacy-foreground;
+  }
+
+  /* Status indicators */
+  .status-success {
+    @apply bg-success text-success-foreground;
+  }
+
+  .status-warning {
+    @apply bg-warning text-warning-foreground;
+  }
+
+  .status-error {
+    @apply bg-destructive text-destructive-foreground;
+  }
+
+  .status-info {
+    @apply bg-info text-info-foreground;
+  }
+
+  /* Focus styles for accessibility */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  /* Scrollbar styling for theme consistency */
+  .theme-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+  }
+
+  .theme-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .theme-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+
+  .theme-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+
+  .theme-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+@layer utilities {
+  /* Theme-aware text utilities */
+  .text-theme-primary {
+    color: hsl(var(--primary));
+  }
+
+  .text-theme-secondary {
+    color: hsl(var(--secondary-foreground));
+  }
+
+  .text-theme-muted {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .text-theme-accent {
+    color: hsl(var(--accent-foreground));
+  }
+
+  /* Theme-aware background utilities */
+  .bg-theme-card {
+    background-color: hsl(var(--card));
+  }
+
+  .bg-theme-popover {
+    background-color: hsl(var(--popover));
+  }
+
+  .bg-theme-muted {
+    background-color: hsl(var(--muted));
+  }
+
+  .bg-theme-accent {
+    background-color: hsl(var(--accent));
+  }
+
+  /* Theme-aware border utilities */
+  .border-theme {
+    border-color: hsl(var(--border));
+  }
+
+  .border-theme-input {
+    border-color: hsl(var(--input));
+  }
+
+  /* Animation utilities for theme transitions */
+  .theme-transition {
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out,
+      border-color 0.2s ease-in-out;
+  }
+
+  .theme-transition-fast {
+    transition: background-color 0.1s ease-in-out, color 0.1s ease-in-out,
+      border-color 0.1s ease-in-out;
+  }
+
+  .theme-transition-slow {
+    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out,
+      border-color 0.3s ease-in-out;
   }
 }
