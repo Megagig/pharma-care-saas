@@ -10,9 +10,7 @@ import {
   Box,
   Chip,
 } from '@mui/material';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import LogoutIcon from '@mui/icons-material/ExitToApp';
+import { Bell, User, Power } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
@@ -110,7 +108,7 @@ const Navbar: React.FC = () => {
             onClick={handleNotificationMenuOpen}
           >
             <Badge badgeContent={3} color="error">
-              <NotificationsIcon />
+              <Bell size={24} />
             </Badge>
           </IconButton>
 
@@ -120,8 +118,7 @@ const Navbar: React.FC = () => {
             color="inherit"
             onClick={handleProfileMenuOpen}
           >
-            {/* Use default icon for now */}
-            <AccountCircleIcon />
+            <User size={24} />
           </IconButton>
         </Box>
 
@@ -151,7 +148,7 @@ const Navbar: React.FC = () => {
             Settings
           </MenuItem>
           <MenuItem onClick={handleLogout}>
-            <LogoutIcon fontSize="small" sx={{ mr: 1 }} />
+            <Power size={16} style={{ marginRight: 8 }} />
             Logout
           </MenuItem>
         </Menu>

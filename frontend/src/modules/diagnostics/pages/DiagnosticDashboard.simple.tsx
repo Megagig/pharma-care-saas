@@ -1,5 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { Box, Container, Typography, Button, TextField } from '@mui/material';
+import { Box, Container } from '@mui/material';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 // Import hooks and components
 import { useDiagnosticStore } from '../store/diagnosticStore';
@@ -30,25 +32,24 @@ const DiagnosticDashboardSimple: React.FC = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Typography variant="h4" sx={{ mb: 4 }}>
+      <h1 className="text-3xl font-bold mb-8">
         Simple Dashboard Test
-      </Typography>
+      </h1>
 
       <Box sx={{ mb: 4 }}>
-        <TextField
+        <Input
           placeholder="Search..."
           value={searchTerm}
           onChange={handleSearch}
-          size="small"
-          sx={{ mr: 2 }}
+          className="mr-2 h-8 w-64"
         />
         <Button onClick={handleSetPending}>Set Pending</Button>
       </Box>
 
       <Box>
-        <Typography>Current Search: "{filters.search}"</Typography>
-        <Typography>Current Status: {filters.status || 'All'}</Typography>
-        <Typography>Search Term State: "{searchTerm}"</Typography>
+        <p>Current Search: "{filters.search}"</p>
+        <p>Current Status: {filters.status || 'All'}</p>
+        <p>Search Term State: "{searchTerm}"</p>
       </Box>
     </Container>
   );

@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import {
   Box,
-  Button,
   Typography,
   LinearProgress,
   Alert,
@@ -24,6 +23,7 @@ import {
   CircularProgress,
   Snackbar,
 } from '@mui/material';
+import { Button } from '@/components/ui/button';
 import {
   CloudUpload as UploadIcon,
   Delete as DeleteIcon,
@@ -589,13 +589,12 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
       {/* Upload Button */}
       {!uploading && totalFiles < maxFiles && (
         <Button
-          component="label"
-          variant="outlined"
-          startIcon={<UploadIcon />}
+          variant="outline"
           disabled={disabled}
-          sx={{ mt: 2 }}
+          className="mt-2"
           onClick={() => fileInputRef.current?.click()}
         >
+          <UploadIcon className="w-4 h-4 mr-2" />
           Add More Files
         </Button>
       )}
@@ -662,15 +661,16 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
         <DialogActions>
           {'_id' in (previewFile || {}) && (
             <Button
-              startIcon={<DownloadIcon />}
               onClick={() =>
                 handleAttachmentDownload(previewFile as Attachment)
               }
+              variant="outline"
             >
+              <DownloadIcon className="w-4 h-4 mr-2" />
               Download
             </Button>
           )}
-          <Button onClick={() => setPreviewOpen(false)}>Close</Button>
+          <Button onClick={() => setPreviewOpen(false)} variant="ghost">Close</Button>
         </DialogActions>
       </Dialog>
 
@@ -687,8 +687,8 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
-          <Button onClick={confirmDelete} color="error" variant="contained">
+          <Button onClick={() => setDeleteConfirmOpen(false)} variant="ghost">Cancel</Button>
+          <Button onClick={confirmDelete} variant="destructive">
             Delete
           </Button>
         </DialogActions>

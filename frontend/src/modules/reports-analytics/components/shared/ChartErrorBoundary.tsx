@@ -1,6 +1,7 @@
 // Chart Error Boundary Component
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Box, Paper, Typography, Alert, Button } from '@mui/material';
+import { Box, Paper, Typography, Alert } from '@mui/material';
+import { Button } from '@/components/ui/button';
 import {
   Refresh as RefreshIcon,
   BugReport as BugIcon,
@@ -119,12 +120,12 @@ class ChartErrorBoundary extends Component<Props, State> {
 
             <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
               <Button
-                variant="outlined"
-                size="small"
-                startIcon={<RefreshIcon />}
+                variant="destructive"
+                size="sm"
                 onClick={this.handleRetry}
-                color="error"
+                className="mt-2"
               >
+                <RefreshIcon className="w-4 h-4 mr-2" />
                 Try Again
               </Button>
             </Box>

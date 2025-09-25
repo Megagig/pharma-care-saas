@@ -31,17 +31,19 @@ import {
   Badge,
   Collapse,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import WarningIcon from '@mui/icons-material/Warning';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CloseIcon from '@mui/icons-material/Close';
-import ImportIcon from '@mui/icons-material/ImportExport';
-import SearchIcon from '@mui/icons-material/Search';
-import MedicationIcon from '@mui/icons-material/Medication';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  AlertTriangle,
+  CheckCircle,
+  X,
+  ArrowUpDown,
+  Search,
+  Pill,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -756,7 +758,7 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
         >
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
+            startIcon={<Plus size={16} />}
             onClick={() => handleAddMedication()}
             size={isMobile ? 'large' : 'medium'}
             fullWidth={isMobile}
@@ -766,7 +768,7 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
           <Button
             variant="outlined"
             startIcon={
-              importLoading ? <CircularProgress size={16} /> : <ImportIcon />
+              importLoading ? <CircularProgress size={16} /> : <ArrowUpDown size={16} />
             }
             onClick={handleImportMedications}
             disabled={importLoading}
@@ -856,7 +858,7 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                 <Button
                   variant="outlined"
                   size="small"
-                  startIcon={<AddIcon />}
+                  startIcon={<Plus size={16} />}
                   onClick={() => handleAddMedication(category.value)}
                 >
                   Add {category.label.split('/')[0]}
@@ -872,8 +874,9 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                     bgcolor: 'grey.50',
                   }}
                 >
-                  <MedicationIcon
-                    sx={{ fontSize: 48, color: 'grey.400', mb: 2 }}
+                  <Pill
+                    size={48}
+                    className="text-gray-400 mb-2"
                   />
                   <Typography
                     variant="h6"
@@ -892,7 +895,7 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                   </Typography>
                   <Button
                     variant="contained"
-                    startIcon={<AddIcon />}
+                    startIcon={<Plus size={16} />}
                     onClick={() => handleAddMedication(category.value)}
                   >
                     Add {category.label.split('/')[0]}
@@ -940,9 +943,9 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                                 variant="outlined"
                                 icon={
                                   medication.isManual ? (
-                                    <EditIcon />
+                                    <Edit size={16} />
                                   ) : (
-                                    <CheckCircleIcon />
+                                    <CheckCircle size={16} />
                                   )
                                 }
                               />
@@ -989,9 +992,9 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                                   }
                                 >
                                   {expandedMedications.has(medication.id!) ? (
-                                    <ExpandLessIcon />
+                                    <ChevronUp size={16} />
                                   ) : (
-                                    <ExpandMoreIcon />
+                                    <ChevronDown size={16} />
                                   )}
                                 </IconButton>
                               </Tooltip>
@@ -1002,7 +1005,7 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                                     handleEditMedication(medication)
                                   }
                                 >
-                                  <EditIcon />
+                                  <Edit size={16} />
                                 </IconButton>
                               </Tooltip>
                               <Tooltip title="Delete">
@@ -1013,7 +1016,7 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                                     handleDeleteMedication(medication.id!)
                                   }
                                 >
-                                  <DeleteIcon />
+                                  <Trash2 size={16} />
                                 </IconButton>
                               </Tooltip>
                             </Box>
@@ -1146,9 +1149,9 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                   Total Medications: {medications.length}
                 </Typography>
                 {canProceed() ? (
-                  <CheckCircleIcon color="success" fontSize="small" />
+                  <CheckCircle size={16} className="text-green-500" />
                 ) : (
-                  <WarningIcon color="warning" fontSize="small" />
+                  <AlertTriangle size={16} className="text-orange-500" />
                 )}
               </Box>
             </CardContent>
@@ -1174,7 +1177,7 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                 {editingMedication ? 'Edit Medication' : 'Add New Medication'}
               </Typography>
               <IconButton onClick={() => setShowMedicationModal(false)}>
-                <CloseIcon />
+                <X size={24} />
               </IconButton>
             </Box>
           </DialogTitle>
@@ -1207,14 +1210,14 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                         }
                         color={isManualEntry ? 'secondary' : 'primary'}
                         size="small"
-                        icon={isManualEntry ? <EditIcon /> : <SearchIcon />}
+                        icon={isManualEntry ? <Edit size={16} /> : <Search size={16} />}
                       />
                       {isManualEntry && (
                         <Button
                           size="small"
                           variant="outlined"
                           onClick={handleBackToSearch}
-                          startIcon={<SearchIcon />}
+                          startIcon={<Search size={16} />}
                         >
                           Back to Search
                         </Button>
@@ -1294,11 +1297,9 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                                     InputProps={{
                                       ...params.InputProps,
                                       startAdornment: (
-                                        <SearchIcon
-                                          sx={{
-                                            mr: 1,
-                                            color: 'text.secondary',
-                                          }}
+                                        <Search
+                                          size={20}
+                                          className="mr-2 text-gray-500"
                                         />
                                       ),
                                     }}
@@ -1316,7 +1317,7 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                                         color="inherit"
                                         size="small"
                                         onClick={handleManualEntry}
-                                        startIcon={<AddIcon />}
+                                        startIcon={<Plus size={16} />}
                                       >
                                         Add Manually
                                       </Button>
@@ -1343,8 +1344,9 @@ const MedicationHistory: React.FC<MedicationHistoryProps> = ({
                               required
                               InputProps={{
                                 startAdornment: (
-                                  <EditIcon
-                                    sx={{ mr: 1, color: 'text.secondary' }}
+                                  <Edit
+                                    size={20}
+                                    className="mr-2 text-gray-500"
                                   />
                                 ),
                               }}

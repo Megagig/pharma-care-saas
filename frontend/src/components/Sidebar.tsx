@@ -15,42 +15,44 @@ import {
   Tooltip,
 } from '@mui/material';
 import {
-  Dashboard as DashboardIcon,
-  People as PeopleIcon,
-  Description as DescriptionIcon,
-  Medication as MedicationIcon,
-  CreditCard as CreditCardIcon,
-  Settings as SettingsIcon,
-  Help as HelpIcon,
-  ChevronLeft as ChevronLeftIcon,
-} from '@mui/icons-material';
-// Import icons that require default imports
-import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
-import Assignment from '@mui/icons-material/Assignment';
-import SubscriptionsTwoTone from '@mui/icons-material/SubscriptionsTwoTone';
-// Pharmacy module icons - using default imports
-import Reviews from '@mui/icons-material/Reviews';
-import MedicalServices from '@mui/icons-material/MedicalServices';
-import Science from '@mui/icons-material/Science';
-import Forum from '@mui/icons-material/Forum';
-import MenuBook from '@mui/icons-material/MenuBook';
-import Psychology from '@mui/icons-material/Psychology';
-import Analytics from '@mui/icons-material/Analytics';
-import SupervisorAccount from '@mui/icons-material/SupervisorAccount';
+  LayoutDashboard,
+  Users,
+  FileText,
+  Pill,
+  CreditCard,
+  Settings,
+  HelpCircle,
+  ChevronLeft,
+  Shield,
+  Star,
+  Stethoscope,
+  Flask,
+  MessageSquare,
+  BookOpen,
+  Brain,
+  BarChart3,
+} from 'lucide-react';
 
-// Use imported icons with aliases
-const AdminIcon = AdminPanelSettings;
-const LicenseIcon = Assignment;
-const SubscriptionIcon = SubscriptionsTwoTone;
-// Pharmacy module icon aliases
-const ReviewsIcon = Reviews;
-const MedicalServicesIcon = MedicalServices;
-const ScienceIcon = Science;
-const ForumIcon = Forum;
-const MenuBookIcon = MenuBook;
-const PsychologyIcon = Psychology;
-const AnalyticsIcon = Analytics;
-const SupervisorAccountIcon = SupervisorAccount;
+// Icon aliases for consistency
+const DashboardIcon = LayoutDashboard;
+const PeopleIcon = Users;
+const DescriptionIcon = FileText;
+const MedicationIcon = Pill;
+const CreditCardIcon = CreditCard;
+const SettingsIcon = Settings;
+const HelpIcon = HelpCircle;
+const ChevronLeftIcon = ChevronLeft;
+const AdminIcon = Shield;
+const LicenseIcon = FileText;
+const SubscriptionIcon = Star;
+const ReviewsIcon = Star;
+const MedicalServicesIcon = Stethoscope;
+const ScienceIcon = Flask;
+const ForumIcon = MessageSquare;
+const MenuBookIcon = BookOpen;
+const PsychologyIcon = Brain;
+const AnalyticsIcon = BarChart3;
+const SupervisorAccountIcon = Users;
 import { useSidebarControls } from '../stores/sidebarHooks';
 import { useRBAC } from '../hooks/useRBAC';
 import { ConditionalRender } from './AccessControl';
@@ -288,8 +290,8 @@ const Sidebar = () => {
                 }}
               >
                 <IconComponent
-                  fontSize="small"
-                  sx={{
+                  size={20}
+                  style={{
                     filter: isActive
                       ? 'drop-shadow(0 0 2px rgba(255,255,255,0.6))'
                       : 'none',
@@ -499,18 +501,11 @@ const Sidebar = () => {
               onClick={toggleSidebar}
             >
               <ChevronLeftIcon
-                sx={{
+                size={sidebarOpen ? 28 : 24}
+                style={{
                   transform: sidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)',
-                  transition: theme.transitions.create('transform', {
-                    easing: theme.transitions.easing.easeInOut,
-                    duration: theme.transitions.duration.standard,
-                  }),
-                  fontSize: sidebarOpen ? 28 : 24,
+                  transition: 'transform 0.3s ease-in-out',
                   color: '#ffffff',
-                  fontWeight: 'bold',
-                  [theme.breakpoints.down('sm')]: {
-                    fontSize: sidebarOpen ? 24 : 20,
-                  },
                 }}
               />
             </Box>
@@ -598,10 +593,9 @@ const Sidebar = () => {
                   onClick={toggleSidebar}
                 >
                   <ChevronLeftIcon
-                    sx={{
-                      fontSize: 20,
-                      color: theme.palette.common.white,
-                      fontWeight: 'bold',
+                    size={20}
+                    style={{
+                      color: '#ffffff',
                     }}
                   />
                 </Box>
@@ -665,10 +659,9 @@ const Sidebar = () => {
                   onClick={toggleSidebar}
                 >
                   <ChevronLeftIcon
-                    sx={{
-                      fontSize: 22,
-                      color: theme.palette.common.white,
-                      fontWeight: 'bold',
+                    size={22}
+                    style={{
+                      color: '#ffffff',
                       transform: 'rotate(180deg)',
                     }}
                   />

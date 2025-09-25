@@ -8,7 +8,6 @@ import {
   Chip,
   IconButton,
   Button,
-  TextField,
   MenuItem,
   Select,
   FormControl,
@@ -29,6 +28,7 @@ import {
   Collapse,
   Divider,
 } from '@mui/material';
+import { Input } from '@/components/ui/input';
 import {
   Timeline,
   TimelineItem,
@@ -38,19 +38,21 @@ import {
   TimelineContent,
   TimelineDot,
 } from '@mui/lab';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import DownloadIcon from '@mui/icons-material/Download';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import ScienceIcon from '@mui/icons-material/Science';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import WarningIcon from '@mui/icons-material/Warning';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PendingIcon from '@mui/icons-material/Pending';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import SortIcon from '@mui/icons-material/Sort';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import AddIcon from '@mui/icons-material/Add';
+import {
+  ChevronDown,
+  ChevronUp,
+  Download,
+  Eye,
+  Flask,
+  FileText,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Filter,
+  ArrowUpDown,
+  Refresh,
+  Plus,
+} from 'lucide-react';
 
 import {
   usePatientLabOrders,
@@ -169,17 +171,17 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'requested':
-        return <PendingIcon color="info" />;
+        return <Clock size={16} className="text-blue-500" />;
       case 'sample_collected':
-        return <ScienceIcon color="primary" />;
+        return <Flask size={16} className="text-blue-600" />;
       case 'result_awaited':
-        return <PendingIcon color="warning" />;
+        return <Clock size={16} className="text-orange-500" />;
       case 'completed':
-        return <CheckCircleIcon color="success" />;
+        return <CheckCircle size={16} className="text-green-500" />;
       case 'referred':
-        return <WarningIcon color="error" />;
+        return <AlertTriangle size={16} className="text-red-500" />;
       default:
-        return <AssignmentIcon />;
+        return <FileText size={16} />;
     }
   };
 
@@ -273,7 +275,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
             </Typography>
             <Button
               size="small"
-              startIcon={<RefreshIcon />}
+              startIcon={<Refresh size={16} />}
               onClick={() => refetch()}
               sx={{ mt: 1 }}
             >
@@ -296,7 +298,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
               {showCreateButton && (
                 <Button
                   size="small"
-                  startIcon={<AddIcon />}
+                  startIcon={<Plus size={16} />}
                   onClick={onCreateOrder}
                   variant="outlined"
                 >
@@ -304,7 +306,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                 </Button>
               )}
               <IconButton size="small" onClick={() => refetch()}>
-                <RefreshIcon />
+                <Refresh size={16} />
               </IconButton>
             </Box>
           }
@@ -332,7 +334,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                             size="small"
                             onClick={() => handleDownloadPdf(order.orderId)}
                           >
-                            <DownloadIcon fontSize="small" />
+                            <Download size={16} />
                           </IconButton>
                         </Tooltip>
                         {onViewOrder && (
@@ -341,7 +343,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                               size="small"
                               onClick={() => onViewOrder(order.orderId)}
                             >
-                              <VisibilityIcon fontSize="small" />
+                              <Eye size={16} />
                             </IconButton>
                           </Tooltip>
                         )}
@@ -427,7 +429,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
               Lab Order History
             </Typography>
             <Badge badgeContent={orders.length} color="primary">
-              <AssignmentIcon />
+              <FileText size={24} />
             </Badge>
           </Box>
         }
@@ -435,7 +437,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             {showCreateButton && (
               <Button
-                startIcon={<AddIcon />}
+                startIcon={<Plus size={16} />}
                 onClick={onCreateOrder}
                 variant="contained"
                 size={isMobile ? 'small' : 'medium'}
@@ -444,7 +446,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
               </Button>
             )}
             <IconButton onClick={() => refetch()}>
-              <RefreshIcon />
+              <Refresh size={16} />
             </IconButton>
           </Box>
         }
@@ -457,12 +459,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
             spacing={2}
             alignItems={isMobile ? 'stretch' : 'center'}
           >
-            <TextField
-              size="small"
+            <Input
               placeholder="Search orders..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{ flex: 1, minWidth: 200 }}
+              className="flex-1 min-w-[200px] h-8"
             />
 
             <FormControl size="small" sx={{ minWidth: 120 }}>
@@ -500,8 +501,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
         {/* Orders List */}
         {filteredAndSortedOrders.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 4 }}>
-            <ScienceIcon
-              sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+            <Flask
+              size={48}
+              className="text-gray-500 mb-2"
             />
             <Typography variant="h6" color="text.secondary" gutterBottom>
               No lab orders found
@@ -513,7 +515,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
             </Typography>
             {showCreateButton && orders.length === 0 && (
               <Button
-                startIcon={<AddIcon />}
+                startIcon={<Plus size={16} />}
                 onClick={onCreateOrder}
                 variant="contained"
                 sx={{ mt: 2 }}
@@ -569,17 +571,17 @@ const OrderHistoryItem: React.FC<OrderHistoryItemProps> = ({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'requested':
-        return <PendingIcon />;
+        return <Clock size={16} />;
       case 'sample_collected':
-        return <ScienceIcon />;
+        return <Flask size={16} />;
       case 'result_awaited':
-        return <PendingIcon />;
+        return <Clock size={16} />;
       case 'completed':
-        return <CheckCircleIcon />;
+        return <CheckCircle size={16} />;
       case 'referred':
-        return <WarningIcon />;
+        return <AlertTriangle size={16} />;
       default:
-        return <AssignmentIcon />;
+        return <FileText size={16} />;
     }
   };
 
@@ -656,7 +658,7 @@ const OrderHistoryItem: React.FC<OrderHistoryItemProps> = ({
               <Box sx={{ display: 'flex', gap: 0.5 }}>
                 <Tooltip title="Download PDF">
                   <IconButton size="small" onClick={onDownloadPdf}>
-                    <DownloadIcon />
+                    <Download size={16} />
                   </IconButton>
                 </Tooltip>
                 {onViewOrder && (
@@ -665,12 +667,12 @@ const OrderHistoryItem: React.FC<OrderHistoryItemProps> = ({
                       size="small"
                       onClick={() => onViewOrder(order.orderId)}
                     >
-                      <VisibilityIcon />
+                      <Eye size={16} />
                     </IconButton>
                   </Tooltip>
                 )}
                 <IconButton size="small" onClick={onToggleExpansion}>
-                  {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </IconButton>
               </Box>
             </Box>

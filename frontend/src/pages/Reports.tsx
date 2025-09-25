@@ -1,6 +1,8 @@
-import { Box, Typography, Button, Card, CardContent } from '@mui/material';
+import { Box } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { Assessment as AssessmentIcon } from '@mui/icons-material';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 const Reports = () => {
   return (
@@ -15,16 +17,12 @@ const Reports = () => {
         }}
       >
         <Box>
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{ fontWeight: 600, mb: 1 }}
-          >
+          <h1 className="text-3xl font-semibold mb-2">
             Reports & Analytics
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
+          </h1>
+          <p className="text-muted-foreground">
             Generate comprehensive reports and track key performance metrics
-          </Typography>
+          </p>
         </Box>
       </Box>
 
@@ -46,18 +44,14 @@ const Reports = () => {
           >
             <AssessmentIcon sx={{ fontSize: 40, color: 'primary.main' }} />
           </Box>
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
+          <h2 className="text-2xl font-semibold mb-4">
             Advanced Reporting Coming Soon
-          </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}
-          >
+          </h2>
+          <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
             We're working on comprehensive reporting features including patient
             outcomes tracking, medication adherence analytics, clinical
             documentation summaries, and practice performance metrics.
-          </Typography>
+          </p>
           <Box
             sx={{
               display: 'flex',
@@ -66,11 +60,11 @@ const Reports = () => {
               flexWrap: 'wrap',
             }}
           >
-            <Button variant="contained" component={Link} to="/dashboard">
-              Back to Dashboard
+            <Button variant="default" asChild>
+              <Link to="/dashboard">Back to Dashboard</Link>
             </Button>
-            <Button variant="outlined" component={Link} to="/contact">
-              Request Features
+            <Button variant="outline" asChild>
+              <Link to="/contact">Request Features</Link>
             </Button>
           </Box>
         </CardContent>

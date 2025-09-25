@@ -1,5 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
-import { Box, Typography, Button, Paper, Alert } from '@mui/material';
+import { Box, Typography, Alert } from '@mui/material';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 interface Props {
   children: ReactNode;
@@ -59,13 +61,8 @@ class ErrorBoundary extends Component<Props, State> {
             bgcolor: 'background.default',
           }}
         >
-          <Paper
-            sx={{
-              p: 4,
-              maxWidth: 600,
-              width: '100%',
-              textAlign: 'center',
-            }}
+          <Card
+            className="p-8 max-w-2xl w-full text-center"
           >
             <Alert severity="error" sx={{ mb: 3 }}>
               <Typography variant="h5" component="h1" gutterBottom>
@@ -82,7 +79,7 @@ class ErrorBoundary extends Component<Props, State> {
                 <Typography variant="h6" gutterBottom>
                   Error Details:
                 </Typography>
-                <Paper sx={{ p: 2, bgcolor: 'grey.50', overflow: 'auto' }}>
+                <Card className="p-4 bg-gray-50 overflow-auto">
                   <Typography
                     variant="body2"
                     component="pre"
@@ -91,19 +88,19 @@ class ErrorBoundary extends Component<Props, State> {
                     {this.state.error.toString()}
                     {this.state.errorInfo?.componentStack}
                   </Typography>
-                </Paper>
+                </Card>
               </Box>
             )}
 
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-              <Button variant="contained" onClick={this.handleReset}>
+              <Button variant="default" onClick={this.handleReset}>
                 Try Again
               </Button>
-              <Button variant="outlined" onClick={this.handleReload}>
+              <Button variant="outline" onClick={this.handleReload}>
                 Reload Page
               </Button>
             </Box>
-          </Paper>
+          </Card>
         </Box>
       );
     }

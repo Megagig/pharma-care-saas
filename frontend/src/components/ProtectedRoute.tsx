@@ -1,9 +1,11 @@
 import React from 'react';
 import { Navigate, useLocation, Link } from 'react-router-dom';
-import { Box, Typography, Button, Paper, Alert } from '@mui/material';
+import { Box, Typography, Alert } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import WarningIcon from '@mui/icons-material/Warning';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { useAuth } from '../hooks/useAuth';
 import { useRBAC } from '../hooks/useRBAC';
 import LoadingSpinner from './LoadingSpinner';
@@ -99,36 +101,37 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
       case 'subscription':
         return (
           <Button
-            variant="contained"
-            color="primary"
-            component={Link}
-            to="/subscription-management"
-            sx={{ mt: 2 }}
+            variant="default"
+            asChild
+            className="mt-2"
           >
-            Upgrade Subscription
+            <Link to="/subscription-management">
+              Upgrade Subscription
+            </Link>
           </Button>
         );
       case 'license':
         return (
           <Button
-            variant="contained"
-            color="primary"
-            component={Link}
-            to="/license"
-            sx={{ mt: 2 }}
+            variant="default"
+            asChild
+            className="mt-2"
           >
-            Upload License
+            <Link to="/license">
+              Upload License
+            </Link>
           </Button>
         );
       default:
         return (
           <Button
-            variant="outlined"
-            component={Link}
-            to="/dashboard"
-            sx={{ mt: 2 }}
+            variant="outline"
+            asChild
+            className="mt-2"
           >
-            Back to Dashboard
+            <Link to="/dashboard">
+              Back to Dashboard
+            </Link>
           </Button>
         );
     }
@@ -142,14 +145,8 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
       minHeight="60vh"
       p={3}
     >
-      <Paper
-        elevation={3}
-        sx={{
-          p: 4,
-          textAlign: 'center',
-          maxWidth: 500,
-          width: '100%',
-        }}
+      <Card
+        className="p-8 text-center max-w-lg w-full shadow-lg"
       >
         <Box mb={3}>{getIcon()}</Box>
 
@@ -176,7 +173,7 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
         )}
 
         {getActionButton()}
-      </Paper>
+      </Card>
     </Box>
   );
 };

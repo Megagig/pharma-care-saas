@@ -4,7 +4,6 @@ import {
   Typography,
   Card,
   CardContent,
-  Button,
   Stack,
   TextField,
   MenuItem,
@@ -34,15 +33,18 @@ import {
   StepLabel,
   StepContent,
 } from '@mui/material';
-import WarningIcon from '@mui/icons-material/Warning';
-import ErrorIcon from '@mui/icons-material/Error';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import CloseIcon from '@mui/icons-material/Close';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import { Button } from '@/components/ui/button';
+import {
+  AlertTriangle,
+  AlertCircle,
+  CheckCircle,
+  Plus,
+  Edit,
+  X,
+  BarChart3,
+  Stethoscope,
+  Play,
+} from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import FixedGrid from './common/FixedGrid';
 
@@ -727,15 +729,15 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return <ErrorIcon color="error" />;
+        return <AlertCircle size={20} className="text-red-500" />;
       case 'major':
-        return <WarningIcon color="warning" />;
+        return <AlertTriangle size={20} className="text-orange-500" />;
       case 'moderate':
-        return <WarningIcon color="info" />;
+        return <AlertTriangle size={20} className="text-blue-500" />;
       case 'minor':
-        return <CheckCircleIcon color="success" />;
+        return <CheckCircle size={20} className="text-green-500" />;
       default:
-        return <WarningIcon />;
+        return <AlertTriangle size={20} />;
     }
   };
 
@@ -832,8 +834,9 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
     return (
       <Card>
         <CardContent sx={{ textAlign: 'center', py: 6 }}>
-          <AssessmentIcon
-            sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+          <BarChart3
+            size={48}
+            className="text-gray-500 mb-2"
           />
           <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
             No Medications to Assess
@@ -859,7 +862,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <AssessmentIcon sx={{ mr: 1, color: 'primary.main' }} />
+          <BarChart3 size={24} className="mr-2 text-blue-600" />
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
             Therapy Assessment
           </Typography>
@@ -873,24 +876,22 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
         </Box>
         <Stack direction="row" spacing={2}>
           <Button
-            variant="outlined"
-            startIcon={<AddIcon />}
+            variant="outline"
             onClick={() => handleOpenProblemDialog()}
           >
+            <Plus className="w-4 h-4 mr-2" />
             Add Problem
           </Button>
           <Button
-            variant="contained"
-            startIcon={
-              isRunningAssessment ? (
-                <CircularProgress size={16} />
-              ) : (
-                <PlayArrowIcon />
-              )
-            }
+            variant="default"
             onClick={runAutomatedAssessment}
             disabled={isRunningAssessment}
           >
+            {isRunningAssessment ? (
+              <CircularProgress size={16} className="mr-2" />
+            ) : (
+              <Play className="w-4 h-4 mr-2" />
+            )}
             {isRunningAssessment ? 'Running Assessment...' : 'Run Assessment'}
           </Button>
         </Stack>
@@ -1177,7 +1178,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                                 size="small"
                                 onClick={() => handleOpenProblemDialog(problem)}
                               >
-                                <EditIcon fontSize="small" />
+                                <Edit size={16} />
                               </IconButton>
                             </Tooltip>
                           </TableCell>
@@ -1190,14 +1191,14 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
 
               <Box sx={{ mb: 1 }}>
                 <Button
-                  variant="contained"
+                  variant="default"
                   onClick={() => {
                     if (step.id === 'adherence') {
                       completeAdherenceAssessment();
                     }
                     setActiveStep((prev) => prev + 1);
                   }}
-                  sx={{ mt: 1, mr: 1 }}
+                  className="mt-1 mr-1"
                   disabled={
                     step.id === 'adherence' &&
                     adherenceAssessments.some((a) => a.adherenceScore === 0)
@@ -1210,7 +1211,8 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                 <Button
                   disabled={index === 0}
                   onClick={() => setActiveStep((prev) => prev - 1)}
-                  sx={{ mt: 1, mr: 1 }}
+                  className="mt-1 mr-1"
+                  variant="ghost"
                 >
                   Back
                 </Button>
@@ -1299,7 +1301,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                             size="small"
                             onClick={() => handleOpenProblemDialog(problem)}
                           >
-                            <EditIcon fontSize="small" />
+                            <Edit size={16} />
                           </IconButton>
                         </Tooltip>
                       </TableCell>
@@ -1321,14 +1323,14 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
       >
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', pr: 6 }}>
-            <MedicalServicesIcon sx={{ mr: 1 }} />
+            <Stethoscope size={24} className="mr-2" />
             {selectedProblem ? 'Edit Drug Therapy Problem' : 'Add New Problem'}
           </Box>
           <IconButton
             onClick={handleCloseProblemDialog}
             sx={{ position: 'absolute', right: 8, top: 8 }}
           >
-            <CloseIcon />
+            <X size={24} />
           </IconButton>
         </DialogTitle>
 
@@ -1570,14 +1572,14 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
         </DialogContent>
 
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={handleCloseProblemDialog} disabled={isSubmitting}>
+          <Button onClick={handleCloseProblemDialog} disabled={isSubmitting} variant="ghost">
             Cancel
           </Button>
           <Button
             onClick={handleSubmit(handleSaveProblem)}
-            variant="contained"
+            variant="default"
             disabled={isSubmitting}
-            sx={{ minWidth: 120 }}
+            className="min-w-[120px]"
           >
             {isSubmitting
               ? 'Saving...'

@@ -1,5 +1,7 @@
 import React from 'react';
-import { TextField, Button, Typography, Paper } from '@mui/material';
+import { Button } from '@/components/ui/button';
+import { FormField } from '@/components/ui/form-field';
+import { Card } from '@/components/ui/card';
 import { GridItem, GridContainer } from './GridSystem';
 
 /**
@@ -7,15 +9,15 @@ import { GridItem, GridContainer } from './GridSystem';
  */
 export const GridExample: React.FC = () => {
   return (
-    <Paper sx={{ p: 3 }}>
-      <Typography variant="h5" sx={{ mb: 2 }}>
+    <Card className="p-6">
+      <h2 className="text-xl font-semibold mb-4">
         Grid System Example
-      </Typography>
+      </h2>
 
       <GridContainer spacing={3}>
         {/* Full width on xs, half width on md and up */}
         <GridItem xs={12} md={6}>
-          <TextField
+          <FormField
             fullWidth
             label="First Name"
             placeholder="Enter your first name"
@@ -24,7 +26,7 @@ export const GridExample: React.FC = () => {
 
         {/* Full width on xs, half width on md and up */}
         <GridItem xs={12} md={6}>
-          <TextField
+          <FormField
             fullWidth
             label="Last Name"
             placeholder="Enter your last name"
@@ -33,24 +35,24 @@ export const GridExample: React.FC = () => {
 
         {/* Full width */}
         <GridItem xs={12}>
-          <TextField fullWidth label="Email" placeholder="Enter your email" />
+          <FormField fullWidth label="Email" placeholder="Enter your email" />
         </GridItem>
 
         {/* Nested grid example */}
         <GridItem xs={12}>
           <GridContainer spacing={2}>
             <GridItem xs={12} md={4}>
-              <TextField fullWidth label="City" placeholder="Enter your city" />
+              <FormField fullWidth label="City" placeholder="Enter your city" />
             </GridItem>
             <GridItem xs={12} md={4}>
-              <TextField
+              <FormField
                 fullWidth
                 label="State"
                 placeholder="Enter your state"
               />
             </GridItem>
             <GridItem xs={12} md={4}>
-              <TextField
+              <FormField
                 fullWidth
                 label="Zip Code"
                 placeholder="Enter your zip code"
@@ -63,17 +65,17 @@ export const GridExample: React.FC = () => {
         <GridItem xs={12}>
           <GridContainer spacing={2} justifyContent="flex-end">
             <GridItem>
-              <Button variant="outlined">Cancel</Button>
+              <Button variant="outline">Cancel</Button>
             </GridItem>
             <GridItem>
-              <Button variant="contained" color="primary">
+              <Button variant="default">
                 Submit
               </Button>
             </GridItem>
           </GridContainer>
         </GridItem>
       </GridContainer>
-    </Paper>
+    </Card>
   );
 };
 

@@ -37,24 +37,25 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import BlockIcon from '@mui/icons-material/Block';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import DownloadIcon from '@mui/icons-material/Download';
-import PeopleIcon from '@mui/icons-material/People';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import SettingsIcon from '@mui/icons-material/Settings';
-import SecurityIcon from '@mui/icons-material/Security';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import SwapVertIcon from '@mui/icons-material/SwapVert';
-import EmailIcon from '@mui/icons-material/Email';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import WebhookIcon from '@mui/icons-material/Webhook';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
-import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
+import {
+  Edit,
+  X,
+  CheckCircle,
+  Download,
+  Users,
+  FileText,
+  BarChart3,
+  Settings,
+  Shield,
+  TrendingUp,
+  ArrowUpDown,
+  Mail,
+  MapPin,
+  ExternalLink,
+  ChevronDown,
+  CheckCircle as PlaylistAddCheck,
+  XCircle,
+} from 'lucide-react';
 import { useUIStore } from '../../stores';
 import LoadingSpinner from '../LoadingSpinner';
 import BulkOperationProgress from '../rbac/BulkOperationProgress';
@@ -544,44 +545,44 @@ const AdminDashboard: React.FC = () => {
           scrollButtons="auto"
         >
           <Tab
-            icon={<PeopleIcon />}
+            icon={<Users size={20} />}
             label="User Management"
             iconPosition="start"
           />
           <Tab
             icon={
               <Badge badgeContent={licenses.length} color="error">
-                <AssignmentIcon />
+                <FileText size={20} />
               </Badge>
             }
             label="License Verification"
             iconPosition="start"
           />
           <Tab
-            icon={<AnalyticsIcon />}
+            icon={<BarChart3 size={20} />}
             label="Analytics"
             iconPosition="start"
           />
-          <Tab icon={<SecurityIcon />} label="Security" iconPosition="start" />
+          <Tab icon={<Shield size={20} />} label="Security" iconPosition="start" />
           <Tab
-            icon={<TrendingUpIcon />}
+            icon={<TrendingUp size={20} />}
             label="Usage Monitoring"
             iconPosition="start"
           />
           <Tab
-            icon={<SwapVertIcon />}
+            icon={<ArrowUpDown size={20} />}
             label="Migrations"
             iconPosition="start"
           />
-          <Tab icon={<EmailIcon />} label="Invitations" iconPosition="start" />
+          <Tab icon={<Mail size={20} />} label="Invitations" iconPosition="start" />
           <Tab
-            icon={<LocationOnIcon />}
+            icon={<MapPin size={20} />}
             label="Locations"
             iconPosition="start"
           />
-          <Tab icon={<WebhookIcon />} label="Webhooks" iconPosition="start" />
+          <Tab icon={<ExternalLink size={20} />} label="Webhooks" iconPosition="start" />
           <Tab
-            icon={<SettingsIcon />}
+            icon={<Settings size={20} />}
             label="System Settings"
             iconPosition="start"
           />
@@ -595,7 +596,7 @@ const AdminDashboard: React.FC = () => {
           <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
             <Button
               variant="contained"
-              startIcon={<PlaylistAddCheckIcon />}
+              startIcon={<PlaylistAddCheck size={16} />}
               onClick={() => setBulkAssignDialogOpen(true)}
               disabled={selectedUsers.length === 0}
             >
@@ -604,7 +605,7 @@ const AdminDashboard: React.FC = () => {
             <Button
               variant="outlined"
               color="error"
-              startIcon={<RemoveCircleIcon />}
+              startIcon={<XCircle size={16} />}
               onClick={() => setBulkRevokeDialogOpen(true)}
               disabled={selectedUsers.length === 0}
             >
@@ -729,7 +730,7 @@ const AdminDashboard: React.FC = () => {
                             setEditDialogOpen(true);
                           }}
                         >
-                          <EditIcon />
+                          <Edit size={16} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Suspend User">
@@ -737,7 +738,7 @@ const AdminDashboard: React.FC = () => {
                           onClick={() => handleSuspendUser(user._id)}
                           disabled={user.status === 'suspended'}
                         >
-                          <BlockIcon />
+                          <X size={16} />
                         </IconButton>
                       </Tooltip>
                     </TableCell>
@@ -783,7 +784,7 @@ const AdminDashboard: React.FC = () => {
                   <TableCell>{license.licenseNumber}</TableCell>
                   <TableCell>
                     <Button
-                      startIcon={<DownloadIcon />}
+                      startIcon={<Download size={16} />}
                       size="small"
                       onClick={() => {
                         window.open(
@@ -804,7 +805,7 @@ const AdminDashboard: React.FC = () => {
                         onClick={() => handleApproveLicense(license._id)}
                         color="success"
                       >
-                        <CheckCircleIcon />
+                        <CheckCircle size={16} />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Reject License">
@@ -815,7 +816,7 @@ const AdminDashboard: React.FC = () => {
                         }}
                         color="error"
                       >
-                        <CancelIcon />
+                        <X size={16} />
                       </IconButton>
                     </Tooltip>
                   </TableCell>
@@ -1075,7 +1076,7 @@ const AdminDashboard: React.FC = () => {
             </Box>
 
             <Accordion>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <AccordionSummary expandIcon={<ChevronDown size={16} />}>
                 <Typography>Advanced Options</Typography>
               </AccordionSummary>
               <AccordionDetails>
