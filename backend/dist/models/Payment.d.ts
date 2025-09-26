@@ -1,14 +1,19 @@
 import mongoose, { Document } from 'mongoose';
 export interface IPayment extends Document {
-    user: mongoose.Types.ObjectId;
-    subscription: mongoose.Types.ObjectId;
+    userId: mongoose.Types.ObjectId;
+    planId?: mongoose.Types.ObjectId;
+    subscription?: mongoose.Types.ObjectId;
     amount: number;
     currency: string;
-    paymentMethod: 'credit_card' | 'debit_card' | 'paypal' | 'bank_transfer';
+    paymentMethod: 'credit_card' | 'debit_card' | 'paypal' | 'bank_transfer' | 'nomba' | 'paystack';
     status: 'pending' | 'completed' | 'failed' | 'refunded';
+    paymentReference?: string;
     stripePaymentIntentId?: string;
     paypalOrderId?: string;
     transactionId?: string;
+    metadata?: Record<string, any>;
+    completedAt?: Date;
+    failedAt?: Date;
     invoice: {
         invoiceNumber?: string;
         dueDate?: Date;

@@ -4,31 +4,131 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendSubscriptionReminder = exports.sendWelcomeEmail = exports.sendEmail = void 0;
+const resend_1 = require("resend");
 const nodemailer_1 = __importDefault(require("nodemailer"));
-const transporter = nodemailer_1.default.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
-const sendEmail = async (options) => {
+let resend = null;
+const getResendClient = () => {
+    if (!resend && hasValidResendConfig()) {
+        resend = new resend_1.Resend(process.env.RESEND_API_KEY);
+    }
+    return resend;
+};
+const hasValidResendConfig = () => {
+    return (process.env.RESEND_API_KEY &&
+        process.env.SENDER_EMAIL &&
+        process.env.RESEND_API_KEY.startsWith('re_'));
+};
+const hasValidSMTPConfig = () => {
+    return (process.env.SMTP_HOST &&
+        process.env.SMTP_USER &&
+        process.env.SMTP_PASS &&
+        process.env.SMTP_HOST !== 'smtp.gmail.com' &&
+        process.env.SMTP_USER !== 'your-email@gmail.com');
+};
+const createSMTPTransporter = () => {
+    if (hasValidSMTPConfig()) {
+        return nodemailer_1.default.createTransport({
+            host: process.env.SMTP_HOST,
+            port: Number(process.env.SMTP_PORT),
+            secure: false,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS,
+            },
+        });
+    }
+    return null;
+};
+const smtpTransporter = createSMTPTransporter();
+const sendWithResend = async (options) => {
+    try {
+        const resendClient = getResendClient();
+        const { data, error } = await resendClient.emails.send({
+            from: `${process.env.SENDER_NAME || 'PharmaCare Hub'} <${process.env.SENDER_EMAIL}>`,
+            to: [options.to],
+            subject: options.subject,
+            html: options.html || options.text || '',
+            text: options.text,
+        });
+        if (error) {
+            throw new Error(`Resend error: ${error.message}`);
+        }
+        console.log('✅ Email sent successfully via Resend:', data?.id);
+        return {
+            messageId: data?.id,
+            service: 'resend',
+            response: 'Email sent via Resend'
+        };
+    }
+    catch (error) {
+        console.error('❌ Resend email failed:', error);
+        throw error;
+    }
+};
+const sendWithSMTP = async (options) => {
+    if (!smtpTransporter) {
+        throw new Error('SMTP transporter not configured');
+    }
     try {
         const message = {
-            from: `${process.env.FROM_NAME} <${process.env.FROM_EMAIL}>`,
+            from: `${process.env.FROM_NAME || 'PharmaCare Hub'} <${process.env.FROM_EMAIL || process.env.SENDER_EMAIL}>`,
             to: options.to,
             subject: options.subject,
             text: options.text,
             html: options.html,
         };
-        const info = await transporter.sendMail(message);
-        console.log('Message sent: %s', info.messageId);
-        return info;
+        const info = await smtpTransporter.sendMail(message);
+        console.log('✅ Email sent successfully via SMTP:', info.messageId);
+        return {
+            messageId: info.messageId,
+            service: 'smtp',
+            response: info.response
+        };
     }
     catch (error) {
-        console.error('Email sending failed:', error);
+        console.error('❌ SMTP email failed:', error);
+        throw error;
+    }
+};
+const simulateEmail = (options) => {
+    console.log('📧 EMAIL SIMULATION (Development Mode)');
+    console.log('To:', options.to);
+    console.log('Subject:', options.subject);
+    console.log('Content:', options.text || options.html);
+    console.log('---');
+    return {
+        messageId: 'dev-' + Date.now(),
+        service: 'simulation',
+        response: 'Email simulated in development mode'
+    };
+};
+const sendEmail = async (options) => {
+    try {
+        if (hasValidResendConfig()) {
+            try {
+                return await sendWithResend(options);
+            }
+            catch (resendError) {
+                console.warn('⚠️ Resend failed, trying SMTP fallback:', resendError);
+                if (hasValidSMTPConfig()) {
+                    return await sendWithSMTP(options);
+                }
+            }
+        }
+        if (hasValidSMTPConfig()) {
+            return await sendWithSMTP(options);
+        }
+        if (process.env.NODE_ENV === 'development') {
+            return simulateEmail(options);
+        }
+        throw new Error('No email service configured');
+    }
+    catch (error) {
+        console.error('❌ All email services failed:', error);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('📧 EMAIL FALLBACK (Development Mode)');
+            return simulateEmail(options);
+        }
         throw error;
     }
 };

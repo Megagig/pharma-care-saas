@@ -1,0 +1,211 @@
+# Reports & Analytics Module - Logging Configuration
+
+# Fluentd Configuration for Reports Logging
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reports-logging-config
+  namespace: pharma-care-prod
+data:
+  fluent.conf: |
+    <source>
+      @type tail
+      path /var/log/pharma-care/reports/*.log
+      pos_file /var/log/fluentd-reports.log.pos
+      tag pharma-care.reports
+      format json
+      time_key timestamp
+      time_format %Y-%m-%dT%H:%M:%S.%LZ
+    </source>
+
+    # Parse report generation logs
+    <filter pharma-care.reports>
+      @type parser
+      key_name message
+      reserve_data true
+      <parse>
+        @type json
+      </parse>
+    </filter>
+
+    # Add metadata
+    <filter pharma-care.reports>
+      @type record_transformer
+      <record>
+        service pharma-care
+        module reports-analytics
+        environment production
+        kubernetes_namespace pharma-care-prod
+      </record>
+    </filter>
+
+    # Route different log types
+    <match pharma-care.reports>
+      @type rewrite_tag_filter
+      <rule>
+        key level
+        pattern /ERROR|FATAL/
+        tag pharma-care.reports.error
+      </rule>
+      <rule>
+        key level
+        pattern /WARN/
+        tag pharma-care.reports.warning
+      </rule>
+      <rule>
+        key level
+        pattern /INFO/
+        tag pharma-care.reports.info
+      </rule>
+      <rule>
+        key level
+        pattern /DEBUG/
+        tag pharma-care.reports.debug
+      </rule>
+    </match>
+
+    # Send error logs to alerting system
+    <match pharma-care.reports.error>
+      @type elasticsearch
+      host elasticsearch-service
+      port 9200
+      index_name pharma-care-reports-errors
+      type_name _doc
+      include_tag_key true
+      tag_key @log_name
+      flush_interval 1s
+      
+      # Alert on critical errors
+      <buffer>
+        @type memory
+        flush_mode immediate
+      </buffer>
+    </match>
+
+    # Send all logs to main index
+    <match pharma-care.reports.**>
+      @type elasticsearch
+      host elasticsearch-service
+      port 9200
+      index_name pharma-care-reports-${Date.strftime(Time.now, '%Y.%m.%d')}
+      type_name _doc
+      include_tag_key true
+      tag_key @log_name
+      
+      <buffer time>
+        @type file
+        path /var/log/fluentd-buffers/reports
+        timekey 3600
+        timekey_wait 10m
+        flush_mode interval
+        flush_interval 30s
+      </buffer>
+    </match>
+
+---
+# Log Rotation Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reports-logrotate-config
+  namespace: pharma-care-prod
+data:
+  logrotate.conf: |
+    /var/log/pharma-care/reports/*.log {
+        daily
+        rotate 30
+        compress
+        delaycompress
+        missingok
+        notifempty
+        create 0644 app app
+        postrotate
+            /usr/bin/killall -USR1 node || true
+        endscript
+    }
+
+    /var/log/pharma-care/reports/audit/*.log {
+        daily
+        rotate 365
+        compress
+        delaycompress
+        missingok
+        notifempty
+        create 0644 app app
+        # Audit logs are kept for 1 year for compliance
+    }
+
+    /var/log/pharma-care/reports/performance/*.log {
+        hourly
+        rotate 168
+        compress
+        delaycompress
+        missingok
+        notifempty
+        create 0644 app app
+        # Performance logs kept for 1 week
+    }
+
+---
+# Structured Logging Schema
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reports-logging-schema
+  namespace: pharma-care-prod
+data:
+  schema.json: |
+    {
+      "report_generation": {
+        "timestamp": "ISO8601",
+        "level": "string",
+        "message": "string",
+        "report_type": "string",
+        "user_id": "string",
+        "workspace_id": "string",
+        "duration_ms": "number",
+        "filters": "object",
+        "status": "string",
+        "error": "string",
+        "metadata": {
+          "request_id": "string",
+          "session_id": "string",
+          "ip_address": "string",
+          "user_agent": "string"
+        }
+      },
+      "report_export": {
+        "timestamp": "ISO8601",
+        "level": "string",
+        "message": "string",
+        "export_format": "string",
+        "file_size_bytes": "number",
+        "export_duration_ms": "number",
+        "user_id": "string",
+        "report_type": "string",
+        "status": "string",
+        "error": "string"
+      },
+      "report_access": {
+        "timestamp": "ISO8601",
+        "level": "string",
+        "message": "string",
+        "user_id": "string",
+        "workspace_id": "string",
+        "report_type": "string",
+        "action": "string",
+        "ip_address": "string",
+        "user_agent": "string",
+        "authorized": "boolean",
+        "permissions": "array"
+      },
+      "performance": {
+        "timestamp": "ISO8601",
+        "level": "string",
+        "message": "string",
+        "metric_name": "string",
+        "metric_value": "number",
+        "metric_unit": "string",
+        "tags": "object"
+      }
+    }

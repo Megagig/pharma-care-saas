@@ -1,0 +1,22 @@
+import { Response } from 'express';
+import { AuthRequest } from '../types/auth';
+export declare const getLocationPatients: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getSharedPatients: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getLocationAnalytics: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const assignPatientToLocation: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const bulkAssignPatientsToLocation: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const transferPatientsBetweenLocations: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const removeLocationAssignment: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getLocationDistribution: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getLocationVisits: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getLocationClinicalNotes: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const assignVisitToLocation: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const assignClinicalNoteToLocation: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const sharePatientWithLocations: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const revokeSharedPatientAccess: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getPatientsAccessibleFromLocation: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const createPatientTransferWorkflow: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const completePatientTransfer: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getLocationAccessSummary: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const checkPatientAccess: (req: AuthRequest, res: Response) => Promise<void>;
+//# sourceMappingURL=locationDataController.d.ts.map

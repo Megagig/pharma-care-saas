@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pharmacare Admin Dashboard</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          sans-serif;
+        background-color: #f5f5f5;
+        color: #333;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 2rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .header h1 {
+        font-size: 1.8rem;
+        font-weight: 600;
+      }
+
+      .header p {
+        opacity: 0.9;
+        margin-top: 0.5rem;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid #667eea;
+      }
+
+      .stat-card h3 {
+        color: #666;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+      }
+
+      .stat-card .value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 0.5rem;
+      }
+
+      .stat-card .change {
+        font-size: 0.85rem;
+        color: #28a745;
+      }
+
+      .stat-card .change.negative {
+        color: #dc3545;
+      }
+
+      .content-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .card-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #eee;
+        background: #f8f9fa;
+      }
+
+      .card-header h2 {
+        font-size: 1.2rem;
+        color: #333;
+      }
+
+      .card-body {
+        padding: 1.5rem;
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .table th,
+      .table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+      }
+
+      .table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #666;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .table tbody tr:hover {
+        background: #f8f9fa;
+      }
+
+      .status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .status.active {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .status.trial {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .status.expired {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .status.pending {
+        background: #cce5ff;
+        color: #004085;
+      }
+
+      .btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s;
+      }
+
+      .btn-primary {
+        background: #667eea;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #5a6fd8;
+      }
+
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #c82333;
+      }
+
+      .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+      }
+
+      .alert {
+        padding: 1rem;
+        border-radius: 5px;
+        margin-bottom: 1rem;
+      }
+
+      .alert-warning {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+
+      .alert-danger {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+      }
+
+      .error {
+        text-align: center;
+        padding: 2rem;
+        color: #dc3545;
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .search-box {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        margin-bottom: 1rem;
+      }
+
+      .filters {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .filter-select {
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background: white;
+      }
+
+      @media (max-width: 768px) {
+        .content-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .container {
+          padding: 1rem;
+        }
+
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>🏥 Pharmacare Admin Dashboard</h1>
+      <p>Workspace Subscription & RBAC Management</p>
+    </div>
+
+    <div class="container">
+      <!-- Statistics Overview -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <h3>Total Workspaces</h3>
+          <div class="value" id="totalWorkspaces">-</div>
+          <div class="change" id="workspaceChange">Loading...</div>
+        </div>
+        <div class="stat-card">
+          <h3>Active Subscriptions</h3>
+          <div class="value" id="activeSubscriptions">-</div>
+          <div class="change" id="subscriptionChange">Loading...</div>
+        </div>
+        <div class="stat-card">
+          <h3>Total Users</h3>
+          <div class="value" id="totalUsers">-</div>
+          <div class="change" id="userChange">Loading...</div>
+        </div>
+        <div class="stat-card">
+          <h3>Pending Invitations</h3>
+          <div class="value" id="pendingInvitations">-</div>
+          <div class="change" id="invitationChange">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Alerts -->
+      <div id="alertsContainer"></div>
+
+      <!-- Main Content -->
+      <div class="content-grid">
+        <!-- Workspaces Table -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Recent Workspaces</h2>
+          </div>
+          <div class="card-body">
+            <div class="filters">
+              <input
+                type="text"
+                class="search-box"
+                id="workspaceSearch"
+                placeholder="Search workspaces..."
+              />
+              <select class="filter-select" id="statusFilter">
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="trial">Trial</option>
+                <option value="expired">Expired</option>
+              </select>
+              <button class="btn btn-primary" onclick="refreshWorkspaces()">
+                Refresh
+              </button>
+            </div>
+            <div id="workspacesTable">
+              <div class="loading">Loading workspaces...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Health -->
+        <div class="card">
+          <div class="card-header">
+            <h2>System Health</h2>
+          </div>
+          <div class="card-body" id="systemHealth">
+            <div class="loading">Loading system health...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Invitations Table -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Recent Invitations</h2>
+        </div>
+        <div class="card-body">
+          <div class="filters">
+            <input
+              type="text"
+              class="search-box"
+              id="invitationSearch"
+              placeholder="Search invitations..."
+            />
+            <select class="filter-select" id="invitationStatusFilter">
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="used">Used</option>
+              <option value="expired">Expired</option>
+              <option value="canceled">Canceled</option>
+            </select>
+            <button class="btn btn-primary" onclick="refreshInvitations()">
+              Refresh
+            </button>
+          </div>
+          <div id="invitationsTable">
+            <div class="loading">Loading invitations...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Configuration
+      const API_BASE_URL = 'http://localhost:5000/api';
+      let authToken = localStorage.getItem('adminToken');
+
+      // Utility functions
+      function formatDate(dateString) {
+        return new Date(dateString).toLocaleString();
+      }
+
+      function formatCurrency(amount) {
+        return new Intl.NumberFormat('en-NG', {
+          style: 'currency',
+          currency: 'NGN',
+        }).format(amount);
+      }
+
+      function showError(message) {
+        const alertsContainer = document.getElementById('alertsContainer');
+        alertsContainer.innerHTML = `
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> ${message}
+                </div>
+            `;
+      }
+
+      function showWarning(message) {
+        const alertsContainer = document.getElementById('alertsContainer');
+        alertsContainer.innerHTML = `
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> ${message}
+                </div>
+            `;
+      }
+
+      // API functions
+      async function apiCall(endpoint, options = {}) {
+        try {
+          const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${authToken}`,
+              ...options.headers,
+            },
+          });
+
+          if (response.status === 401) {
+            showError('Authentication required. Please login as admin.');
+            return null;
+          }
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          return await response.json();
+        } catch (error) {
+          console.error('API call failed:', error);
+          showError(`API call failed: ${error.message}`);
+          return null;
+        }
+      }
+
+      // Load dashboard data
+      async function loadDashboard() {
+        try {
+          // Load overview data
+          const overview = await apiCall('/admin/dashboard/overview');
+          if (overview && overview.success) {
+            updateStats(overview.data);
+            updateAlerts(overview.data.alerts);
+          }
+
+          // Load workspaces
+          await loadWorkspaces();
+
+          // Load invitations
+          await loadInvitations();
+
+          // Load system health
+          await loadSystemHealth();
+        } catch (error) {
+          console.error('Failed to load dashboard:', error);
+          showError('Failed to load dashboard data');
+        }
+      }
+
+      function updateStats(data) {
+        document.getElementById('totalWorkspaces').textContent =
+          data.summary.workspaces.total;
+        document.getElementById('activeSubscriptions').textContent =
+          data.summary.subscriptions.active;
+        document.getElementById('totalUsers').textContent =
+          data.summary.users.total;
+        document.getElementById('pendingInvitations').textContent =
+          data.summary.invitations.pending;
+
+        // Update growth indicators
+        const workspaceGrowth = data.summary.workspaces.growth || 0;
+        const userGrowth = data.summary.users.growth || 0;
+
+        document.getElementById('workspaceChange').textContent = `${
+          workspaceGrowth > 0 ? '+' : ''
+        }${workspaceGrowth.toFixed(1)}% this month`;
+        document.getElementById('workspaceChange').className =
+          workspaceGrowth >= 0 ? 'change' : 'change negative';
+
+        document.getElementById('userChange').textContent = `${
+          userGrowth > 0 ? '+' : ''
+        }${userGrowth.toFixed(1)}% this month`;
+        document.getElementById('userChange').className =
+          userGrowth >= 0 ? 'change' : 'change negative';
+      }
+
+      function updateAlerts(alerts) {
+        const alertsContainer = document.getElementById('alertsContainer');
+        let alertsHtml = '';
+
+        if (alerts.trialExpiring && alerts.trialExpiring.length > 0) {
+          alertsHtml += `
+                    <div class="alert alert-warning">
+                        <strong>Trial Expiring:</strong> ${alerts.trialExpiring.length} workspaces have trials expiring within 7 days.
+                    </div>
+                `;
+        }
+
+        if (alerts.failedPayments && alerts.failedPayments.length > 0) {
+          alertsHtml += `
+                    <div class="alert alert-danger">
+                        <strong>Failed Payments:</strong> ${alerts.failedPayments.length} workspaces have failed payments.
+                    </div>
+                `;
+        }
+
+        alertsContainer.innerHTML = alertsHtml;
+      }
+
+      async function loadWorkspaces() {
+        const search = document.getElementById('workspaceSearch').value;
+        const status = document.getElementById('statusFilter').value;
+
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+        params.append('limit', '10');
+
+        const response = await apiCall(`/admin/dashboard/workspaces?${params}`);
+        if (response && response.success) {
+          renderWorkspacesTable(response.data.workspaces);
+        }
+      }
+
+      function renderWorkspacesTable(workspaces) {
+        const container = document.getElementById('workspacesTable');
+
+        if (workspaces.length === 0) {
+          container.innerHTML =
+            '<p class="text-center">No workspaces found.</p>';
+          return;
+        }
+
+        let html = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Owner</th>
+                            <th>Status</th>
+                            <th>Plan</th>
+                            <th>Users</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+        workspaces.forEach((workspace) => {
+          const owner = workspace.ownerId
+            ? `${workspace.ownerId.firstName} ${workspace.ownerId.lastName}`
+            : 'Unknown';
+          const plan = workspace.plan ? workspace.plan.name : 'No Plan';
+          const userCount = workspace.stats ? workspace.stats.usersCount : 0;
+
+          html += `
+                    <tr>
+                        <td><strong>${workspace.name}</strong></td>
+                        <td>${owner}</td>
+                        <td><span class="status ${workspace.subscriptionStatus}">${workspace.subscriptionStatus}</span></td>
+                        <td>${plan}</td>
+                        <td>${userCount}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-primary btn-sm" onclick="viewWorkspace('${workspace._id}')">View</button>
+                                <button class="btn btn-danger btn-sm" onclick="editSubscription('${workspace._id}')">Edit</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      }
+
+      async function loadInvitations() {
+        const search = document.getElementById('invitationSearch').value;
+        const status = document.getElementById('invitationStatusFilter').value;
+
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+        params.append('limit', '10');
+
+        const response = await apiCall(
+          `/admin/dashboard/invitations?${params}`
+        );
+        if (response && response.success) {
+          renderInvitationsTable(response.data.invitations);
+        }
+      }
+
+      function renderInvitationsTable(invitations) {
+        const container = document.getElementById('invitationsTable');
+
+        if (invitations.length === 0) {
+          container.innerHTML =
+            '<p class="text-center">No invitations found.</p>';
+          return;
+        }
+
+        let html = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Workspace</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Expires</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+        invitations.forEach((invitation) => {
+          const workspace = invitation.workspaceId
+            ? invitation.workspaceId.name
+            : 'Unknown';
+          const expires = formatDate(invitation.expiresAt);
+
+          html += `
+                    <tr>
+                        <td>${invitation.email}</td>
+                        <td>${workspace}</td>
+                        <td>${invitation.role}</td>
+                        <td><span class="status ${invitation.status}">${
+            invitation.status
+          }</span></td>
+                        <td>${expires}</td>
+                        <td>
+                            <div class="actions">
+                                ${
+                                  invitation.status === 'active'
+                                    ? `<button class="btn btn-danger btn-sm" onclick="cancelInvitation('${invitation._id}')">Cancel</button>`
+                                    : '-'
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                `;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      }
+
+      async function loadSystemHealth() {
+        const response = await apiCall('/admin/dashboard/system-health');
+        if (response && response.success) {
+          renderSystemHealth(response.data);
+        }
+      }
+
+      function renderSystemHealth(health) {
+        const container = document.getElementById('systemHealth');
+
+        const dbStatus = health.database.connected
+          ? 'Connected'
+          : 'Disconnected';
+        const dbColor = health.database.connected ? 'green' : 'red';
+
+        const uptime = Math.floor(health.application.uptime / 3600);
+        const memory = Math.round(
+          health.application.memory.heapUsed / 1024 / 1024
+        );
+
+        container.innerHTML = `
+                <div style="margin-bottom: 1rem;">
+                    <strong>Database:</strong> <span style="color: ${dbColor};">${dbStatus}</span>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <strong>Uptime:</strong> ${uptime} hours
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <strong>Memory Usage:</strong> ${memory} MB
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <strong>Environment:</strong> ${health.application.environment}
+                </div>
+                <div>
+                    <strong>Node Version:</strong> ${health.application.nodeVersion}
+                </div>
+            `;
+      }
+
+      // Action functions
+      function viewWorkspace(workspaceId) {
+        // Implement workspace details view
+        alert(`View workspace: ${workspaceId}`);
+      }
+
+      function editSubscription(workspaceId) {
+        // Implement subscription editing
+        alert(`Edit subscription for workspace: ${workspaceId}`);
+      }
+
+      async function cancelInvitation(invitationId) {
+        if (!confirm('Are you sure you want to cancel this invitation?')) {
+          return;
+        }
+
+        const reason = prompt('Cancellation reason:');
+        if (!reason) return;
+
+        const response = await apiCall(
+          `/admin/dashboard/invitations/${invitationId}`,
+          {
+            method: 'DELETE',
+            body: JSON.stringify({ reason }),
+          }
+        );
+
+        if (response && response.success) {
+          alert('Invitation canceled successfully');
+          loadInvitations();
+        }
+      }
+
+      function refreshWorkspaces() {
+        loadWorkspaces();
+      }
+
+      function refreshInvitations() {
+        loadInvitations();
+      }
+
+      // Event listeners
+      document
+        .getElementById('workspaceSearch')
+        .addEventListener('input', debounce(loadWorkspaces, 500));
+      document
+        .getElementById('statusFilter')
+        .addEventListener('change', loadWorkspaces);
+      document
+        .getElementById('invitationSearch')
+        .addEventListener('input', debounce(loadInvitations, 500));
+      document
+        .getElementById('invitationStatusFilter')
+        .addEventListener('change', loadInvitations);
+
+      // Utility function for debouncing
+      function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+          const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+          };
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      }
+
+      // Authentication check
+      function checkAuth() {
+        if (!authToken) {
+          const token = prompt('Please enter admin token:');
+          if (token) {
+            authToken = token;
+            localStorage.setItem('adminToken', token);
+          } else {
+            showError('Admin authentication required');
+            return false;
+          }
+        }
+        return true;
+      }
+
+      // Initialize dashboard
+      if (checkAuth()) {
+        loadDashboard();
+
+        // Auto-refresh every 5 minutes
+        setInterval(loadDashboard, 5 * 60 * 1000);
+      }
+    </script>
+  </body>
+</html>
