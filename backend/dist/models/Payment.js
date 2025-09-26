@@ -35,58 +35,79 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const paymentSchema = new mongoose_1.Schema({
-    user: {
+    userId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
+    },
+    planId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'SubscriptionPlan',
+        required: false,
     },
     subscription: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Subscription',
-        required: true
+        required: false,
     },
     amount: {
         type: Number,
-        required: true
+        required: true,
     },
     currency: {
         type: String,
-        default: 'USD'
+        default: 'NGN',
     },
     paymentMethod: {
         type: String,
-        enum: ['credit_card', 'debit_card', 'paypal', 'bank_transfer'],
-        required: true
+        enum: [
+            'credit_card',
+            'debit_card',
+            'paypal',
+            'bank_transfer',
+            'nomba',
+            'paystack',
+        ],
+        required: true,
     },
     status: {
         type: String,
         enum: ['pending', 'completed', 'failed', 'refunded'],
-        default: 'pending'
+        default: 'pending',
     },
+    paymentReference: String,
     stripePaymentIntentId: String,
     paypalOrderId: String,
     transactionId: String,
+    metadata: {
+        type: mongoose_1.Schema.Types.Mixed,
+        default: {},
+    },
+    completedAt: Date,
+    failedAt: Date,
     invoice: {
         invoiceNumber: String,
         dueDate: Date,
-        items: [{
+        items: [
+            {
                 description: String,
                 amount: Number,
-                quantity: { type: Number, default: 1 }
-            }]
+                quantity: { type: Number, default: 1 },
+            },
+        ],
     },
     billingAddress: {
         street: String,
         city: String,
         state: String,
         zipCode: String,
-        country: String
+        country: String,
     },
     refundInfo: {
         refundedAt: Date,
         refundAmount: Number,
-        reason: String
-    }
+        reason: String,
+    },
 }, { timestamps: true });
 exports.default = mongoose_1.default.model('Payment', paymentSchema);
 //# sourceMappingURL=Payment.js.map

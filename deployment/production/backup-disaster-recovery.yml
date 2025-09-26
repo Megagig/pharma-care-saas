@@ -1,0 +1,370 @@
+# AI Diagnostics & Therapeutics Module - Backup and Disaster Recovery Configuration
+
+# MongoDB Backup CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mongodb-backup
+  namespace: pharmacare-prod
+  labels:
+    app: mongodb-backup
+    component: backup
+spec:
+  schedule: '0 2 * * *' # Daily at 2 AM UTC
+  timeZone: 'UTC'
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: mongodb-backup
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: backup-service-account
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+          containers:
+            - name: mongodb-backup
+              image: mongo:7.0
+              imagePullPolicy: Always
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  set -e
+
+                  # Set backup variables
+                  BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
+                  BACKUP_DIR="/backup/mongodb_${BACKUP_DATE}"
+                  S3_BUCKET="${BACKUP_S3_BUCKET}"
+                  S3_PREFIX="mongodb-backups"
+
+                  echo "Starting MongoDB backup at $(date)"
+
+                  # Create backup directory
+                  mkdir -p "${BACKUP_DIR}"
+
+                  # Perform MongoDB dump with compression
+                  mongodump \
+                    --uri="${MONGODB_URI}" \
+                    --gzip \
+                    --out="${BACKUP_DIR}" \
+                    --verbose
+
+                  # Create backup metadata
+                  cat > "${BACKUP_DIR}/backup_metadata.json" << EOF
+                  {
+                    "backup_date": "${BACKUP_DATE}",
+                    "backup_type": "full",
+                    "database": "pharmacare-prod",
+                    "collections": [
+                      "diagnosticrequests",
+                      "diagnosticresults",
+                      "laborders",
+                      "labresults",
+                      "patients",
+                      "users",
+                      "workplaces"
+                    ],
+                    "retention_days": ${BACKUP_RETENTION_DAYS},
+                    "encryption": "AES-256",
+                    "compression": "gzip"
+                  }
+                  EOF
+
+                  # Encrypt backup
+                  tar -czf - -C "${BACKUP_DIR}" . | \
+                    openssl enc -aes-256-cbc -salt -k "${BACKUP_ENCRYPTION_KEY}" > \
+                    "${BACKUP_DIR}.tar.gz.enc"
+
+                  # Upload to S3
+                  aws s3 cp "${BACKUP_DIR}.tar.gz.enc" \
+                    "s3://${S3_BUCKET}/${S3_PREFIX}/mongodb_${BACKUP_DATE}.tar.gz.enc" \
+                    --storage-class STANDARD_IA \
+                    --server-side-encryption AES256
+
+                  # Verify backup integrity
+                  aws s3api head-object \
+                    --bucket "${S3_BUCKET}" \
+                    --key "${S3_PREFIX}/mongodb_${BACKUP_DATE}.tar.gz.enc" \
+                    --query 'ContentLength' --output text
+
+                  # Clean up local files
+                  rm -rf "${BACKUP_DIR}" "${BACKUP_DIR}.tar.gz.enc"
+
+                  # Clean up old backups (older than retention period)
+                  CUTOFF_DATE=$(date -d "${BACKUP_RETENTION_DAYS} days ago" +%Y%m%d)
+                  aws s3 ls "s3://${S3_BUCKET}/${S3_PREFIX}/" | \
+                    awk '{print $4}' | \
+                    grep "mongodb_" | \
+                    while read backup_file; do
+                      backup_date=$(echo "$backup_file" | sed 's/mongodb_\([0-9]*\)_.*/\1/')
+                      if [ "$backup_date" -lt "$CUTOFF_DATE" ]; then
+                        echo "Deleting old backup: $backup_file"
+                        aws s3 rm "s3://${S3_BUCKET}/${S3_PREFIX}/$backup_file"
+                      fi
+                    done
+
+                  echo "MongoDB backup completed successfully at $(date)"
+              env:
+                - name: MONGODB_URI
+                  valueFrom:
+                    secretKeyRef:
+                      name: ai-diagnostics-secrets
+                      key: MONGODB_URI
+                - name: BACKUP_ENCRYPTION_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: ai-diagnostics-secrets
+                      key: BACKUP_ENCRYPTION_KEY
+                - name: BACKUP_S3_BUCKET
+                  value: 'pharmacare-backups-prod'
+                - name: BACKUP_RETENTION_DAYS
+                  value: '30'
+                - name: AWS_DEFAULT_REGION
+                  value: 'us-east-1'
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backup
+              resources:
+                requests:
+                  memory: '512Mi'
+                  cpu: '250m'
+                limits:
+                  memory: '1Gi'
+                  cpu: '500m'
+          volumes:
+            - name: backup-storage
+              emptyDir:
+                sizeLimit: 10Gi
+
+---
+# Application Data Backup CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: app-data-backup
+  namespace: pharmacare-prod
+  labels:
+    app: app-data-backup
+    component: backup
+spec:
+  schedule: '0 3 * * *' # Daily at 3 AM UTC
+  timeZone: 'UTC'
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: app-data-backup
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: backup-service-account
+          containers:
+            - name: app-data-backup
+              image: alpine/aws-cli:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+
+                  BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
+                  S3_BUCKET="${BACKUP_S3_BUCKET}"
+
+                  echo "Starting application data backup at $(date)"
+
+                  # Backup uploaded files
+                  if [ -d "/var/uploads/pharmacare" ]; then
+                    tar -czf "/tmp/uploads_${BACKUP_DATE}.tar.gz" -C /var/uploads pharmacare/
+                    aws s3 cp "/tmp/uploads_${BACKUP_DATE}.tar.gz" \
+                      "s3://${S3_BUCKET}/app-data-backups/uploads_${BACKUP_DATE}.tar.gz" \
+                      --storage-class STANDARD_IA
+                    rm "/tmp/uploads_${BACKUP_DATE}.tar.gz"
+                  fi
+
+                  # Backup logs
+                  if [ -d "/var/log/pharmacare" ]; then
+                    tar -czf "/tmp/logs_${BACKUP_DATE}.tar.gz" -C /var/log pharmacare/
+                    aws s3 cp "/tmp/logs_${BACKUP_DATE}.tar.gz" \
+                      "s3://${S3_BUCKET}/app-data-backups/logs_${BACKUP_DATE}.tar.gz" \
+                      --storage-class GLACIER
+                    rm "/tmp/logs_${BACKUP_DATE}.tar.gz"
+                  fi
+
+                  echo "Application data backup completed at $(date)"
+              env:
+                - name: BACKUP_S3_BUCKET
+                  value: 'pharmacare-backups-prod'
+                - name: AWS_DEFAULT_REGION
+                  value: 'us-east-1'
+              volumeMounts:
+                - name: uploads
+                  mountPath: /var/uploads/pharmacare
+                  readOnly: true
+                - name: logs
+                  mountPath: /var/log/pharmacare
+                  readOnly: true
+              resources:
+                requests:
+                  memory: '256Mi'
+                  cpu: '100m'
+                limits:
+                  memory: '512Mi'
+                  cpu: '250m'
+          volumes:
+            - name: uploads
+              persistentVolumeClaim:
+                claimName: ai-diagnostics-uploads-pvc
+            - name: logs
+              persistentVolumeClaim:
+                claimName: ai-diagnostics-logs-pvc
+
+---
+# Disaster Recovery Job Template
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: disaster-recovery-restore
+  namespace: pharmacare-prod
+  labels:
+    app: disaster-recovery
+    component: restore
+spec:
+  template:
+    metadata:
+      labels:
+        app: disaster-recovery
+    spec:
+      restartPolicy: Never
+      serviceAccountName: backup-service-account
+      containers:
+        - name: disaster-recovery
+          image: mongo:7.0
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+
+              # Disaster recovery script
+              RESTORE_DATE="${RESTORE_DATE:-latest}"
+              S3_BUCKET="${BACKUP_S3_BUCKET}"
+              S3_PREFIX="mongodb-backups"
+
+              echo "Starting disaster recovery restore at $(date)"
+              echo "Restore date: ${RESTORE_DATE}"
+
+              # Find backup file
+              if [ "${RESTORE_DATE}" = "latest" ]; then
+                BACKUP_FILE=$(aws s3 ls "s3://${S3_BUCKET}/${S3_PREFIX}/" | \
+                  grep "mongodb_" | sort | tail -1 | awk '{print $4}')
+              else
+                BACKUP_FILE="mongodb_${RESTORE_DATE}.tar.gz.enc"
+              fi
+
+              if [ -z "${BACKUP_FILE}" ]; then
+                echo "ERROR: No backup file found for date ${RESTORE_DATE}"
+                exit 1
+              fi
+
+              echo "Restoring from backup: ${BACKUP_FILE}"
+
+              # Download backup
+              aws s3 cp "s3://${S3_BUCKET}/${S3_PREFIX}/${BACKUP_FILE}" \
+                "/tmp/${BACKUP_FILE}"
+
+              # Decrypt backup
+              openssl enc -aes-256-cbc -d -salt -k "${BACKUP_ENCRYPTION_KEY}" \
+                -in "/tmp/${BACKUP_FILE}" | tar -xzf - -C /tmp/
+
+              # Restore database
+              mongorestore \
+                --uri="${MONGODB_URI}" \
+                --drop \
+                --gzip \
+                --dir="/tmp" \
+                --verbose
+
+              # Verify restore
+              mongo "${MONGODB_URI}" --eval "
+                db.diagnosticrequests.countDocuments();
+                db.diagnosticresults.countDocuments();
+                db.laborders.countDocuments();
+                db.labresults.countDocuments();
+              "
+
+              echo "Disaster recovery restore completed at $(date)"
+          env:
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: ai-diagnostics-secrets
+                  key: MONGODB_URI
+            - name: BACKUP_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ai-diagnostics-secrets
+                  key: BACKUP_ENCRYPTION_KEY
+            - name: BACKUP_S3_BUCKET
+              value: 'pharmacare-backups-prod'
+            - name: RESTORE_DATE
+              value: 'latest' # Can be overridden
+            - name: AWS_DEFAULT_REGION
+              value: 'us-east-1'
+          resources:
+            requests:
+              memory: '1Gi'
+              cpu: '500m'
+            limits:
+              memory: '2Gi'
+              cpu: '1000m'
+
+---
+# ServiceAccount for backup operations
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backup-service-account
+  namespace: pharmacare-prod
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT-ID:role/backup-service-role
+
+---
+# Role for backup operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: backup-role
+  namespace: pharmacare-prod
+rules:
+  - apiGroups: ['']
+    resources: ['pods', 'persistentvolumeclaims']
+    verbs: ['get', 'list']
+  - apiGroups: ['batch']
+    resources: ['jobs', 'cronjobs']
+    verbs: ['get', 'list', 'create']
+
+---
+# RoleBinding for backup operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backup-role-binding
+  namespace: pharmacare-prod
+subjects:
+  - kind: ServiceAccount
+    name: backup-service-account
+    namespace: pharmacare-prod
+roleRef:
+  kind: Role
+  name: backup-role
+  apiGroup: rbac.authorization.k8s.io
