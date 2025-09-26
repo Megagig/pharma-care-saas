@@ -33,22 +33,35 @@ export class RedisCacheService {
     private responseTimes: number[] = [];
 
     constructor() {
-        this.redis = new Redis({
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT || '6379'),
-            password: process.env.REDIS_PASSWORD,
-            db: parseInt(process.env.REDIS_DB || '0'),
-            retryDelayOnFailover: 100,
-            maxRetriesPerRequest: 3,
-            lazyConnect: true,
-            keepAlive: 30000,
-            // Connection pool settings
-            family: 4,
-            connectTimeout: 10000,
-            commandTimeout: 5000,
-        });
+        // Check if Redis is disabled or should use memory cache
+        const cacheProvider = process.env.CACHE_PROVIDER || 'redis';
+        if (cacheProvider === 'memory') {
+            logger.info('Using memory cache provider instead of Redis');
+            this.redis = null;
+            return;
+        }
 
-        this.setupEventHandlers();
+        try {
+            this.redis = new Redis({
+                host: process.env.REDIS_HOST || 'localhost',
+                port: parseInt(process.env.REDIS_PORT || '6379'),
+                password: process.env.REDIS_PASSWORD,
+                db: parseInt(process.env.REDIS_DB || '0'),
+                maxRetriesPerRequest: 3,
+                lazyConnect: true,
+                keepAlive: 30000,
+                family: 4,
+                connectTimeout: 10000,
+                commandTimeout: 5000,
+                enableReadyCheck: true,
+                enableOfflineQueue: false
+            });
+
+            this.setupEventHandlers();
+        } catch (error) {
+            logger.error('Failed to initialize Redis cache service:', error);
+            this.redis = null;
+        }
     }
 
     static getInstance(): RedisCacheService {
@@ -59,6 +72,8 @@ export class RedisCacheService {
     }
 
     private setupEventHandlers(): void {
+        if (!this.redis) return;
+
         this.redis.on('connect', () => {
             logger.info('Redis connected successfully');
         });
@@ -84,6 +99,10 @@ export class RedisCacheService {
         value: T,
         options: CacheOptions = {}
     ): Promise<boolean> {
+        if (!this.redis) {
+            return false;
+        }
+
         const startTime = performance.now();
 
         try {
@@ -134,6 +153,11 @@ export class RedisCacheService {
      * Get cache value
      */
     async get<T>(key: string): Promise<T | null> {
+        if (!this.redis) {
+            this.stats.misses++;
+            return null;
+        }
+
         const startTime = performance.now();
 
         try {
@@ -168,6 +192,11 @@ export class RedisCacheService {
      * Get multiple cache values
      */
     async mget<T>(keys: string[]): Promise<(T | null)[]> {
+        if (!this.redis) {
+            this.stats.misses += keys.length;
+            return keys.map(() => null);
+        }
+
         const startTime = performance.now();
 
         try {
@@ -208,6 +237,10 @@ export class RedisCacheService {
      * Delete cache entry
      */
     async del(key: string): Promise<boolean> {
+        if (!this.redis) {
+            return false;
+        }
+
         try {
             const pipeline = this.redis.pipeline();
             pipeline.del(key);
@@ -226,6 +259,10 @@ export class RedisCacheService {
      * Check if key exists
      */
     async exists(key: string): Promise<boolean> {
+        if (!this.redis) {
+            return false;
+        }
+
         try {
             const exists = await this.redis.exists(key);
             if (exists === 0) {
@@ -243,6 +280,10 @@ export class RedisCacheService {
      * Set cache expiration
      */
     async expire(key: string, ttl: number): Promise<boolean> {
+        if (!this.redis) {
+            return false;
+        }
+
         try {
             const pipeline = this.redis.pipeline();
             pipeline.expire(key, ttl);
@@ -261,6 +302,10 @@ export class RedisCacheService {
      * Get cache TTL
      */
     async ttl(key: string): Promise<number> {
+        if (!this.redis) {
+            return -1;
+        }
+
         try {
             let ttl = await this.redis.ttl(key);
             if (ttl === -2) {
@@ -278,6 +323,10 @@ export class RedisCacheService {
      * Invalidate cache by tags
      */
     async invalidateByTags(tags: string[]): Promise<number> {
+        if (!this.redis) {
+            return 0;
+        }
+
         try {
             let deletedCount = 0;
 
@@ -312,6 +361,10 @@ export class RedisCacheService {
      * Clear all cache
      */
     async clear(): Promise<boolean> {
+        if (!this.redis) {
+            return false;
+        }
+
         try {
             await this.redis.flushdb();
             this.resetStats();
@@ -347,6 +400,10 @@ export class RedisCacheService {
      * Get cache info
      */
     async getInfo(): Promise<any> {
+        if (!this.redis) {
+            return null;
+        }
+
         try {
             const info = await this.redis.info();
             const memory = await this.redis.info('memory');
@@ -368,6 +425,10 @@ export class RedisCacheService {
      * Health check
      */
     async healthCheck(): Promise<boolean> {
+        if (!this.redis) {
+            return false;
+        }
+
         try {
             const result = await this.redis.ping();
             return result === 'PONG';
@@ -381,6 +442,10 @@ export class RedisCacheService {
      * Close connection
      */
     async close(): Promise<void> {
+        if (!this.redis) {
+            return;
+        }
+
         try {
             await this.redis.quit();
         } catch (error) {
@@ -391,6 +456,10 @@ export class RedisCacheService {
     // Private helper methods
 
     private async addCacheTags(key: string, tags: string[], ttl: number): Promise<void> {
+        if (!this.redis) {
+            return;
+        }
+
         const pipeline = this.redis.pipeline();
 
         tags.forEach(tag => {

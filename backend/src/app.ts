@@ -9,6 +9,8 @@ import xss from 'xss-clean';
 import hpp from 'hpp';
 
 import errorHandler from './middlewares/errorHandler';
+import memoryManagementService from './services/MemoryManagementService';
+import logger from './utils/logger';
 
 // Route imports
 import authRoutes from './routes/authRoutes';
@@ -61,6 +63,13 @@ const app: Application = express();
 
 // Initialize system integration service
 const systemIntegration = SystemIntegrationService.getInstance();
+
+// Initialize memory management service
+// Start memory monitoring if enabled
+if (process.env.MEMORY_MONITORING_ENABLED === 'true') {
+  memoryManagementService.startMonitoring();
+  logger.info('Memory management service started');
+}
 
 // Security middleware
 app.use(helmet());
@@ -152,6 +161,51 @@ app.get('/api/health/integration', async (req: Request, res: Response) => {
 });
 
 app.use('/api/health/feature-flags', healthRoutes);
+
+// Memory health endpoint
+app.get('/api/health/memory', (req: Request, res: Response) => {
+  try {
+    const memoryReport = memoryManagementService.getMemoryReport();
+    res.json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      memory: memoryReport
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      error: 'Failed to get memory health'
+    });
+  }
+});
+
+// Cache health endpoint
+app.get('/api/health/cache', async (req: Request, res: Response) => {
+  try {
+    const CacheManager = (await import('./services/CacheManager')).default;
+    const cacheManager = CacheManager.getInstance();
+    const cacheMetrics = await cacheManager.getMetrics();
+
+    res.json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      cache: {
+        metrics: cacheMetrics,
+        connected: true
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      error: 'Failed to get cache health',
+      cache: {
+        connected: false
+      }
+    });
+  }
+});
 
 // Public API routes (no authentication required)
 app.use('/api/public', publicApiRoutes);
